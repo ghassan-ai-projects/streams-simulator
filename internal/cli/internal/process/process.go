@@ -10,6 +10,7 @@ import (
 )
 
 type Env struct {
+	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
 	Now    func() time.Time
@@ -17,5 +18,5 @@ type Env struct {
 }
 
 func Standard() Env {
-	return Env{Stdout: os.Stdout, Stderr: os.Stderr, Now: time.Now, Getenv: os.Getenv}
+	return Env{Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr, Now: time.Now, Getenv: os.Getenv}
 }

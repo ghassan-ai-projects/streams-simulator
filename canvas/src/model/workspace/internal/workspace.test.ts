@@ -37,6 +37,8 @@ const lab: Workspace = {
     { path: "compositions/draft.composition.json", id: "draft", title: "Draft plant", instances: 0 },
   ],
   scenarios: [],
+  kinds: [],
+  components: [],
   runs: [
     run("w-2", "factory", "2026-10-14T10:00:00Z"),
     run("w-10", "factory", "2026-10-14T12:00:00Z"),
@@ -94,7 +96,9 @@ describe("workspace catalogue", () => {
   it("summarises and recognises an empty workspace", () => {
     expect(workspaceSummary(sampleWorkspace)).toBe("1 plant · 2 runs");
     expect(workspaceEmpty(sampleWorkspace)).toBe(false);
-    expect(workspaceEmpty({ name: "x", domains: [], compositions: [], scenarios: [], runs: [] })).toBe(true);
+    expect(
+      workspaceEmpty({ name: "x", domains: [], compositions: [], scenarios: [], kinds: [], components: [], runs: [] }),
+    ).toBe(true);
   });
 
   it("says when in words", () => {

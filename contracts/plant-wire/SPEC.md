@@ -1,10 +1,10 @@
 # Plant wire v1 — specification
 
-- **Status**: contract v1.0.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
+- **Status**: contract v1.1.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
   deployment.
 - **Scope**: the session between a **node** (a simulated world, or an edge gateway in front of hardware) and a **host** (a plant
   supervisor). Field protocols below a gateway are out of scope; section 13 maps the one this contract meets first.
-- **This folder is self-contained**: `SPEC.md`, `schemas/` (one JSON Schema per record), `fixtures/` (see `fixtures/README.md`)
+- **This folder is self-contained**: `SPEC.md`, `schemas/` (one JSON Schema per record, and `KIND` for a kind file), `fixtures/` (see `fixtures/README.md`)
   and `DIGEST`. It refers to nothing outside itself.
 
 ## 1. Pattern and roles
@@ -49,7 +49,7 @@ Node → host:
 
 | Type | Lane | Carries |
 |---|---|---|
-| `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds`, `boards`, `node_metrics` |
+| `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds` (each entry with its `kind_digest`), `boards`, `node_metrics` |
 | `DBIRTH` | data | `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, `overrides`, the **current value** of every metric (`null` with quality `warming_up` before its first sample) |
 | `DDATA` | data | `device`, `boot_id`, `historical`, `metrics`: one or more `{alias, value, quality, event_time_ns, time_source, uncertainty_ms?, device_mono_us?}` |
 | `DDEATH` | control | `device`, `boot_id`, `reason` (`offline`, `link_down`, `retired`, `reboot`, `poll_failure`), `last_seq` |
@@ -90,6 +90,17 @@ prose, so an id cannot carry an instruction.
   acknowledgement before the host acts on the device.
 - `capability_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the array of `{kind, commands}` objects,
   sorted by `kind`, each `commands` array sorted by `name`, taken from `NBIRTH.kinds`.
+- **Kind file and `kind_digest`.** A kind file is a JSON document that is exactly one `NBIRTH.kinds` entry (`kind`, `metrics`,
+  `commands`) without its `kind_digest`; schema `KIND`. A kind file **never carries** a `kind_digest` (a stale one would be
+  accepted and ignored, so the schema forbids the member), and the ranges of its metrics (`eu_range`, `instrument_range`) need
+  `min` below `max`, which a validator checks beyond the schema. The `NBIRTH.kinds` entry schema is the `KIND` definition plus a
+  required `kind_digest`, so the two cannot diverge. `kind_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of
+  the entry without its `kind_digest` member. `capability_digest` is not enough to identify a model: it covers only
+  `{kind, commands}` and ignores metrics, so two implementations that differ in metrics, units or ranges share it.
+  The kind file is the contract. An implementation that has the file (a simulated domain) is proven equal to it by comparing
+  its own entry with the file; a device is proven to match it only by announcing a `kind_digest` equal to the file's, which a
+  host or gateway checks at commissioning. A host recomputes every `kind_digest` from the entry it received and refuses a
+  session whose digest differs (`inventory_mismatch`).
 
 ## 6. Handshake, sessions and rebirth
 
@@ -97,7 +108,7 @@ prose, so an id cannot carry an instruction.
 2. The host answers `STATE`. If it accepts, `protocol_version` in `STATE` is the highest version within both ranges, and every
    later record in either direction uses it. If it refuses, it sends `STATE {online: false, refusal}` with `refusal` one of
    `version_unsupported`, `contract_unsupported` (a `contract_version` below the host's minimum, or a `contract_digest` it does
-   not know at that version), `environment_mismatch`, `inventory_mismatch`, `protocol_invalid` (`protocol_min` above
+   not know at that version), `environment_mismatch`, `inventory_mismatch` (a commissioned device missing from the birth, or a `kind_digest` that does not match its entry), `protocol_invalid` (`protocol_min` above
    `protocol_max`), then closes. A node does not reconnect after a refusal without an operator's action.
 3. The node sends every `DBIRTH`, then data.
 

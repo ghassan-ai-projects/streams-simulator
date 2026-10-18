@@ -87,7 +87,7 @@ The identifiers come from earlier responses: `world_id`, `run_id` and `token` ar
    {"domain":"rotating-machinery","seed":7,"adapter":"native-jsonl","sink":"file","sink_target":"runs/w-1/trace.jsonl","time_mode":"stepped"}
    ```
 
-   The response includes `world_id`, `run_id`, `world_digest`, `entity_ids`, `clock`, `token`, and `operator_endpoint` when HTTP operator serving is enabled.
+   The response includes `world_id`, `run_id`, `world_digest`, `entity_ids`, `clock`, `token`, `implements_checked`, and `operator_endpoint` when HTTP operator serving is enabled. `implements_checked` lists `{kind, kind_digest}` for each kind file the domain was checked against; it is empty when no kind of the domain implements one. A domain that implements a kind file is refused when the server was started without `--kinds-dir`.
 2. Call `sim.truth.seal` with the director-generated `ground_truth`, then call `sim.run.begin` with `world_id`. `run.begin` returns `run_id` and confirms `truth_sealed`.
 3. Call `sim.clock.advance` with either `by_ns` or `to_ns`. Set `await_consumer: true` at a boundary where the consumer must have processed the delivered evidence.
 4. Over the operator endpoint, call `sim.nameplate.read` and `sim.effector.list`, then invoke declared actions with `sim.effector.invoke`. Preserve the same `command_id` across retries. Submit the verdict and quiescence through `sim.consumer.report`.

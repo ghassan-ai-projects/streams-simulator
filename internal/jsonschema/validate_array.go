@@ -19,10 +19,10 @@ func (s *Schema) validateArray(arr []any, path string, errs *[]Error) {
 
 func (s *Schema) validateArraySize(arr []any, path string, errs *[]Error) {
 	if s.hasMinItems && len(arr) < s.minItems {
-		*errs = append(*errs, Error{Path: path, Msg: s.shortArrayMessage()})
+		*errs = append(*errs, Error{Path: path, Msg: s.shortArrayMessage(), Keyword: "minItems"})
 	}
 	if s.hasMaxItems && len(arr) > s.maxItems {
-		*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("array longer than maxItems %d", s.maxItems)})
+		*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("array longer than maxItems %d", s.maxItems), Keyword: "maxItems"})
 	}
 }
 
@@ -32,7 +32,7 @@ func (s *Schema) validateUniqueItems(arr []any, path string, errs *[]Error) {
 		for _, e := range arr {
 			key, err := canonical.MarshalString(e)
 			if err == nil && seen[key] {
-				*errs = append(*errs, Error{Path: path, Msg: "array items must be unique"})
+				*errs = append(*errs, Error{Path: path, Msg: "array items must be unique", Keyword: "uniqueItems"})
 				break
 			}
 			seen[key] = true
@@ -47,7 +47,7 @@ func (s *Schema) validateContains(arr []any, path string, errs *[]Error) {
 				return
 			}
 		}
-		*errs = append(*errs, Error{Path: path, Msg: s.missingItemMessage()})
+		*errs = append(*errs, Error{Path: path, Msg: s.missingItemMessage(), Keyword: "contains"})
 	}
 }
 

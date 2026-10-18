@@ -30,7 +30,7 @@ type Options struct {
 	BDSeq        uint64
 	PriorLastSeq int64
 	Policies     []string
-	SafeStop     []string
+	KindsDirs    []string
 	WireFaults   []domain.WireFault
 }
 
@@ -78,7 +78,7 @@ func NewSession(r *run.Run, link Link, options Options) *Session {
 }
 
 func (s *Session) Run(ctx context.Context) error {
-	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded(s.options.SafeStop)); err != nil {
+	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded()); err != nil {
 		return fmt.Errorf("plantwire: %w", err)
 	}
 	if err := s.handshake(ctx); err != nil {
@@ -93,7 +93,7 @@ func (s *Session) Run(ctx context.Context) error {
 }
 
 func (s *Session) handshake(ctx context.Context) error {
-	if err := s.send(s.nodeBirth()); err != nil {
+	if err := s.sendNodeBirth(); err != nil {
 		return err
 	}
 	state, err := s.awaitState(ctx)
@@ -153,6 +153,13 @@ func isType(kind string) func(domain.Message) bool {
 }
 
 func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.Duration, options Options) error {
+	if _, err := CheckImplements(r.Domain().Spec, options.KindsDirs); err != nil {
+		return fmt.Errorf("plantwire: %w", model.WithSource(err, r.Domain().Spec.ID))
+	}
+	return serveSession(ctx, r, socketPath, barrierCap, options)
+}
+
+func serveSession(ctx context.Context, r *run.Run, socketPath string, barrierCap time.Duration, options Options) error {
 	ctx, stop := uds.UntilInterrupted(ctx)
 	defer stop()
 	link, err := uds.Dial(ctx, socketPath, barrierCap)

@@ -29,7 +29,14 @@ Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not
 `artifact_invalid`, `replay_mismatch`, `domain_lint`,
 `adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
 command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
-is known; `result` carries the command's report for a failed check (for example the replay
+is known; each issue is `{pointer?, message, keyword?, member?}`. `keyword` says why, for a
+program: the JSON Schema keyword that failed (`type`, `enum`, `pattern`, `required`,
+`additionalProperties`, `minimum`, `exclusiveMinimum`, `maxLength`, ...) or a stable rule code of the
+binary (`twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`, `twin_name_pattern`,
+`twin_range`, `kind_range_empty`, `domain_rule`, `implements_drift`, `json` for a document that is not
+JSON). `member` names the member a rule is about (`resolution`, `writable`, `safe_stop`, `unit`, `eu_range`, `data_type`, or the
+missing or extra property of `required` and `additionalProperties`). `message` stays plain English; a
+surface never parses it. `result` carries the command's report for a failed check (for example the replay
 report of a failed `verify`). `mcp` owns its stdout for the protocol and reports failures on
 stderr only; `device serve` prints no success document while it serves.
 
@@ -53,8 +60,96 @@ Flags:
 Validates one domain file and reports its ID, digest, channel count, fault count, and effector count.
 
 ```text
-streamsim domain validate <path>
+streamsim domain validate <path> [--kinds-dir <dir>]...
 ```
+
+- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected and reads no kind file. A domain that implements reads only the kind files of the kinds it implements, found by the kind a file declares (a file that does not parse or read is known by its file name, so its failure is reported when its name is an implemented kind); a malformed kind file of another kind is never read as a problem, so one unfinished device does not block the others (it still fails `kind validate`). The check compares the safe-stop flag of each command too: a domain flags a safe stop with `safe_stop: true` on its effector, and the kind file must flag the same commands. A kind file must be a regular file of at most 1 MiB (a symbolic link or a named pipe is refused), one JSON document, with no member named twice and no number beyond the range of a double. `domain validate` and `run` print `implements_checked`, a list of `{kind, kind_digest}` for the kind files the domain was checked against; it is empty when no kind of the domain implements one, so an empty list means there was nothing to check. `domain compose`, `run`, `plantwire node` and `mcp` take the same option and run the same check; `domain lint` takes none, because it judges a nominal day of the domain's behaviour, not its interface (`--kinds-dir` there is a usage error). A recorded run (`replay`, `verify`, `scenario from-run`) does not run it either: it reproduces a recorded run and sends nothing to a host.
+
+### `kind validate`
+
+Checks one or more kind files against the plant wire kind schema and prints `{valid, kinds}`, where each kind is `{path, kind, kind_digest, metrics, commands}`. A kind file is one `NBIRTH.kinds` entry without its `kind_digest`; its digest is the one a host sees. A kind file that carries a `kind_digest` member is refused (issue at `/kind_digest`), even a correct one, because a stale digest would be accepted and ignored; a metric's `eu_range` and `instrument_range` need `min` below `max` (issue at `/metrics/<i>/eu_range`). The kind file is the contract: `implements` proves a domain equal to it, and only an announced `kind_digest` equal to the file's proves a device matches it.
+
+```text
+streamsim kind validate [--twin] (<file.kind.json>... | --stdin)
+```
+
+A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`. A file that is not JSON or breaks the schema also carries `source` (the file) and `issues`, as `domain validate` does: one `{pointer, message, keyword, member?}` per schema violation, sorted by pointer, with `pointer` an RFC 6901 pointer into the kind file (for example `/metrics/0/data_type`, `/commands` for a missing member), `keyword` the schema keyword that failed (`required`, `enum`, `pattern`, ...) and `member` the missing or extra property; a file that is not JSON has an issue with `message` and `keyword: "json"` only. A kind file that breaks the schema in a `--kinds-dir` fails `domain validate`, `domain compose` and `run` the same way.
+
+- `--stdin` — checks one kind document read from standard input instead of files: at most 1 MiB, decoded as strictly as a file (one JSON document, no member named twice, no number beyond a double), the same issues as a file with `source` `<stdin>`. It reads and writes no file; the output is `{valid, kinds}` with one kind whose `path` is `<stdin>`. Giving files beside `--stdin`, or neither, is a usage error.
+- `--twin` — also reports everything a twin of the kind needs that the document lacks, **all at once**, each as an issue at the member in the kind file with `keyword` `twin_member_required` (`resolution` and `writable` on a reading; `name`, `args_schema`, `risk_class` and `safe_stop` on a command), `twin_member_unsupported`, `twin_name_pattern`, `twin_type_unsupported` (an enum or string reading), `twin_unit_required` (a number or integer reading without a unit), `twin_unit_unexpected` (a boolean with a unit), `twin_range` (an `eu_range` with `min` not below `max`), `twin_risk_class` or `twin_not_object`, and `member` the member concerned. Schema violations are reported first and alone: fix them, then the twin requirements follow in one list. A kind file that passes `--twin` produces a twin with `kind twin` without refusal for the kind file (the choices can still be refused). `kind twin` reports the same rules for a kind file it is given, all of them, at `/kinds/<i>/kind` of the choices.
+
+### `kind twin`
+
+Scaffolds a runnable twin of kind files: a domain whose kinds `implements` them. The binary does the work, so a surface needs no simulation knowledge of its own. Per metric, the choices name the library instrument that measures it (or `none` for a plain channel); per command that is not a safe stop, one of three fixed responses. Everything else comes from the kind files.
+
+```text
+streamsim kind twin [<file.kind.json>...] (--choices <choices.json> [--out <file>] | --suggest) [--kinds-dir <dir>]... [--components-dir <dir>]...
+```
+
+- `--suggest` — prints, and writes nothing, a valid choices document with the binary's defaults for the kind files, as `{choices}`, so a surface needs no defaults of its own: `id` and `title` from the kind names of the given files only (`fan-twin` and `Twin of fan`; for a board too long for an id, the first kind and a count, `board-part-number-0-and-7-more-twin`), `version` `0.1.0`, one `instance` per kind (`<kind>-01`, underscores as hyphens), per reading the library instrument that fits its unit and range (`none` when none does, for a boolean and for a reading without a unit or range), and per command that is not a safe stop `direct` when the command's numeric arguments are named for the writable readings of the kind and no other command claims them, else `none`. It takes no `--choices` or `--out`. The suggestion always passes the schema and, for kind files that meet the twin requirements, `kind twin --choices`; a kind file that does not is refused with every violation at once, as `kind validate --twin` reports them.
+
+- `--choices <file>` — the choices document, `twin-choices-v0.1` ([schema](../../contracts/twin-choices-v0.1.schema.json)): `id`, `version`, `title`, optional `description`, `site {name, area?}` and `board {name}`, and `kinds[]` in the order the domain declares them. Each entry is `{kind, instance, metrics, commands}`: `kind` names a kind file, `instance` is the one instance the twin has, `metrics` has one `{instrument, initial?}` for every metric of the kind file, `commands` one `{response, sets?, drives?}` for every command that is not a safe stop.
+- Kind files come from the arguments, from `--kinds-dir` (every `*.kind.json` there, all of which must parse), or both; only the kinds the choices name are used. Give the files as arguments to keep an unrelated kind file out of the twin altogether; `--suggest` names its default `id` and `title` after the files it is given.
+- An instrument whose unit differs from the metric's is used through a unit conversion: the twin keeps the unit of its kind file, and the instrument's noise, drift and fault magnitudes are converted into it.
+- `--out <file>` — write the domain there; without it the spec is printed inside the output document (`domain`).
+- `--components-dir <dir>` — a customer library directory, repeatable (see `domain compose`).
+
+Responses:
+
+| `response` | Takes | Result |
+| --- | --- | --- |
+| `direct` | `sets`: argument name to the writable metric of the same kind it sets | The command assigns the argument to the metric's state |
+| `first_order` | `sets`, and `drives[]` of `{from, kind, metric, gain, time_constant_s}` | As `direct`, and the read-only metric `metric` of `kind` relaxes with `time_constant_s` toward its `initial` plus `gain` times the value of `from` (a first-order lag) |
+| `none` | nothing | The command is acknowledged and changes nothing |
+
+A safe-stop command lowers every metric the kind's commands set to the low end of its range. A command whose arguments carry `lease_ms` (or `lease_s`) holds its effect for that lease and falls back to the low end of the range. An instrument keeps its noise, cadence, faults and tag; the kind file keeps the metric's unit, range and resolution, so the instrument must read in the metric's unit (an alias of the same quantity, such as `Cel` for `degC`, is accepted) and cover its range.
+
+It prints `{id, digest, channels, faults, effectors, implements}` and `composed` (the file written) or `domain`. The twin is checked against the same kind files before it is printed, so it always passes `domain validate --kinds-dir`. Choices that break their schema, name something the kind files do not hold, leave a metric or command undecided, or ask a response that does not fit fail with `kind_failed`, each issue at its pointer in the choices (`/kinds/2/commands/set_pwm_lease/drives/0/gain`) with a `keyword` (`twin_kind_missing`, `twin_name_collision`, `twin_unknown_choice`, `twin_choice_missing`, `twin_instrument_mismatch`, `twin_response_mismatch`, `twin_initial_range`) whose `member` names the part of the metric at fault: `unit` for an instrument of another quantity, `eu_range` for a metric without a range or one the instrument's range does not cover (compared after conversion into the instrument's unit), `data_type` for a boolean metric; a kind file the twin cannot reproduce (a string metric, a member beyond the interface, a missing `resolution`) fails the same way at `/kinds/<i>/kind`, one issue per violation, each with the twin `keyword` and `member`.
+
+### `kind capture`
+
+Drafts kind files from the `NBIRTH` a node announced, for a person to review: a birth is a claim, so a captured kind becomes the model only after review, and the command writes nothing. The source is one `NBIRTH` record (a file holding it, as one line or indented), or a JSON Lines file in which the **first** `NBIRTH` is taken: a recorded wire stream, or a run's observer journal (`journal.jsonl`), whose `wire` records wrap the record as `{"stream": "observer", "type": "wire", "direction": "node", "record": {...}}`.
+
+```bash
+streamsim kind capture (<file> | --stdin) [--kinds-dir <dir>]...
+```
+
+- `<file>` — a regular file, read as a stream line by line and never held whole: a line is at most 1 MiB (plus its envelope), and the scan stops after 32 MiB, so a journal of any size works when its birth is early. A symbolic link or a named pipe is refused. A relative path is walked component by component and none may be a symbolic link (the canvas bridge passes `runs/<id>/journal.jsonl` relative to the workspace); for an absolute path only the last component is checked, because the system's own links above it cannot be told from a planted one. `--stdin` reads at most 1 MiB instead, as `kind validate --stdin` does, with `source` `<stdin>`. A file or `--stdin`, exactly one.
+- `--kinds-dir <dir>` — repeatable; each captured kind is compared with the kind file of the same name (a file is found by the kind it declares; a name that differs only in case is a collision). Only the files of the captured kinds are **parsed**; a kind file that cannot be read degrades to an issue of its own kind, never to a failure of the capture. A directory that does not exist holds no kind file (every kind is `new`, aimed at a file of it) and is not created. Without the option there is no comparison and no `target`.
+
+Only the observer stream is ever taken. A record of the director stream (`sealed_stream`) or of any other stream, or a wrapped record without a stream (`stream_not_observer`), is refused; a bare `NBIRTH` with no envelope is allowed. Records are read strictly: member names are matched exactly (`Stream` is not `stream`), a member named twice makes the line unreadable, and the stream is checked before a record is accepted.
+
+The birth must be sound: it validates against the plant wire `NBIRTH` schema, `protocol_min` does not exceed `protocol_max`, the contract version and digest are the ones this binary speaks, the `kind_digest` of every kind is recomputed and equals the one announced (issue at `/kinds/<i>/kind_digest`, `keyword` `kind_digest_mismatch`) and no kind is announced twice, not even under another case (`kind_duplicate`, which the reference host refuses as `inventory_mismatch` too). Any violation fails with `kind_failed` and the issues in the shape `domain validate` uses; a source with no readable `NBIRTH` fails with the issue `no_birth`. A first birth that breaks the contract is refused, not skipped for a later one. Member names and values echoed in a message or pointer are cut at 128 characters, and a pointer escapes `~` and `/` (RFC 6901).
+
+It prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
+
+```json
+{
+  "environment": "hardware",
+  "bd_seq": 0,
+  "births_seen": 2,
+  "taken": {"line": 12, "bd_seq": 0},
+  "later_births": [{"line": 840, "bd_seq": 1, "same_content": false}],
+  "issues": [{"message": "the birth at line 840 (bd_seq 1) announces other kinds than the one taken at line 12", "keyword": "rebirth_differs"}],
+  "kinds": [
+    {
+      "kind": "fan",
+      "kind_digest": "sha256:...",
+      "draft": {"kind": "fan", "metrics": [], "commands": []},
+      "claims": ["/commands/0/risk_class", "/commands/0/safe_stop", "/commands/0/args_schema/properties/duty/maximum"],
+      "issues": [{"pointer": "/metrics/0/eu_range", "message": "min 5 is not below max 5", "keyword": "kind_range_empty", "member": "eu_range"}],
+      "comparison": {"status": "differs", "target": "kinds/fan.kind.json", "file": "kinds/fan.kind.json", "file_digest": "sha256:...", "differs_at": "/metrics/0/unit"}
+    }
+  ]
+}
+```
+
+- `environment` is what the board **claims**, `simulated` or `hardware`, like everything else in a birth; the binary does not verify it. A birth of either is accepted.
+- `births_seen`, `taken`, `later_births` — provenance. The first birth found is the one captured (a rebirth later in a journal does not replace it); `taken` says where it stood (`line` counts lines of the source from 1), `later_births` lists up to 64 later births with whether their kinds equal the taken one's. The capture-level `issues` hold `rebirth_differs` (a later birth announces other kinds), `birth_line_unreadable` (a line that names a birth but cannot be read, with its line number; it is skipped, never silently), `capability_digest_mismatch` (the board's `capability_digest` does not hold; the reference host does not check it, so this is a capture-only check and the kinds are captured all the same) and `scan_truncated` (`births_seen` is a lower bound). No option takes the last birth.
+- `draft` — the `NBIRTH.kinds` entry without `kind_digest`: the content of a kind file, which must not carry that member. `kind_digest` is the digest the node announced, equal to what `kind validate` reports for the file once saved.
+- `claims` — pointers into the draft of the members that came from the board and that nothing verified: `risk_class` and `safe_stop` of each command and every bound of an `args_schema` (`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`, `minLength`, `maxLength`, `minItems`, `maxItems`, `minProperties`, `maxProperties`). A reviewer reads these before saving.
+- `issues` (of a kind) — present only when the draft still breaks the kind file rules (for example a range with `min` not below `max`), with the `keyword` and `member` `kind validate` would report, or when the comparison found `kind_name_collision` or `kind_file_unreadable`.
+- `comparison` — `status` is `new` (no kind file of that name), `same` (equal `kind_digest`), `differs` or `unreadable` (the file of that name cannot be read, or two files define the kind). `target` is where the draft would be saved, derived by one rule: an existing file's path for `same`, `differs` and `unreadable`; for `new`, `<first --kinds-dir>/<stem>.kind.json` where the stem is the kind name with `:` made `_` (cut so the file name fits a workspace path segment); on a collision, the colliding file. `file` and `file_digest` name the existing file, and `differs_at` is the pointer of the first member where it and the draft differ, found by the comparison `implements` uses. A kind whose name differs from a kind file's only in case (`Pump` and `pump.kind.json`) is `differs` at `/kind` with `collides_with` the file and a `kind_name_collision` issue, never `new`. Names are matched with their case folded; the schema's name pattern is ASCII, so a Unicode look-alike or a name with a space is refused as a birth and needs no normalisation.
 
 ### `domain lint`
 
@@ -80,7 +175,7 @@ streamsim domain format <path>
 Composes a plant from the component library into an ordinary domain ([components](../../docs/design/COMPONENTS_V0_1.md)). The result is validated with the domain contract and written in canonical layout, so the same composition and library files always give the same bytes.
 
 ```text
-streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]...
+streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]... [--kinds-dir <dir>]...
 ```
 
 - `--out <file>` — write the domain there; without it the composed spec is printed inside the output document (`domain`).
@@ -96,7 +191,8 @@ Lists, shows and validates the component library: equipment, instruments and voc
 streamsim component [list|show <namespace/name[@major]>|validate|examples|example <id>] [--components-dir <dir>]...
 ```
 
-- `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
+- `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters, and the entry also carries its `unit` and, when it states one, its measuring `range {min, max}`.
+- `component list --unit <u> [--min <n> --max <n>]` — only the instruments that measure in `u` or in a unit convertible to it (the unit conversion `kind twin` uses), ordered fitting instruments first, then the exact unit before a convertible one, then by id and version; each entry carries `match` (`exact` or `convertible`) beside its `unit` and `range`, and `fit: {ok, code?, member?}`: whether a twin can read a metric of that unit through it. `--min` and `--max` are the metric's `eu_range` in `u` (both or neither, `min` below `max`, else a usage failure); the instrument's own range is compared with it after conversion, with the comparison `kind twin` uses, so `ok: true` is exactly what `kind twin` accepts. `code` is `unit_incompatible` (`member` `unit`), `range_unstated` (`eu_range`: no `--min`/`--max` given, and a twin needs the metric's range), `range_narrower` (`eu_range`) or `reading_not_number` (`data_type`). A unit no family knows lists nothing. `--unit`, `--min` and `--max` belong to `list` only.
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
 - `component examples` — the ready-to-run example plants shipped with the library, as `{id, title, description}`.
 - `component example <id>` — one example plant's composition, ready to copy into a workspace; an id that is not shipped fails with `component_failed`.
@@ -162,7 +258,7 @@ streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory
                          [--policy <digest>] [--epoch <n>] [--delay-ms <n>]
 streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domains-dir domains] [--adapter <id>] [--adapters-dir adapters]
                          [--session-id <id>] [--seed <n>] [--slice-s 60] [--duration 3600] [--barrier-cap-ms 30000]
-                         [--policy <digest>]... [--safe-stop <command>]...
+                         [--policy <digest>]... [--kinds-dir <dir>]...
 ```
 
 The socket's directory must be owner-only (it is created `0700` when missing); a stale socket left by a crash is replaced,
@@ -172,8 +268,9 @@ run folder. The script is a JSON array of
 unique wire-safe name, default `ref-<n>` by position) becomes the command's `command_id`; a command to a
 device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
 arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
-must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists; `--safe-stop` names commands that
-skip freshness, epoch and policy checks. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
+must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists. The commands that skip freshness, epoch and policy checks are the
+safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
+(`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
 
 ### `run`
@@ -194,7 +291,7 @@ A scenario's `description` is for readers; a scenario without a `clock.advance` 
 
 ```text
 streamsim run [flags]
-streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir] [--explore]
+streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--kinds-dir d]... [--sink s] [--sink-target t] [--out dir] [--explore]
 ```
 
 With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--seed`,
@@ -263,6 +360,8 @@ Flags:
 - `--domains-dir <path>` — defaults to `domains`.
 - `--adapters-dir <path>` — defaults to `adapters`.
 - `--out <path>` — run artifact root; defaults to `runs`.
+- `--components-dir <dir>` — a customer component library directory, repeatable (see `domain compose`).
+- `--kinds-dir <dir>` — a directory of kind files, repeatable. `sim.world.create` runs the same `implements` check as `domain validate` on the domain it is asked for, and refuses a domain whose kind implements a kind file this director cannot find (`domain_invalid`, an issue at `/kinds/<i>/implements`). A director started without `--kinds-dir` refuses every domain that declares `implements`; a domain without `implements` is unaffected.
 
 ### `refconsumer`
 

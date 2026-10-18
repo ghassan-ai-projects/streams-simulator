@@ -82,7 +82,8 @@
         "required": [
           "kind",
           "metrics",
-          "commands"
+          "commands",
+          "kind_digest"
         ],
         "properties": {
           "kind": {
@@ -214,6 +215,10 @@
                 }
               }
             }
+          },
+          "kind_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
           }
         }
       }

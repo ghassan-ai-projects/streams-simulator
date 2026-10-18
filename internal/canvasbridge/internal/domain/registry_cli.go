@@ -11,11 +11,12 @@ import (
 type ArgShape string
 
 const (
-	ShapeText ArgShape = "text"
-	ShapePath ArgShape = "path"
-	ShapeRun  ArgShape = "run"
-	ShapeNum  ArgShape = "number"
-	ShapeFlag ArgShape = "switch"
+	ShapeText  ArgShape = "text"
+	ShapePath  ArgShape = "path"
+	ShapeRun   ArgShape = "run"
+	ShapeNum   ArgShape = "number"
+	ShapeFlag  ArgShape = "switch"
+	ShapeStems ArgShape = "stems"
 )
 
 type CLIArg struct {
@@ -25,15 +26,22 @@ type CLIArg struct {
 	Class    FileClass
 	RunFile  string
 	Required bool
+	Relative bool
 }
 
 type ArgvPart struct {
-	Literal string
-	Path    string
+	Literal  string
+	Path     string
+	Existing bool
+	Relative bool
 }
 
+var kindsArg = CLIArg{Key: "kinds", Shape: ShapeStems, Class: ClassKind, Required: true}
+
 var (
-	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true}
+	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true,
+		CLIArgs: []CLIArg{{Key: "unit", Flag: "--unit", Shape: ShapeText}, {Key: "min", Flag: "--min", Shape: ShapeNum},
+			{Key: "max", Flag: "--max", Shape: ShapeNum}}}
 	cliComponentShow = Action{Name: "component.show", Kind: KindCLI, Command: []string{"component", "show"}, Library: true,
 		CLIArgs: []CLIArg{{Key: "ref", Shape: ShapeText, Required: true}}}
 	cliExamples = Action{Name: "component.examples", Kind: KindCLI, Command: []string{"component", "examples"}}
@@ -43,10 +51,22 @@ var (
 		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}, {Key: "title", Flag: "--title", Shape: ShapeText, Required: true},
 			{Key: "from", Flag: "--from", Shape: ShapePath, Class: ClassComposition}, {Key: "example", Flag: "--example", Shape: ShapeText},
 			{Key: "empty", Flag: "--empty", Shape: ShapeFlag}}}
-	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true, Etag: true,
+	cliComponentValidate = Action{Name: "component.validate", Kind: KindCLI, Command: []string{"component", "validate"}, Library: true}
+	cliKindValidate      = Action{Name: "kind.validate", Kind: KindCLI, Command: []string{"kind", "validate"},
+		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
+	cliKindCheck = Action{Name: "kind.check", Kind: KindCLI, Command: []string{"kind", "validate", "--stdin"}, Input: inputKey,
+		CLIArgs: []CLIArg{{Key: "twin", Flag: "--twin", Shape: ShapeFlag}}}
+	cliKindCapture = Action{Name: "kind.capture", Kind: KindCLI, Command: []string{"kind", "capture"}, Kinds: true, KindsHome: true, Input: inputKey, StdinFlag: "--stdin",
+		OneOf: []string{inputKey, runKey}, CLIArgs: []CLIArg{{Key: runKey, Shape: ShapeRun, RunFile: "journal.jsonl", Relative: true}}}
+	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true,
+		CLIArgs: []CLIArg{kindsArg}}
+	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Mutating: true, Etag: true,
+		CLIArgs: []CLIArg{kindsArg, {Key: "choices", Flag: "--choices", Shape: ShapePath, Class: ClassTwin, Required: true},
+			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
+	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Kinds: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
-	cliValidate = Action{Name: "domain.validate", Kind: KindCLI, Command: []string{"domain", "validate"},
+	cliValidate = Action{Name: "domain.validate", Kind: KindCLI, Command: []string{"domain", "validate"}, Kinds: true,
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliLint = Action{Name: "domain.lint", Kind: KindCLI, Command: []string{"domain", "lint"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "hours", Flag: "--hours", Shape: ShapeNum}}}
@@ -60,10 +80,10 @@ var (
 )
 
 func (a Action) Argv(args map[string]any) ([]ArgvPart, error) {
-	if err := a.closedArguments(args); err != nil {
+	if err := a.admit(args); err != nil {
 		return nil, err
 	}
-	parts := literals(a.Command)
+	parts := append(literals(a.Command), a.stdinFlag(args)...)
 	for _, spec := range a.CLIArgs {
 		rendered, err := a.argument(spec, args)
 		if err != nil {
@@ -90,8 +110,11 @@ func (a Action) argument(spec CLIArg, args map[string]any) ([]ArgvPart, error) {
 }
 
 func (spec CLIArg) parts(value any) ([]ArgvPart, error) {
-	if spec.Shape == ShapeFlag {
+	switch spec.Shape {
+	case ShapeFlag:
 		return spec.renderSwitch(value)
+	case ShapeStems:
+		return spec.renderStems(value)
 	}
 	rendered, err := spec.render(value)
 	if err != nil {
@@ -110,7 +133,7 @@ func (a Action) closedArguments(args map[string]any) error {
 }
 
 func (a Action) takes(key string) bool {
-	if a.Etag && key == etagKey {
+	if (a.Etag && key == etagKey) || (a.Input != "" && key == a.Input) {
 		return true
 	}
 	for _, spec := range a.CLIArgs {

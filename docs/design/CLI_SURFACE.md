@@ -38,7 +38,7 @@ Tools may branch on the exit status or on the presence of `error`.
     "code": "domain_invalid",
     "message": "domain: domains/x.domain.json fails domain-spec-v0.2 validation: …",
     "source": "domains/x.domain.json",
-    "issues": [ { "pointer": "/channels/2/unit", "message": "missing required property \"unit\"" } ],
+    "issues": [ { "pointer": "/channels/2/unit", "message": "missing required property \"unit\"", "keyword": "required", "member": "unit" } ],
     "result": { }
   }
 }
@@ -49,7 +49,7 @@ Tools may branch on the exit status or on the presence of `error`.
 | `code` | Always | Stable code from §3 |
 | `message` | Always | Human-readable cause on one line, without repeated `streamsim:` prefixes; for a contract violation the issues carry the details |
 | `source` | When a file is at fault | The path as given on the command line |
-| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one, a "missing required property" or "additional property" issue pointing at the member itself; domain cross-reference issues carry one since domain-spec v0.2 (phase P5a). A document that is not JSON, adapter cross-reference checks and run-flag issues have no location and omit it |
+| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one, a "missing required property" or "additional property" issue pointing at the member itself; domain cross-reference issues carry one since domain-spec v0.2 (phase P5a). A document that is not JSON, adapter cross-reference checks and run-flag issues have no location and omit it. Every issue of `kind validate`, `kind twin` and `domain validate` also carries `keyword`, for a program: the JSON Schema keyword that failed (`type`, `enum`, `pattern`, `required`, `additionalProperties`, `minimum`, ...) or a stable rule code of the binary (`twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`, `twin_name_pattern`, `twin_range`, `domain_rule`, ...), and `member` when the rule is about a named member (`resolution`, `writable`, `safe_stop`, `unit`); `message` stays human-readable English and is never parsed |
 | `result` | `replay_mismatch`, `adapter_verify_failed`, `domain_lint` | The command's result document describing the failure (e.g. the replay report with `first_divergence`) |
 
 ## 3. Error codes

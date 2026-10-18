@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { createDeviceDesk } from "../app/devices";
 import { createNavigationStore } from "../app/shell";
 import { createPlantMaker } from "../app/plant";
 import { createWorkspaceStore } from "../app/workspace";
@@ -16,6 +17,7 @@ export async function show(
   bridge: FakeBridge,
   nav = navigation(),
   badgeFor: (worldId: string) => Badge | null = () => null,
+  desk = createDeviceDesk(bridge.devices),
 ) {
   const store = createWorkspaceStore(bridge.workspace);
   await store.open();
@@ -24,6 +26,7 @@ export async function show(
       workspace={store}
       navigation={nav.store}
       maker={createPlantMaker(bridge.plant)}
+      desk={desk}
       badgeFor={badgeFor}
     />,
   );

@@ -1,10 +1,10 @@
 package domain
 
-func (b *entryBuild) instrumentFaults(point MeasurementPoint, instrument *Instrument, measured reading, channel string) ([]any, bool) {
+func instrumentFaults(owner string, point MeasurementPoint, instrument *Instrument, measured reading, channel string) ([]any, bool) {
 	var faults []any
 	biased := false
 	for _, fault := range instrument.Faults {
-		document := b.instrumentFault(point, fault, measured, channel)
+		document := instrumentFault(owner, point, fault, measured, channel)
 		biased = biased || actsThroughBias(fault)
 		faults = append(faults, document)
 	}
@@ -15,8 +15,8 @@ func actsThroughBias(fault InstrumentFault) bool {
 	return fault.Form == "offset" || fault.Form == "drift"
 }
 
-func (b *entryBuild) instrumentFault(point MeasurementPoint, fault InstrumentFault, measured reading, channel string) map[string]any {
-	document := map[string]any{"id": b.name + "__" + point.Name + "__" + fault.ID, "observability": detectorOn(channel)}
+func instrumentFault(owner string, point MeasurementPoint, fault InstrumentFault, measured reading, channel string) map[string]any {
+	document := map[string]any{"id": owner + "__" + point.Name + "__" + fault.ID, "observability": detectorOn(channel)}
 	if actsThroughBias(fault) {
 		document["affects"], document["onset"] = biasEffect(point, fault, measured)
 	} else {

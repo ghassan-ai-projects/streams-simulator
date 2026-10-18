@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os/exec"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -19,7 +18,7 @@ var ErrGone = errors.New("canvasbridge: the director is gone")
 
 type Director struct {
 	session *mcpsdk.ClientSession
-	stderr  *tail
+	stderr  *lastWords
 }
 
 type ToolResult struct {
@@ -28,16 +27,33 @@ type ToolResult struct {
 }
 
 func StartDirector(ctx context.Context, executable string, args []string) (*Director, error) {
-	command := exec.CommandContext(ctx, executable, args...) //nolint:gosec // G204: the bridge's own executable with argv it built
+	command := directorCommand(ctx, executable, args)
+	words, release, err := captureStderr(command)
+	if err != nil {
+		return nil, err
+	}
+	session, err := connect(ctx, command)
+	release()
+	if err != nil {
+		return nil, fmt.Errorf("%w%s", err, words.said())
+	}
+	return &Director{session: session, stderr: words}, nil
+}
+
+func directorCommand(ctx context.Context, executable string, args []string) *exec.Cmd {
+	//nolint:gosec // G204: the bridge's own executable with argv entries the bridge built (governance/DEFERRED.md D-64)
+	command := exec.CommandContext(ctx, executable, args...)
 	command.Env = []string{}
-	stderr := &tail{}
-	command.Stderr = stderr
+	return command
+}
+
+func connect(ctx context.Context, command *exec.Cmd) (*mcpsdk.ClientSession, error) {
 	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "streamsim-canvas-bridge", Version: "0.1.0"}, nil)
 	session, err := client.Connect(ctx, &mcpsdk.CommandTransport{Command: command}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("canvasbridge: start the director: %w%s", err, said(stderr))
+		return nil, fmt.Errorf("canvasbridge: start the director: %w", err)
 	}
-	return &Director{session: session, stderr: stderr}, nil
+	return session, nil
 }
 
 func (d *Director) Call(ctx context.Context, tool string, args map[string]any) (ToolResult, error) {
@@ -59,18 +75,7 @@ func (d *Director) callFailure(ctx context.Context, tool string, err error) erro
 	if ctx.Err() != nil || !connectionLost(err) {
 		return fmt.Errorf("canvasbridge: %s: %w", tool, err)
 	}
-	return fmt.Errorf("%w: %s: %w%s", ErrGone, tool, err, said(d.stderr))
-}
-
-func connectionLost(err error) bool {
-	return errors.Is(err, mcpsdk.ErrConnectionClosed) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrClosedPipe)
-}
-
-func said(stderr *tail) string {
-	if text := stderr.String(); text != "" {
-		return "; the director said: " + text
-	}
-	return ""
+	return fmt.Errorf("%w: %s: %w%s", ErrGone, tool, err, d.stderr.said())
 }
 
 func (d *Director) Close() error {

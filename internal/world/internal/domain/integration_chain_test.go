@@ -2,10 +2,10 @@ package domain
 
 import (
 	"math"
-	"math/rand"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
 type lagLink struct {
@@ -120,7 +120,7 @@ func readEvery(w *World, state string, every int64, untilS float64) {
 
 func TestRandomLagChainsAgreeWithAnIndependentRecursion(t *testing.T) {
 	t.Parallel()
-	rng := rand.New(rand.NewSource(11)) //nolint:gosec // a seeded, reproducible case generator, not security
+	rng := randutil.NewSplitMix64(11)
 	steps := []float64{0.5, 1, 2, 3, 5, 7, 10, 45, 60}
 	names := []string{"a", "b", "c", "d", "e"}
 	for trial := range 200 {

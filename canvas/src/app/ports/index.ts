@@ -1,3 +1,16 @@
+export type {
+  BoardCapture,
+  CapturedKind,
+  CaptureSource,
+  DeviceFailure,
+  DevicesGateway,
+  DomainChecked,
+  InstrumentQuery,
+  KindChecked,
+  LibraryInstrument,
+  LintReport,
+  TwinMade,
+} from "./devices";
 export type { EditorFailure, EditorGateway } from "./editor";
 export type { Acknowledgement, LaunchFailure, LaunchGateway } from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";
@@ -9,6 +22,7 @@ export type { Location, PreferenceStore, SystemTheme } from "./browser";
 export { failure, success } from "./shared";
 export type { ComposeSummary, Diagnostic, DomainDocument, FileContent, Outcome, PlantSource } from "./shared";
 
+import type { DevicesGateway } from "./devices";
 import type { EditorGateway } from "./editor";
 import type { LaunchGateway } from "./launch";
 import type { PlantGateway } from "./plant";
@@ -21,6 +35,7 @@ export interface BridgeAdapters {
   readonly workspace: WorkspaceGateway;
   readonly plant: PlantGateway;
   readonly editor: EditorGateway;
+  readonly devices: DevicesGateway;
   readonly launch: LaunchGateway;
   readonly review: ReviewGateway;
 }

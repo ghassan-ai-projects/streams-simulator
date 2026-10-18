@@ -19,8 +19,23 @@ type Verify = host.Verify
 
 type WireFault = domain.WireFault
 
+type KindSummary = domain.KindSummary
+
+type TwinRules = domain.TwinRules
+
+type Capture = domain.Capture
+
 var (
+	ErrKindFileMissing  = domain.ErrKindFileMissing
+	ErrKindDrift        = domain.ErrKindDrift
+	ErrNotCanonical     = domain.ErrNotCanonical
+	ErrTwinRequirements = domain.ErrTwinRequirements
+	ErrDuplicateMember  = domain.ErrDuplicateMember
 	ErrRefused          = domain.ErrRefused
+	ErrNoBirth          = domain.ErrNoBirth
+	ErrBirthRefused     = domain.ErrBirthRefused
+	ErrSealedStream     = domain.ErrSealedStream
+	ErrNotObserver      = domain.ErrNotObserver
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap
 	ErrSocketNotPrivate = uds.ErrSocketNotPrivate

@@ -18,6 +18,7 @@ type Build struct{ Version, Commit string }
 
 type session struct {
 	build  Build
+	stdin  io.Reader
 	stderr io.Writer
 	now    func() time.Time
 	getenv func(string) string
@@ -35,6 +36,7 @@ var commands = map[string]command{
 	"domain":      {run: cmdDomain},
 	"component":   {run: componentCommand},
 	"adapter":     {run: cmdAdapter},
+	"kind":        {run: cmdKind},
 	"run":         {run: cmdRun},
 	"replay":      {run: cmdReplay},
 	"verify":      {run: cmdVerify},
@@ -55,7 +57,7 @@ func Main(args []string, version, commit string) int {
 }
 
 func Run(args []string, build Build, env process.Env) int {
-	s := &session{build: build, stderr: env.Stderr, now: env.Now, getenv: env.Getenv}
+	s := &session{build: build, stdin: env.Stdin, stderr: env.Stderr, now: env.Now, getenv: env.Getenv}
 	if len(args) < 2 {
 		s.usage()
 		return s.fail(env.Stdout, "", usageExit{code: 2, message: "a command is required"})
@@ -132,10 +134,19 @@ Usage: streamsim <command> [flags]
 
 Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
-  domain validate <path>                Validate a domain spec against the contract
+  domain validate <path> [--kinds-dir]  Validate a domain spec against the contract and the
+                                        kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
-  component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
+  kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
+                                        against the plant wire kind schema (--twin: also what a twin needs)
+  kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
+                                        instruments and command responses (--kinds-dir, --out)
+  kind twin <file>... --suggest         Print default choices for kind files; writes nothing
+  kind capture <file>|--stdin           Draft kind files from the NBIRTH of a board: a file holding it
+                                        or a journal (--kinds-dir compares with kind files); writes nothing
+  component list [--unit u [--min n --max n]]|show <ref>|validate
+                                        The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
                                         (built in; --components-dir adds customer
@@ -148,7 +159,8 @@ Commands:
   mcp --role director                   Serve the director role over stdio
                                         (--operator-addr binds the operator role
                                         over streamable HTTP; sim.world.create
-                                        returns the endpoint with the token)
+                                        returns the endpoint with the token;
+                                        --kinds-dir checks domains that implement kind files)
   canvas --workspace <dir> --ui-dir <d> Serve the visual canvas on a loopback address
                                         (prints the address and a pairing code)
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json

@@ -11,7 +11,7 @@ import (
 )
 
 func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
-	cfg, err := d.worldConfig(req)
+	cfg, checked, err := d.worldConfig(req)
 	if err != nil {
 		return nil, err
 	}
@@ -23,19 +23,23 @@ func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	return d.publishWorld(worldID, r)
+	return d.publishWorld(worldID, r, checked)
 }
 
-func (d *Director) worldConfig(req WorldRequest) (run.Config, error) {
+func (d *Director) worldConfig(req WorldRequest) (run.Config, []model.ImplementsChecked, error) {
 	spec, err := d.catalog().Describe(req.Domain)
 	if err != nil {
-		return run.Config{}, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
+		return run.Config{}, nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
+	}
+	checked, err := run.CheckDomain(d.check, spec.Spec)
+	if err != nil {
+		return run.Config{}, nil, rules.ValidationToolError(err, rules.CodeDomainInvalid)
 	}
 	adap, err := d.worldAdapter(req)
 	if err != nil {
-		return run.Config{}, err
+		return run.Config{}, nil, err
 	}
-	return configuredWorld(spec, adap, req), nil
+	return configuredWorld(spec, adap, req), checked, nil
 }
 
 func (d *Director) reserveWorldIdentity() (string, string) {
@@ -74,14 +78,14 @@ func buildNameplate(r *run.Run) *rules.Nameplate {
 	return np
 }
 
-func (d *Director) publishWorld(worldID string, r *run.Run) (map[string]any, error) {
+func (d *Director) publishWorld(worldID string, r *run.Run, checked []model.ImplementsChecked) (map[string]any, error) {
 	token, err := capability.NewToken()
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "capability token generation failed: %v", err)
 	}
 	endpoint := d.registerWorld(worldID, r, token)
 	out := map[string]any{"world_id": worldID, "run_id": r.ID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
-		"clock": model.FormatTime(r.World.Clock()), "token": token, "simulated": true}
+		"clock": model.FormatTime(r.World.Clock()), "token": token, "simulated": true, "implements_checked": checked}
 	if endpoint != "" {
 		out["operator_endpoint"] = endpoint
 	}

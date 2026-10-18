@@ -12,7 +12,7 @@ import (
 
 func TestADirectorStartedFromDirectoriesAlwaysServesTheBuiltInLibrary(t *testing.T) {
 	t.Parallel()
-	d, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir(), nil)
+	d, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestADirectorStartedFromDirectoriesAlwaysServesTheBuiltInLibrary(t *testing
 func TestADirectorRefusesToStartWithACustomerLibraryDirectoryThatDoesNotExist(t *testing.T) {
 	t.Parallel()
 	missing := []string{filepath.Join(t.TempDir(), "absent")}
-	_, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir(), missing)
+	_, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir(), missing, nil)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("error = %v, want a not-exist error", err)
 	}

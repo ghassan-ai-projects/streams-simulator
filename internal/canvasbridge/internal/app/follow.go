@@ -59,16 +59,20 @@ func (b *Bridge) everyTick(ctx context.Context, every time.Duration, step func()
 }
 
 func (f *follower) drain() (bool, error) {
-	chunk, err := f.bridge.edges.Workspace.ReadFrom(f.rel, f.offset, followChunk)
-	if err != nil {
-		return false, nil //nolint:nilerr // the journal appears when the director opens the run; keep waiting
-	}
-	end := bytes.LastIndexByte(chunk, '\n')
+	chunk, end := f.completeLines()
 	if end < 0 {
 		return false, nil
 	}
 	f.offset += int64(end + 1)
 	return f.emitLines(chunk[:end])
+}
+
+func (f *follower) completeLines() ([]byte, int) {
+	chunk, err := f.bridge.edges.Workspace.ReadFrom(f.rel, f.offset, followChunk)
+	if err != nil {
+		return nil, -1
+	}
+	return chunk, bytes.LastIndexByte(chunk, '\n')
 }
 
 func (f *follower) emitLines(lines []byte) (bool, error) {

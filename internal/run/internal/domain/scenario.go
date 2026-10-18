@@ -93,15 +93,16 @@ func scenarioWorld(config model.WorldConfig) model.ScenarioWorld {
 		ClockMultiplier: config.ClockMultiplier}
 }
 
+// The Check methods return the violation text, or "" when the arguments are acceptable.
 type ScenarioFacts interface {
 	HasProfile(name string) bool
 	HasFault(id string) bool
-	CheckFaultParams(fault string, params map[string]any) error
+	CheckFaultParams(fault string, params map[string]any) string
 	HasPerturbation(name string) bool
-	CheckPerturbationParams(name string, params map[string]any) error
-	CheckPerturbationWindow(name string, fromNS, untilNS int64) error
+	CheckPerturbationParams(name string, params map[string]any) string
+	CheckPerturbationWindow(name string, fromNS, untilNS int64) string
 	HasEffector(name string) bool
-	CheckEffectorArgs(effector string, args map[string]any) error
+	CheckEffectorArgs(effector string, args map[string]any) string
 }
 
 func CheckScenario(scenario *model.Scenario, facts ScenarioFacts) []model.Issue {

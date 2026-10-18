@@ -54,6 +54,7 @@
         "properties": {
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$", "description": "The kind's name. It becomes the entity_type of every instance."},
           "system": {"type": "boolean", "default": false, "description": "A system kind holds plant-wide measurements (an air header, a power bus). It is named by exactly one instance set, which has exactly one name, no id_template and no churn, so each of its channels belongs to exactly one entity."},
+          "implements": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The kind file this kind implements, named by its kind name. The kind's plant wire interface (its metrics and commands, as a host sees them in NBIRTH.kinds) must equal that kind file, so the simulated kind and a physical device are the same model. A kind file is one NBIRTH.kinds entry without its kind_digest."},
           "state": {
             "type": "array",
             "description": "Hidden world variables. Channels observe these; nothing outside sim-director may ever read them. This is the array whose absence from PlantView is enforced at compile time.",
@@ -957,6 +958,7 @@
         "description": {"type": "string", "maxLength": 400},
         "args_schema": {"type": "object", "description": "JSON Schema for arguments beyond command_id."},
         "risk_class": {"enum": ["low", "medium", "high"], "default": "medium"},
+        "safe_stop": {"type": "boolean", "default": false, "description": "The command is the declared safe stop of its kind: a plant wire node announces it as safe_stop in NBIRTH.kinds and runs it without the host's freshness, epoch or policy checks. It carries no preconditions and no interlock. A kind that implements a kind file must flag the same commands the kind file flags."},
         "ack": {
           "type": "object",
           "additionalProperties": false,

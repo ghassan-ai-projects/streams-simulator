@@ -10,6 +10,8 @@ describe("routes", () => {
       { screen: "plant", domain: "domains/c.domain.json", hall: null, launch: true },
       { screen: "review", worldId: "w-1" },
       { screen: "edit", composition: "compositions/lab.composition.json" },
+      { screen: "device", path: "kinds/fan.kind.json" },
+      { screen: "capture" },
     ] as const;
     for (const route of routes) {
       expect(parseRoute(formatRoute(route))).toEqual(route);
@@ -20,6 +22,7 @@ describe("routes", () => {
     expect(parseRoute("")).toEqual({ screen: "workspace" });
     expect(parseRoute("#/plant")).toEqual({ screen: "workspace" });
     expect(parseRoute("#/edit")).toEqual({ screen: "workspace" });
+    expect(parseRoute("#/device")).toEqual({ screen: "workspace" });
     expect(parseRoute("#/elsewhere?x=1")).toEqual({ screen: "workspace" });
   });
 });

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
@@ -75,8 +76,21 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	if name == "" || !s.exists(name) {
 		name = "index.html"
 	}
-	//nolint:gosec // G703: the name is cleaned and the file system is an os.Root of the UI folder
-	http.ServeFileFS(w, r, s.ui.FS(), name)
+	s.serveUI(w, r, name)
+}
+
+func (s *Server) serveUI(w http.ResponseWriter, r *http.Request, name string) {
+	file, err := s.ui.Open(name)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer func() { _ = file.Close() }()
+	var modTime time.Time
+	if info, err := file.Stat(); err == nil {
+		modTime = info.ModTime()
+	}
+	http.ServeContent(w, r, name, modTime, file)
 }
 
 func (s *Server) exists(name string) bool {

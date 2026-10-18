@@ -34,6 +34,7 @@ type Director struct {
 	domains          *domain.Catalog
 	catalogMu        sync.RWMutex
 	library          *component.Library
+	check            model.DomainCheck
 	Adapters         map[string]*model.Adapter
 	Worlds           map[string]*WorldRecord
 	byRun            map[string]string

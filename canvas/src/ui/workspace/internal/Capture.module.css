@@ -1,0 +1,168 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 960px;
+  padding: var(--space-6) var(--space-8) var(--space-8);
+}
+
+.lead,
+.note,
+.claim,
+.facts {
+  margin: 0;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.panelTitle:focus-visible,
+.refusalMessage:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.textarea,
+.select,
+.file {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.textarea {
+  min-height: 112px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+
+.select {
+  max-width: 420px;
+  height: 28px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.problem {
+  margin: 0;
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.origin {
+  composes: chip from "./CaptureCard.module.css";
+}
+
+.originReal {
+  border-color: var(--origin-real);
+  background: var(--origin-real-bg);
+  color: var(--origin-real);
+}
+
+.originSimulated {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+.notice {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+}
+
+.notice p {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.refusal {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--status-alarm);
+  border-radius: var(--radius-lg);
+  background: var(--status-alarm-bg);
+}
+
+.refusalMessage {
+  margin: 0;
+  font-weight: 600;
+}
+
+.issues {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issues li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+}

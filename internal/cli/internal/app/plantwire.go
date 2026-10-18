@@ -62,7 +62,7 @@ func serveNode(r *run.Run, options plantWireNodeOptions) (any, error) {
 func (o plantWireNodeOptions) node() plantwire.Options {
 	start := model.DefaultStartTimeNS
 	return plantwire.Options{Environment: "simulated", ProtocolMax: 1, SessionID: o.sessionID,
-		SliceNS: int64(o.sliceS * 1e9), UntilNS: start + int64(o.durationS*1e9), Policies: o.policies.items(), SafeStop: o.safeStops.items()}
+		SliceNS: int64(o.sliceS * 1e9), UntilNS: start + int64(o.durationS*1e9), Policies: o.policies.items(), KindsDirs: o.kinds.items()}
 }
 
 func cmdPlantWireHost(s *session, args []string) (any, error) {

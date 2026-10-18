@@ -25,7 +25,7 @@ type Edges struct {
 	Workspace     *files.Workspace
 	Tick          func(every time.Duration) (<-chan time.Time, func())
 	StartDirector func(ctx context.Context) (Director, error)
-	RunCommand    func(ctx context.Context, argv []string) (process.CommandResult, error)
+	RunCommand    func(ctx context.Context, argv []string, stdin []byte) (process.CommandResult, error)
 	NewSession    func() string
 }
 

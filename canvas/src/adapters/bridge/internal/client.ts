@@ -1,6 +1,7 @@
 import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure, RunFollower } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 import type { Replay } from "../../../model/review";
+import { devicesGateway } from "./devices";
 import type { FailureMapper, Transport, WireProblem } from "./http";
 import { action, getFile, post, putFile, request } from "./http";
 import {
@@ -47,6 +48,7 @@ export function bridgeAdapter(transport: Transport): BridgeAdapters {
     },
     plant: plantGateway(transport),
     editor: editorGateway(transport),
+    devices: devicesGateway(transport),
     launch: launchGateway(transport),
     review: reviewGateway(transport),
   };

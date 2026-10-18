@@ -33,6 +33,7 @@ const (
 var exchangeChecks = map[string]*Verify{
 	"session-start":          nil,
 	"environment-refusal":    nil,
+	"kind-digest-mismatch":   nil,
 	"version-negotiation":    nil,
 	"gap-rebirth":            nil,
 	"verified-result":        {Metric: "speed_setpoint", Equals: 80, Tolerance: 0.5, WithinNS: exchangeWindow},

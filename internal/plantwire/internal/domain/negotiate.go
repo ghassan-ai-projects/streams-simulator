@@ -21,6 +21,14 @@ func Negotiate(state Message, nodeMax int) (int, error) {
 	return int(version), nil
 }
 
+func ProtocolInvalid(m Message) bool {
+	return m.ProtocolMin > m.ProtocolMax
+}
+
+func ContractUnsupported(m Message) bool {
+	return m.ContractVersion != ContractVersion || m.ContractDigest != ContractDigest()
+}
+
 func Seq(value any) uint64 {
 	seq, _ := SeqOf(value)
 	return seq

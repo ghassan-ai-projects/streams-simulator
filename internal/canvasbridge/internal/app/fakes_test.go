@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -50,6 +52,7 @@ type harness struct {
 	dir       string
 	directors []*fakeDirector
 	argv      [][]string
+	stdin     [][]byte
 	command   process.CommandResult
 	ticks     chan time.Time
 	prepare   func(*fakeDirector)
@@ -91,9 +94,23 @@ func (h *harness) startDirector(context.Context) (Director, error) {
 	return director, nil
 }
 
-func (h *harness) runCommand(_ context.Context, argv []string) (process.CommandResult, error) {
+func (h *harness) runCommand(_ context.Context, argv []string, stdin []byte) (process.CommandResult, error) {
 	h.argv = append(h.argv, argv)
+	h.stdin = append(h.stdin, stdin)
 	return h.command, nil
+}
+
+func (h *harness) echoStdin() {
+	var mu sync.Mutex
+	h.bridge.edges.RunCommand = func(_ context.Context, _ []string, stdin []byte) (process.CommandResult, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		echoed, err := json.Marshal(map[string]string{"echo": string(stdin)})
+		if err != nil {
+			return process.CommandResult{}, fmt.Errorf("marshal echo: %w", err)
+		}
+		return process.CommandResult{Stdout: echoed}, nil
+	}
 }
 
 func (h *harness) replace(t *testing.T, rel, content string) {

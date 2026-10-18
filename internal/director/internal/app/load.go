@@ -10,7 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string) (*Director, error) {
+func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string, check model.DomainCheck) (*Director, error) {
 	cat, adapters, err := loadInputs(domainsDir, adaptersDir)
 	if err != nil {
 		return nil, err
@@ -20,7 +20,7 @@ func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string, c
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	d := NewDirector(ctx, cat, adapters, outDir)
-	d.library = library
+	d.library, d.check = library, check
 	return d, nil
 }
 

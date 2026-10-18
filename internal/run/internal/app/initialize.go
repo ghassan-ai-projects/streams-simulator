@@ -22,11 +22,18 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := r.begin(); err != nil {
-		r.releaseOpened()
+	if err := r.beginReleasing(); err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *Run) beginReleasing() error {
+	if err := r.begin(); err != nil {
+		r.releaseOpened()
+		return err
+	}
+	return nil
 }
 
 func (r *Run) begin() error {

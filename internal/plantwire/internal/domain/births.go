@@ -1,24 +1,35 @@
 package domain
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"cmp"
 
-const ContractVersion = "1.0.0"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
+
+const ContractVersion = "1.1.0"
 
 type NodeIdentity struct {
 	Environment  string
 	ProtocolMax  int
 	BDSeq        uint64
 	PriorLastSeq int64
-	SafeStops    []string
+	ClockMode    string
 }
 
-func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) Record {
-	templates := KindTemplates(kinds, identity.SafeStops)
+func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) (Record, error) {
+	return NodeBirthOf(identity, KindTemplates(kinds), boards)
+}
+
+func NodeBirthOf(identity NodeIdentity, templates []any, boards []model.Board) (Record, error) {
+	templates, err := WithKindDigests(templates)
+	if err != nil {
+		return Record{}, err
+	}
 	return newRecord("NBIRTH", LaneControl, map[string]any{
 		"protocol_min": Version, "protocol_max": identity.ProtocolMax, "contract_version": ContractVersion,
 		"contract_digest": ContractDigest(), "environment": identity.Environment, "bd_seq": identity.BDSeq,
 		"prior_last_seq": identity.PriorLastSeq, "capability_digest": CapabilityDigest(templates), "kinds": templates,
-		"boards": boardList(boards), "node_metrics": map[string]any{"clock_mode": "virtual", "run_state": "running"}})
+		"boards": boardList(boards), "node_metrics": map[string]any{"clock_mode": cmp.Or(identity.ClockMode, "virtual"), "run_state": "running"}}), nil
 }
 
 type DeviceIdentity struct {

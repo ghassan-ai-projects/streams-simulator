@@ -25,7 +25,7 @@ func pumpSession(t *testing.T, host *scriptedHost) *run.Run {
 	t.Helper()
 	r := runOf(t, testsupport.PumpBoardDomain())
 	options := sliceOptions(5)
-	options.Policies, options.SafeStop = []string{policy}, []string{"safe_stop"}
+	options.Policies = []string{policy}
 	if err := NewSession(r, host, options).Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}

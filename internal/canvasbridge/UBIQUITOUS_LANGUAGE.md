@@ -3,11 +3,16 @@
 | Term | Meaning |
 |---|---|
 | Bridge | The local HTTP server behind `streamsim canvas`; the canvas's only way to the simulator |
-| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `runs/` |
+| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/` (`equipment/`, `instruments/`), `runs/` |
+| Twin choices | A `twins/*.twin.json` file: the instrument of each metric and the response of each command from which the `kind.twin` action scaffolds a twin into `domains/` |
+| Kind stems | The `kinds` argument of `kind.twin` and `kind.suggest`: the stems of `kinds/<stem>.kind.json` that are in the twin, resolved by the bridge to workspace paths, repeats counted once; the whole `kinds/` folder is never passed to these actions (`ShapeStems`, `StemPath`, `ArgvPart.Existing`) |
 | Pairing code | A one-time code the bridge prints on stderr; exchanged once for a session cookie |
 | Session | The paired browser, identified by an `HttpOnly`, `SameSite=Strict` cookie |
 | Admission | The check every API request passes: the bridge's host, its origin, a same-origin fetch |
 | Action | A canvas operation in the registry, mapped to one director MCP tool or one streamsim command |
+| Action input | The one argument of an action whose text goes on the command's standard input and nowhere else; `kind.check` and `kind.capture` have `content`; capped at 1 MiB (`Action.Input`, `Action.Stdin`) |
+| One of | The arguments of which an action takes exactly one: `kind.capture` takes the text of a birth (`content`, on standard input) or a run (`run`, resolved to the observer journal `runs/<run>/journal.jsonl`, never to the sealed one), not both and not neither (`Action.OneOf`, `Action.StdinFlag`) |
+| Issue | `{pointer?, message, keyword?, member?}`: where, in words, why for a program, and which named member; relayed unchanged from the command, never parsed by the bridge |
 | Effector call | The canvas's `effector.list` and `effector.invoke` actions: the director lists a world's effectors and invokes one on an entity; the result is the operator acknowledgement, the capability token stays in the director |
 | Truth gate | The rule that keeps a run's sealed files from the canvas until the run ends (or from the start of an Explore run) |
 | Follow | Streaming a run's observer journal to the page as Server-Sent Events, by line index |

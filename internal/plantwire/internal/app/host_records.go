@@ -80,11 +80,19 @@ func (s *Session) hostState(m domain.Message) {
 
 func (s *Session) rebirth() error {
 	s.bdSeq++
-	return s.send(append([]domain.Record{s.nodeBirth()}, s.devices.births(s.run.Status().ClockNS)...)...)
+	return s.sendNodeBirth(s.devices.births(s.run.Status().ClockNS)...)
 }
 
-func (s *Session) nodeBirth() domain.Record {
+func (s *Session) sendNodeBirth(followers ...domain.Record) error {
+	birth, err := s.nodeBirth()
+	if err != nil {
+		return fmt.Errorf("plantwire: node birth: %w", err)
+	}
+	return s.send(append([]domain.Record{birth}, followers...)...)
+}
+
+func (s *Session) nodeBirth() (domain.Record, error) {
 	identity := domain.NodeIdentity{Environment: s.options.Environment, ProtocolMax: s.options.ProtocolMax,
-		BDSeq: s.bdSeq, PriorLastSeq: s.options.PriorLastSeq, SafeStops: s.options.SafeStop}
+		BDSeq: s.bdSeq, PriorLastSeq: s.options.PriorLastSeq}
 	return domain.NodeBirth(identity, s.devices.kinds(), s.devices.boards())
 }

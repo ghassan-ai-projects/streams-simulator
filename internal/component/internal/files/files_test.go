@@ -19,9 +19,7 @@ func write(t *testing.T, path, content string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, filepath.Dir(path), filepath.Base(path), []byte(content))
 }
 
 func builtInDir() string { return testsupport.ComponentsDir() }
@@ -130,10 +128,14 @@ func TestLoadRefusesAListingItCannotRead(t *testing.T) {
 	dir := t.TempDir()
 	locked := filepath.Join(dir, "instruments")
 	write(t, filepath.Join(locked, "x.instrument.json"), "{}")
+	before, err := os.Stat(locked)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Chmod(locked, 0); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.Chmod(locked, 0o700) }) //nolint:gosec // G302: restoring the owner-only directory so the temporary tree can be removed
+	t.Cleanup(func() { _ = os.Chmod(locked, before.Mode().Perm()) })
 	if _, _, err := loadCustomer(dir); !errors.Is(err, fs.ErrPermission) {
 		t.Fatalf("error = %v, want a permission error", err)
 	}

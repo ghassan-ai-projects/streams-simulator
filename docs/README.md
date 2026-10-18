@@ -216,6 +216,7 @@ anything else; it may never remove these.
 | [design/IMPLEMENTATION_PLAN.md](design/IMPLEMENTATION_PLAN.md) | Seven stages, ~58 days, gates, cut list, stop/go, **zero external dependencies** |
 | [design/GAP_ANALYSIS.md](design/GAP_ANALYSIS.md) | Twelve gaps found by taking the design's own goals as given |
 | [design/CRITICAL_REVIEW.md](design/CRITICAL_REVIEW.md) | Eight findings attacking the premises |
+| [design/PHYSICAL_DEVICES.md](design/PHYSICAL_DEVICES.md) | One device model (the plant wire kind), defining devices, relay mode, real data as a recorded run input, live control plane with local/remote interrupts, M1–M5 roadmap |
 | [contracts/](contracts/) | `sim-event`, `output-adapter`, `consumer-verdict`, `domain-spec`, `run-artifact`, `ground-truth` |
 | [adapters/](adapters/) | One adapter per consumer. Deleting one changes no simulator behaviour. |
 | [examples/](examples/) | `aquaculture-pond`, the closed-loop showcase domain |

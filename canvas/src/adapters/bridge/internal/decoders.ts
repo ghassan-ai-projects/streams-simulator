@@ -33,16 +33,33 @@ export function workspace(value: unknown): Workspace | null {
   const domains = definitions(value.domains);
   const compositions = definitions(value.compositions);
   const scenarios = definitions(value.scenarios);
+  const kinds = optionalRows(value.kinds, kindEntry);
+  const components = optionalRows(value.components, componentEntry);
   const runs = rows(value.runs, runEntry);
   if (domains === null || compositions === null || scenarios === null || runs === null) return null;
-  return { name: value.name, domains, compositions, scenarios, runs };
+  if (kinds === null || components === null) return null;
+  return { name: value.name, domains, compositions, scenarios, kinds, components, runs };
 }
 
 function definitions(value: unknown): Workspace["domains"] | null {
   return rows(value, definition);
 }
 
-function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+function optionalRows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+  return value === undefined ? [] : rows(value, decode);
+}
+
+function kindEntry(entry: Record<string, unknown>): Workspace["kinds"][number] | null {
+  if (text(entry.path) === "") return null;
+  return { path: text(entry.path), kind: text(entry.kind), title: text(entry.title) };
+}
+
+function componentEntry(entry: Record<string, unknown>): Workspace["components"][number] | null {
+  if (text(entry.path) === "") return null;
+  return { path: text(entry.path), id: text(entry.id), title: text(entry.title), class: text(entry.class) };
+}
+
+export function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
   if (!Array.isArray(value)) return null;
   const decoded: T[] = [];
   for (const raw of value) {

@@ -45,6 +45,8 @@ export function workspaceWire(workspace: Workspace) {
     domains: workspace.domains,
     compositions: workspace.compositions,
     scenarios: workspace.scenarios,
+    kinds: workspace.kinds,
+    components: workspace.components,
     runs: workspace.runs.map((run) => ({
       world_id: run.worldId,
       ended: run.ended,

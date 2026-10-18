@@ -85,23 +85,23 @@ func (walk *scenarioWalk) fault(args map[string]any) []model.Issue {
 	if !walk.facts.HasFault(fault) {
 		return walk.issue("fault", "the domain declares no fault %q", fault)
 	}
-	if err := walk.facts.CheckFaultParams(fault, AsMap(args["params"])); err != nil {
-		return walk.issue("params", "%v", err)
+	if violation := walk.facts.CheckFaultParams(fault, AsMap(args["params"])); violation != "" {
+		return walk.issue("params", "%s", violation)
 	}
 	return nil
 }
 
 func (walk *scenarioWalk) perturbation(args map[string]any) []model.Issue {
 	name := CommandString(args, "perturbation")
-	if err := walk.facts.CheckPerturbationParams(name, AsMap(args["params"])); err != nil {
+	if violation := walk.facts.CheckPerturbationParams(name, AsMap(args["params"])); violation != "" {
 		field := "params"
 		if !walk.facts.HasPerturbation(name) {
 			field = "perturbation"
 		}
-		return walk.issue(field, "%v", err)
+		return walk.issue(field, "%s", violation)
 	}
-	if err := walk.facts.CheckPerturbationWindow(name, CommandTime(args, "from_ns"), CommandTime(args, "until_ns")); err != nil {
-		return walk.issue("until_ns", "%v", err)
+	if violation := walk.facts.CheckPerturbationWindow(name, CommandTime(args, "from_ns"), CommandTime(args, "until_ns")); violation != "" {
+		return walk.issue("until_ns", "%s", violation)
 	}
 	return nil
 }
@@ -111,8 +111,8 @@ func (walk *scenarioWalk) invocation(args map[string]any) []model.Issue {
 	if !walk.facts.HasEffector(effector) {
 		return walk.issue("effector", "the domain declares no effector %q", effector)
 	}
-	if err := walk.facts.CheckEffectorArgs(effector, AsMap(args["args"])); err != nil {
-		return walk.issue("args", "effector %q refuses these args: %v", effector, err)
+	if violation := walk.facts.CheckEffectorArgs(effector, AsMap(args["args"])); violation != "" {
+		return walk.issue("args", "effector %q refuses these args: %s", effector, violation)
 	}
 	return nil
 }

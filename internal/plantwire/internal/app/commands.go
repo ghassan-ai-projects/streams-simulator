@@ -111,7 +111,14 @@ func (s *Session) authorize(c domain.Command) string {
 	return ""
 }
 
-func (s *Session) safeStop(c domain.Command) bool { return slices.Contains(s.options.SafeStop, c.Name) }
+func (s *Session) safeStop(c domain.Command) bool {
+	entity, known := s.devices.entity(c.Device)
+	if !known {
+		return false
+	}
+	effector := s.run.World.EffectorOf(entity, c.Name)
+	return effector != nil && effector.SafeStop
+}
 
 func (s *Session) boot(c domain.Command) string {
 	boot, _ := s.devices.bootOf(c.Device)

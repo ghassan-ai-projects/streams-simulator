@@ -1,7 +1,11 @@
 package host
 
 import (
+	"maps"
+	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
 func commissionedHost(t *testing.T) *Host {
@@ -76,5 +80,35 @@ func TestARecordFromAnotherSessionIsIgnored(t *testing.T) {
 	h.Receive(birth(t, "simulated"))
 	if replies := h.Receive(record(t, "NSYNC", 1, map[string]any{"session_id": "s-other", "through_seq": 0})); len(replies) != 0 {
 		t.Fatalf("a sync from another session was answered: %v", replies)
+	}
+}
+
+func TestAKindWhoseContentDiffersFromItsDigestRefusesTheSession(t *testing.T) {
+	t.Parallel()
+	kinds := birth(t, "simulated").Kinds
+	kinds[0].(map[string]any)["metrics"] = []any{}
+	h := New(Options{Environment: "simulated", ProtocolMax: 1})
+	replies := h.Receive(birth(t, "simulated", map[string]any{"kinds": kinds}))
+	if h.Report().Refused != "inventory_mismatch" || len(replies) != 1 || replies[0]["online"] != false || replies[0]["refusal"] != "inventory_mismatch" {
+		t.Fatalf("refused %q, replies %v", h.Report().Refused, replies)
+	}
+}
+
+func TestAKindAnnouncedTwiceUnderOneNameOrItsCaseRefusesTheSession(t *testing.T) {
+	t.Parallel()
+	for name, rename := range map[string]func(string) string{"the same name": func(n string) string { return n }, "another case": strings.ToUpper} {
+		kinds := birth(t, "simulated").Kinds
+		twin := maps.Clone(kinds[0].(map[string]any))
+		twin["kind"] = rename(twin["kind"].(string))
+		digest, err := domain.KindDigest(twin)
+		if err != nil {
+			t.Fatal(err)
+		}
+		twin["kind_digest"] = digest
+		h := New(Options{Environment: "simulated", ProtocolMax: 1})
+		replies := h.Receive(birth(t, "simulated", map[string]any{"kinds": append(kinds, twin)}))
+		if h.Report().Refused != "inventory_mismatch" || len(replies) != 1 || replies[0]["refusal"] != "inventory_mismatch" {
+			t.Fatalf("%s: refused %q, replies %v, want inventory_mismatch", name, h.Report().Refused, replies)
+		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -29,7 +30,7 @@ func commandSession(t *testing.T, slices int64, script func(h *scriptedHost, syn
 	t.Helper()
 	host := &scriptedHost{t: t, afterSync: script}
 	options := sliceOptions(slices)
-	options.Policies, options.SafeStop = []string{policy}, []string{"stop_chiller"}
+	options.Policies = []string{policy}
 	if adjust != nil {
 		adjust(&options)
 	}
@@ -239,9 +240,23 @@ func TestARetryLearnsTheAnswerWhoseAcknowledgementWasLost(t *testing.T) {
 
 func TestASafeStopWithPreconditionsIsRefusedAtStart(t *testing.T) {
 	t.Parallel()
-	options := sliceOptions(1)
-	options.SafeStop = []string{"start_chiller"}
-	if err := NewSession(utilityRun(t), &scriptedHost{t: t}, options).Run(t.Context()); !errors.Is(err, ErrBadOptions) {
+	r := utilityRun(t)
+	flagSafeStop(t, r, "start_chiller")
+	if err := NewSession(r, &scriptedHost{t: t}, sliceOptions(1)).Run(t.Context()); !errors.Is(err, ErrBadOptions) {
 		t.Fatalf("err = %v, want a refusal of a guarded safe stop", err)
 	}
+}
+
+func flagSafeStop(t *testing.T, r *run.Run, name string) {
+	t.Helper()
+	kinds := r.Domain().Spec.Kinds
+	for k := range kinds {
+		for i := range kinds[k].Effectors {
+			if kinds[k].Effectors[i].Name == name {
+				kinds[k].Effectors[i].SafeStop = true
+				return
+			}
+		}
+	}
+	t.Fatalf("no effector %s to flag as a safe stop", name)
 }

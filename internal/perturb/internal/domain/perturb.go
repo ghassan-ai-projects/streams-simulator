@@ -50,11 +50,11 @@ func CatalogNames() []string {
 }
 
 type Delivered struct {
-	DeliveryID uint64
-	Event      model.SimEvent
-	Reason     string
-	Delivered  bool
-	Malformed  bool
+	DeliveryID uint64         `json:"DeliveryID"`
+	Event      model.SimEvent `json:"Event"`
+	Reason     string         `json:"Reason"`
+	Delivered  bool           `json:"Delivered"`
+	Malformed  bool           `json:"Malformed"`
 }
 
 type applied struct {

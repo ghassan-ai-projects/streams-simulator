@@ -1,3 +1,4 @@
+export { DraftStore } from "./draftStore";
 export { Observable } from "./observable";
 export type { Store } from "./observable";
 export { createOperationIdentity } from "./operationIdentity";

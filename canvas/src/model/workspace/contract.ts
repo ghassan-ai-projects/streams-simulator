@@ -1,1 +1,1 @@
-export type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "./internal/types";
+export type { Definition, KindEntry, PlantEntry, RunEntry, RunRow, Workspace } from "./internal/types";

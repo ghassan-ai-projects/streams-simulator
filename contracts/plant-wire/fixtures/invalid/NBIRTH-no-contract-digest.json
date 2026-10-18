@@ -9,7 +9,7 @@
     "lane": "control",
     "protocol_min": 1,
     "protocol_max": 1,
-    "contract_version": "1.0.0",
+    "contract_version": "1.1.0",
     "environment": "simulated",
     "bd_seq": 0,
     "prior_last_seq": -1,
@@ -93,7 +93,8 @@
             "risk_class": "high",
             "safe_stop": false
           }
-        ]
+        ],
+        "kind_digest": "sha256:b5e93cadac03ad9537622cacf3e529d44de2271811d35455712b7eefb3f24fb1"
       }
     ],
     "boards": [

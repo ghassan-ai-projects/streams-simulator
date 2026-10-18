@@ -14,7 +14,7 @@ const formatWidth = 110
 
 var documentKeys = []string{"id", "version", "title", "description", "axes", "stresses", "kinds", "instances", "link_types", "links", "boards", "profiles", "ground_truth"}
 
-var memberKeys = []string{"id", "name", "kind", "system", "names", "id_template", "count", "churn", "target", "tier", "form", "state", "unit", "initial", "default", "min", "max", "dynamics", "flows", "channels", "faults", "effectors", "boundaries"}
+var memberKeys = []string{"id", "name", "kind", "system", "implements", "names", "id_template", "count", "churn", "target", "tier", "form", "state", "unit", "initial", "default", "min", "max", "dynamics", "flows", "channels", "faults", "effectors", "boundaries"}
 
 func Format(c *Compiled) ([]byte, error) {
 	var doc any

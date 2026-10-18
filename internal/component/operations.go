@@ -22,11 +22,36 @@ func Compose(lib *Library, composition []byte, source string) (*Composed, error)
 	return layer.ComposeDomain(lib.library, composition, source)
 }
 
+func Twin(lib *Library, kinds map[string]map[string]any, choices []byte, source string) (*Composed, error) {
+	if lib == nil || lib.library == nil {
+		return nil, ErrNoLibrary
+	}
+	return layer.ScaffoldTwin(lib.library, kinds, choices, source)
+}
+
+func Suggest(lib *Library, kinds map[string]map[string]any) (map[string]any, error) {
+	if lib == nil || lib.library == nil {
+		return nil, ErrNoLibrary
+	}
+	return layer.SuggestTwinChoices(lib.library, kinds)
+}
+
+func TwinRequirements(kind map[string]any) []Issue {
+	return layer.TwinRequirements(kind)
+}
+
 func (l *Library) List() []Summary {
 	if l == nil || l.library == nil {
 		return nil
 	}
 	return l.library.List()
+}
+
+func (l *Library) ListFor(unit string, low, high *float64) ([]Summary, error) {
+	if l == nil || l.library == nil {
+		return nil, nil
+	}
+	return l.library.ListForReading(unit, low, high)
 }
 
 func (l *Library) Describe(ref string) (*Detail, error) {

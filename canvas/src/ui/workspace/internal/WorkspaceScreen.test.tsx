@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
+import { createDeviceDesk } from "../../../app/devices";
 import { createPlantMaker } from "../../../app/plant";
 import { createWorkspaceStore } from "../../../app/workspace";
 import { failure as failed, success } from "../../../test/outcome";
@@ -13,6 +14,7 @@ const base = "compositions/factory-utilities.composition.json";
 const frame = { schema_version: "0.1", version: "1", stresses: "none", axes: {}, profiles: [], ground_truth: {} };
 const generated = (parts: Record<string, unknown>) => success({ composition: { ...frame, ...parts } });
 const emptied = { areas: [{ name: "Site" }] };
+const emptyWorkspace = { ...sampleWorkspace, name: "fresh", domains: [], compositions: [], runs: [] };
 
 describe("workspace screen", () => {
   it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
@@ -162,7 +164,7 @@ describe("workspace screen", () => {
 
   it("says what to do in an empty workspace", async () => {
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.workspaceOutcome = success(emptyWorkspace);
     await show(bridge);
     expect(screen.getByRole("heading", { name: "The fresh workspace has no plants yet" })).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
@@ -175,7 +177,7 @@ describe("workspace screen", () => {
   it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {
     const nav = navigation();
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.workspaceOutcome = success(emptyWorkspace);
     bridge.actions.set(
       "component.examples",
       success({ examples: [{ id: "pilot", title: "Pilot", description: "A small plant." }] }),
@@ -196,7 +198,7 @@ describe("workspace screen", () => {
   it("creates a blank plant from an empty workspace with only a name and an id", async () => {
     const nav = navigation();
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.workspaceOutcome = success(emptyWorkspace);
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
     bridge.actions.set("component.new", generated({ ...emptied, id: "office-tower-hvac", title: "Office tower HVAC" }));
     const view = await show(bridge, nav);
@@ -225,7 +227,7 @@ describe("workspace screen", () => {
 
   it("keeps the blank plant button unavailable until a frame to start from exists", async () => {
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.workspaceOutcome = success(emptyWorkspace);
     await show(bridge);
     const start = screen.getByRole("button", { name: "New plant" });
     fireEvent.click(start);
@@ -235,7 +237,7 @@ describe("workspace screen", () => {
 
   it("says why an example could not be set up", async () => {
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.workspaceOutcome = success(emptyWorkspace);
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
     bridge.actions.set("component.new", failed(cannedFailure("component_failed", 422, "gone")));
     await show(bridge);
@@ -279,6 +281,7 @@ describe("workspace screen", () => {
         workspace={createWorkspaceStore(bridge.workspace)}
         navigation={navigation().store}
         maker={createPlantMaker(bridge.plant)}
+        desk={createDeviceDesk(bridge.devices)}
         badgeFor={() => null}
       />,
     );

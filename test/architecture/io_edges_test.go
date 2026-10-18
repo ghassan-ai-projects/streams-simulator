@@ -48,6 +48,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/canvasbridge/internal/process/clock.go":       {uses: []string{"call:time.NewTicker"}, why: "the poll interval of journal following and workspace watching"},
 	"internal/canvasbridge/internal/process/command.go":     {uses: []string{"import:os/exec"}, why: "streamsim commands the canvas actions run, the bridge's own executable"},
 	"internal/canvasbridge/internal/process/director.go":    {uses: []string{"import:os/exec"}, why: "the director child the canvas drives over MCP on stdio"},
+	"internal/canvasbridge/internal/process/lastwords.go":   {uses: []string{"call:time.NewTimer", "go-statement", "import:os", "import:os/exec"}, why: "the director child's stderr drained through a pipe so a crash is reported with its last words, bounded in wall time"},
 	"internal/canvasbridge/internal/process/self.go":        {uses: []string{"import:os"}, why: "the bridge's own executable path"},
 	"internal/canvasbridge/internal/transport/admission.go": {uses: []string{"import:net/http"}, why: "request admission and pairing over HTTP"},
 	"internal/canvasbridge/internal/transport/events.go":    {uses: []string{"import:net/http"}, why: "Server-Sent Events of run journals and workspace changes"},

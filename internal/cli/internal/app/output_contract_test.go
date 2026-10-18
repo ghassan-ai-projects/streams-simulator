@@ -139,11 +139,9 @@ func writeNominalLabel(t *testing.T, dir string) string {
 // writeFile writes content to name under a fresh temporary directory.
 func writeFile(t *testing.T, name, content string) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), name)
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
-	return path
+	dir := t.TempDir()
+	testsupport.WriteFileIn(t, dir, name, []byte(content))
+	return filepath.Join(dir, name)
 }
 
 func TestAContractViolationListsEveryIssueWithItsPointer(t *testing.T) {
@@ -197,7 +195,7 @@ func TestACrossReferenceViolationIsADomainIssueAtItsPointer(t *testing.T) {
 	failure := invoke(t, "domain", "validate", writeFile(t, "x.domain.json", string(broken))).failure(t)
 	issues, _ := failure["issues"].([]any)
 	issue, _ := issues[0].(map[string]any)
-	if failure["code"] != "domain_invalid" || len(issues) != 1 || issue["pointer"] != "/kinds/0/faults/0/expected_effector" ||
+	if failure["code"] != "domain_invalid" || len(issues) != 1 || issue["pointer"] != "/kinds/0/faults/0/expected_effector" || issue["keyword"] != "domain_rule" ||
 		!strings.Contains(issue["message"].(string), "no_such_effector") {
 		t.Fatalf("failure = %v, want one domain_invalid issue at the expected_effector member naming the effector", failure)
 	}

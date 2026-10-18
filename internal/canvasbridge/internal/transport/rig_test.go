@@ -189,8 +189,7 @@ func (r *rig) do(t *testing.T, q req) reply {
 		request.Host = q.Host
 	}
 	if q.Paired {
-		//nolint:gosec // G124: a request cookie of the test client
-		request.AddCookie(&http.Cookie{Name: r.cookieName(), Value: goodSession})
+		request.AddCookie(&http.Cookie{Name: r.cookieName(), Value: goodSession, Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode})
 	}
 	for key, value := range q.Header {
 		request.Header.Set(key, value)

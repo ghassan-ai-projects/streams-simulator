@@ -105,6 +105,8 @@ describe("workspace payload", () => {
       domains: [{ path: "d.json", id: "mini", title: "Mini", instances: 4 }],
       compositions: [{ path: "c.json", id: "comp", title: "Comp", instances: 0 }],
       scenarios: [{ path: "s.json", id: "", title: "", instances: 0 }],
+      kinds: [],
+      components: [],
       runs: [
         {
           worldId: "w-1",
@@ -120,6 +122,21 @@ describe("workspace payload", () => {
         },
       ],
     });
+  });
+
+  it("reads the kind files and components the workspace lists", () => {
+    const decoded = workspace({
+      ...wire,
+      kinds: [{ path: "kinds/fan.kind.json", kind: "fan", title: "Fan" }, { path: "kinds/bad.kind.json" }],
+      components: [{ path: "components/equipment/pump.component.json", id: "pump", title: "Pump", class: "equipment" }],
+    });
+    expect(decoded?.kinds).toEqual([
+      { path: "kinds/fan.kind.json", kind: "fan", title: "Fan" },
+      { path: "kinds/bad.kind.json", kind: "", title: "" },
+    ]);
+    expect(decoded?.components).toEqual([
+      { path: "components/equipment/pump.component.json", id: "pump", title: "Pump", class: "equipment" },
+    ]);
   });
 
   it("defaults a run's missing or mistyped fields", () => {
@@ -157,6 +174,10 @@ describe("workspace payload", () => {
     ["a domain without a path", { ...wire, domains: [{ id: "mini" }] }],
     ["a composition with an empty path", { ...wire, compositions: [{ path: "", id: "comp" }] }],
     ["a scenario that is not an object", { ...wire, scenarios: ["s.json"] }],
+    ["kinds a string", { ...wire, kinds: "none" }],
+    ["a kind without a path", { ...wire, kinds: [{ kind: "fan" }] }],
+    ["components null", { ...wire, components: null }],
+    ["a component without a path", { ...wire, components: [{ id: "pump" }] }],
   ])("refuses a workspace with %s", (_name, bad) => {
     expect(workspace(bad)).toBeNull();
   });

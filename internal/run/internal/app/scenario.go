@@ -93,24 +93,31 @@ func (facts scenarioFacts) HasProfile(name string) bool { return facts.created.S
 
 func (facts scenarioFacts) HasFault(id string) bool { return facts.created.Spec.HasFault(id) }
 
-func (facts scenarioFacts) CheckFaultParams(fault string, params map[string]any) error {
-	return facts.created.CheckFaultParams(fault, params) //nolint:wrapcheck // the violation is the issue message
+func (facts scenarioFacts) CheckFaultParams(fault string, params map[string]any) string {
+	return violationText(facts.created.CheckFaultParams(fault, params))
 }
 
 func (facts scenarioFacts) HasPerturbation(name string) bool {
 	return slices.Contains(perturb.Names(), name)
 }
 
-func (facts scenarioFacts) CheckPerturbationParams(name string, params map[string]any) error {
-	return perturb.CheckParams(name, params) //nolint:wrapcheck // the violation is the issue message
+func (facts scenarioFacts) CheckPerturbationParams(name string, params map[string]any) string {
+	return violationText(perturb.CheckParams(name, params))
 }
 
-func (facts scenarioFacts) CheckPerturbationWindow(name string, fromNS, untilNS int64) error {
-	return perturb.CheckWindow(name, fromNS, untilNS) //nolint:wrapcheck // the violation is the issue message
+func (facts scenarioFacts) CheckPerturbationWindow(name string, fromNS, untilNS int64) string {
+	return violationText(perturb.CheckWindow(name, fromNS, untilNS))
 }
 
 func (facts scenarioFacts) HasEffector(name string) bool { return facts.created.Spec.HasEffector(name) }
 
-func (facts scenarioFacts) CheckEffectorArgs(effector string, args map[string]any) error {
-	return facts.created.CheckEffectorArgs(effector, args) //nolint:wrapcheck // the violation is the issue message
+func (facts scenarioFacts) CheckEffectorArgs(effector string, args map[string]any) string {
+	return violationText(facts.created.CheckEffectorArgs(effector, args))
+}
+
+func violationText(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

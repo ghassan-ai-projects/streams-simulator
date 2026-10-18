@@ -71,7 +71,7 @@ func pair(t *testing.T, hostOptions HostOptions, delay, barrierCap time.Duration
 		prepare(r)
 	}
 	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9,
-		UntilNS: model.DefaultStartTimeNS + 300e9, Policies: []string{hostPolicy}, SafeStop: []string{"safe_stop"}}
+		UntilNS: model.DefaultStartTimeNS + 300e9, Policies: []string{hostPolicy}}
 	nodeErr := Serve(t.Context(), r, path, barrierCap, options)
 	result := <-hosted
 	result.node, result.run = nodeErr, r

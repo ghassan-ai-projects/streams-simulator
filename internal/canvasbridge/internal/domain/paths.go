@@ -14,6 +14,10 @@ const (
 	ClassComposition FileClass = "composition"
 	ClassScenario    FileClass = "scenario"
 	ClassLayout      FileClass = "layout"
+	ClassKind        FileClass = "kind"
+	ClassTwin        FileClass = "twin"
+	ClassEquipment   FileClass = "equipment"
+	ClassInstrument  FileClass = "instrument"
 	ClassRun         FileClass = "run"
 )
 
@@ -32,11 +36,17 @@ var definitionFolders = map[string]struct {
 	class  FileClass
 	suffix string
 }{
-	"domains":      {ClassDomain, ".domain.json"},
-	"compositions": {ClassComposition, ".composition.json"},
-	"scenarios":    {ClassScenario, ".scenario.json"},
-	"layouts":      {ClassLayout, ".layout.json"},
+	"domains":                {ClassDomain, ".domain.json"},
+	"compositions":           {ClassComposition, ".composition.json"},
+	"scenarios":              {ClassScenario, ".scenario.json"},
+	"layouts":                {ClassLayout, ".layout.json"},
+	"kinds":                  {ClassKind, ".kind.json"},
+	"twins":                  {ClassTwin, ".twin.json"},
+	"components/equipment":   {ClassEquipment, ".component.json"},
+	"components/instruments": {ClassInstrument, ".instrument.json"},
 }
+
+var stemFolders = map[FileClass]string{ClassKind: "kinds"}
 
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
 	"verdict.json", "label.json", "sealed/journal.jsonl"}
@@ -54,6 +64,18 @@ func ParsePath(rel string) (WorkspacePath, error) {
 	return WorkspacePath{}, fmt.Errorf("%w: %q", ErrBadPath, rel)
 }
 
+func StemPath(class FileClass, stem string) (WorkspacePath, error) {
+	folder, named := stemFolders[class]
+	if !named {
+		return WorkspacePath{}, fmt.Errorf("%w: no folder holds %s files by name", ErrBadPath, class)
+	}
+	path, err := ParsePath(folder + "/" + stem + definitionFolders[folder].suffix)
+	if err != nil || path.Class != class || strings.Contains(stem, "/") {
+		return WorkspacePath{}, fmt.Errorf("want the name of a %s file without folder or suffix, got %q", class, stem)
+	}
+	return path, nil
+}
+
 func RunJournal(runID string) (WorkspacePath, error) {
 	if badSegment(runID) {
 		return WorkspacePath{}, fmt.Errorf("%w: run id %q", ErrBadPath, runID)
@@ -66,8 +88,9 @@ func badSegment(part string) bool {
 }
 
 func definitionPath(rel string, parts []string) (WorkspacePath, bool) {
-	folder, known := definitionFolders[parts[0]]
-	if !known || len(parts) != 2 || !strings.HasSuffix(parts[1], folder.suffix) || parts[1] == folder.suffix {
+	name := parts[len(parts)-1]
+	folder, known := definitionFolders[strings.Join(parts[:len(parts)-1], "/")]
+	if !known || !strings.HasSuffix(name, folder.suffix) || name == folder.suffix {
 		return WorkspacePath{}, false
 	}
 	return WorkspacePath{Rel: rel, Class: folder.class}, true
@@ -93,6 +116,10 @@ func (p WorkspacePath) Writable() error {
 
 func DefinitionFolders() []string {
 	return []string{"domains", "compositions", "scenarios", "layouts"}
+}
+
+func ComponentFolders() []string {
+	return []string{"components/equipment", "components/instruments"}
 }
 
 func ClassOfFolder(folder string) (FileClass, string, bool) {

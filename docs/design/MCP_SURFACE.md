@@ -84,7 +84,7 @@ through `sim.adapter.list`; an adapter resource template is not exposed yet.
 
 | Tool | Args | Returns |
 |---|---|---|
-| `sim.world.create` | `{domain, seed?, entities?, scenario_profile?, sink?, sink_target?, adapter?, time_mode?, start_time?, label?, explore?}` | `{world_id, world_digest, entity_ids[], clock, token}` |
+| `sim.world.create` | `{domain, seed?, entities?, scenario_profile?, sink?, sink_target?, adapter?, time_mode?, start_time?, label?, explore?}` | `{world_id, world_digest, entity_ids[], clock, token, implements_checked[]}` |
 | `sim.world.describe` | `{world_id}` | domain, seed, clock, emitted count |
 | `sim.world.destroy` | `{world_id}` | `{world_id, destroyed}`; final artifact is written under the configured output directory |
 | `sim.entity.retire` | `{world_id, entity_id, reason}` | churn domains |

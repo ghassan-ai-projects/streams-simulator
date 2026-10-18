@@ -24,6 +24,17 @@ func TestTheBuiltUIIsServedWithAnIndexFallback(t *testing.T) {
 	}
 }
 
+func TestAUIWithoutItsIndexAnswersNotFound(t *testing.T) {
+	t.Parallel()
+	r := newRig(t)
+	if err := os.Remove(filepath.Join(r.uiDir, "index.html")); err != nil {
+		t.Fatal(err)
+	}
+	if got := r.do(t, req{Path: "/"}); got.Status != http.StatusNotFound {
+		t.Errorf("GET / without an index: %d, want 404", got.Status)
+	}
+}
+
 func TestTheUIRootCannotBeLeftByTraversalOrSymlink(t *testing.T) {
 	t.Parallel()
 	r := newRig(t)

@@ -1,4 +1,5 @@
 import type {
+  DeviceFailure,
   Diagnostic,
   EditorFailure,
   LaunchFailure,
@@ -53,6 +54,24 @@ function plantProblem(problem: WireProblem, action: "read" | "generate" | "write
 
 export function editorFailure(action: "read" | "write" | "compose"): FailureMapper<EditorFailure> {
   return plantFailure(action);
+}
+
+type DeviceStep = "read" | "write" | "check" | "twin" | "capture";
+
+const refusingSteps: readonly DeviceStep[] = ["check", "twin", "capture"];
+
+export function deviceFailure(step: DeviceStep): FailureMapper<DeviceFailure> {
+  return (error) => (error.kind === "http" ? deviceProblem(error.problem, step) : unreached(error));
+}
+
+function deviceProblem(problem: WireProblem, step: DeviceStep): DeviceFailure {
+  const display = diagnostic(problem);
+  if (isMissing(problem)) return { kind: "missing", diagnostic: display };
+  if (problem.code === "conflict") return { kind: "conflict", diagnostic: display };
+  if (refusingSteps.includes(step) && problem.status === 422) {
+    return { kind: "refused", diagnostic: display, issues: problem.issues };
+  }
+  return serverFault(problem, display);
 }
 
 export function launchFailure(step: "create" | "advance" | "inject" | "invoke" | "end"): FailureMapper<LaunchFailure> {

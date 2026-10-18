@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,32 +10,27 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// openFileDescriptors counts this process's open descriptors.
-func openFileDescriptors(t *testing.T) int {
-	t.Helper()
-	entries, err := os.ReadDir("/dev/fd")
-	if err != nil {
-		t.Skipf("no /dev/fd on this platform: %v", err)
-	}
-	return len(entries)
-}
-
-// A failed start must hand back what it opened. It counts this process's
-// descriptors, so it runs while no parallel test does.
-//
-//nolint:paralleltest // descriptor counts are process-wide
-func TestFailedNewLeaksNoFileDescriptor(t *testing.T) {
+// A failed start must hand back what it opened: the ledger file it opened is
+// closed (closing it again reports os.ErrClosed).
+func TestFailedNewClosesTheLedgerItOpened(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
-	dir := t.TempDir()
-	before := openFileDescriptors(t)
-	for i := range 10 {
-		cfg := Config{Domain: spec, Adapter: a, SinkName: "no-such-sink", LedgerPath: filepath.Join(dir, "ledger.jsonl")}
-		if _, err := New(t.Context(), cfg); err == nil || !strings.Contains(err.Error(), "unsupported sink") {
-			t.Fatalf("attempt %d: err = %v", i, err)
-		}
+	cfg := Config{Domain: spec, Adapter: a, SinkName: "no-such-sink", LedgerPath: filepath.Join(t.TempDir(), "ledger.jsonl")}
+	if _, err := New(t.Context(), cfg); err == nil || !strings.Contains(err.Error(), "unsupported sink") {
+		t.Fatalf("New = %v, want the unsupported sink", err)
 	}
-	if after := openFileDescriptors(t); after > before {
-		t.Fatalf("ten failed starts leaked %d file descriptors", after-before)
+	r, err := newRun(t.Context(), defaultConfig(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.beginReleasing(); err == nil || !strings.Contains(err.Error(), "unsupported sink") {
+		t.Fatalf("beginReleasing = %v, want the unsupported sink", err)
+	}
+	if r.durableLedger == nil {
+		t.Fatal("the ledger was never opened, so the test proves nothing")
+	}
+	if err := r.durableLedger.Finish(); !errors.Is(err, os.ErrClosed) {
+		t.Fatalf("closing the ledger of a failed start again = %v, want os.ErrClosed (it was left open)", err)
 	}
 }
 

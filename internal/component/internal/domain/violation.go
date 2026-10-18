@@ -13,6 +13,10 @@ func (l *issueList) addf(pointer, format string, args ...any) {
 	l.items = append(l.items, model.LocatedIssue(pointer, fmt.Sprintf(format, args...)))
 }
 
+func (l *issueList) rule(pointer, keyword, member, format string, args ...any) {
+	l.items = append(l.items, model.RuleIssue(pointer, keyword, member, fmt.Sprintf(format, args...)))
+}
+
 func (l *issueList) empty() bool { return len(l.items) == 0 }
 
 func (l *issueList) violation(contract model.Contract, source string) error {

@@ -99,7 +99,13 @@ describe("protocol failures mapped to the owning feature", () => {
   });
 
   it("keeps an unknown protocol code as display data, not as feature behaviour", () => {
-    const unknown: WireProblem = { ...cannedFailure("something_new", 418, "never seen"), result: null };
+    const unknown: WireProblem = {
+      status: 418,
+      code: "something_new",
+      message: "never seen",
+      issues: [],
+      result: null,
+    };
     expect(plantFailure("read")({ kind: "http", problem: unknown })).toMatchObject({
       kind: "unreadable",
       diagnostic: { displayCode: "something_new", message: "never seen" },

@@ -4,6 +4,92 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads the first
+  `NBIRTH` of a file (bare, or the `wire` records of a run's observer journal; streamed line by line, a line at most
+  1 MiB, a scan at most 32 MiB) and prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
+  per announced kind a draft kind file (the entry without `kind_digest`), the announced `kind_digest`, `claims` (the
+  members that came from the board and that nothing verified: `risk_class`, `safe_stop`, the bounds of an
+  `args_schema`), the issues the draft still has, and, with `--kinds-dir`, a `comparison` with the workspace kind file
+  of the same name (`new`, `same`, `differs` at the pointer of the first differing member, `unreadable`) and its
+  `target`, the path the draft would be saved to, derived by one rule in the binary (a name that differs only in case is
+  a `kind_name_collision` aimed at the existing file). Provenance is reported, never silent: the first birth is taken,
+  later ones are listed with whether their kinds are the same (`rebirth_differs`), a line that names a birth but cannot
+  be read is an issue (`birth_line_unreadable`), a cut scan is `scan_truncated`. A birth is a claim: it is refused
+  (`kind_failed`, issues with `keyword` and `member`) unless it validates against the plant wire schema, speaks this
+  contract and every `kind_digest` is recomputed and holds; the board's `capability_digest` is checked beside it
+  (`capability_digest_mismatch`) and `environment` is echoed as the board's claim. Only the observer stream is taken:
+  records are read strictly (exact member names, no member twice) and the stream is checked before a record is accepted.
+  The reference host now also refuses a birth announcing a kind twice (`inventory_mismatch`). It writes nothing.
+  `cli-output-v0.1` gains `kind_capture` (and `issue`); the kernel gains `OpenRegular` (a relative path is walked and
+  no component may be a symbolic link). The canvas bridge gains the read-only `kind.capture` (`{content}` on standard
+  input, or `{run}` for the observer journal of a run of the workspace, exactly one of them; the sealed journal is
+  never reachable). Test support: a scripted plant wire node (`internal/plantwire/internal/standin`, imported by tests
+  only) stands in for a board behind a gateway. A kinds directory that does not exist holds no kind files for a capture, and the bridge always passes the workspace `kinds/`, so a first capture has a `target`.
+
+- **One unfinished device no longer breaks another, and the picker tells the truth about fit.** The twin actions take the
+  kind files that are in the twin: the canvas bridge's `kind.twin` and `kind.suggest` take `kinds: ["<file stem>", ...]`
+  (the stems of `kinds/<stem>.kind.json`, one to 64, repeats counted once, an absent stem is `not_found`) and pass exactly
+  those files, never `--kinds-dir`; `kind twin [--suggest]` already took files as arguments, and its default `id` and
+  `title` come from the given kinds only (`fan-twin`, `Twin of fan`; a long board is named after its first kind and a count).
+  A domain that `implements` kind files now reads only the kind files of the kinds it implements (`domain validate`,
+  `domain compose`, `run`, `plantwire node`, `mcp`), found by the declared kind and, for a file that does not parse, by its
+  file name: a malformed kind file of another kind never blocks it. `component list --unit <u> [--min n --max n]` gives
+  every instrument `fit: {ok, code?, member?}` (`unit_incompatible`, `range_unstated`, `range_narrower`,
+  `reading_not_number`), decided by the comparison `kind twin` uses, so `ok: true` is what the scaffold accepts; the range
+  is compared after unit conversion and fitting instruments are listed first. A twin now reads through an instrument of
+  another unit (kPa transmitter, Pa reading) in the unit of its kind file, converting the instrument's noise, drift and
+  fault magnitudes, so `twin_conversion_needed` is gone; a refusal of an instrument carries the `member` at fault
+  (`unit`, `eu_range`, `data_type`) with keyword `twin_instrument_mismatch`. `cli-output-v0.1` gains `fit`. The canvas
+  bridge gains `min` and `max` on `component.list`.
+
+- **The binary tells the canvas everything a twin needs in one pass.** Every issue of `kind validate`, `kind twin` and
+  `domain validate` keeps `pointer` and `message` and gains `keyword` (the JSON Schema keyword that failed, or a stable
+  rule code such as `twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`, `twin_name_pattern`,
+  `twin_range`, `domain_rule`) and, for a rule about a named member, `member` (`resolution`, `writable`, `safe_stop`,
+  `unit`); `jsonschema.Error` and `model.Issue` carry them. The twin requirements of a kind file are reported all at once
+  (`component.TwinRequirements`, one implementation). New: `kind validate --stdin [--twin]` (one kind document from
+  standard input, at most 1 MiB, strict, writes nothing), `kind twin --suggest` (the binary's default choices for kind
+  files, `{choices}`, writes nothing), `component list --unit <u>` (instruments of that unit or a convertible one, exact
+  unit first, with `unit`, `range` and `match`). `cli-output-v0.1` gains `keyword`/`member` on issues, `kind_suggest`, and
+  `unit`/`range`/`match` on a component summary. The canvas bridge gains `kind.check` (`{content, twin?}`, the first
+  action with an input on standard input), `kind.suggest`, and `unit` on `component.list`.
+
+- **A kind file never carries `kind_digest`.** The `KIND` schema forbids the member (a stale digest used to be accepted and
+  ignored), and `kind validate` and every `--kinds-dir` load refuse it at `/kind_digest`; a metric's `eu_range` and
+  `instrument_range` need `min` below `max`. The plant wire contract digest changes (schema, one invalid fixture). The canvas
+  bridge lists a kind's `kind`, a component's `id` and a `title` only when they are plain text of the expected form, and
+  lists only the path of a file over 256 KiB.
+- **A safe stop is the domain's.** An effector may carry `safe_stop: true` (domain spec). The plant wire node announces
+  and runs the commands the domain flags; `plantwire node` loses `--safe-stop` and takes `--kinds-dir`, and a domain that
+  implements a kind file is checked against it before the node connects, so the announced `kind_digest` and safe stops
+  are the kind file's. The `implements` check compares the safe-stop flag of every command. The `kind twin` scaffold
+  flags the safe stops of its kind files.
+- **The `implements` check cannot be skipped.** `run.ScenarioRunOptions.CheckDomain` with no check refuses a domain that
+  implements a kind file, as the director does (`run.CheckDomain`, one implementation). `domain validate`, `run` and
+  `sim.world.create` print `implements_checked` (`{kind, kind_digest}` per kind file checked; empty when the domain
+  implements none). Kind files are read only for a domain that implements one, only as regular files of at most 1 MiB,
+  as one JSON document with no member named twice and no number beyond the range of a double; `kind validate` no longer
+  prints a blank digest for such a file. `plantwire.CheckImplements` returns what it checked, and `plantwire.Scaffold`
+  replaces `ReadKindFiles` and `CheckImplementsKinds`: `kind twin` is one facade call.
+- **`streamsim kind twin`.** Scaffolds a runnable twin of kind files: `kind twin [<file.kind.json>...] --choices
+  <choices.json> [--kinds-dir <dir>] [--out <file>]` writes a domain whose kinds `implements` the kind files, from a
+  small choices document (`twin-choices-v0.1`): per metric the library instrument that measures it or `none`, per
+  command one of three fixed responses (`direct`, `first_order`, `none`); a safe stop and a lease come from the kind
+  file. The twin is checked against the same kind files before it is printed. The canvas bridge gains the `kind.twin`
+  action and the `twins/` workspace folder; `cli-output-v0.1` gains `kind_twin`. The built-in vocabulary accepts `Cel`
+  for `degC` and `%` for `%RH`, the spellings of a kind file.
+- **The director checks `implements`.** `streamsim mcp --role director` takes `--kinds-dir` (repeatable), and
+  `sim.world.create` runs the `implements` check on the domain it is asked for, as `run` does; a director without kind
+  files refuses a domain that implements one. The canvas bridge starts its director with the workspace `kinds/` folder.
+  `director.NewFromDirs` and `mcp.ServeOptions` take the check as an argument.
+
+- **Kind files and `implements`.** A domain kind may declare `implements: "<kind>"`. `streamsim domain validate`,
+  `domain compose` and `run` (with `--kinds-dir`, repeatable) check that the kind's plant wire interface equals the
+  kind file of that name (`*.kind.json` in a kinds directory) after canonicalisation, naming the first differing member; a mismatch, an unknown
+  kind file or no `--kinds-dir` is a `domain_invalid` error. `streamsim kind validate <file>...` checks kind files
+  against the plant wire kind schema and prints their `kind_digest`. `cli-output-v0.1` gains `kind_validate` and
+  the `kind_failed` code.
+
 - **`streamsim component new`.** Prints a new plant's composition, copied from a composition file or a shipped example
   or emptied to its frame, with the id and title checked by the binary. The canvas creates plants through it, so the
   rule for what an empty plant keeps and the id check live in the binary.

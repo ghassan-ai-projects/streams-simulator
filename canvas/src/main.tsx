@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { browserClock, hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
 import { bridgeAdapter, browserTransport } from "./adapters/bridge";
+import { createDeviceDesk, createDeviceSession } from "./app/devices";
 import { createEditorSession } from "./app/editor";
 import { createLaunchStore } from "./app/launch";
 import { createPlantMaker, createPlantSession } from "./app/plant";
@@ -38,6 +39,8 @@ if (root) {
           launch: createLaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,
+          devices: createDeviceSession(adapters.devices, adapters.workspace.watch),
+          desk: createDeviceDesk(adapters.devices),
           panels,
           maker: createPlantMaker(adapters.plant),
           showDetails: () => {

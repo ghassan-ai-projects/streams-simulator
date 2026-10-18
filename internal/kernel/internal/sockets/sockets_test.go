@@ -51,7 +51,12 @@ func TestNeitherAFileNorASharedDirectoryIsUsed(t *testing.T) {
 	if err := os.Mkdir(shared, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(shared, 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Chmod("shared", 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := ListenPrivate(t.Context(), filepath.Join(shared, "s.sock")); !errors.Is(err, ErrNotPrivate) {

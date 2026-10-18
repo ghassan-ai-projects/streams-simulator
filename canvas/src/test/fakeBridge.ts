@@ -62,6 +62,7 @@ export class FakeBridge {
   readonly workspace = this.gateways.workspace;
   readonly plant = this.gateways.plant;
   readonly editor = this.gateways.editor;
+  readonly devices = this.gateways.devices;
   readonly launch = this.gateways.launch;
   readonly review = this.gateways.review;
 

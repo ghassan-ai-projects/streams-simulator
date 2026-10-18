@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -26,11 +27,14 @@ func helper(args []string) int {
 	case "env":
 		_, _ = os.Stdout.WriteString(strings.Join(os.Environ(), ","))
 		return 0
+	case "cat":
+		_, _ = io.Copy(os.Stdout, os.Stdin)
+		return 0
 	case "fail":
 		_, _ = os.Stderr.WriteString("refused")
 		return 3
 	case "director":
-		return serveHelperDirector()
+		return serveHelperDirector(args[1:])
 	case "stderr-exit":
 		_, _ = os.Stderr.WriteString("domain factory.domain.json: invalid\n")
 		return 3
@@ -38,8 +42,9 @@ func helper(args []string) int {
 	return 2
 }
 
-func serveHelperDirector() int {
+func serveHelperDirector(args []string) int {
 	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "helper", Version: "0"}, nil)
+	addFailureTools(server, args)
 	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.die"}, func(context.Context, *mcpsdk.CallToolRequest, map[string]any) (*mcpsdk.CallToolResult, map[string]any, error) {
 		_, _ = os.Stderr.WriteString("director crashed\n")
 		os.Exit(9)
@@ -69,15 +74,15 @@ func self(t *testing.T) string {
 func TestCommandsRunWithAScrubbedEnvironmentInTheWorkspace(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	result, err := Run(context.Background(), self(t), dir, []string{"--helper", "env"})
+	result, err := RunWithInput(context.Background(), self(t), dir, []string{"--helper", "env"}, nil)
 	if err != nil || result.ExitCode != 0 || len(result.Stdout) != 0 {
-		t.Fatalf("Run = %+v, %v: the child sees no inherited variable", result, err)
+		t.Fatalf("RunWithInput = %+v, %v: the child sees no inherited variable", result, err)
 	}
-	failed, err := Run(context.Background(), self(t), dir, []string{"--helper", "fail"})
+	failed, err := RunWithInput(context.Background(), self(t), dir, []string{"--helper", "fail"}, nil)
 	if err != nil || failed.ExitCode != 3 || !strings.HasPrefix(string(failed.Stderr), "refused") {
 		t.Fatalf("a failing command: %+v, %v", failed, err)
 	}
-	if _, err := Run(context.Background(), filepath.Join(dir, "absent"), dir, nil); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := RunWithInput(context.Background(), filepath.Join(dir, "absent"), dir, nil, nil); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("a missing executable ran: %v", err)
 	}
 }

@@ -16,8 +16,8 @@ internal/report/internal/app     87
 internal/report/internal/files   100
 # The plant wire node (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/plantwire                  99
-internal/plantwire/internal/app     91
-internal/plantwire/internal/domain  93
+internal/plantwire/internal/app     93
+internal/plantwire/internal/domain  95
 internal/plantwire/internal/host    93
 internal/plantwire/internal/uds     90
 # The component module (QUALITY_BAR section 2: new modules at 85 percent or more).
@@ -30,5 +30,5 @@ internal/canvasbridge/internal/app        92
 internal/canvasbridge/internal/domain     95
 internal/canvasbridge/internal/entropy    100
 internal/canvasbridge/internal/files      90
-internal/canvasbridge/internal/process    91
+internal/canvasbridge/internal/process    93
 internal/canvasbridge/internal/transport  95

@@ -68,3 +68,8 @@ func Instrument() []byte { return instrument }
 func Composition() []byte { return composition }
 
 func ComponentVocabulary() []byte { return componentVocabulary }
+
+//go:embed twin-choices-v0.1.schema.json
+var twinChoices []byte
+
+func TwinChoices() []byte { return twinChoices }

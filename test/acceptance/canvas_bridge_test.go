@@ -36,10 +36,7 @@ func copyIntoWorkspace(t *testing.T, source, workspace, rel string) {
 	if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 		t.Fatal(err)
 	}
-	//nolint:gosec // G703: the target is a fixed relative path inside the test's own temporary workspace
-	if err := os.WriteFile(target, content, 0o600); err != nil {
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, filepath.Dir(target), filepath.Base(target), content)
 }
 
 func TestTheCanvasBridgeDrivesAWorldFromPairingToTheReport(t *testing.T) {

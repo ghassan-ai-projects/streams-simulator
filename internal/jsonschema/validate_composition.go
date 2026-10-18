@@ -2,7 +2,7 @@ package jsonschema
 
 import "fmt"
 
-func (s *Schema) validateComposition(v any, path string, errs *[]Error, fail func(string)) {
+func (s *Schema) validateComposition(v any, path string, errs *[]Error, fail failFunc) {
 	for _, sub := range s.allOf {
 		sub.validate(v, path, errs)
 	}
@@ -12,7 +12,7 @@ func (s *Schema) validateComposition(v any, path string, errs *[]Error, fail fun
 	s.validateCondition(v, path, errs)
 }
 
-func (s *Schema) validateOneOf(v any, fail func(string)) {
+func (s *Schema) validateOneOf(v any, fail failFunc) {
 	if len(s.oneOf) > 0 {
 		matches := 0
 		for _, sub := range s.oneOf {
@@ -21,14 +21,14 @@ func (s *Schema) validateOneOf(v any, fail func(string)) {
 			}
 		}
 		if matches != 1 {
-			fail(fmt.Sprintf("value must match exactly one oneOf branch (matched %d)", matches))
+			fail("oneOf", fmt.Sprintf("value must match exactly one oneOf branch (matched %d)", matches))
 		}
 	}
 }
 
-func (s *Schema) validateAnyOf(v any, fail func(string)) {
+func (s *Schema) validateAnyOf(v any, fail failFunc) {
 	if len(s.anyOf) > 0 && !anyBranchMatches(s.anyOf, v) {
-		fail("value matches no anyOf branch")
+		fail("anyOf", "value matches no anyOf branch")
 	}
 }
 
@@ -41,9 +41,9 @@ func anyBranchMatches(branches []*Schema, v any) bool {
 	return false
 }
 
-func (s *Schema) validateNot(v any, fail func(string)) {
+func (s *Schema) validateNot(v any, fail failFunc) {
 	if s.not != nil && len(s.not.Validate(v)) == 0 {
-		fail("value must not match the not schema")
+		fail("not", "value must not match the not schema")
 	}
 }
 

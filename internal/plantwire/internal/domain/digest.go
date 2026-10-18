@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"cmp"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/fs"
+	"maps"
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
@@ -55,4 +58,39 @@ func CapabilityDigest(templates []any) string {
 func nameOf(command any) string {
 	name, _ := command.(map[string]any)["name"].(string)
 	return name
+}
+
+var ErrNotCanonical = errors.New("plantwire: canonical form of a kind")
+
+func KindDigest(entry map[string]any) (string, error) {
+	body := maps.Clone(entry)
+	delete(body, "kind_digest")
+	digest, err := canonical.Digest(body)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrNotCanonical, err)
+	}
+	return digest, nil
+}
+
+func WithKindDigests(templates []any) ([]any, error) {
+	for _, template := range templates {
+		entry := template.(map[string]any)
+		digest, err := KindDigest(entry)
+		if err != nil {
+			return nil, err
+		}
+		entry["kind_digest"] = digest
+	}
+	return templates, nil
+}
+
+func KindsMisdigested(kinds []any) bool {
+	return slices.ContainsFunc(kinds, KindMisdigested)
+}
+
+func KindMisdigested(kind any) bool {
+	entry, _ := kind.(map[string]any)
+	declared, _ := entry["kind_digest"].(string)
+	digest, err := KindDigest(entry)
+	return err != nil || declared != digest
 }

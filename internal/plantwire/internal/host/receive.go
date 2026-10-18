@@ -89,15 +89,15 @@ func (h *Host) nodeDeath(m domain.Message) {
 
 func (h *Host) refusal(m domain.Message) string {
 	switch {
-	case m.ProtocolMin > m.ProtocolMax:
+	case domain.ProtocolInvalid(m):
 		return "protocol_invalid"
 	case m.Environment != h.options.Environment:
 		return "environment_mismatch"
-	case m.ContractVersion != domain.ContractVersion || m.ContractDigest != domain.ContractDigest():
+	case domain.ContractUnsupported(m):
 		return "contract_unsupported"
 	case m.ProtocolMin > int64(h.options.ProtocolMax) || m.ProtocolMax < domain.Version:
 		return "version_unsupported"
-	case h.missingFromBirth(m):
+	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds) || domain.KindsDuplicated(m.Kinds):
 		return "inventory_mismatch"
 	}
 	return ""

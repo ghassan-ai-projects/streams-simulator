@@ -34,6 +34,13 @@
   margin-left: auto;
 }
 
+.note {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
 .rows {
   margin: 0;
   padding: 0;

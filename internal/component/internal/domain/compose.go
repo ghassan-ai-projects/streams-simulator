@@ -17,9 +17,10 @@ type composer struct {
 }
 
 type Composed struct {
-	Bytes   []byte
-	Domain  *specs.Compiled
-	Summary specs.Summary
+	Bytes      []byte
+	Domain     *specs.Compiled
+	Summary    specs.Summary
+	Implements []string
 }
 
 func ComposeDomain(lib *Library, raw []byte, source string) (*Composed, error) {

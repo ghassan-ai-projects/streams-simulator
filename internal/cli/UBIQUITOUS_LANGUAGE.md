@@ -19,6 +19,9 @@ line: a file, an import or a construct beyond wiring fails the build.
 | Flag origin | The flag occurrence behind a command of a scripted run; a refusal names it instead of pointing into a document the user never wrote | `scripted`, `flagOrigin`, `flagScenarioFailure` | `--effector "…": …` |
 | Scenario-defined flag | A run flag a scenario file defines, refused beside `--scenario`: exactly the flags `registerScenarioFlags` registers | `registerScenarioFlags`, `scenarioDefinedFlags` | `--domain`, `--seed`, … |
 | Scenario file | A run defined by a `scenario-v0.1` file instead of flags. Not a domain's profile, and not a suite's generated scenario | `loadScenarioFile` | `run --scenario` |
+| Kind twin | A domain scaffolded from kind files and a choices document by the `component` module, checked against the same kind files by `plantwire` before it is printed or written | `cmdKindTwin`, `component.Twin` | `kind twin --choices` |
+| Kind validate stdin | One kind document read from standard input (`--stdin`), at most 1 MiB and strict like a file, named `<stdin>`; `--twin` adds every twin requirement to the schema's issues | `cmdKindValidate`, `validateKindStream` | `kind validate --stdin [--twin]` |
+| Kind twin suggestion | The binary's default choices for kind files, printed as `{choices}` and written nowhere | `suggestChoices`, `component.Suggest` | `kind twin --suggest` |
 | Scenario export | The scenario that reproduces a recorded run | `cmdScenario`, `exportScenario` | `scenario from-run` |
 | Build | The version and commit the binary was linked with | `Build` | `sim` in the manifest |
 | Release manifest | The signed record of simulator, domain, adapter, suite and consumer digests with author and reviewer identity; written by the `release` module | `cmdManifest`, `release.Publish` | `release-manifest.json` |
