@@ -33,8 +33,17 @@ const nameFields = new Set(["kind", "name"]);
 
 const generic = "The binary does not accept this";
 
+function phraseOf(member: string): string {
+  return needPhrases[member] ?? (member === "" ? "more detail" : `the ${spaced(member)} setting`);
+}
+
 function needs({ member }: Subject): string {
-  return `Needs ${needPhrases[member] ?? (member === "" ? "more detail" : `the ${spaced(member)} setting`)}`;
+  return `Needs ${phraseOf(member)}`;
+}
+
+export function neededPhrase(keyword: string, member: string): string | null {
+  const asks = keyword === "twin_member_required" || keyword === "twin_unit_required";
+  return asks ? phraseOf(member) : null;
 }
 
 function pattern({ field }: Subject): string {

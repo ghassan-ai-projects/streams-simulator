@@ -1,4 +1,4 @@
-import { keepCurrentIssues, serialiseChoices, twinDomainPath } from "../../../model/devices";
+import { keepCurrentIssues, serialiseChoices, stemOf, twinDomainPath } from "../../../model/devices";
 import type { KindFile, TwinChoices } from "../../../model/devices";
 import type { DevicesGateway, TwinMade } from "../../ports";
 import { DraftStore, createOperationIdentity } from "../../shared";
@@ -7,8 +7,19 @@ import type { TwinSession } from "./api";
 import { loadCatalogue } from "./instrumentCatalogue";
 import type { Built, TwinDraft, TwinState } from "./twinDraft";
 import { loadTwin, readMember } from "./twinLoad";
-import { afterFlush, afterRefusal, fresh, missingLead, sameKind, withMembers } from "./twinReduce";
+import {
+  afterFlush,
+  afterRefusal,
+  fresh,
+  holdBack,
+  joinMembers,
+  missingLead,
+  pendingOf,
+  sameKind,
+  withMembers,
+} from "./twinReduce";
 import { isBuilding, isChoicesDirty, problemsOf } from "./twinSelectors";
+import { suggestFor, unreadableHeld } from "./twinSuggest";
 
 class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession {
   private readonly operations = createOperationIdentity();
@@ -47,8 +58,7 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
     const loaded = lead === null ? null : await loadTwin(this.gateway, path, lead);
     if (!this.holds(request, path)) return;
     if (!loaded?.ok) {
-      const failure = loaded === null ? missingLead : loaded.failure;
-      this.set({ phase: "failed", path, failure });
+      this.set({ phase: "failed", path, ...(loaded === null ? { failure: missingLead, held: [] } : loaded.failure) });
       return;
     }
     this.etag = loaded.value.etag;
@@ -65,12 +75,13 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
     const members = draft.members.map((member, index) => (index === 0 ? { ...member, kind: lead } : member));
     const [instruments, suggestion] = await Promise.all([
       loadCatalogue(this.gateway, members, draft.instruments),
-      this.gateway.suggest(),
+      suggestFor(this.gateway, members),
     ]);
     if (!this.holds(operation, draft.path)) return;
     this.update((current) => {
-      const suggested = suggestion.ok ? suggestion.value : current.suggested;
-      return { ...withMembers({ ...current, suggested }, members), edited: current.edited, instruments };
+      const suggested = suggestion.outcome.ok ? suggestion.outcome.value : current.suggested;
+      const grown = withMembers({ ...current, suggested }, members);
+      return { ...grown, edited: current.edited, instruments, held: [...suggestion.held, ...pendingOf(current)] };
     });
   }
 
@@ -95,20 +106,44 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
     const operation = this.operations.current();
     if (draft === null || operation === null || draft.members.some((member) => member.path === path)) return;
     const member = await readMember(this.gateway, path);
-    if (!member.ok || !this.holds(operation, draft.path)) return;
-    const members = [...draft.members, member.value];
-    const instruments = await loadCatalogue(this.gateway, members, draft.instruments);
     if (!this.holds(operation, draft.path)) return;
-    this.update((current) => ({ ...withMembers(current, members), instruments }));
+    if (!member.ok) {
+      this.update((current) => holdBack(current, unreadableHeld(path)));
+      return;
+    }
+    const members = [...draft.members, member.value];
+    const [suggestion, instruments] = await Promise.all([
+      suggestFor(this.gateway, members),
+      loadCatalogue(this.gateway, members, draft.instruments),
+    ]);
+    if (!this.holds(operation, draft.path)) return;
+    const waiting = suggestion.held.find((held) => held.path === path);
+    const suggested = suggestion.outcome.ok ? suggestion.outcome.value : null;
+    this.update((current) =>
+      waiting === undefined
+        ? joinMembers(current, members, instruments, { suggested, held: suggestion.held })
+        : holdBack(current, waiting, suggestion.held),
+    );
   }
 
   leave(path: string): void {
-    this.update((draft) =>
-      withMembers(
+    this.update((draft) => ({
+      ...withMembers(
         draft,
         draft.members.filter((member, index) => index === 0 || member.path !== path),
       ),
-    );
+      held: draft.held.filter((held) => held.path !== path),
+    }));
+  }
+
+  async retry(): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase === "failed") return this.restart(state.path);
+    const draft = this.draft();
+    if (draft === null || draft.held.length === 0) return;
+    await this.persist();
+    await this.restart(draft.path);
+    for (const held of draft.held.filter((entry) => entry.adding)) await this.include(held.path);
   }
 
   discard(): void {
@@ -158,7 +193,8 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
       return;
     }
     const out = twinDomainPath(draft.doc.id);
-    const made = await this.gateway.twin({ choices: draft.choicesPath, out, etag: this.domainEtag });
+    const kinds = draft.members.map((member) => stemOf(member.path));
+    const made = await this.gateway.twin({ kinds, choices: draft.choicesPath, out, etag: this.domainEtag });
     if (!this.holds(operation, draft.path)) return;
     if (made.ok) await this.verify(operation, draft, made.value, out);
     else this.update((current) => afterRefusal(current, made.failure, draft.doc));

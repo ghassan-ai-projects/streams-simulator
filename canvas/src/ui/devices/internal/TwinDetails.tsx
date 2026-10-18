@@ -1,21 +1,31 @@
 import { Info, TriangleAlert } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { TwinDraft } from "../../../app/devices";
-import { twinDomainPath, twinIssueTitle } from "../../../model/devices";
+import { placeKey, twinDomainPath, twinIssueTitle } from "../../../model/devices";
 import { cx, panel, shared, useCutBottom } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
 
-function useFocusFirst(build: TwinDraft["build"]) {
+function fieldAt(place: string): HTMLElement | undefined {
+  const fields = document.querySelectorAll<HTMLElement>("[data-place]");
+  return [...fields].find((field) => field.dataset.place === place);
+}
+
+function useFocusFirst({ build, issues }: TwinDraft) {
   const first = useRef<HTMLLIElement>(null);
+  const place = useRef("");
   useEffect(() => {
-    if (build.kind === "refused") first.current?.focus();
+    const [issue] = issues;
+    place.current = issue === undefined ? "" : placeKey(issue);
+  });
+  useEffect(() => {
+    if (build.kind === "refused") (fieldAt(place.current) ?? first.current)?.focus();
   }, [build]);
   return first;
 }
 
 function Issues({ draft }: { readonly draft: TwinDraft }) {
-  const first = useFocusFirst(draft.build);
+  const first = useFocusFirst(draft);
   if (draft.issues.length === 0) return null;
   return (
     <section className={panel.group} aria-labelledby="twin-issues-title" role="alert">

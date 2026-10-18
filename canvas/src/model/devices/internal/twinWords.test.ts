@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { cooler, coolerPath, sensor, sensorPath } from "../../../test/twinFixture";
 import {
+  argumentLabel,
   driveFollows,
   effectWords,
   followChoices,
   followTarget,
   noFollowerHint,
+  noSetpointHint,
   partsWords,
   settableChoices,
+  slowTimeWords,
 } from "./twinWords";
 import type { Drive } from "./twinTypes";
 import { choicesFor } from "./words";
@@ -62,7 +65,15 @@ describe("twin wording", () => {
     expect(words({ from: "" })).toBe("");
     expect(words({ metric: "" })).toBe("");
     expect(words({ kind: sensorPath, metric: "m1" })).toContain("humidity moves toward");
+    expect(words({ timeConstantS: 0 })).toBe(slowTimeWords);
+    expect(words({ timeConstantS: -5, gain: null })).toBe("Choose a time constant above zero.");
     expect(partsWords(1, 2, 0)).toBe("1 channel · 2 effectors · 0 faults");
+  });
+
+  it("names an argument by what it is, and says what a setpoint needs when there is none", () => {
+    expect(argumentLabel("target")).toBe("Reading set by the target value");
+    expect(argumentLabel("lease_ms")).toBe("Reading set by the lease ms value");
+    expect(noSetpointHint).toBe("Mark a reading as a setpoint and give it a range in the Interface step");
   });
 
   it("does not offer a second way to leave a choice blank", () => {

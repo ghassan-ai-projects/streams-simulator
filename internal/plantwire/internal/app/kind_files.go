@@ -14,11 +14,20 @@ func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.Implem
 	if !spec.HasImplements() {
 		return []model.ImplementsChecked{}, nil
 	}
-	kindFiles, err := readKindFiles(nil, kindsDirs)
+	kindFiles, err := readImplemented(spec, kindsDirs)
 	if err != nil {
 		return nil, err
 	}
 	return domain.CheckImplements(spec, kindFiles)
+}
+
+func readImplemented(spec *model.DomainSpec, dirs []string) (domain.KindFiles, error) {
+	sources, err := files.Scan(dirs)
+	if err != nil {
+		return nil, err
+	}
+	kindFiles, _, err := domain.ParseKindFiles(domain.SelectKindSources(sources, domain.ImplementedKinds(spec)))
+	return kindFiles, err
 }
 
 func WithKindFiles[T any](paths, dirs []string, use func(map[string]map[string]any) (T, error)) (T, error) {

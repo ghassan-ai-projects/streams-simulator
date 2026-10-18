@@ -1,5 +1,6 @@
 import {
   chooseInstrument,
+  placeKey,
   rangeWords,
   readingFacts,
   startAt,
@@ -23,15 +24,17 @@ interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly instruments: readonly Instrument[] | null;
 }
 
-type NumericFields = Pick<RowProps, "twin" | "member" | "metric" | "choice" | "instruments"> & {
+type NumericFields = Pick<RowProps, "twin" | "member" | "metric" | "choice" | "instruments" | "reveal"> & {
   readonly on: (field: string) => readonly string[];
 };
 
-function InstrumentField({ twin, member, metric, choice, instruments, on }: NumericFields) {
+function InstrumentField({ twin, member, metric, choice, instruments, reveal, on }: NumericFields) {
+  const place = (field: string) => placeKey({ scope: "metric", kind: member, key: metric.key, field });
   return (
     <Field
       label="Instrument"
       field="instrument"
+      place={place("instrument")}
       hint="What measures this reading, with its noise and faults."
       issues={on("instrument")}
     >
@@ -40,6 +43,13 @@ function InstrumentField({ twin, member, metric, choice, instruments, on }: Nume
           metric={metric.name}
           value={choice.instrument}
           instruments={instruments}
+          reveal={
+            reveal === null
+              ? null
+              : () => {
+                  reveal({ part: "metric", key: metric.key }, "eu_range");
+                }
+          }
           aria={aria}
           onPick={(ref) => {
             choose(twin, (choices) => chooseInstrument(choices, member, metric.key, ref));
@@ -55,6 +65,7 @@ function InitialField({ twin, member, metric, choice, on }: NumericFields) {
     <Field
       label="Starts at"
       field="initial"
+      place={placeKey({ scope: "metric", kind: member, key: metric.key, field: "initial" })}
       hint="Optional. The true value when the twin starts."
       issues={on("initial")}
     >
@@ -72,9 +83,9 @@ function InitialField({ twin, member, metric, choice, on }: NumericFields) {
   );
 }
 
-function Numeric({ twin, issues, member, metric, choice, instruments }: RowProps) {
+function Numeric({ twin, issues, member, metric, choice, instruments, reveal }: RowProps) {
   const on = (field: string) => twinIssuesOn(issues, { scope: "metric", kind: member, key: metric.key, field });
-  const fields = { twin, member, metric, choice, instruments, on };
+  const fields = { twin, member, metric, choice, instruments, reveal, on };
   return (
     <>
       <InstrumentField {...fields} />

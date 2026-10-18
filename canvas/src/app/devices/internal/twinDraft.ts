@@ -36,6 +36,13 @@ type Build =
   | { readonly kind: "failed"; readonly failure: DeviceFailure }
   | Built;
 
+export interface Held {
+  readonly path: string;
+  readonly name: string;
+  readonly words: string;
+  readonly adding: boolean;
+}
+
 export interface TwinDraft {
   readonly phase: "ready";
   readonly path: string;
@@ -53,10 +60,16 @@ export interface TwinDraft {
   readonly save: ChoiceSave;
   readonly build: Build;
   readonly issues: readonly TwinIssue[];
+  readonly held: readonly Held[];
 }
 
 export type TwinState =
   | { readonly phase: "idle" }
   | { readonly phase: "loading"; readonly path: string }
-  | { readonly phase: "failed"; readonly path: string; readonly failure: DeviceFailure }
+  | {
+      readonly phase: "failed";
+      readonly path: string;
+      readonly failure: DeviceFailure;
+      readonly held: readonly Held[];
+    }
   | TwinDraft;

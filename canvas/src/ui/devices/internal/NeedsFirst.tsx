@@ -11,7 +11,7 @@ import type { Reveal } from "./twinProps";
 export function NeedsFirst({ device, reveal }: { readonly device: Draft; readonly reveal: Reveal }) {
   return (
     <section className={cx(panel.body, styles.form)} aria-label="What the twin needs first">
-      <FormTitle id="needs-first-title" words="Before the behaviour" />
+      <FormTitle id="needs-first-title" words="Before the behaviour" interim />
       <p className={panel.hint}>
         A twin cannot be started until the device states what it needs. Set these in the Interface step.
       </p>

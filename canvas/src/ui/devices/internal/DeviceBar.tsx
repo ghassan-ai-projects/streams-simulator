@@ -1,8 +1,8 @@
 import { Cpu, RefreshCw, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import type { DeviceSession, Draft } from "../../../app/devices";
-import { canSave, isBusy, isDirty, saveStatusOf, twinReadiness } from "../../../app/devices";
+import { canSave, isBusy, isDirty, rangeNeedsOf, saveStatusOf, twinReadiness } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
-import { screen, shared } from "../../primitives";
+import { screen, shared, useStore } from "../../primitives";
 import { ConfirmButton } from "./ConfirmButton";
 import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
@@ -101,7 +101,7 @@ function SaveButton({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
 export function DeviceBar({ draft, devices, navigation }: BarProps) {
   useDeviceKeys(devices);
   const status = saveStatusOf(draft);
-  const readiness = twinReadiness(draft);
+  const readiness = twinReadiness(draft, rangeNeedsOf(useStore(devices.twin)).length);
   return (
     <div className={screen.bar}>
       <Cpu size={14} aria-hidden="true" />

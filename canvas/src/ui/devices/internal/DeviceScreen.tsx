@@ -10,6 +10,7 @@ import { PendingDeviceLeave } from "./LeaveDevice";
 import { StepTabs } from "./StepTabs";
 import { TwinStep } from "./TwinStep";
 import { StepFocusContext } from "./stepFocus";
+import type { Pending } from "./stepFocus";
 
 interface ScreenProps {
   readonly devices: DeviceSession;
@@ -33,19 +34,20 @@ function Editing({ draft, devices, navigation }: Omit<ScreenProps, "path"> & { r
   useLeaveWarning(devices);
   const [step, setStep] = useState<Step>("interface");
   const [focus, setFocus] = useState<{ readonly field: string; readonly at: number } | null>(null);
-  const [pending, setPending] = useState(false);
-  const done = useCallback(() => {
-    setPending(false);
+  const [pending, setPending] = useState<Pending>("fresh");
+  const done = useCallback((next: Pending) => {
+    setPending(next);
   }, []);
   const statuses = stepStatuses(draft, useStore(devices.twin));
   const pick = (next: Step) => {
     setFocus(null);
-    setPending(true);
+    setPending("fresh");
     setStep(next);
   };
   const reveal = (selection: Selection, field: string) => {
     devices.select(selection);
     setFocus((previous) => ({ field, at: (previous?.at ?? 0) + 1 }));
+    setPending("none");
     setStep("interface");
   };
   const tabs = <StepTabs step={step} statuses={statuses} onPick={pick} />;

@@ -21,7 +21,10 @@ func TestListForAUnitReturnsTheInstrumentsOfTheSameOrAConvertibleUnitExactFirst(
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			listed := library.ListFor(tc.unit)
+			listed, err := library.ListFor(tc.unit, nil, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 			got := make([]string, len(listed))
 			for i, entry := range listed {
 				got[i] = entry.ID + ":" + entry.Unit + ":" + entry.Match
@@ -39,20 +42,26 @@ func TestListForAUnitReturnsTheInstrumentsOfTheSameOrAConvertibleUnitExactFirst(
 func TestListForNoUnitIsTheWholeLibraryAndEveryInstrumentStatesItsUnitAndRange(t *testing.T) {
 	t.Parallel()
 	library := builtInLibrary(t)
-	all := library.ListFor("")
+	all, err := library.ListFor("", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(all) != len(library.List()) {
 		t.Fatalf("ListFor(\"\") lists %d entries, want the %d of List", len(all), len(library.List()))
 	}
 	for _, entry := range all {
-		if (entry.Kind == "instrument") != (entry.Unit != "") || entry.Match != "" {
-			t.Errorf("entry %+v: an instrument states its unit, equipment does not, and no match without a unit to match", entry)
+		if (entry.Kind == "instrument") != (entry.Unit != "") || entry.Match != "" || entry.Fit != nil {
+			t.Errorf("entry %+v: an instrument states its unit, equipment does not, and neither a match nor a fit without a unit to match", entry)
 		}
 	}
 	raw, err := json.Marshal(all)
 	if err != nil || len(raw) == 0 {
 		t.Fatal(err)
 	}
-	if (*Library)(nil).ListFor("Cel") != nil || (&Library{}).ListFor("Cel") != nil {
+	if listed, err := (*Library)(nil).ListFor("Cel", nil, nil); listed != nil || err != nil {
 		t.Fatal("a missing library lists nothing")
+	}
+	if listed, err := (&Library{}).ListFor("Cel", nil, nil); listed != nil || err != nil {
+		t.Fatal("an empty library lists nothing")
 	}
 }

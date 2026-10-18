@@ -12,7 +12,13 @@ function Identity({ metric, on, need, change }: MetricFields) {
   const ref = useFocusOnMount<HTMLInputElement>({ when: metric.name === "" });
   return (
     <>
-      <Field label="Name" field="name" issues={on("name")} needs={need("name")}>
+      <Field
+        label="Name"
+        field="name"
+        hint="Start with a letter or digit, then letters, digits and . _ : - only."
+        issues={on("name")}
+        needs={need("name")}
+      >
         {(aria) => (
           <TextBox
             aria={aria}

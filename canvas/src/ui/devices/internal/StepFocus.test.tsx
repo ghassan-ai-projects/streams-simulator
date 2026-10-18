@@ -1,16 +1,21 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { editingDevice } from "../../../test/deviceHarness";
 import { behaviourOf, pickStep } from "../../../test/twinHarness";
+import { FormTitle } from "./FormTitle";
+import { StepFocusContext } from "./stepFocus";
+import type { Pending } from "./stepFocus";
 
 function home() {
   return screen.getByRole("button", { name: "Streams Simulator, workspace home" });
 }
 
 describe("where the focus goes", () => {
-  it("lands on the heading of a device when it is opened", async () => {
+  it("lands on the heading of the form when a device is opened, so the next Tab reaches the form", async () => {
     await editingDevice();
-    expect(screen.getByRole("heading", { level: 1, name: "fan" })).toHaveFocus();
+    expect(screen.getByRole("heading", { level: 2, name: "Device" })).toHaveFocus();
+    expect(screen.getByRole("heading", { level: 1, name: "fan" })).not.toHaveFocus();
   });
 
   it("lands on the heading of the step that was picked, whichever it is", async () => {
@@ -23,6 +28,27 @@ describe("where the focus goes", () => {
     fireEvent.click(screen.getByRole("button", { name: /^duty/ }));
     expect(screen.getByRole("button", { name: /^duty/ })).not.toHaveFocus();
     expect(screen.getByRole("heading", { level: 2, name: "Reading" })).not.toHaveFocus();
+  });
+});
+
+function Screens({ ready }: { readonly ready: boolean }) {
+  const [pending, setPending] = useState<Pending>("fresh");
+  return (
+    <StepFocusContext value={{ pending, done: setPending }}>
+      {ready ? <FormTitle id="final" words="Twin" /> : <FormTitle id="waiting" words="Not yet" interim />}
+    </StepFocusContext>
+  );
+}
+
+describe("a heading that appears after a screen that was only passing through", () => {
+  it("takes the focus again when the form it stands for finally mounts, once", () => {
+    const { rerender } = render(<Screens ready={false} />);
+    expect(screen.getByRole("heading", { name: "Not yet" })).toHaveFocus();
+    rerender(<Screens ready />);
+    expect(screen.getByRole("heading", { name: "Twin" })).toHaveFocus();
+    screen.getByRole("heading", { name: "Twin" }).blur();
+    rerender(<Screens ready={false} />);
+    expect(screen.getByRole("heading", { name: "Not yet" })).not.toHaveFocus();
   });
 });
 

@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
+
+var idPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,63}$`)
 
 type located struct{ pointer, keyword, member string }
 
@@ -118,13 +121,14 @@ func TestInstrumentsForAUnitAreRankedExactFirstThenByIdentity(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got := summaryLines(library.InstrumentsForUnit(tc.unit))
+		listed, err := library.ListForReading(tc.unit, nil, nil)
 		if tc.unit == "" {
-			if len(library.ListForUnit("")) != len(library.List()) || len(got) != 0 {
-				t.Errorf("an empty unit: ListForUnit lists %d, want the %d of List; InstrumentsForUnit = %v", len(library.ListForUnit("")), len(library.List()), got)
+			if err != nil || len(listed) != len(library.List()) || len(got) != 0 {
+				t.Errorf("an empty unit: ListForReading lists %d, want the %d of List; InstrumentsForUnit = %v", len(listed), len(library.List()), got)
 			}
 			continue
 		}
-		if !reflect.DeepEqual(got, tc.want) || !reflect.DeepEqual(summaryLines(library.ListForUnit(tc.unit)), tc.want) {
+		if !reflect.DeepEqual(got, tc.want) || err != nil || !reflect.DeepEqual(summaryLines(listed), tc.want) {
 			t.Errorf("unit %q lists %v, want %v", tc.unit, got, tc.want)
 		}
 	}
@@ -211,7 +215,7 @@ func TestSuggestLeavesNoResponseDirectWhenTwoCommandsClaimTheSameReading(t *test
 	}
 }
 
-func TestSuggestShortensAnIdAndATitleThatOutgrowTheirLimits(t *testing.T) {
+func TestSuggestNamesALongBoardAfterItsFirstKindAndTheCountOfTheOthers(t *testing.T) {
 	t.Parallel()
 	kinds := map[string]map[string]any{}
 	for i := range 8 {
@@ -219,8 +223,38 @@ func TestSuggestShortensAnIdAndATitleThatOutgrowTheirLimits(t *testing.T) {
 		kinds[name] = rawKind(t, `{"kind":"`+name+`","metrics":[{"name":"on","data_type":"boolean","resolution":1,"writable":false}],"commands":[]}`)
 	}
 	choices := choicesOf(t, baseLibrary(t), kinds)
-	if title, _ := choices["title"].(string); choices["id"] != "board-twin" || len(title) != 120 {
-		t.Fatalf("id %v and title of %d bytes, want board-twin and a title cut at 120", choices["id"], len(title))
+	if choices["id"] != "board-part-number-0-and-7-more-twin" || choices["title"] != "Twin of board_part_number_0 and 7 more" {
+		t.Fatalf("id %v and title %v, want the first kind and the count of the others", choices["id"], choices["title"])
+	}
+	if !idPattern.MatchString(choices["id"].(string)) {
+		t.Fatalf("id %v does not fit the choices schema", choices["id"])
+	}
+}
+
+func TestSuggestNamesATwinAfterTheKindsItIsGivenAndNoOther(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		kinds []string
+		id    string
+		title string
+	}{
+		{"one kind", []string{"zone"}, "zone-twin", "Twin of zone"},
+		{"two kinds in alphabetical order", []string{"zone", "fan"}, "fan-zone-twin", "Twin of fan, zone"},
+	}
+	documents := kindDocuments(t, zoneKindJSON, fanKindJSON, heaterKindJSON)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			picked := map[string]map[string]any{}
+			for _, kind := range tc.kinds {
+				picked[kind] = documents[kind]
+			}
+			choices := choicesOf(t, baseLibrary(t), picked)
+			if choices["id"] != tc.id || choices["title"] != tc.title || len(choices["kinds"].([]any)) != len(tc.kinds) {
+				t.Fatalf("suggested id %v, title %v, %d kinds, want %s, %q and %d kinds", choices["id"], choices["title"], len(choices["kinds"].([]any)), tc.id, tc.title, len(tc.kinds))
+			}
+		})
 	}
 }
 

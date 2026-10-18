@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
@@ -32,11 +33,23 @@ func (b *Bridge) runCommand(ctx context.Context, action domain.Action, args map[
 	if err != nil {
 		return nil, err
 	}
+	if err := b.requireExisting(parts); err != nil {
+		return nil, err
+	}
 	stdin, err := action.Stdin(args)
 	if err != nil {
 		return nil, err
 	}
 	return b.runGuarded(ctx, action, args, parts, stdin)
+}
+
+func (b *Bridge) requireExisting(parts []domain.ArgvPart) error {
+	for _, part := range parts {
+		if part.Existing && !b.edges.Workspace.Exists(part.Path) {
+			return fmt.Errorf("%w: %s", domain.ErrAbsent, part.Path)
+		}
+	}
+	return nil
 }
 
 func (b *Bridge) runGuarded(ctx context.Context, action domain.Action, args map[string]any, parts []domain.ArgvPart, stdin []byte) (json.RawMessage, error) {

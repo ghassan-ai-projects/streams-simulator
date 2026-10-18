@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { coolerPath, startingChoices } from "../../../test/twinFixture";
+import { cooler, coolerPath, kindOf, startingChoices } from "../../../test/twinFixture";
+import { reconcileChoices } from "./twinReconcile";
+import type { Response } from "./twinTypes";
 import {
   addDrive,
   changeDrive,
   chooseInstrument,
   chooseResponse,
+  pickResponse,
   removeDrive,
   renameInstance,
   renameTwin,
@@ -72,5 +75,49 @@ describe("editing the choices", () => {
     expect(command(removeDrive(changed, coolerPath, "c1", 0)).drives).toHaveLength(1);
     expect(command(removeDrive(changed, coolerPath, "c1", 0)).drives[0]?.gain).toBe(-0.5);
     expect(addDrive(start, coolerPath, "absent")).toEqual(start);
+  });
+});
+
+describe("choosing a response for a command", () => {
+  const valve = kindOf({
+    kind: "valve",
+    metrics: [
+      {
+        name: "opening",
+        data_type: "number",
+        unit: "%",
+        eu_range: { min: 0, max: 100 },
+        resolution: 1,
+        writable: true,
+      },
+    ],
+    commands: [{ name: "set_opening", args_schema: { type: "object", properties: { opening: { type: "number" } } } }],
+  });
+  const path = "kinds/valve.kind.json";
+  const blank = reconcileChoices({ id: "v", title: "V", kinds: [], extra: {} }, [{ path, kind: valve }], null);
+  const [command] = valve.commands;
+  const [metric] = valve.metrics;
+  if (command === undefined || metric === undefined) throw new Error("no valve");
+  const ask = (choices: typeof blank, response: Response) =>
+    pickResponse(choices, { member: path, kind: valve, command }, response);
+  const setsOf = (choices: typeof blank) => choices.kinds[0]?.commands[command.key]?.sets;
+
+  it("preselects the only reading the only number argument can set, once", () => {
+    const direct = ask(blank, "direct");
+    expect(direct.kinds[0]?.commands[command.key]).toMatchObject({ response: "direct", sets: { opening: metric.key } });
+    expect(setsOf(ask(direct, "none"))).toEqual({});
+    expect(setsOf(ask(setArgument(direct, path, command.key, "opening", ""), "first_order"))).toEqual({
+      opening: metric.key,
+    });
+    expect(setsOf(ask(ask(direct, "first_order"), "direct"))).toEqual({ opening: metric.key });
+  });
+
+  it("leaves the choice to the person when there are several arguments", () => {
+    const [twoArguments] = cooler.kind.commands;
+    if (twoArguments === undefined) throw new Error("no command");
+    const none = chooseResponse(start, coolerPath, twoArguments.key, "none");
+    const asked = { member: coolerPath, kind: cooler.kind, command: twoArguments };
+    const direct = pickResponse(none, asked, "direct");
+    expect(direct.kinds[0]?.commands[twoArguments.key]?.sets).toEqual({});
   });
 });

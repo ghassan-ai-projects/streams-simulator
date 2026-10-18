@@ -8,6 +8,7 @@ import {
   followTarget,
   gainHint,
   noFollowerHint,
+  placeKey,
   removeDrive,
   timeConstantHint,
   twinIssuesOn,
@@ -34,13 +35,14 @@ interface EffectFields {
   readonly kind: KindFile;
   readonly members: readonly Member[];
   readonly on: (field: string) => readonly string[];
+  readonly place: (field: string) => string;
   readonly change: (edit: Partial<Drive>) => void;
 }
 
-function Timing({ twin, drive, on, change }: EffectFields) {
+function Timing({ twin, drive, on, place, change }: EffectFields) {
   return (
     <>
-      <Field label="Gain" field="gain" hint={gainHint} issues={on("gain")}>
+      <Field label="Gain" field="gain" place={place("gain")} hint={gainHint} issues={on("gain")} reserve>
         {(aria) => (
           <NumberInput
             aria={aria}
@@ -52,7 +54,14 @@ function Timing({ twin, drive, on, change }: EffectFields) {
           />
         )}
       </Field>
-      <Field label="Time constant" field="time_constant_s" hint={timeConstantHint} issues={on("time_constant_s")}>
+      <Field
+        label="Time constant"
+        field="time_constant_s"
+        place={place("time_constant_s")}
+        hint={timeConstantHint}
+        issues={on("time_constant_s")}
+        reserve
+      >
         {(aria) => (
           <NumberInput
             aria={aria}
@@ -68,14 +77,14 @@ function Timing({ twin, drive, on, change }: EffectFields) {
   );
 }
 
-function Source({ twin, drive, choice, kind, on, change }: EffectFields) {
+function Source({ twin, drive, choice, kind, on, place, change }: EffectFields) {
   const sources = [...new Set(Object.values(choice.sets))].flatMap((key) => {
     const name = kind.metrics.find((metric) => metric.key === key)?.name;
     return name === undefined ? [] : [[key, name] as const];
   });
   if (sources.length < 2) return null;
   return (
-    <Field label="Reading it sets" field="from" issues={on("from")}>
+    <Field label="Reading it sets" field="from" place={place("from")} issues={on("from")}>
       {(aria) => (
         <Select
           aria={aria}
@@ -91,12 +100,13 @@ function Source({ twin, drive, choice, kind, on, change }: EffectFields) {
   );
 }
 
-function Follower({ twin, drive, members, on, change }: EffectFields) {
+function Follower({ twin, drive, members, on, place, change }: EffectFields) {
   const choices = followChoices(members);
   return (
     <Field
       label="Reading that follows"
       field="follows"
+      place={place("follows")}
       hint={choices.length === 0 ? noFollowerHint : undefined}
       issues={on("follows")}
     >
@@ -119,11 +129,13 @@ function Effect(props: DriveProps & { readonly drive: Drive; readonly index: num
   const { twin, issues, member, command, drive, index } = props;
   const on = (field: string) =>
     twinIssuesOn(issues, { scope: "command", kind: member, key: command.key, field, spot: String(index) });
+  const place = (field: string) =>
+    placeKey({ scope: "command", kind: member, key: command.key, field, spot: String(index) });
   const at = { kind: member, command: command.key, index };
   const change = (edit: Partial<Drive>) => {
     twin.edit((all) => changeDrive(all, at, edit));
   };
-  const fields = { ...props, on, change };
+  const fields = { ...props, on, place, change };
   const words = effectWords(drive, member, props.members);
   return (
     <div role="group" aria-label={`Effect ${String(index + 1)} of ${command.name}`} className={tw.drive}>

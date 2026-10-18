@@ -6,6 +6,7 @@ export type {
   Drive,
   FieldIssue,
   Instrument,
+  InstrumentQuery,
   KindChoice,
   KindFile,
   Member,
@@ -39,17 +40,21 @@ export {
   twinNeeds,
 } from "./internal/issues";
 export {
+  catalogueKey,
   chosenInstrumentWords,
   instrumentCount,
   instrumentOf,
+  instrumentQuery,
   instrumentWords,
   noInstrument,
   rangeWords,
   searchInstruments,
   takesInstrument,
+  unfitWords,
+  unstatedMember,
 } from "./internal/instruments";
+export { heldWords } from "./internal/heldWords";
 export { enumOptions, withEnumOptions } from "./internal/options";
-export { spaced } from "../shared/words";
 export { deviceNameProblem, devicePath, draftProblems, rangeHint } from "./internal/rules";
 export { askedCommands, commandChoiceOf, metricChoiceOf, numericArguments } from "./internal/twinMembers";
 export { reconcileChoices } from "./internal/twinReconcile";
@@ -58,6 +63,7 @@ export {
   changeDrive,
   chooseInstrument,
   chooseResponse,
+  pickResponse,
   removeDrive,
   renameInstance,
   renameTwin,
@@ -67,15 +73,17 @@ export {
 } from "./internal/twinEdits";
 export { choicesOfDocument, parseChoices, responseOf } from "./internal/twinFile";
 export { keyChoices, serialiseChoices } from "./internal/twinKeys";
-export { keepCurrentIssues, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
+export { keepCurrentIssues, placeKey, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
 export { choiceProblems, twinDomainPath, twinPath } from "./internal/twinRules";
 export {
+  argumentLabel,
   driveFollows,
   effectWords,
   followChoices,
   followTarget,
   gainHint,
   noFollowerHint,
+  noSetpointHint,
   partsWords,
   responseChoices,
   settableChoices,

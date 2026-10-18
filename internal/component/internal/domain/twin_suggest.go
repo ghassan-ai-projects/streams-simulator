@@ -4,6 +4,7 @@ import (
 	"errors"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -38,17 +39,24 @@ func (l *Library) SuggestChoices(files map[string]map[string]any) (map[string]an
 }
 
 func suggestedDocument(names []string, kinds []any) map[string]any {
-	title := "Twin of " + strings.Join(names, ", ")
 	return map[string]any{"schema_version": "0.1", "id": suggestedID(names), "version": suggestedVersion,
-		"title": title[:min(len(title), maxTitleBytes)], "kinds": kinds}
+		"title": suggestedTitle(names), "kinds": kinds}
 }
 
 func suggestedID(names []string) string {
 	id := strings.ReplaceAll(strings.Join(names, "-"), "_", "-") + "-twin"
 	if len(id) > maxSuggestedID {
-		return "board-twin"
+		return strings.ReplaceAll(names[0], "_", "-") + "-and-" + strconv.Itoa(len(names)-1) + "-more-twin"
 	}
 	return id
+}
+
+func suggestedTitle(names []string) string {
+	title := "Twin of " + strings.Join(names, ", ")
+	if len(title) > maxTitleBytes {
+		return "Twin of " + names[0] + " and " + strconv.Itoa(len(names)-1) + " more"
+	}
+	return title
 }
 
 func (l *Library) suggestKind(file *kindFile) map[string]any {
@@ -78,7 +86,7 @@ func (l *Library) instrumentChoice(metric kindMetric) string {
 
 func (l *Library) fittingInstruments(metric kindMetric) []Summary {
 	return slices.DeleteFunc(l.InstrumentsForUnit(metric.Unit), func(candidate Summary) bool {
-		return l.fit(l.instruments[reference(candidate.ID, candidate.Version)], metric) != nil
+		return !l.fit(l.instruments[reference(candidate.ID, candidate.Version)], metric).OK
 	})
 }
 

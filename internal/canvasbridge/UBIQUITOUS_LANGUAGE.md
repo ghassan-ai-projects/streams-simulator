@@ -5,6 +5,7 @@
 | Bridge | The local HTTP server behind `streamsim canvas`; the canvas's only way to the simulator |
 | Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/` (`equipment/`, `instruments/`), `runs/` |
 | Twin choices | A `twins/*.twin.json` file: the instrument of each metric and the response of each command from which the `kind.twin` action scaffolds a twin into `domains/` |
+| Kind stems | The `kinds` argument of `kind.twin` and `kind.suggest`: the stems of `kinds/<stem>.kind.json` that are in the twin, resolved by the bridge to workspace paths, repeats counted once; the whole `kinds/` folder is never passed to these actions (`ShapeStems`, `StemPath`, `ArgvPart.Existing`) |
 | Pairing code | A one-time code the bridge prints on stderr; exchanged once for a session cookie |
 | Session | The paired browser, identified by an `HttpOnly`, `SameSite=Strict` cookie |
 | Admission | The check every API request passes: the bridge's host, its origin, a same-origin fetch |

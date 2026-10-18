@@ -15,6 +15,12 @@ export interface KindChecked {
   readonly commands: number;
 }
 
+interface InstrumentFit {
+  readonly ok: boolean;
+  readonly code: "unit_incompatible" | "range_unstated" | "range_narrower" | "reading_not_number" | "";
+  readonly member: string;
+}
+
 export interface LibraryInstrument {
   readonly ref: string;
   readonly title: string;
@@ -22,6 +28,13 @@ export interface LibraryInstrument {
   readonly min: number | null;
   readonly max: number | null;
   readonly match: "exact" | "convertible" | "";
+  readonly fit: InstrumentFit | null;
+}
+
+export interface InstrumentQuery {
+  readonly unit: string;
+  readonly min: number | null;
+  readonly max: number | null;
 }
 
 interface DeviceListing {
@@ -69,9 +82,10 @@ export interface DevicesGateway {
   check(path: string): Promise<Outcome<KindChecked, DeviceFailure>>;
   checkContent(content: string, twin: boolean): Promise<Outcome<KindChecked, DeviceFailure>>;
   listing(): Promise<Outcome<DeviceListing, DeviceFailure>>;
-  instruments(unit: string): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
-  suggest(): Promise<Outcome<SuggestedChoices, DeviceFailure>>;
+  instruments(query: InstrumentQuery): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
+  suggest(kinds: readonly string[]): Promise<Outcome<SuggestedChoices, DeviceFailure>>;
   twin(input: {
+    readonly kinds: readonly string[];
     readonly choices: string;
     readonly out: string;
     readonly etag: string;

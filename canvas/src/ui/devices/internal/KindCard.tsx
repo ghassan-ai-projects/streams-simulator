@@ -1,5 +1,13 @@
 import { useId } from "react";
-import { askedCommands, commandChoiceOf, metricChoiceOf, renameInstance, twinIssuesOn } from "../../../model/devices";
+import {
+  askedCommands,
+  catalogueKey,
+  commandChoiceOf,
+  metricChoiceOf,
+  placeKey,
+  renameInstance,
+  twinIssuesOn,
+} from "../../../model/devices";
 import type { KindChoice, KindFile } from "../../../model/devices";
 import { panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
@@ -34,7 +42,7 @@ function Readings({ twin, draft, issues, needs, kind, choice, reveal }: CardProp
           member={choice.kind}
           metric={metric}
           choice={metricChoiceOf(choice, metric.key)}
-          instruments={draft.instruments[metric.unit] ?? null}
+          instruments={draft.instruments[catalogueKey(metric)] ?? null}
         />
       ))}
     </>
@@ -79,7 +87,12 @@ export function KindCard(props: CardProps) {
         {kind.kind}
       </h2>
       <ItemIssues messages={[...on(""), ...on("kind"), ...on("metrics"), ...on("commands")]} />
-      <Field label="Name in the twin" hint="Names this device inside the twin." issues={on("instance")}>
+      <Field
+        label="Name in the twin"
+        place={placeKey({ scope: "kind", kind: choice.kind, key: "", field: "instance" })}
+        hint="Names this device inside the twin."
+        issues={on("instance")}
+      >
         {(aria) => (
           <TextBox
             aria={aria}

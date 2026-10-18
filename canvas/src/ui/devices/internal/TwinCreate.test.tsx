@@ -49,6 +49,11 @@ describe("creating the twin from the screen", () => {
     expect(details).not.toHaveAttribute("open");
     expect(within(details as HTMLElement).getByText(domainPath)).toBeInTheDocument();
     expect(within(details as HTMLElement).getByText("sha256:t")).toBeInTheDocument();
+    expect(within(details as HTMLElement).getByText("twins/cooler.twin.json")).toBeInTheDocument();
+    expect(within(details as HTMLElement).getByText("3 readings · 2 commands")).toBeInTheDocument();
+    expect(
+      within(details as HTMLElement).getByText(/^temperature: No instrument: a plain reading$/),
+    ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Open as a plant" }));
     expect(location.hash).toBe(`#/plant?domain=${encodeURIComponent(domainPath)}`);
@@ -87,11 +92,14 @@ describe("creating the twin from the screen", () => {
     const list = within(screen.getByRole("alert", { name: "Issues" }));
     expect(list.getByText("cooler · set_duty · Time constant")).toBeInTheDocument();
     expect(list.getByText("must be > 0")).toBeInTheDocument();
-    expect(list.getByRole("listitem")).toHaveFocus();
+    expect(effect.getByLabelText("Time constant")).toHaveFocus();
     expect(stepChip(/^Behaviour/)).toHaveTextContent("Needs attention");
     fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "30" } });
     expect(effect.queryByText("Must be above zero")).toBeNull();
     expect(screen.queryByRole("alert", { name: "Issues" })).toBeNull();
+    expect(stepChip(/^Behaviour/)).toHaveTextContent("Ready");
+    expect(stepChip(/^Behaviour/)).not.toHaveTextContent("Needs attention");
+    expect(screen.getByText(/Choices are ready/)).toBeInTheDocument();
     fake.handlers.set("kind.twin", () => success(madeWire));
     createTwin();
     expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
@@ -115,6 +123,7 @@ describe("creating the twin from the screen", () => {
     const card = within(section);
     expect(await card.findByText("Needs a resolution")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Set it in the Interface step" })).toBeNull();
+    expect(within(screen.getByRole("alert", { name: "Issues" })).getByRole("listitem")).toHaveFocus();
   });
 
   it("lists an issue that names nothing in the form under the issues", async () => {

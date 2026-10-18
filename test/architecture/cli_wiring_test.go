@@ -59,6 +59,8 @@ var cliAppFiles = map[string]cliFile{
 	"kind_suggest.go":       {"command: kind twin --suggest", []string{"internal/component", "internal/plantwire"}, 30},
 	"component.go":          {"command: component library", []string{"internal/component"}, 70},
 	"component_options.go":  {"option parsing", nil, 30},
+	"component_reading.go":  {"option parsing", nil, 45},
+	"component_list.go":     {"command: component list", []string{"internal/component"}, 25},
 	"component_examples.go": {"command: component examples", []string{"internal/component"}, 32},
 	"component_new.go":      {"command: component new", []string{cliF, "internal/component"}, 58},
 	"device.go":             {"command: device serve", []string{"internal/device", "internal/deviceworld"}, 100},

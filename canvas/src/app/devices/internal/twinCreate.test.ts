@@ -41,7 +41,7 @@ describe("creating the twin", () => {
     await twin.create();
     expect(fake.writes[0]).toMatchObject({ path: choicesPath, etag: "" });
     const asked = fake.calls.filter((call) => call.name === "kind.twin");
-    expect(asked[0]?.args).toEqual({ choices: choicesPath, out: domainPath, etag: "" });
+    expect(asked[0]?.args).toEqual({ kinds: ["cooler"], choices: choicesPath, out: domainPath, etag: "" });
     expect(fake.calls.map((call) => call.name).slice(-3)).toEqual(["kind.twin", "domain.validate", "domain.lint"]);
     const built = builtOf(ready(twin));
     expect(built).toMatchObject({ path: domainPath, implemented: { kind: "passed" }, lint: { kind: "done" } });

@@ -54,8 +54,9 @@ describe("the instrument library", () => {
       unit: "degC",
       range: { min: -50, max: 200 },
       match: "exact",
+      fit: { ok: true },
     },
-    { id: "streamsim/bare", kind: "instrument", match: "other" },
+    { id: "streamsim/bare", kind: "instrument", match: "other", fit: { ok: "yes" } },
     { id: "", kind: "instrument" },
     { id: "streamsim/pump", version: 1, kind: "equipment", title: "Pump" },
     {
@@ -65,16 +66,31 @@ describe("the instrument library", () => {
       title: "Thermistor",
       unit: "degC",
       match: "convertible",
+      fit: { ok: false, code: "range_narrower", member: "eu_range" },
+    },
+    {
+      id: "streamsim/odd",
+      version: 1,
+      kind: "instrument",
+      fit: { ok: false, code: "something_new", member: 3 },
     },
   ];
 
   it("lists the instruments for a unit, as the binary ranks them, with their unit, range and match", async () => {
     const { gateway, transport } = devices(() => respond(200, { result: { components } }));
-    expect(await gateway.instruments("Cel")).toEqual({
+    expect(await gateway.instruments({ unit: "Cel", min: null, max: null })).toEqual({
       ok: true,
       value: [
-        { ref: "streamsim/rtd@2", title: "RTD", unit: "degC", min: -50, max: 200, match: "exact" },
-        { ref: "streamsim/bare@1", title: "streamsim/bare", unit: "", min: null, max: null, match: "" },
+        {
+          ref: "streamsim/rtd@2",
+          title: "RTD",
+          unit: "degC",
+          min: -50,
+          max: 200,
+          match: "exact",
+          fit: { ok: true, code: "", member: "" },
+        },
+        { ref: "streamsim/bare@1", title: "streamsim/bare", unit: "", min: null, max: null, match: "", fit: null },
         {
           ref: "streamsim/thermistor@1",
           title: "Thermistor",
@@ -82,6 +98,16 @@ describe("the instrument library", () => {
           min: null,
           max: null,
           match: "convertible",
+          fit: { ok: false, code: "range_narrower", member: "eu_range" },
+        },
+        {
+          ref: "streamsim/odd@1",
+          title: "streamsim/odd",
+          unit: "",
+          min: null,
+          max: null,
+          match: "",
+          fit: { ok: false, code: "", member: "" },
         },
       ],
     });
@@ -89,9 +115,17 @@ describe("the instrument library", () => {
     expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: { unit: "Cel" } }) });
   });
 
+  it("asks with the range of the reading when it states both ends", async () => {
+    const { gateway, transport } = devices(() => respond(200, { result: { components } }));
+    await gateway.instruments({ unit: "Pa", min: 0, max: 300 });
+    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({
+      body: JSON.stringify({ args: { unit: "Pa", min: 0, max: 300 } }),
+    });
+  });
+
   it("lists every instrument when the reading has no unit", async () => {
     const { gateway, transport } = devices(() => respond(200, { result: { components } }));
-    await gateway.instruments("");
+    await gateway.instruments({ unit: "", min: 0, max: 5 });
     expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: {} }) });
     expect(instrumentRefs({ components: "no" })).toBeNull();
     expect(instrumentRefs(null)).toBeNull();
@@ -99,21 +133,23 @@ describe("the instrument library", () => {
 });
 
 describe("the binary's suggestion for a twin", () => {
-  it("asks for the choices it would start from and writes nothing", async () => {
+  it("asks for the choices it would start from for the named kinds only, and writes nothing", async () => {
     const choices = { id: "fan-twin", kinds: [] };
     const { gateway, transport } = devices(() => respond(200, { result: { choices } }));
-    expect(await gateway.suggest()).toEqual({ ok: true, value: choices });
+    expect(await gateway.suggest(["fan", "pump"])).toEqual({ ok: true, value: choices });
     expect(transport.fetch.mock.calls[0]?.[0]).toBe("/api/actions/kind.suggest");
-    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: {} }) });
+    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({
+      body: JSON.stringify({ args: { kinds: ["fan", "pump"] } }),
+    });
     expect(suggestedChoices({ choices: 1 })).toBeNull();
     expect(suggestedChoices(null)).toBeNull();
   });
 
   it("says why there is no suggestion", async () => {
     const { gateway } = devices(() => refusal.clone());
-    expect(await gateway.suggest()).toMatchObject({ ok: false, failure: { kind: "refused", issues } });
+    expect(await gateway.suggest(["fan"])).toMatchObject({ ok: false, failure: { kind: "refused", issues } });
     const down = devices(() => respond(500, "broken"));
-    expect(await down.gateway.suggest()).toMatchObject({ ok: false, failure: { kind: "unavailable" } });
+    expect(await down.gateway.suggest(["fan"])).toMatchObject({ ok: false, failure: { kind: "unavailable" } });
   });
 });
 
@@ -128,14 +164,21 @@ describe("making a twin", () => {
       implements: ["cooler", ""],
     };
     const { gateway, transport } = devices(() => respond(200, { result }));
-    const out = await gateway.twin({ choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "d1" });
+    const out = await gateway.twin({
+      kinds: ["cooler"],
+      choices: "twins/c.twin.json",
+      out: "domains/c.domain.json",
+      etag: "d1",
+    });
     expect(out).toEqual({
       ok: true,
       value: { id: "cooler-twin", digest: "sha256:t", channels: 3, faults: 2, effectors: 1, implements: ["cooler"] },
     });
     expect(transport.fetch.mock.calls[0]?.[0]).toBe("/api/actions/kind.twin");
     expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({
-      body: JSON.stringify({ args: { choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "d1" } }),
+      body: JSON.stringify({
+        args: { kinds: ["cooler"], choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "d1" },
+      }),
     });
     expect(twinMade({ id: "", digest: "d" })).toBeNull();
     expect(twinMade({ id: "x" })).toEqual({
@@ -151,7 +194,7 @@ describe("making a twin", () => {
 
   it("keeps the issues the binary places in the choices file", async () => {
     const { gateway } = devices(() => refusal.clone());
-    const input = { choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "" };
+    const input = { kinds: ["cooler"], choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "" };
     expect(await gateway.twin(input)).toMatchObject({ ok: false, failure: { kind: "refused", issues } });
   });
 
@@ -161,7 +204,7 @@ describe("making a twin", () => {
     ["a bridge fault", respond(500, "broken"), "unavailable"],
   ])("maps %s", async (_name, response, kind) => {
     const { gateway } = devices(() => response.clone());
-    const input = { choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "" };
+    const input = { kinds: ["cooler"], choices: "twins/c.twin.json", out: "domains/c.domain.json", etag: "" };
     expect(await gateway.twin(input)).toMatchObject({ ok: false, failure: { kind } });
   });
 });

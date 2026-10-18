@@ -5,69 +5,109 @@ import (
 	"fmt"
 )
 
-var errConversionNeeded = errors.New("component: the instrument's unit needs a conversion")
+const (
+	FitUnitIncompatible = "unit_incompatible"
+	FitRangeUnstated    = "range_unstated"
+	FitRangeNarrower    = "range_narrower"
+	FitReadingNotNumber = "reading_not_number"
 
-type conversionNeeded struct{ message string }
+	rangeSlack = 1e-9
+)
 
-func (c conversionNeeded) Error() string { return c.message }
+type Fit struct {
+	OK     bool   `json:"ok"`
+	Code   string `json:"code,omitempty"`
+	Member string `json:"member,omitempty"`
+}
 
-func (c conversionNeeded) Is(target error) bool { return target == errConversionNeeded }
+type fitResult struct {
+	Fit
+	conv    conversion
+	message string
+}
+
+type fitRefusal struct {
+	fit     Fit
+	message string
+}
+
+func (r fitRefusal) Error() string { return r.message }
+
+func (l *Library) fit(instrument *Instrument, metric kindMetric) fitResult {
+	if metric.DataType == "boolean" {
+		return refusedFit(FitReadingNotNumber, "data_type", "%s measures a number, and the metric is boolean", instrument.ID)
+	}
+	conv, err := l.vocabulary.convert(instrument.UnitFamily, metric.Unit, instrument.Unit)
+	switch {
+	case err != nil:
+		return refusedFit(FitUnitIncompatible, "unit", "%s measures %s in %s: %v", instrument.ID, instrument.UnitFamily, instrument.Unit, err)
+	case metric.EURange == nil:
+		return refusedFit(FitRangeUnstated, "eu_range", "%s needs the metric to state its eu_range", instrument.ID)
+	}
+	return rangeFit(instrument, *metric.EURange, conv)
+}
+
+func rangeFit(instrument *Instrument, eu Range, conv conversion) fitResult {
+	reach := inInstrumentUnit(conv, eu)
+	if instrument.Range != nil && !covers(*instrument.Range, reach) {
+		return refusedFit(FitRangeNarrower, "eu_range", "%s reads %v to %v %s, narrower than the eu_range %v to %v of the metric, which is %v to %v in that unit",
+			instrument.ID, instrument.Range.Min, instrument.Range.Max, instrument.Unit, eu.Min, eu.Max, reach.Min, reach.Max)
+	}
+	return fitResult{Fit: Fit{OK: true}, conv: conv}
+}
+
+func refusedFit(code, member, format string, args ...any) fitResult {
+	message := fmt.Sprintf(format, args...)
+	return fitResult{Fit: Fit{Code: code, Member: member}, message: message}
+}
+
+func inInstrumentUnit(conv conversion, eu Range) Range {
+	low, high := conv.apply(eu.Min), conv.apply(eu.Max)
+	return Range{Min: min(low, high), Max: max(low, high)}
+}
+
+func covers(instrument, wanted Range) bool {
+	slack := rangeSlack * (instrument.Max - instrument.Min)
+	return wanted.Min >= instrument.Min-slack && wanted.Max <= instrument.Max+slack
+}
+
+func (r fitResult) err() error {
+	if r.OK {
+		return nil
+	}
+	return fitRefusal{fit: r.Fit, message: r.message}
+}
 
 func (t *twinBuild) attachInstrument(plan *metricPlan, at string) error {
 	if plan.choice.Instrument == instrumentNone {
 		return nil
 	}
-	instrument, err := t.lib.instrumentFor(plan.choice.Instrument, plan.file)
+	instrument, conv, err := t.lib.instrumentFor(plan.choice.Instrument, plan.file)
 	if err != nil {
 		return t.refuseRule(ErrInstrumentMismatch, instrumentRule(err), at, "metric %q: %v", plan.file.Name, err)
 	}
-	plan.instrument = instrument
+	plan.instrument, plan.conv = instrument, conv
 	return nil
 }
 
 func instrumentRule(err error) twinRule {
-	if errors.Is(err, errConversionNeeded) {
-		return twinRule{KeywordConversionNeeded, "unit"}
+	rule := ruleOf(ErrInstrumentMismatch)
+	var refusal fitRefusal
+	if errors.As(err, &refusal) {
+		rule.member = refusal.fit.Member
 	}
-	return ruleOf(ErrInstrumentMismatch)
+	return rule
 }
 
-func (l *Library) instrumentFor(ref string, metric kindMetric) (*Instrument, error) {
+func (l *Library) instrumentFor(ref string, metric kindMetric) (*Instrument, conversion, error) {
 	key, err := l.resolve(ref)
 	if err != nil {
-		return nil, err
+		return nil, conversion{}, err
 	}
 	instrument, found := l.instruments[key]
 	if !found {
-		return nil, fmt.Errorf("%s is not an instrument of the library", ref)
+		return nil, conversion{}, fmt.Errorf("%s is not an instrument of the library", ref)
 	}
-	if err := l.fit(instrument, metric); err != nil {
-		return nil, err
-	}
-	return instrument, nil
-}
-
-func (l *Library) fit(instrument *Instrument, metric kindMetric) error {
-	switch {
-	case metric.DataType == "boolean":
-		return fmt.Errorf("%s measures a number, and the metric is boolean", instrument.ID)
-	case metric.EURange == nil:
-		return fmt.Errorf("%s needs the metric to state its eu_range", instrument.ID)
-	case instrument.Range != nil && (metric.EURange.Min < instrument.Range.Min || metric.EURange.Max > instrument.Range.Max):
-		return fmt.Errorf("%s reads %v to %v, narrower than the eu_range %v to %v of the metric",
-			instrument.ID, instrument.Range.Min, instrument.Range.Max, metric.EURange.Min, metric.EURange.Max)
-	}
-	return l.sameUnit(instrument, metric)
-}
-
-func (l *Library) sameUnit(instrument *Instrument, metric kindMetric) error {
-	conv, err := l.vocabulary.convert(instrument.UnitFamily, metric.Unit, instrument.Unit)
-	if err != nil {
-		return fmt.Errorf("%s measures %s in %s: %w", instrument.ID, instrument.UnitFamily, instrument.Unit, err)
-	}
-	if !conv.identity() {
-		return conversionNeeded{fmt.Sprintf("%s reads in %s, which needs a conversion from the metric's %s: a twin keeps the unit of its kind file",
-			instrument.ID, instrument.Unit, metric.Unit)}
-	}
-	return nil
+	verdict := l.fit(instrument, metric)
+	return instrument, verdict.conv, verdict.err()
 }

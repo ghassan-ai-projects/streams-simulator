@@ -1,20 +1,24 @@
 import { createContext, useContext, useEffect, useRef } from "react";
 
+export type Pending = "none" | "fresh" | "interim";
+
 interface StepFocus {
-  readonly pending: boolean;
-  readonly done: () => void;
+  readonly pending: Pending;
+  readonly done: (next: Pending) => void;
 }
 
-export const StepFocusContext = createContext<StepFocus>({ pending: false, done: () => undefined });
+export const StepFocusContext = createContext<StepFocus>({ pending: "none", done: () => undefined });
 
-export function useStepHeading() {
+export type StepKind = "final" | "interim";
+
+export function useStepHeading(kind: StepKind = "final") {
   const heading = useRef<HTMLHeadingElement>(null);
   const { pending, done } = useContext(StepFocusContext);
   useEffect(() => {
-    if (!pending) return;
+    if (pending === "none" || (kind === "interim" && pending === "interim")) return;
     heading.current?.focus();
-    done();
-  }, [pending, done]);
+    done(kind === "interim" ? "interim" : "none");
+  }, [pending, done, kind]);
   return heading;
 }
 

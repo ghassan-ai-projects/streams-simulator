@@ -34,7 +34,7 @@ function appStores(bridge: FakeBridge, hash = "#/") {
     launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
     editor: createEditorSession(bridge.editor),
-    devices: createDeviceSession(bridge.devices),
+    devices: createDeviceSession(bridge.devices, bridge.workspace.watch),
     desk: createDeviceDesk(bridge.devices),
     panels: createPanelStore({ read: () => null, write: () => undefined }),
     maker: createPlantMaker(bridge.plant),

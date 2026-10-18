@@ -3,6 +3,7 @@ export type {
   CommandChoice,
   Drive,
   Instrument,
+  InstrumentQuery,
   KindChoice,
   MetricChoice,
   TwinChoices,

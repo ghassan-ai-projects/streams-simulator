@@ -1,10 +1,9 @@
 import { counted } from "../../../model/workspace";
 import type { DeviceFailure } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
-import { isDirty, twinNeedsOf } from "./deviceSelectors";
 import type { SaveStatus } from "./saveStatus";
 import type { Built, TwinDraft } from "./twinDraft";
-import { isStale, problemsOf, verdictOf } from "./twinSelectors";
+import { createBlock, isBuilding, isStale, verdictOf } from "./twinSelectors";
 
 function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
   return { text, detail, tone };
@@ -42,7 +41,6 @@ function created(draft: TwinDraft, built: Built): SaveStatus {
 }
 
 function idle(draft: TwinDraft): SaveStatus {
-  if (problemsOf(draft).length > 0) return status("Finish the choices marked in the form.", "warn");
   const words = draft.onDisk ? "Replace the twin when you are." : "Create the twin when you are.";
   return status(`Choices are ready. ${words}`, "");
 }
@@ -67,9 +65,7 @@ function buildStatus(draft: TwinDraft): SaveStatus {
 
 export function twinStatusOf(draft: TwinDraft, device: DeviceState): SaveStatus {
   if (draft.save.kind === "write-failed") return notSaved(draft.save.failure);
-  if (isDirty(device)) return status("Save the interface first: the twin is made from the saved device.", "warn");
-  if (device.phase === "ready" && twinNeedsOf(device).length > 0 && draft.build.kind === "idle") {
-    return status("Set what the twin needs in the Interface step first.", "warn");
-  }
+  const block = createBlock(draft, device);
+  if (block !== null && !isBuilding(draft)) return status(block, "warn");
   return buildStatus(draft);
 }

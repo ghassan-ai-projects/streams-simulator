@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { shared, useFocusOnMount } from "../../primitives";
+import { cx, shared, useFocusOnMount } from "../../primitives";
 import notes from "./Notes.module.css";
 
 interface ConfirmProps {
@@ -27,7 +27,7 @@ function Question({ question, confirmWords, onAnswer }: QuestionProps) {
       {question}
       <button
         type="button"
-        className={shared.primary}
+        className={cx(shared.secondary, notes.destructive)}
         onClick={() => {
           onAnswer(true);
         }}
@@ -37,7 +37,7 @@ function Question({ question, confirmWords, onAnswer }: QuestionProps) {
       <button
         type="button"
         ref={keep}
-        className={shared.secondary}
+        className={shared.primary}
         onClick={() => {
           onAnswer(false);
         }}

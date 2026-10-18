@@ -137,11 +137,12 @@ func dropoutFault(k *twinKind, plan *metricPlan) []any {
 
 func instrumentedReading(k *twinKind, plan *metricPlan) metricReading {
 	instrument, eu := plan.instrument, plan.file.EURange
-	measured := reading{conv: conversion{gain: 1}, lo: eu.Min, hi: eu.Max, scale: spanScale(instrument, eu.Max-eu.Min)}
+	measured := reading{conv: conversion{gain: 1}, lo: eu.Min, hi: eu.Max, scale: inMetricUnit(plan)}
 	channel := cloneMap(instrument.Document["channel"])
 	maps.Copy(channel, baseChannel(plan.file))
 	channel["tag"] = instrument.Tag
 	scaleSigma(channel, instrument.Scaling, measured.scale)
+	scaleAbsoluteMembers(channel, instrument, measured.scale)
 	copyStates(channel, instrument)
 	return withInstrumentFaults(k, plan, channel, measured)
 }

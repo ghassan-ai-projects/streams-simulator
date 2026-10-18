@@ -1,4 +1,5 @@
 import type { TwinDraft, TwinSession } from "../../../app/devices";
+import type { NavigationStore } from "../../../app/shell";
 import type { FieldIssue, Selection, TwinChoices, TwinIssue } from "../../../model/devices";
 
 export type Reveal = (selection: Selection, field: string) => void;
@@ -9,6 +10,7 @@ export interface TwinProps {
   readonly issues: readonly TwinIssue[];
   readonly needs: readonly FieldIssue[];
   readonly reveal: Reveal;
+  readonly navigation: NavigationStore;
 }
 
 export function persist(twin: TwinSession): void {

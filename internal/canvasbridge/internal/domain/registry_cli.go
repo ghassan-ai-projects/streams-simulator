@@ -11,11 +11,12 @@ import (
 type ArgShape string
 
 const (
-	ShapeText ArgShape = "text"
-	ShapePath ArgShape = "path"
-	ShapeRun  ArgShape = "run"
-	ShapeNum  ArgShape = "number"
-	ShapeFlag ArgShape = "switch"
+	ShapeText  ArgShape = "text"
+	ShapePath  ArgShape = "path"
+	ShapeRun   ArgShape = "run"
+	ShapeNum   ArgShape = "number"
+	ShapeFlag  ArgShape = "switch"
+	ShapeStems ArgShape = "stems"
 )
 
 type CLIArg struct {
@@ -28,13 +29,17 @@ type CLIArg struct {
 }
 
 type ArgvPart struct {
-	Literal string
-	Path    string
+	Literal  string
+	Path     string
+	Existing bool
 }
+
+var kindsArg = CLIArg{Key: "kinds", Shape: ShapeStems, Class: ClassKind, Required: true}
 
 var (
 	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true,
-		CLIArgs: []CLIArg{{Key: "unit", Flag: "--unit", Shape: ShapeText}}}
+		CLIArgs: []CLIArg{{Key: "unit", Flag: "--unit", Shape: ShapeText}, {Key: "min", Flag: "--min", Shape: ShapeNum},
+			{Key: "max", Flag: "--max", Shape: ShapeNum}}}
 	cliComponentShow = Action{Name: "component.show", Kind: KindCLI, Command: []string{"component", "show"}, Library: true,
 		CLIArgs: []CLIArg{{Key: "ref", Shape: ShapeText, Required: true}}}
 	cliExamples = Action{Name: "component.examples", Kind: KindCLI, Command: []string{"component", "examples"}}
@@ -49,9 +54,10 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
 	cliKindCheck = Action{Name: "kind.check", Kind: KindCLI, Command: []string{"kind", "validate", "--stdin"}, Input: inputKey,
 		CLIArgs: []CLIArg{{Key: "twin", Flag: "--twin", Shape: ShapeFlag}}}
-	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true, Kinds: true}
-	cliKindTwin    = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Kinds: true, Mutating: true, Etag: true,
-		CLIArgs: []CLIArg{{Key: "choices", Flag: "--choices", Shape: ShapePath, Class: ClassTwin, Required: true},
+	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true,
+		CLIArgs: []CLIArg{kindsArg}}
+	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Mutating: true, Etag: true,
+		CLIArgs: []CLIArg{kindsArg, {Key: "choices", Flag: "--choices", Shape: ShapePath, Class: ClassTwin, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Kinds: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
@@ -100,8 +106,11 @@ func (a Action) argument(spec CLIArg, args map[string]any) ([]ArgvPart, error) {
 }
 
 func (spec CLIArg) parts(value any) ([]ArgvPart, error) {
-	if spec.Shape == ShapeFlag {
+	switch spec.Shape {
+	case ShapeFlag:
 		return spec.renderSwitch(value)
+	case ShapeStems:
+		return spec.renderStems(value)
 	}
 	rendered, err := spec.render(value)
 	if err != nil {

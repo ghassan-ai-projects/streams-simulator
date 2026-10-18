@@ -119,12 +119,13 @@ func TestKindValidateTakesOneKindFileAndNothingElse(t *testing.T) {
 func TestKindTwinTakesAChoicesFileAndADomainToWriteAndGuardsTheDomain(t *testing.T) {
 	t.Parallel()
 	twin, err := Lookup("kind.twin")
-	if err != nil || twin.Kind != KindCLI || !twin.Mutating || !twin.Etag || !twin.Kinds || !twin.Library {
+	if err != nil || twin.Kind != KindCLI || !twin.Mutating || !twin.Etag || twin.Kinds || !twin.Library {
 		t.Fatalf("kind.twin = %+v, %v", twin, err)
 	}
-	args := map[string]any{"choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json")}
+	args := map[string]any{"kinds": []any{"fan"}, "choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json")}
 	got, err := twin.Argv(args)
-	want := []ArgvPart{{Literal: "kind"}, {Literal: "twin"}, {Literal: "--choices"}, {Path: "twins/fan.twin.json"}, {Literal: "--out"}, {Path: inDomains("fan.domain.json")}}
+	want := []ArgvPart{{Literal: "kind"}, {Literal: "twin"}, {Path: "kinds/fan.kind.json", Existing: true}, {Literal: "--choices"}, {Path: "twins/fan.twin.json"},
+		{Literal: "--out"}, {Path: inDomains("fan.domain.json")}}
 	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("Argv = %+v, %v", got, err)
 	}
@@ -135,10 +136,11 @@ func TestKindTwinTakesAChoicesFileAndADomainToWriteAndGuardsTheDomain(t *testing
 		name string
 		args map[string]any
 	}{
-		{"choices that are a kind file", map[string]any{"choices": "kinds/fan.kind.json", "out": inDomains("fan.domain.json")}},
-		{"an output that is a twin file", map[string]any{"choices": "twins/fan.twin.json", "out": "twins/other.twin.json"}},
-		{"no output", map[string]any{"choices": "twins/fan.twin.json"}},
-		{"an unknown argument", map[string]any{"choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json"), "kinds_dir": "/"}},
+		{"choices that are a kind file", map[string]any{"kinds": []any{"fan"}, "choices": "kinds/fan.kind.json", "out": inDomains("fan.domain.json")}},
+		{"an output that is a twin file", map[string]any{"kinds": []any{"fan"}, "choices": "twins/fan.twin.json", "out": "twins/other.twin.json"}},
+		{"no output", map[string]any{"kinds": []any{"fan"}, "choices": "twins/fan.twin.json"}},
+		{"no kinds", map[string]any{"choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json")}},
+		{"an unknown argument", map[string]any{"kinds": []any{"fan"}, "choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json"), "kinds_dir": "/"}},
 	}
 	for _, tc := range refused {
 		if _, err := twin.Argv(tc.args); !errors.Is(err, ErrBadArguments) {
@@ -173,10 +175,10 @@ func TestComponentValidateChecksTheWholeLibraryAndTakesNoArguments(t *testing.T)
 	}
 }
 
-func TestOnlyDomainValidateComposeTwinAndSuggestCarryTheWorkspaceKinds(t *testing.T) {
+func TestOnlyDomainValidateAndComposeCarryTheWorkspaceKindsFolder(t *testing.T) {
 	t.Parallel()
 	for _, action := range Actions() {
-		want := action.Name == "domain.validate" || action.Name == "domain.compose" || action.Name == "kind.twin" || action.Name == "kind.suggest"
+		want := action.Name == "domain.validate" || action.Name == "domain.compose"
 		if action.Kinds != want {
 			t.Errorf("%s: Kinds = %v, want %v", action.Name, action.Kinds, want)
 		}

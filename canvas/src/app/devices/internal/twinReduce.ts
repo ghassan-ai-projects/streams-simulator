@@ -1,7 +1,7 @@
 import { resolveTwinIssues, serialiseKind } from "../../../model/devices";
 import type { KindFile, Member, TwinChoices } from "../../../model/devices";
 import type { DeviceFailure } from "../../ports";
-import type { TwinDraft } from "./twinDraft";
+import type { Catalogue, Held, TwinDraft } from "./twinDraft";
 import type { Loaded } from "./twinLoad";
 import { reconciled } from "./twinLoad";
 
@@ -23,6 +23,7 @@ export function fresh(path: string, loaded: Loaded): TwinDraft {
     save: { kind: "idle" },
     build: { kind: "idle" },
     issues: [],
+    held: loaded.held,
   };
 }
 
@@ -50,4 +51,34 @@ export const missingLead: DeviceFailure = {
 export function afterFlush(draft: TwinDraft, saved: TwinChoices, written: string): TwinDraft {
   const edited = draft.doc === saved ? false : draft.edited;
   return { ...draft, saved, written, save: { kind: "idle" }, edited };
+}
+
+export function pendingOf(draft: TwinDraft): readonly Held[] {
+  return draft.held.filter((held) => held.adding);
+}
+
+export function holdBack(
+  draft: TwinDraft,
+  waiting: Held,
+  members: readonly Held[] = draft.held.filter((held) => !held.adding),
+): TwinDraft {
+  const others = pendingOf(draft).filter((held) => held.path !== waiting.path);
+  const kept = members.filter((held) => held.path !== waiting.path);
+  return { ...draft, held: [...kept, ...others, { ...waiting, adding: true }] };
+}
+
+interface Fresh {
+  readonly suggested: Readonly<Record<string, unknown>> | null;
+  readonly held: readonly Held[];
+}
+
+export function joinMembers(
+  draft: TwinDraft,
+  members: readonly Member[],
+  instruments: Catalogue,
+  next: Fresh,
+): TwinDraft {
+  const grown = withMembers({ ...draft, suggested: next.suggested ?? draft.suggested }, members);
+  const pending = pendingOf(draft).filter((held) => !members.some((member) => member.path === held.path));
+  return { ...grown, instruments, held: [...next.held, ...pending] };
 }

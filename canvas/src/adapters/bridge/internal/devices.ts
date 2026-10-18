@@ -1,4 +1,4 @@
-import type { BridgeAdapters } from "../../../app/ports";
+import type { BridgeAdapters, InstrumentQuery } from "../../../app/ports";
 import { fileContent, written } from "./decoders";
 import { deviceFailure } from "./failures";
 import type { Transport } from "./http";
@@ -6,16 +6,21 @@ import { action, getFile, putFile, request } from "./http";
 import { kindChecked } from "./kindIssues";
 import { deviceListing, domainChecked, instrumentRefs, lintReport, suggestedChoices, twinMade } from "./twinDecoders";
 
+function listArguments({ unit, min, max }: InstrumentQuery): Record<string, unknown> {
+  if (unit === "") return {};
+  return min !== null && max !== null ? { unit, min, max } : { unit };
+}
+
 function twinGateway(
   transport: Transport,
 ): Omit<BridgeAdapters["devices"], "readFile" | "writeFile" | "check" | "checkContent"> {
   return {
     listing: () => request(transport, "/api/workspace", deviceListing, deviceFailure("read")),
-    instruments: (unit) =>
-      action(transport, "component.list", unit === "" ? {} : { unit }, instrumentRefs, deviceFailure("read")),
-    suggest: () => action(transport, "kind.suggest", {}, suggestedChoices, deviceFailure("check")),
-    twin: ({ choices, out, etag }) =>
-      action(transport, "kind.twin", { choices, out, etag }, twinMade, deviceFailure("twin")),
+    instruments: (query) =>
+      action(transport, "component.list", listArguments(query), instrumentRefs, deviceFailure("read")),
+    suggest: (kinds) => action(transport, "kind.suggest", { kinds }, suggestedChoices, deviceFailure("check")),
+    twin: ({ kinds, choices, out, etag }) =>
+      action(transport, "kind.twin", { kinds, choices, out, etag }, twinMade, deviceFailure("twin")),
     validateDomain: (path) => action(transport, "domain.validate", { path }, domainChecked, deviceFailure("check")),
     lint: (path) =>
       action(transport, "domain.lint", { path }, lintReport, deviceFailure("read"), (problem) =>

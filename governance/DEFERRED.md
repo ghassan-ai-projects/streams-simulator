@@ -228,3 +228,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > by conversion, a relative humidity) are told apart only by a reading named after the instrument. Trigger to fix: a
 > reading is suggested an instrument of another quantity that a user cannot tell from the unit; then an instrument
 > declares the quantity (a kind file would name it) and the match is by quantity, not by unit.
+> D-66 (twin from a kind directory): `kind twin --kinds-dir` (and `plantwire.WithKindFiles` with directories) still loads
+> every `*.kind.json` of the directory and refuses the whole command for one malformed file, even a kind the choices do not
+> name; only the `implements` check of a domain reads the kinds it implements alone. The canvas bridge passes the kind files
+> of the twin as arguments and never the directory, so no surface depends on it. Trigger to fix: a surface hands the twin
+> commands a directory that holds unfinished kinds; then the choices' kind names select the files, as a domain's
+> `implements` names do (`SelectKindSources`).

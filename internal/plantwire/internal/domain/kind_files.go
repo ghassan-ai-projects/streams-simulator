@@ -14,6 +14,7 @@ var ErrKindFileDuplicate = errors.New("plantwire: two kind files define one kind
 type KindSource struct {
 	Path string
 	Raw  []byte
+	Err  error
 }
 
 type KindFiles map[string]map[string]any
@@ -66,6 +67,9 @@ func (i kindIndex) add(path string, entry map[string]any) error {
 }
 
 func parseKindFile(source KindSource) (map[string]any, error) {
+	if source.Err != nil {
+		return nil, source.Err
+	}
 	entry, err := decodeKind(source.Raw)
 	if err != nil {
 		return nil, model.NotJSONError(model.ContractKindFile, source.Path, "plantwire: kind file "+source.Path, err)

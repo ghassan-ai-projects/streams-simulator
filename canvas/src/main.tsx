@@ -39,7 +39,7 @@ if (root) {
           launch: createLaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,
-          devices: createDeviceSession(adapters.devices),
+          devices: createDeviceSession(adapters.devices, adapters.workspace.watch),
           desk: createDeviceDesk(adapters.devices),
           panels,
           maker: createPlantMaker(adapters.plant),

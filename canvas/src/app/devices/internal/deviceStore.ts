@@ -11,7 +11,7 @@ import {
   serialiseKind,
   twinNeeds,
 } from "../../../model/devices";
-import type { DeviceFailure, DevicesGateway, KindChecked, Outcome } from "../../ports";
+import type { DeviceFailure, DevicesGateway, KindChecked, Outcome, WorkspaceGateway } from "../../ports";
 import { DraftStore, createOperationIdentity } from "../../shared";
 import type { Operation, OperationIdentity } from "../../shared";
 import type { DeviceSession, TwinSession } from "./api";
@@ -20,7 +20,11 @@ import { unreadable } from "./deviceFailures";
 import { canSave, isBusy, isSaving } from "./deviceSelectors";
 import { createTwinSession } from "./twinStore";
 
+type Watch = WorkspaceGateway["watch"];
+
 const kindSelected: Selection = { part: "kind" };
+
+const noWatch: Watch = () => () => undefined;
 
 const noReview: Review = { state: "idle", schema: [], needs: [] };
 
@@ -71,11 +75,13 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   private etag = "";
   private running: Promise<void> | null = null;
   private again = false;
+  private stopWatching: (() => void) | null = null;
   readonly twin: TwinSession;
 
   constructor(
     private readonly gateway: DevicesGateway,
     private readonly operations: OperationIdentity,
+    private readonly watch: Watch,
   ) {
     super({ phase: "idle" });
     this.twin = createTwinSession(gateway, () => this.draft()?.saved ?? null);
@@ -90,6 +96,8 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 
   close(): void {
+    this.stopWatching?.();
+    this.stopWatching = null;
     this.twin.close();
     this.operations.invalidate();
     this.checks.invalidate();
@@ -100,6 +108,9 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
 
   protected override async restart(path: string): Promise<void> {
     this.twin.close();
+    this.stopWatching ??= this.watch(() => {
+      void this.twin.retry();
+    });
     const request = this.operations.begin();
     const file = await this.gateway.readFile(path);
     const kind = file.ok ? parseKind(file.value.content) : null;
@@ -180,6 +191,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
     }
     this.etag = written.value.etag;
     this.update((current) => ({ ...current, saved: doc, save: { kind: "idle" }, check: { kind: "valid", summary } }));
+    void this.twin.open(path);
   }
 
   private async runCheck(operation: Operation, path: string): Promise<void> {
@@ -244,6 +256,6 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 }
 
-export function createDeviceSession(gateway: DevicesGateway): DeviceSession {
-  return new DeviceStore(gateway, createOperationIdentity());
+export function createDeviceSession(gateway: DevicesGateway, watch: Watch = noWatch): DeviceSession {
+  return new DeviceStore(gateway, createOperationIdentity(), watch);
 }

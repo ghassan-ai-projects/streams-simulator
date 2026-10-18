@@ -66,7 +66,7 @@ describe("the state of each step", () => {
     const status = (state: Parameters<typeof stepStatuses>[1]) => stepStatuses(device, state).behaviour;
     expect(status({ phase: "idle" })).toEqual({ text: "Not started", tone: "" });
     expect(status({ phase: "loading", path: coolerPath })).toEqual({ text: "Opening", tone: "busy" });
-    expect(status({ phase: "failed", path: coolerPath, failure: unavailable })).toEqual({
+    expect(status({ phase: "failed", path: coolerPath, failure: unavailable, held: [] })).toEqual({
       text: "Not started",
       tone: "",
     });
@@ -74,7 +74,9 @@ describe("the state of each step", () => {
     expect(status({ ...twin, touched: true })).toEqual({ text: "Ready", tone: "" });
     expect(status({ ...twin, build: { kind: "building" } })).toEqual({ text: "Creating", tone: "busy" });
     expect(status(built(twin))).toEqual({ text: "Created", tone: "ok" });
-    expect(status({ ...twin, build: { kind: "refused", failure: refused } })).toEqual({
+    const issue = { scope: "elsewhere" as const, kind: "", key: "", field: "", spot: "", pointer: "", keyword: "" };
+    const refusedWith = { ...twin, build: { kind: "refused" as const, failure: refused } };
+    expect(status({ ...refusedWith, issues: [{ ...issue, message: "m", text: "m" }] })).toEqual({
       text: "Needs attention",
       tone: "warn",
     });
@@ -167,7 +169,9 @@ describe("the headline of the behaviour step", () => {
     );
     expect(text(twin)).toMatchObject({ text: "Choices are ready. Create the twin when you are.", tone: "" });
     expect(text({ ...twin, onDisk: true }).text).toBe("Choices are ready. Replace the twin when you are.");
-    expect(text({ ...twin, doc: { ...twin.doc, title: "" } }).text).toBe("Finish the choices marked in the form.");
+    expect(text({ ...twin, doc: { ...twin.doc, title: "" } }).text).toBe(
+      "Finish the choices marked in the form first.",
+    );
     expect(text({ ...twin, build: { kind: "building" } }).text).toBe("Creating the twin…");
     expect(text({ ...twin, build: { kind: "exists" } }).tone).toBe("warn");
     expect(text({ ...twin, build: { kind: "failed", failure: unavailable } }).text).toBe(

@@ -37,10 +37,16 @@ describe("opening the behaviour of a device", () => {
     expect(draft.saved).toBe(draft.doc);
     expect(draft.doc).toMatchObject({ id: "cooler-sensor-twin", title: "Twin of cooler, sensor" });
     expect(draft.doc.kinds[0]?.metrics.m1?.instrument).toBe("none");
-    expect(Object.keys(draft.instruments)).toEqual(["Cel", "%"]);
-    expect(draft.instruments.Cel?.map((instrument) => instrument.match)).toEqual(["convertible"]);
-    expect(calls(fake, "component.list").map((call) => call.args)).toEqual([{ unit: "Cel" }, { unit: "%" }]);
-    expect(calls(fake, "kind.suggest")).toHaveLength(1);
+    expect(Object.keys(draft.instruments)).toEqual(["Cel|0|100", "%|0|100"]);
+    expect(draft.instruments["Cel|0|100"]?.map((instrument) => instrument.match)).toEqual(["convertible"]);
+    expect(draft.instruments["Cel|0|100"]?.map((instrument) => instrument.fit)).toEqual([
+      { ok: true, code: "", member: "" },
+    ]);
+    expect(calls(fake, "component.list").map((call) => call.args)).toEqual([
+      { unit: "Cel", min: 0, max: 100 },
+      { unit: "%", min: 0, max: 100 },
+    ]);
+    expect(calls(fake, "kind.suggest").map((call) => call.args)).toEqual([{ kinds: ["cooler"] }]);
     expect(othersOf(draft).map((entry) => entry.path)).toEqual([sensorPath]);
     expect(fake.reads).toContain(choicesPath);
     expect(pairsOf(draft)).toHaveLength(1);
@@ -83,7 +89,7 @@ describe("opening the behaviour of a device", () => {
     fake.handlers.set("component.list", () => failure(cannedFailure("boom", 500)));
     fake.workspaceOutcome = failure(cannedFailure("boom", 500));
     const draft = ready((await opened(fake)).twin);
-    expect(draft.instruments).toEqual({ Cel: null, "%": null });
+    expect(draft.instruments).toEqual({ "Cel|0|100": null, "%|0|100": null });
     expect(draft.known).toEqual([]);
     expect(draft.doc.kinds[0]?.metrics.m1?.instrument).toBe("none");
   });

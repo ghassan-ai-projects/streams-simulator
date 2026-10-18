@@ -4,9 +4,25 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **One unfinished device no longer breaks another, and the picker tells the truth about fit.** The twin actions take the
+  kind files that are in the twin: the canvas bridge's `kind.twin` and `kind.suggest` take `kinds: ["<file stem>", ...]`
+  (the stems of `kinds/<stem>.kind.json`, one to 64, repeats counted once, an absent stem is `not_found`) and pass exactly
+  those files, never `--kinds-dir`; `kind twin [--suggest]` already took files as arguments, and its default `id` and
+  `title` come from the given kinds only (`fan-twin`, `Twin of fan`; a long board is named after its first kind and a count).
+  A domain that `implements` kind files now reads only the kind files of the kinds it implements (`domain validate`,
+  `domain compose`, `run`, `plantwire node`, `mcp`), found by the declared kind and, for a file that does not parse, by its
+  file name: a malformed kind file of another kind never blocks it. `component list --unit <u> [--min n --max n]` gives
+  every instrument `fit: {ok, code?, member?}` (`unit_incompatible`, `range_unstated`, `range_narrower`,
+  `reading_not_number`), decided by the comparison `kind twin` uses, so `ok: true` is what the scaffold accepts; the range
+  is compared after unit conversion and fitting instruments are listed first. A twin now reads through an instrument of
+  another unit (kPa transmitter, Pa reading) in the unit of its kind file, converting the instrument's noise, drift and
+  fault magnitudes, so `twin_conversion_needed` is gone; a refusal of an instrument carries the `member` at fault
+  (`unit`, `eu_range`, `data_type`) with keyword `twin_instrument_mismatch`. `cli-output-v0.1` gains `fit`. The canvas
+  bridge gains `min` and `max` on `component.list`.
+
 - **The binary tells the canvas everything a twin needs in one pass.** Every issue of `kind validate`, `kind twin` and
   `domain validate` keeps `pointer` and `message` and gains `keyword` (the JSON Schema keyword that failed, or a stable
-  rule code such as `twin_member_required`, `twin_unit_required`, `twin_conversion_needed`, `twin_name_pattern`,
+  rule code such as `twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`, `twin_name_pattern`,
   `twin_range`, `domain_rule`) and, for a rule about a named member, `member` (`resolution`, `writable`, `safe_stop`,
   `unit`); `jsonschema.Error` and `model.Issue` carry them. The twin requirements of a kind file are reported all at once
   (`component.TwinRequirements`, one implementation). New: `kind validate --stdin [--twin]` (one kind document from

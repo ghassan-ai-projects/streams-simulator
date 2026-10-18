@@ -2,6 +2,7 @@ export type {
   DeviceFailure,
   DevicesGateway,
   DomainChecked,
+  InstrumentQuery,
   KindChecked,
   LibraryInstrument,
   LintReport,

@@ -7,5 +7,5 @@ export type WorkspaceFailure =
 
 export interface WorkspaceGateway {
   load(): Promise<Outcome<Workspace, WorkspaceFailure>>;
-  watch(onChange: () => void): () => void;
+  watch: (onChange: () => void) => () => void;
 }

@@ -47,11 +47,11 @@ func (l *Library) List() []Summary {
 	return l.library.List()
 }
 
-func (l *Library) ListFor(unit string) []Summary {
+func (l *Library) ListFor(unit string, low, high *float64) ([]Summary, error) {
 	if l == nil || l.library == nil {
-		return nil
+		return nil, nil
 	}
-	return l.library.ListForUnit(unit)
+	return l.library.ListForReading(unit, low, high)
 }
 
 func (l *Library) Describe(ref string) (*Detail, error) {

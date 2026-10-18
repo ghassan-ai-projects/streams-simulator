@@ -84,8 +84,8 @@ func TestKindCheckArgvIsFixedAndTheContentIsNeverAnArgument(t *testing.T) {
 func TestKindSuggestAndComponentListUnitAreRegisteredWithTheirArguments(t *testing.T) {
 	t.Parallel()
 	suggest, err := Lookup("kind.suggest")
-	if err != nil || suggest.Mutating || !suggest.Library || !suggest.Kinds || len(suggest.CLIArgs) != 0 {
-		t.Fatalf("kind.suggest = %+v, %v, want a read-only action over the library and the workspace kinds, without arguments", suggest, err)
+	if err != nil || suggest.Mutating || !suggest.Library || suggest.Kinds || len(suggest.CLIArgs) != 1 || suggest.CLIArgs[0].Shape != ShapeStems {
+		t.Fatalf("kind.suggest = %+v, %v, want a read-only action over the library and the named kind files, never the kinds folder", suggest, err)
 	}
 	list, _ := Lookup("component.list")
 	got, err := list.Argv(map[string]any{"unit": "Cel"})

@@ -94,7 +94,10 @@ async function chooseThermistor(page: Page): Promise<void> {
   const temperature = page.getByRole("group", { name: "Reading temperature" });
   await temperature.getByRole("button", { name: "Change the instrument of temperature" }).click();
   await temperature.getByLabel("Find an instrument for temperature").fill("thermistor");
-  await temperature.getByRole("listbox", { name: "Instruments for temperature" }).selectOption({ index: 1 });
+  await temperature
+    .getByRole("radio", { name: /thermistor/i })
+    .first()
+    .check();
   await temperature.getByRole("button", { name: "Use this instrument" }).click();
   await expect(temperature.getByLabel("Instrument", { exact: true })).toHaveValue(/thermistor/i);
   await temperature.getByLabel("Starts at").fill("30");
@@ -139,8 +142,12 @@ test("a device gets a twin: what it still needs is found before the behaviour, t
   await expect(effect.getByText("Must be above zero")).toBeVisible();
   await expect(effect.getByLabel("Time constant")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByRole("button", { name: "Create twin" })).toHaveAccessibleDescription(/Finish the choices/);
+  await expect(effect.getByText("Choose a time constant above zero.")).toBeVisible();
+  await expect(step(page, /^Behaviour/)).toContainText("Needs choices");
   await effect.getByLabel("Time constant").fill("180");
   await expect(effect.getByText("Must be above zero")).toHaveCount(0);
+  await expect(step(page, /^Behaviour/)).toContainText("Ready");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole("button", { name: "Create twin" }).click();

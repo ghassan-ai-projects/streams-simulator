@@ -178,7 +178,7 @@
                   "keyword": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Why the issue exists, for a program: the JSON Schema keyword that failed (type, enum, pattern, required, additionalProperties, minimum, ...) or a stable rule code of the binary (twin_member_required, twin_unit_required, twin_conversion_needed, twin_name_pattern, twin_range, domain_rule, implements_drift, ...). Never parse message."
+                    "description": "Why the issue exists, for a program: the JSON Schema keyword that failed (type, enum, pattern, required, additionalProperties, minimum, ...) or a stable rule code of the binary (twin_member_required, twin_unit_required, twin_instrument_mismatch, twin_name_pattern, twin_range, domain_rule, implements_drift, ...). Never parse message."
                   },
                   "member": {
                     "type": "string",
@@ -1012,6 +1012,36 @@
             "convertible"
           ],
           "description": "Only with component list --unit: whether the instrument measures in the asked unit or in a convertible one."
+        },
+        "fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ok"
+          ],
+          "description": "Only with component list --unit: whether a twin can read a metric of that unit (and of --min to --max when given) through this instrument. A conversion between units is not a refusal.",
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            },
+            "code": {
+              "enum": [
+                "unit_incompatible",
+                "range_unstated",
+                "range_narrower",
+                "reading_not_number"
+              ],
+              "description": "Why the instrument does not fit; absent when it does."
+            },
+            "member": {
+              "enum": [
+                "unit",
+                "eu_range",
+                "data_type"
+              ],
+              "description": "The member of the metric the reason is about; absent when the instrument fits."
+            }
+          }
         }
       }
     },

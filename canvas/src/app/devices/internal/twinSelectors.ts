@@ -2,8 +2,9 @@ import { choiceProblems, serialiseChoices } from "../../../model/devices";
 import type { KindChoice, KindFile, TwinIssue } from "../../../model/devices";
 import type { KindEntry } from "../../../model/workspace";
 import type { DeviceState } from "./deviceDraft";
-import { isDirty, twinNeedsOf } from "./deviceSelectors";
+import { isDirty } from "./deviceSelectors";
 import type { Built, TwinDraft, TwinState } from "./twinDraft";
+import { interfaceNeedsOf } from "./twinNeeds";
 
 export function isChoicesDirty(draft: TwinDraft): boolean {
   return serialiseChoices(draft.doc, draft.members) !== draft.written;
@@ -53,9 +54,11 @@ export function createBlock(draft: TwinDraft, device: DeviceState): string | nul
   if (draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict") {
     return "The choices file changed on disk. Reload it to continue.";
   }
-  if (device.phase === "ready" && twinNeedsOf(device).length > 0) {
+  if (device.phase === "ready" && interfaceNeedsOf(device, draft).length > 0) {
     return "Set what the twin needs in the Interface step first.";
   }
+  const [held] = draft.held.filter((entry) => !entry.adding);
+  if (held !== undefined) return `${held.words}.`;
   return problemsOf(draft).length > 0 ? "Finish the choices marked in the form first." : null;
 }
 

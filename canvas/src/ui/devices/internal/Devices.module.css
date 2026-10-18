@@ -50,6 +50,10 @@
   margin: 0;
 }
 
+.reserved {
+  min-height: 1.5em;
+}
+
 .issue,
 .caution {
   display: flex;
@@ -81,8 +85,20 @@
 .argRow {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 72px 72px auto auto;
-  align-items: center;
+  align-items: end;
   gap: var(--space-2);
+}
+
+.argField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.argLabel {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .argRows {
@@ -186,7 +202,8 @@
 .statusOk,
 .statusWarn {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 120px;
+  line-height: 1.2;
   white-space: normal;
   overflow-wrap: anywhere;
   font-size: var(--text-sm);

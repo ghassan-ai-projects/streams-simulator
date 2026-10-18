@@ -1,5 +1,6 @@
-import { settleCommand } from "./twinMembers";
+import { numericArguments, settleCommand, writableReadings } from "./twinMembers";
 import type { CommandChoice, Drive, KindChoice, MetricChoice, Response, TwinChoices } from "./twinTypes";
+import type { Command, KindFile } from "./types";
 
 const blankDrive: Drive = { from: "", kind: "", metric: "", gain: null, timeConstantS: null };
 
@@ -64,6 +65,27 @@ export function chooseResponse(choices: TwinChoices, kind: string, command: stri
       drives: withDrives(current, response),
     }),
   );
+}
+
+function soleSetting(kind: KindFile, command: Command): readonly [string, string] | null {
+  const [argument, ...moreArguments] = numericArguments(command);
+  const [reading, ...moreReadings] = writableReadings(kind);
+  const alone = moreArguments.length === 0 && moreReadings.length === 0;
+  return alone && argument !== undefined && reading !== undefined ? [argument, reading.key] : null;
+}
+
+export function pickResponse(
+  choices: TwinChoices,
+  at: { readonly member: string; readonly kind: KindFile; readonly command: Command },
+  response: Response,
+): TwinChoices {
+  const next = chooseResponse(choices, at.member, at.command.key, response);
+  const sole = soleSetting(at.kind, at.command);
+  const current = next.kinds.find((entry) => entry.kind === at.member)?.commands[at.command.key];
+  const unset = current !== undefined && Object.keys(current.sets).length === 0;
+  return response !== "none" && sole !== null && unset
+    ? setArgument(next, at.member, at.command.key, sole[0], sole[1])
+    : next;
 }
 
 export function setArgument(

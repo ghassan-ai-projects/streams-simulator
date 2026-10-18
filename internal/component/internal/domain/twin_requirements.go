@@ -20,7 +20,6 @@ const (
 	KeywordRiskClass         = "twin_risk_class"
 	KeywordNotObject         = "twin_not_object"
 	KeywordDecode            = "twin_decode"
-	KeywordConversionNeeded  = "twin_conversion_needed"
 )
 
 var riskClasses = []string{"low", "medium", "high"}

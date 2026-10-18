@@ -156,18 +156,18 @@ func TestKindCheckKeepsConcurrentContentsApart(t *testing.T) {
 	group.Wait()
 }
 
-func TestKindSuggestRunsTheCommandOnTheWorkspaceKindsAndTheLibraryAndTakesNoArgument(t *testing.T) {
+func TestKindSuggestRunsTheCommandOnTheNamedKindFilesAndTheLibraryAndTakesNoOtherArgument(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
 	h.write(t, fanKind, fanKindBytes)
-	if _, err := h.bridge.RunAction(context.Background(), "kind.suggest", nil); err != nil {
+	if _, err := h.bridge.RunAction(context.Background(), "kind.suggest", map[string]any{"kinds": []any{"fan"}}); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"kind", "twin", "--suggest", "--components-dir", "/lib", "--kinds-dir", filepath.Join(h.dir, "kinds")}
+	want := []string{"kind", "twin", "--suggest", h.dir + "/" + fanKind, "--components-dir", "/lib"}
 	if !slices.Equal(h.argv[0], want) || h.stdin[0] != nil {
 		t.Fatalf("argv %v stdin %q, want %v and no input", h.argv[0], h.stdin[0], want)
 	}
-	for _, args := range []map[string]any{{"path": fanKind}, {"out": inDomains("x.domain.json")}, {"content": "{}"}} {
+	for _, args := range []map[string]any{nil, {"path": fanKind}, {"kinds": []any{"fan"}, "out": inDomains("x.domain.json")}, {"kinds": []any{"fan"}, "content": "{}"}} {
 		if _, err := h.bridge.RunAction(context.Background(), "kind.suggest", args); !errors.Is(err, domain.ErrBadArguments) {
 			t.Errorf("kind.suggest %v = %v, want bad arguments", args, err)
 		}
@@ -187,6 +187,24 @@ func TestComponentListFiltersByAUnitAsATextArgument(t *testing.T) {
 	for _, unit := range []any{"--components-dir", "", 3} {
 		if _, err := h.bridge.RunAction(context.Background(), "component.list", map[string]any{"unit": unit}); !errors.Is(err, domain.ErrBadArguments) {
 			t.Errorf("unit %v = %v, want bad arguments", unit, err)
+		}
+	}
+}
+
+func TestComponentListTakesTheRangeOfTheReadingAsTwoNumbersAndRefusesAnythingElse(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	args := map[string]any{"unit": "L/min", "min": 0.0, "max": 600.5}
+	if _, err := h.bridge.RunAction(context.Background(), "component.list", args); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"component", "list", "--unit", "L/min", "--min", "0", "--max", "600.5", "--components-dir", "/lib"}
+	if !slices.Equal(h.argv[0], want) {
+		t.Fatalf("argv = %v, want %v", h.argv[0], want)
+	}
+	for _, bad := range []map[string]any{{"unit": "kPa", "min": "0"}, {"unit": "kPa", "max": true}, {"unit": "kPa", "min": nil}, {"unit": "kPa", "low": 1}} {
+		if _, err := h.bridge.RunAction(context.Background(), "component.list", bad); !errors.Is(err, domain.ErrBadArguments) {
+			t.Errorf("component.list %v = %v, want bad arguments", bad, err)
 		}
 	}
 }

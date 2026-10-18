@@ -21,6 +21,7 @@ export interface DeviceDesk {
 export interface TwinSession extends Store<TwinState> {
   open(path: string): Promise<void>;
   reload(): Promise<void>;
+  retry(): Promise<void>;
   close(): void;
   edit(change: (choices: TwinChoices) => TwinChoices): void;
   include(path: string): Promise<void>;

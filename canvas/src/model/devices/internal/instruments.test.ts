@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { convertibleThermistor, humidity, instruments, metricOf, thermistor } from "../../../test/twinFixture";
 import {
+  catalogueKey,
   chosenInstrumentWords,
-  conversionNote,
+  convertedNote,
   instrumentCount,
   instrumentOf,
+  instrumentQuery,
   instrumentWords,
   noInstrument,
+  queryKey,
   rangeWords,
   searchInstruments,
   takesInstrument,
+  unfitWords,
+  unstatedMember,
 } from "./instruments";
 
 describe("instruments", () => {
@@ -21,6 +26,7 @@ describe("instruments", () => {
       min: 0,
       max: 9,
       match: "exact",
+      fit: null,
     });
     expect(known).toMatchObject({ ref: "a/b@1", title: "Probe", unit: "rpm", min: 0, max: 9, match: "exact" });
     expect(known.words).toBe("probe a/b@1 rpm");
@@ -43,10 +49,49 @@ describe("instruments", () => {
     expect(rangeWords(null, null)).toBe("no stated range");
   });
 
-  it("says when an instrument measures a different unit and needs a conversion", () => {
+  it("says when an instrument measures a different unit and is converted", () => {
     expect(instrumentWords(thermistor)).toBe("Thermistor · degC · -40 to 125");
-    expect(instrumentWords(convertibleThermistor)).toBe(`Thermistor · degC · -40 to 125 · ${conversionNote}`);
-    expect(conversionNote).toBe("different unit — needs conversion");
+    expect(instrumentWords(convertibleThermistor)).toBe("Thermistor · -40 to 125 · measured in degC, converted");
+    expect(convertedNote(convertibleThermistor)).toBe("measured in degC, converted");
+    expect(convertedNote(thermistor)).toBe("");
+  });
+
+  it("gives one plain reason for an instrument the binary says does not fit, and none for one that fits", () => {
+    const unfit = (code: Parameters<typeof instrumentOf>[0]["fit"]) => instrumentOf({ ...thermistor, fit: code });
+    expect(unfitWords(thermistor)).toBe("");
+    expect(unfitWords(unfit({ ok: true, code: "", member: "" }))).toBe("");
+    expect(unfitWords(unfit({ ok: false, code: "unit_incompatible", member: "unit" }))).toBe(
+      "This instrument is in a different kind of unit",
+    );
+    expect(unfitWords(unfit({ ok: false, code: "range_unstated", member: "eu_range" }))).toBe(
+      "Set a range for this reading in the Interface step",
+    );
+    expect(unfitWords(unfit({ ok: false, code: "range_narrower", member: "eu_range" }))).toBe(
+      "This reading's range is wider than the instrument measures",
+    );
+    expect(unfitWords(unfit({ ok: false, code: "reading_not_number", member: "data_type" }))).toBe(
+      "This instrument needs a number reading",
+    );
+    expect(unfitWords(unfit({ ok: false, code: "", member: "" }))).toBe(
+      "The binary cannot use this instrument for this reading",
+    );
+  });
+
+  it("names the member of the reading that an instrument waits for, when the range is unstated", () => {
+    const wait = instrumentOf({ ...thermistor, fit: { ok: false, code: "range_unstated", member: "eu_range" } });
+    const narrow = instrumentOf({ ...thermistor, fit: { ok: false, code: "range_narrower", member: "eu_range" } });
+    expect(unstatedMember(wait)).toBe("eu_range");
+    expect(unstatedMember(narrow)).toBeNull();
+    expect(unstatedMember(thermistor)).toBeNull();
+    expect(unstatedMember(undefined)).toBeNull();
+  });
+
+  it("asks the library by unit, and by range only when the reading states both ends in order", () => {
+    expect(instrumentQuery(metricOf())).toEqual({ unit: "Cel", min: 0, max: 50 });
+    expect(instrumentQuery(metricOf({ eu_range: { min: 0 } }))).toEqual({ unit: "Cel", min: null, max: null });
+    expect(instrumentQuery(metricOf({ eu_range: { min: 5, max: 5 } }))).toEqual({ unit: "Cel", min: null, max: null });
+    expect(catalogueKey(metricOf())).toBe("Cel|0|50");
+    expect(queryKey({ unit: "%", min: null, max: null })).toBe("%||");
   });
 
   it("describes a choice and counts a search", () => {

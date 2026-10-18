@@ -93,14 +93,13 @@ func booleanTemperature(doc map[string]any) {
 	delete(metric, "unit")
 }
 
-func TestAnInstrumentThatReadsLessThanTheMetricOrInAnotherUnitIsRefused(t *testing.T) {
+func TestAnInstrumentThatReadsLessThanTheMetricIsRefused(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name   string
 		change func(doc map[string]any)
 	}{
 		{"a range wider than the instrument", func(doc map[string]any) { fileMetric(doc)["eu_range"] = map[string]any{"min": 0, "max": 500} }},
-		{"a unit that needs a conversion", func(doc map[string]any) { fileMetric(doc)["unit"] = "degF" }},
 		{"a boolean metric", booleanTemperature},
 		{"a metric without a range", func(doc map[string]any) { delete(fileMetric(doc), "eu_range") }},
 	}

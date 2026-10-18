@@ -119,6 +119,10 @@ export function twinIssuesOn(issues: readonly TwinIssue[], where: Omit<Place, "s
     .map((issue) => issue.text);
 }
 
+export function placeKey(place: Omit<Place, "spot"> & { readonly spot?: string }): string {
+  return [place.scope, place.kind, place.key, place.field, place.spot ?? ""].join("|");
+}
+
 export function twinIssueTitle(issue: TwinIssue, members: readonly Member[]): string {
   const member = members.find((entry) => entry.path === issue.kind);
   const item = member !== undefined && (issue.scope === "metric" || issue.scope === "command");

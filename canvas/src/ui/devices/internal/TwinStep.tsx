@@ -1,13 +1,17 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo } from "react";
-import type { DeviceSession, Draft, Step, TwinDraft } from "../../../app/devices";
-import { problemsOf, twinNeedsOf } from "../../../app/devices";
+import type { DeviceSession, Draft, Held, Step, TwinDraft } from "../../../app/devices";
+import { interfaceNeedsOf, problemsOf, twinNeedsOf } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { stemOf } from "../../../model/devices";
-import { failureLine, screen, useStore } from "../../primitives";
+import { cx, failureLine, panel, screen, useStore } from "../../primitives";
 import { CheckPanel } from "./CheckPanel";
+import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
+import { FormTitle } from "./FormTitle";
+import { HeldNotice, RetryButton } from "./HeldNotice";
 import { NeedsFirst } from "./NeedsFirst";
+import notes from "./Notes.module.css";
 import { TwinBar } from "./TwinBar";
 import { TwinDetails } from "./TwinDetails";
 import { TwinForm } from "./TwinForm";
@@ -28,7 +32,7 @@ type ReadyProps = Omit<StepProps, "draft"> & { readonly device: Draft; readonly 
 function Ready({ device, devices, navigation, tabs, step, twin, reveal }: ReadyProps) {
   const session = devices.twin;
   const issues = useMemo(() => [...problemsOf(twin), ...twin.issues], [twin]);
-  const needs = twinNeedsOf(device);
+  const needs = interfaceNeedsOf(device, twin);
   const name = stemOf(device.path);
   return (
     <div className={screen.screen}>
@@ -42,7 +46,14 @@ function Ready({ device, devices, navigation, tabs, step, twin, reveal }: ReadyP
           {step === "check" ? (
             <CheckPanel draft={twin} device={device} />
           ) : (
-            <TwinForm twin={session} draft={twin} issues={issues} needs={needs} reveal={reveal} />
+            <TwinForm
+              twin={session}
+              draft={twin}
+              issues={issues}
+              needs={needs}
+              reveal={reveal}
+              navigation={navigation}
+            />
           )}
         </div>
       </section>
@@ -51,43 +62,73 @@ function Ready({ device, devices, navigation, tabs, step, twin, reveal }: ReadyP
   );
 }
 
-function Waiting({
-  tabs,
-  failed,
-  words,
-}: {
-  readonly tabs: ReactNode;
-  readonly failed: boolean;
-  readonly words: string;
-}) {
+function Waiting({ tabs, words }: { readonly tabs: ReactNode; readonly words: string }) {
   return (
     <div className={screen.screen}>
       <div className={screen.side}>{tabs}</div>
-      <p className={failed ? screen.failure : screen.loading} role={failed ? "alert" : "status"}>
+      <p className={screen.loading} role="status">
         {words}
       </p>
     </div>
   );
 }
 
-function Lacking({
-  device,
-  tabs,
-  reveal,
-}: {
-  readonly device: Draft;
+interface FrameProps {
   readonly tabs: ReactNode;
-  readonly reveal: Reveal;
-}) {
+  readonly name: string;
+  readonly bar: ReactNode;
+  readonly children: ReactNode;
+}
+
+function Frame({ tabs, name, bar, children }: FrameProps) {
   return (
     <div className={screen.screen}>
       <div className={screen.side}>{tabs}</div>
-      <section className={screen.center} aria-label={`Behaviour of ${stemOf(device.path)}`}>
-        <div className={styles.formHost}>
-          <NeedsFirst device={device} reveal={reveal} />
-        </div>
+      <section className={screen.center} aria-label={`Behaviour of ${name}`}>
+        {bar}
+        <div className={styles.formHost}>{children}</div>
       </section>
     </div>
+  );
+}
+
+interface UnavailableProps extends Omit<FrameProps, "children"> {
+  readonly twin: DeviceSession["twin"];
+  readonly navigation: NavigationStore;
+  readonly failure: string;
+  readonly held: readonly Held[];
+}
+
+function Unavailable({ twin, navigation, failure, held, ...frame }: UnavailableProps) {
+  return (
+    <Frame {...frame}>
+      <div className={cx(panel.body, styles.form)}>
+        <FormTitle id="unavailable-title" words="The behaviour cannot be opened yet" interim />
+        {held.length > 0 ? (
+          <HeldNotice held={held} twin={twin} navigation={navigation} />
+        ) : (
+          <>
+            <p className={notes.unavailable} role="alert">
+              {failure}
+            </p>
+            <RetryButton twin={twin} />
+          </>
+        )}
+      </div>
+    </Frame>
+  );
+}
+
+interface LackingProps extends Pick<FrameProps, "tabs" | "bar"> {
+  readonly device: Draft;
+  readonly reveal: Reveal;
+}
+
+function Lacking({ device, tabs, bar, reveal }: LackingProps) {
+  return (
+    <Frame tabs={tabs} bar={bar} name={stemOf(device.path)}>
+      <NeedsFirst device={device} reveal={reveal} />
+    </Frame>
   );
 }
 
@@ -104,12 +145,17 @@ export function TwinStep({ draft, devices, navigation, tabs, step, reveal }: Ste
     const props = { device: draft, devices, navigation, tabs, step, twin: state, reveal };
     return <Ready {...props} />;
   }
-  if (state.phase === "failed" && twinNeedsOf(draft).length > 0) {
-    return <Lacking device={draft} tabs={tabs} reveal={reveal} />;
-  }
   if (state.phase === "failed") {
-    const words = `The behaviour could not be opened: ${failureLine(state.failure.diagnostic)}`;
-    return <Waiting tabs={tabs} failed words={words} />;
+    const tag = step === "check" ? "Check" : "Behaviour";
+    const bar = (
+      <div className={screen.bar}>
+        <DeviceTitle path={draft.path} tag={tag} navigation={navigation} />
+      </div>
+    );
+    if (twinNeedsOf(draft).length > 0) return <Lacking device={draft} tabs={tabs} bar={bar} reveal={reveal} />;
+    const failure = `The behaviour could not be opened: ${failureLine(state.failure.diagnostic)}`;
+    const props = { name: stemOf(draft.path), tabs, bar, twin: session, navigation, failure, held: state.held };
+    return <Unavailable {...props} />;
   }
-  return <Waiting tabs={tabs} failed={false} words="Opening the behaviour…" />;
+  return <Waiting tabs={tabs} words="Opening the behaviour…" />;
 }

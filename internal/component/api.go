@@ -16,6 +16,8 @@ type Detail = layer.Detail
 
 type Composed = layer.Composed
 
+type Fit = layer.Fit
+
 type ExampleSummary = layer.ExampleSummary
 
 type NewPlant = layer.NewPlant
@@ -23,6 +25,14 @@ type NewPlant = layer.NewPlant
 var (
 	ErrUnknownExample = layer.ErrUnknownExample
 	ErrNoKindFiles    = layer.ErrNoKindFiles
+	ErrReadingRange   = layer.ErrReadingRange
+)
+
+const (
+	FitUnitIncompatible = layer.FitUnitIncompatible
+	FitRangeUnstated    = layer.FitRangeUnstated
+	FitRangeNarrower    = layer.FitRangeNarrower
+	FitReadingNotNumber = layer.FitReadingNotNumber
 )
 
 type DomainSummary = specs.Summary

@@ -81,9 +81,9 @@ func TestCheckImplementsComparesTheDomainWithTheKindFilesOfItsDirectories(t *tes
 
 func TestCheckImplementsReadsNothingForADomainWithoutImplements(t *testing.T) {
 	t.Parallel()
-	malformed := kindsDirectoryWith(t, map[string]string{"thin.kind.json": `{"kind": "thin"}`, "broken.kind.json": "{"})
+	malformed := kindsDirectoryWith(t, map[string]string{"pump.kind.json": `{"kind": "pump"}`, "broken.kind.json": "{"})
 	pipes := t.TempDir()
-	if err := syscall.Mkfifo(filepath.Join(pipes, "pipe.kind.json"), 0o600); err != nil {
+	if err := syscall.Mkfifo(filepath.Join(pipes, "pump.kind.json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	cases := []struct {
@@ -113,12 +113,44 @@ func TestCheckImplementsReadsNothingForADomainWithoutImplements(t *testing.T) {
 	}
 }
 
-func TestCheckImplementsRefusesAMalformedKindFileInAnyDirectoryOfADomainThatImplements(t *testing.T) {
+func TestCheckImplementsRefusesAMalformedKindFileOfTheKindTheDomainImplements(t *testing.T) {
 	t.Parallel()
-	dir := kindsDirectoryWith(t, map[string]string{"thin.kind.json": `{"kind": "thin"}`})
+	dir := kindsDirectoryWith(t, map[string]string{"pump.kind.json": `{"kind": "pump"}`})
 	_, err := CheckImplements(pumpImplementing(t, "pump"), []string{dir})
-	if err == nil || !strings.Contains(err.Error(), "thin.kind.json: plantwire: kind file fails its schema") {
+	if err == nil || !strings.Contains(err.Error(), "pump.kind.json: plantwire: kind file fails its schema") {
 		t.Fatalf("CheckImplements = %v, want the schema refusal naming the file", err)
+	}
+}
+
+func TestCheckImplementsNeverReadsAKindFileOfAKindTheDomainDoesNotImplement(t *testing.T) {
+	t.Parallel()
+	pipes := t.TempDir()
+	if err := syscall.Mkfifo(filepath.Join(pipes, "pipe.kind.json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	unrelated := map[string]string{"pump.kind.json": pumpKindContent(t), "pump_monitor.kind.json": `{"kind": "pump_monitor"}`,
+		"broken.kind.json": "{", "twice-a.kind.json": `{"kind": "twice"}`, "twice-b.kind.json": `{"kind": "twice"}`}
+	for name, dirs := range map[string][]string{"files that do not parse": {kindsDirectoryWith(t, unrelated)}, "a named pipe": {pipes, kindsDirectoryWith(t, unrelated)}} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			checked, err := CheckImplements(pumpImplementing(t, "pump"), dirs)
+			if err != nil || len(checked) != 1 || checked[0].Kind != "pump" {
+				t.Fatalf("CheckImplements = %v, %v, want the pump kind checked and every other kind file left unread", checked, err)
+			}
+		})
+	}
+}
+
+func TestCheckImplementsFindsAKindFileByTheKindItDeclaresNotByItsFileName(t *testing.T) {
+	t.Parallel()
+	dir := kindsDirectoryWith(t, map[string]string{"renamed.kind.json": pumpKindContent(t)})
+	checked, err := CheckImplements(pumpImplementing(t, "pump"), []string{dir})
+	if err != nil || len(checked) != 1 || checked[0].Kind != "pump" {
+		t.Fatalf("CheckImplements = %v, %v, want the pump kind found in renamed.kind.json", checked, err)
+	}
+	both := kindsDirectoryWith(t, map[string]string{"a.kind.json": pumpKindContent(t), "b.kind.json": pumpKindContent(t)})
+	if _, err := CheckImplements(pumpImplementing(t, "pump"), []string{both}); !errors.Is(err, wire.ErrKindFileDuplicate) {
+		t.Fatalf("two files of the implemented kind = %v, want ErrKindFileDuplicate", err)
 	}
 }
 

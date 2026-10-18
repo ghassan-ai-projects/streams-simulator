@@ -91,7 +91,7 @@ const library: readonly Entry[] = [
   { id: "streamsim/tachometer", title: "Tachometer", unit: "rpm", range: null },
 ];
 
-function instrumentFrom(entry: Entry, match: Instrument["match"] = ""): Instrument {
+function instrumentFrom(entry: Entry, match: Instrument["match"] = "", fit: Instrument["fit"] = null): Instrument {
   return instrumentOf({
     ref: `${entry.id}@1`,
     title: entry.title,
@@ -99,6 +99,7 @@ function instrumentFrom(entry: Entry, match: Instrument["match"] = ""): Instrume
     min: entry.range?.min ?? null,
     max: entry.range?.max ?? null,
     match,
+    fit,
   });
 }
 
@@ -119,10 +120,21 @@ const matches: Readonly<Record<string, Readonly<Record<string, "exact" | "conver
   rpm: { "streamsim/tachometer": "exact" },
 };
 
-function wire(entry: Entry, match?: string) {
+function fitFor(entry: Entry, args: Readonly<Record<string, unknown>>) {
+  const { min, max } = args;
+  if (entry.range === null) return { ok: true };
+  if (typeof min !== "number" || typeof max !== "number") {
+    return { ok: false, code: "range_unstated", member: "eu_range" };
+  }
+  const covers = entry.range.min <= min && entry.range.max >= max;
+  return covers ? { ok: true } : { ok: false, code: "range_narrower", member: "eu_range" };
+}
+
+function wire(entry: Entry, match?: string, args?: Readonly<Record<string, unknown>>) {
   const { id, title, unit, range } = entry;
   const base = { id, version: 1, kind: "instrument", title, class: "x", tags: [], unit };
-  return { ...base, ...(range === null ? {} : { range }), ...(match === undefined ? {} : { match }) };
+  const fit = args === undefined ? {} : { fit: fitFor(entry, args) };
+  return { ...base, ...(range === null ? {} : { range }), ...(match === undefined ? {} : { match }), ...fit };
 }
 
 function listed(args: Readonly<Record<string, unknown>>) {
@@ -139,7 +151,7 @@ function listed(args: Readonly<Record<string, unknown>>) {
   const found = matches[unit] ?? {};
   const entries = library.flatMap((entry) => {
     const match = found[entry.id];
-    return match === undefined ? [] : [wire(entry, match)];
+    return match === undefined ? [] : [wire(entry, match, args)];
   });
   return success({ components: entries });
 }
@@ -178,10 +190,11 @@ function lacksTwinMembers(content: string): boolean {
   }
 }
 
-function suggested(fake: FakeBridge) {
-  const lacking = [...fake.files.entries()].some(
-    ([path, file]) => path.startsWith("kinds/") && file.ok && lacksTwinMembers(file.value.content),
-  );
+function suggested(fake: FakeBridge, args: Readonly<Record<string, unknown>>) {
+  const stems = list(args.kinds).map(text);
+  const files = stems.map((stem) => fake.files.get(`kinds/${stem}.kind.json`));
+  if (files.some((file) => !file?.ok)) return failure(cannedFailure("not_found", 404, "no kind"));
+  const lacking = files.some((file) => file !== undefined && file.ok && lacksTwinMembers(file.value.content));
   const issue = {
     pointer: "/kinds/0/kind",
     message: 'needs "resolution"',
@@ -207,7 +220,7 @@ export function twinBridge() {
     success({ valid: true, kinds: [{ kind: "cooler", kind_digest: "sha256:abc", metrics: 3, commands: 2 }] }),
   );
   fake.handlers.set("kind.check", kindCheck);
-  fake.handlers.set("kind.suggest", () => suggested(fake));
+  fake.handlers.set("kind.suggest", (args) => suggested(fake, args));
   fake.handlers.set("component.list", listed);
   fake.handlers.set("kind.twin", (args) => {
     fake.addFile(String(args.out), { id: "cooler-sensor-twin" }, "d1");

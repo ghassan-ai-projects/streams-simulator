@@ -20,7 +20,7 @@ test("everything a twin still needs is found at once in the interface step, befo
   writeKind(lab, "e2e_needs", needy);
   await page.goto("/");
   await page.getByRole("region", { name: "Devices" }).getByRole("button", { name: "Edit e2e_needs" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "e2e_needs" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: "Device", exact: true })).toBeFocused();
   await expect(page.getByText("Needed for a twin: 3")).toBeVisible();
   await expect(step(page, /^Interface/)).toContainText("Valid");
   const needs = page.getByRole("region", { name: "Needed for a twin" });

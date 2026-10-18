@@ -29,7 +29,39 @@ func Directories(dirs []string) ([]domain.KindSource, error) {
 	return sources, nil
 }
 
+func Scan(dirs []string) ([]domain.KindSource, error) {
+	var sources []domain.KindSource
+	for _, dir := range dirs {
+		paths, err := kindPaths(dir)
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, readEach(paths)...)
+	}
+	return sources, nil
+}
+
+func readEach(paths []string) []domain.KindSource {
+	sources := make([]domain.KindSource, len(paths))
+	for i, path := range paths {
+		raw, err := kernel.ReadRegular(path, MaxKindFileBytes)
+		if err != nil {
+			err = fmt.Errorf("plantwire: read %s: %w", path, err)
+		}
+		sources[i] = domain.KindSource{Path: path, Raw: raw, Err: err}
+	}
+	return sources
+}
+
 func directory(dir string) ([]domain.KindSource, error) {
+	paths, err := kindPaths(dir)
+	if err != nil {
+		return nil, err
+	}
+	return Paths(paths)
+}
+
+func kindPaths(dir string) ([]string, error) {
 	names, err := kernel.Names(dir)
 	if err != nil {
 		return nil, fmt.Errorf("plantwire: list %s: %w", dir, err)
@@ -41,7 +73,7 @@ func directory(dir string) ([]domain.KindSource, error) {
 			paths = append(paths, filepath.Join(dir, name))
 		}
 	}
-	return Paths(paths)
+	return paths, nil
 }
 
 func Stream(reader io.Reader) (domain.KindSource, error) {

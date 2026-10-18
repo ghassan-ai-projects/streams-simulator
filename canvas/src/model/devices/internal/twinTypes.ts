@@ -35,6 +35,20 @@ export interface TwinChoices {
   readonly extra: Fields;
 }
 
+export type FitCode = "unit_incompatible" | "range_unstated" | "range_narrower" | "reading_not_number" | "";
+
+export interface InstrumentFit {
+  readonly ok: boolean;
+  readonly code: FitCode;
+  readonly member: string;
+}
+
+export interface InstrumentQuery {
+  readonly unit: string;
+  readonly min: number | null;
+  readonly max: number | null;
+}
+
 export interface Instrument {
   readonly ref: string;
   readonly title: string;
@@ -42,6 +56,7 @@ export interface Instrument {
   readonly min: number | null;
   readonly max: number | null;
   readonly match: "exact" | "convertible" | "";
+  readonly fit: InstrumentFit | null;
   readonly words: string;
 }
 

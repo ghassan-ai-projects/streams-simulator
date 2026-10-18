@@ -2,6 +2,7 @@ import type { DeviceState } from "./deviceDraft";
 import { isDirty } from "./deviceSelectors";
 import type { TwinState } from "./twinDraft";
 import { builtOf, isBuilding, problemsOf, verdictOf } from "./twinSelectors";
+import { twinStatusOf } from "./twinStatus";
 
 export type Step = "interface" | "behaviour" | "check";
 
@@ -23,22 +24,25 @@ function interfaceStatus(device: DeviceState): StepStatus {
   return check.kind === "checking" ? state("Checking", "busy") : state("Not checked", "");
 }
 
-export function twinReadiness(device: DeviceState): StepStatus {
+export function twinReadiness(device: DeviceState, extra = 0): StepStatus {
   if (device.phase !== "ready") return state("", "");
   const { review } = device;
-  if (review.needs.length > 0) return state(`Needed for a twin: ${String(review.needs.length)}`, "warn");
+  const needed = review.needs.length + extra;
+  if (needed > 0) return state(`Needed for a twin: ${String(needed)}`, "warn");
   if (review.state === "checking") return state("Checking what a twin needs", "busy");
   if (review.state === "done" && review.schema.length === 0) return state("Ready for a twin", "ok");
   return state("", "");
 }
 
-function behaviourStatus(twin: TwinState): StepStatus {
+function behaviourStatus(twin: TwinState, device: DeviceState): StepStatus {
   if (twin.phase === "loading") return state("Opening", "busy");
   if (twin.phase !== "ready") return state("Not started", "");
   if (isBuilding(twin)) return state("Creating", "busy");
-  if (builtOf(twin) !== null) return state("Created", "ok");
-  if (["refused", "failed", "exists"].includes(twin.build.kind)) return state("Needs attention", "warn");
-  if (problemsOf(twin).length > 0) return state("Needs choices", "warn");
+  if (twinStatusOf(twin, device).tone === "warn") {
+    return state(problemsOf(twin).length > 0 ? "Needs choices" : "Needs attention", "warn");
+  }
+  const built = builtOf(twin);
+  if (built !== null) return verdictOf(built) === "pending" ? state("Checking", "busy") : state("Created", "ok");
   return twin.touched ? state("Ready", "") : state("Not started", "");
 }
 
@@ -51,5 +55,5 @@ function checkStatus(twin: TwinState): StepStatus {
 }
 
 export function stepStatuses(device: DeviceState, twin: TwinState): Readonly<Record<Step, StepStatus>> {
-  return { interface: interfaceStatus(device), behaviour: behaviourStatus(twin), check: checkStatus(twin) };
+  return { interface: interfaceStatus(device), behaviour: behaviourStatus(twin, device), check: checkStatus(twin) };
 }

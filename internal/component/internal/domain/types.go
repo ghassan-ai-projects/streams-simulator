@@ -155,6 +155,7 @@ type Summary struct {
 	Unit    string   `json:"unit,omitempty"`
 	Range   *Range   `json:"range,omitempty"`
 	Match   string   `json:"match,omitempty"`
+	Fit     *Fit     `json:"fit,omitempty"`
 }
 
 type Detail struct {

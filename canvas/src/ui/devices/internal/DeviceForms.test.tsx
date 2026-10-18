@@ -148,6 +148,19 @@ describe("a command", () => {
     expect(screen.queryByLabelText("Argument 1 name")).toBeNull();
   });
 
+  it("moves to the name of each new argument, and shows what every box of an argument holds", async () => {
+    await editingDevice();
+    choose(/^stop/);
+    fireEvent.click(screen.getByRole("button", { name: "Add argument" }));
+    expect(screen.getByLabelText("Argument 1 name")).toHaveFocus();
+    expect(screen.getByText("Min")).toBeInTheDocument();
+    expect(screen.getByText("Max")).toBeInTheDocument();
+    expect(screen.getByText("Type")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Argument 1 name"), { target: { value: "lease_ms" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add argument" }));
+    expect(screen.getByLabelText("Argument 2 name")).toHaveFocus();
+  });
+
   it("says what is wrong with an unnamed argument", async () => {
     await editingDevice();
     choose(/^stop/);

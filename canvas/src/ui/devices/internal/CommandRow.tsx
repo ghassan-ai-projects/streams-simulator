@@ -1,16 +1,18 @@
 import {
-  chooseResponse,
+  argumentLabel,
   commandFacts,
+  noSetpointHint,
   numericArguments,
+  pickResponse,
+  placeKey,
   responseChoices,
   responseOf,
   setArgument,
   settableChoices,
-  spaced,
   twinIssuesOn,
 } from "../../../model/devices";
 import type { Command, CommandChoice, KindFile, Member } from "../../../model/devices";
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import { DriveRows } from "./DriveRows";
 import { Field, ItemIssues, Select } from "./Field";
@@ -27,8 +29,25 @@ interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly choice: CommandChoice;
 }
 
-function Sets({ twin, issues, kind, member, command, choice }: RowProps) {
+function SetpointButton({ kind, reveal }: Pick<RowProps, "kind" | "reveal">) {
+  const first = kind.metrics.find((metric) => metric.name !== "");
+  if (reveal === null) return null;
+  return (
+    <button
+      type="button"
+      className={cx(shared.secondary, panel.secondary)}
+      onClick={() => {
+        reveal(first === undefined ? { part: "kind" } : { part: "metric", key: first.key }, "writable");
+      }}
+    >
+      Set it in the Interface step
+    </button>
+  );
+}
+
+function Sets({ twin, issues, kind, member, command, choice, reveal }: RowProps) {
   const numbers = numericArguments(command);
+  const settable = settableChoices(kind);
   const on = (field: string, spot = "") =>
     twinIssuesOn(issues, { scope: "command", kind: member, key: command.key, field, spot });
   if (choice.response === "none") return null;
@@ -39,12 +58,19 @@ function Sets({ twin, issues, kind, member, command, choice }: RowProps) {
     <>
       <ItemIssues messages={on("sets")} />
       {numbers.map((argument) => (
-        <Field key={argument} label={`Reading set by ${spaced(argument)}`} field="sets" issues={on("sets", argument)}>
+        <Field
+          key={argument}
+          label={argumentLabel(argument)}
+          field="sets"
+          place={placeKey({ scope: "command", kind: member, key: command.key, field: "sets", spot: argument })}
+          hint={settable.length === 1 ? noSetpointHint : undefined}
+          issues={on("sets", argument)}
+        >
           {(aria) => (
             <Select
               aria={aria}
               value={choice.sets[argument] ?? ""}
-              choices={settableChoices(kind)}
+              choices={settable}
               onChange={(reading) => {
                 choose(twin, (all) => setArgument(all, member, command.key, argument, reading));
               }}
@@ -52,6 +78,7 @@ function Sets({ twin, issues, kind, member, command, choice }: RowProps) {
           )}
         </Field>
       ))}
+      {settable.length === 1 && <SetpointButton kind={kind} reveal={reveal} />}
     </>
   );
 }
@@ -66,14 +93,19 @@ export function CommandRow(props: RowProps) {
         <span className={panel.hint}>{commandFacts(command)}</span>
       </h4>
       <ItemIssues messages={[...on(""), ...on("drives")]} />
-      <Field label="Response" field="response" issues={on("response")}>
+      <Field
+        label="Response"
+        field="response"
+        place={placeKey({ scope: "command", kind: member, key: command.key, field: "response" })}
+        issues={on("response")}
+      >
         {(aria) => (
           <Select
             aria={aria}
             value={choice.response}
             choices={responseChoices}
             onChange={(value) => {
-              choose(twin, (all) => chooseResponse(all, member, command.key, responseOf(value)));
+              choose(twin, (all) => pickResponse(all, { member, kind: props.kind, command }, responseOf(value)));
             }}
           />
         )}

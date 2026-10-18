@@ -170,18 +170,31 @@ func equalDocuments(a, b any) bool {
 	return string(left) == string(right)
 }
 
-func TestAMalformedKindFileBlocksOnlyTheDomainsThatImplementAndTheKindCommand(t *testing.T) {
+func TestAMalformedKindFileBlocksOnlyTheDomainThatImplementsItsKindAndTheKindCommand(t *testing.T) {
 	t.Parallel()
 	broken := filepath.Dir(writeFile(t, "broken.kind.json", `{"kind": "thin"}`))
 	pond := testsupport.Domain("aquaculture-pond")
 	invoke(t, "domain", "validate", pond, "--kinds-dir", broken).mustSucceed(t).document(t, "domain_validate")
 	invoke(t, "run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--domain", "aquaculture-pond",
 		"--duration", "600", "--kinds-dir", broken).mustSucceed(t).document(t, "run")
-	if got := invoke(t, "domain", "validate", pumpDomainImplementing(t), "--kinds-dir", broken); got.code != 1 || got.failure(t)["code"] != "kind_failed" {
-		t.Fatalf("a domain that implements a kind file, beside a malformed one: exit %d, want kind_failed", got.code)
+	if got := invoke(t, "domain", "validate", pumpDomainImplementing(t), "--kinds-dir", pumpKindsDirectory(t, func(string) string { return `{"kind": "pump"}` })); got.code != 1 || got.failure(t)["code"] != "kind_failed" {
+		t.Fatalf("a domain that implements a malformed kind file: exit %d, want kind_failed", got.code)
 	}
 	if got := invoke(t, "kind", "validate", filepath.Join(broken, "broken.kind.json")); got.code != 1 || got.failure(t)["code"] != "kind_failed" {
 		t.Fatalf("kind validate of the malformed file: exit %d, want kind_failed", got.code)
+	}
+}
+
+func TestAMalformedKindFileBesideTheOneADomainImplementsBlocksNothing(t *testing.T) {
+	t.Parallel()
+	directory := pumpKindsDirectory(t, asWritten)
+	if err := os.WriteFile(filepath.Join(directory, "pump_monitor.kind.json"), []byte(`{"kind": "pump_monitor"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	doc := invoke(t, "domain", "validate", pumpDomainImplementing(t), "--kinds-dir", directory).mustSucceed(t).document(t, "domain_validate")
+	checked, _ := doc["implements_checked"].([]any)
+	if len(checked) != 1 {
+		t.Fatalf("domain validate = %v, want the pump kind checked and the unrelated malformed kind file left unread", doc)
 	}
 }
 

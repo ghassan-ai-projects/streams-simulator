@@ -1,7 +1,6 @@
 import { CircleCheck, CircleHelp, Loader, TriangleAlert } from "lucide-react";
-import type { Built, CheckRow, Draft, TwinDraft } from "../../../app/devices";
-import { builtOf, checkRows } from "../../../app/devices";
-import { partsWords } from "../../../model/devices";
+import type { CheckFact, CheckRow, Draft, TwinDraft } from "../../../app/devices";
+import { checkFacts, checkRows } from "../../../app/devices";
 import { cx, panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
@@ -38,38 +37,35 @@ function Item({ row }: { readonly row: CheckRow }) {
   );
 }
 
-function digestOf(built: Built): string {
-  const { made, implemented } = built;
-  if (made !== null) return made.digest;
-  return implemented.kind === "passed" ? implemented.checked.digest : "";
-}
-
-function Details({ built }: { readonly built: Built }) {
-  const { made } = built;
-  const digest = digestOf(built);
+function Details({ facts }: { readonly facts: readonly CheckFact[] }) {
   return (
     <details>
       <summary className={cx(shared.sectionTitle, shared.disclosure)}>Technical details</summary>
       <dl className={styles.facts}>
-        <dt>Plant file</dt>
-        <dd>{built.path}</dd>
-        <dt>Digest</dt>
-        <dd>{digest === "" ? "Not reported" : digest}</dd>
-        {made !== null && (
-          <>
-            <dt>Parts</dt>
-            <dd>{partsWords(made.channels, made.effectors, made.faults)}</dd>
-            <dt>Devices</dt>
-            <dd>{made.implements.join(", ")}</dd>
-          </>
-        )}
+        {facts.map((entry) => (
+          <Fact key={entry.label} entry={entry} />
+        ))}
       </dl>
     </details>
   );
 }
 
+function Fact({ entry }: { readonly entry: CheckFact }) {
+  return (
+    <>
+      <dt>{entry.label}</dt>
+      <dd>
+        {entry.values.map((value, index) => (
+          <span key={`${String(index)}:${value}`} className={tw.factLine}>
+            {value}
+          </span>
+        ))}
+      </dd>
+    </>
+  );
+}
+
 export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; readonly device: Draft }) {
-  const built = builtOf(draft);
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="check-title">
       <FormTitle id="check-title" words="Check" />
@@ -83,7 +79,7 @@ export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; reado
           <Item key={row.id} row={row} />
         ))}
       </ul>
-      {built !== null && <Details built={built} />}
+      <Details facts={checkFacts(draft)} />
     </section>
   );
 }

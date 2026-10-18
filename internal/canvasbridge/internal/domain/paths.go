@@ -46,6 +46,8 @@ var definitionFolders = map[string]struct {
 	"components/instruments": {ClassInstrument, ".instrument.json"},
 }
 
+var stemFolders = map[FileClass]string{ClassKind: "kinds"}
+
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
 	"verdict.json", "label.json", "sealed/journal.jsonl"}
 
@@ -60,6 +62,18 @@ func ParsePath(rel string) (WorkspacePath, error) {
 		}
 	}
 	return WorkspacePath{}, fmt.Errorf("%w: %q", ErrBadPath, rel)
+}
+
+func StemPath(class FileClass, stem string) (WorkspacePath, error) {
+	folder, named := stemFolders[class]
+	if !named {
+		return WorkspacePath{}, fmt.Errorf("%w: no folder holds %s files by name", ErrBadPath, class)
+	}
+	path, err := ParsePath(folder + "/" + stem + definitionFolders[folder].suffix)
+	if err != nil || path.Class != class || strings.Contains(stem, "/") {
+		return WorkspacePath{}, fmt.Errorf("want the name of a %s file without folder or suffix, got %q", class, stem)
+	}
+	return path, nil
 }
 
 func RunJournal(runID string) (WorkspacePath, error) {

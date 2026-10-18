@@ -21,6 +21,7 @@ type metricPlan struct {
 	file       kindMetric
 	choice     metricChoice
 	instrument *Instrument
+	conv       conversion
 	driven     []coupling
 	tauS       float64
 }

@@ -126,7 +126,7 @@ func TestTheCanvasBridgeCreatesANewKindFileWithAHyphenatedNameAndStillRefusesBad
 	}
 }
 
-func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOne(t *testing.T) {
+func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOneOnlyForTheDomainThatImplementsIt(t *testing.T) {
 	t.Parallel()
 	client, workspace := startDeviceBridge(t)
 	putKindFiles(t, client)
@@ -151,9 +151,8 @@ func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOne(t *testing.T) 
 		t.Fatalf("the issues of a bad kind file = %v, want %v", failure["issues"], wantIssues)
 	}
 	copyIntoWorkspace(t, testsupport.ThermalBoardDomain(), workspace, thermalDomain)
-	broken := refusedAction(t, client, "domain.validate", map[string]any{"path": thermalDomain})
-	if message, _ := broken["message"].(string); !strings.Contains(message, "kinds/thin.kind.json") {
-		t.Fatalf("a broken kind file in the workspace must stop domain.validate, got %v", broken)
+	if valid := client.action("domain.validate", map[string]any{"path": thermalDomain}); valid["valid"] != true {
+		t.Fatalf("a broken kind file the domain does not implement must not stop domain.validate, got %v", valid)
 	}
 }
 

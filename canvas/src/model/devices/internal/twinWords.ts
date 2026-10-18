@@ -1,4 +1,4 @@
-import { counted } from "../../shared/words";
+import { counted, spaced } from "../../shared/words";
 import { writableReadings } from "./twinMembers";
 import type { Drive } from "./twinTypes";
 import type { KindFile, Member } from "./types";
@@ -14,6 +14,12 @@ export const gainHint = "How much the following reading changes for each unit se
 
 export const timeConstantHint =
   "Seconds the reading takes to cover about two thirds of its way to the new value. Above zero.";
+
+export const noSetpointHint = "Mark a reading as a setpoint and give it a range in the Interface step";
+
+export function argumentLabel(argument: string): string {
+  return `Reading set by the ${spaced(argument)} value`;
+}
 
 export const noFollowerHint = "No reading can follow yet. Add a second reading in the Interface step.";
 
@@ -60,7 +66,10 @@ function readingName(members: readonly Member[], path: string, key: string): str
   return kind?.metrics.find((metric) => metric.key === key)?.name ?? "";
 }
 
+export const slowTimeWords = "Choose a time constant above zero.";
+
 export function effectWords(drive: Drive, path: string, members: readonly Member[]): string {
+  if (drive.timeConstantS !== null && drive.timeConstantS <= 0) return slowTimeWords;
   if (drive.gain === null || drive.timeConstantS === null || drive.from === "" || drive.metric === "") return "";
   const from = readingName(members, path, drive.from);
   const metric = readingName(members, drive.kind, drive.metric);

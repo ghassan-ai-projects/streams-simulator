@@ -17,6 +17,8 @@ interface BarProps {
 
 type PartProps = Pick<BarProps, "draft" | "twin">;
 
+const statusId = "twin-status";
+
 const tones = {
   busy: styles.statusBusy,
   warn: styles.statusWarn,
@@ -81,6 +83,7 @@ function Create({ draft, device, twin }: Pick<BarProps, "draft" | "device" | "tw
       type="button"
       className={shared.primary}
       aria-disabled={!allowed}
+      aria-describedby={allowed ? undefined : statusId}
       title={
         createBlock(draft, device) ??
         (again ? "Replace the twin with these choices" : "Create the twin from these choices")
@@ -101,7 +104,7 @@ export function TwinBar({ draft, device, twin, navigation, step }: BarProps) {
     <div className={screen.bar}>
       <Cpu size={14} aria-hidden="true" />
       <DeviceTitle path={device.path} tag={step === "check" ? "Check" : "Behaviour"} navigation={navigation} />
-      <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
+      <span id={statusId} role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
         {status.text}
       </span>
       <Reload draft={draft} twin={twin} />

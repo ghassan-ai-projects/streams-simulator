@@ -109,7 +109,7 @@ describe("the effect of a command, in words", () => {
     fireEvent.change(command.getByLabelText("Response"), { target: { value: "first_order" } });
     const effect = within(command.getByRole("group", { name: "Effect 1 of set_duty" }));
     expect(effect.queryByLabelText("Reading it sets")).toBeNull();
-    fireEvent.change(command.getByLabelText("Reading set by speed"), { target: { value: "m4" } });
+    fireEvent.change(command.getByLabelText("Reading set by the speed value"), { target: { value: "m4" } });
     const from = effect.getByLabelText("Reading it sets");
     expect(
       within(from)

@@ -12,16 +12,19 @@ export interface Aria {
   readonly "aria-invalid": true | undefined;
   readonly "aria-describedby": string | undefined;
   readonly "data-field": string | undefined;
+  readonly "data-place"?: string | undefined;
 }
 
 interface FieldProps {
   readonly label: string;
   readonly field?: string;
+  readonly place?: string;
   readonly hint?: string | undefined;
   readonly caution?: string;
   readonly issues: readonly string[];
   readonly needs?: readonly string[];
   readonly group?: boolean;
+  readonly reserve?: boolean;
   readonly children: (aria: Aria) => ReactNode;
 }
 
@@ -31,17 +34,32 @@ interface NotesProps {
   readonly caution: string;
   readonly issues: readonly string[];
   readonly needs: readonly string[];
+  readonly reserve: boolean;
 }
 
-function Notes({ id, hint, caution, issues, needs }: NotesProps) {
+function IssueLines({ issues }: { readonly issues: readonly string[] }) {
   return (
-    <div id={id} className={styles.notes} aria-live="polite">
+    <>
       {issues.map((message, index) => (
         <p key={`${String(index)}:${message}`} className={styles.issue}>
           <TriangleAlert size={12} aria-hidden="true" />
           {message}
         </p>
       ))}
+    </>
+  );
+}
+
+function Notes({ id, hint, caution, issues, needs, reserve }: NotesProps) {
+  return (
+    <div id={id} className={styles.notes} aria-live="polite">
+      {reserve ? (
+        <div className={styles.reserved}>
+          <IssueLines issues={issues} />
+        </div>
+      ) : (
+        <IssueLines issues={issues} />
+      )}
       {needs.map((message, index) => (
         <p key={`${String(index)}:${message}`} className={notes.need}>
           <Info size={12} aria-hidden="true" />
@@ -58,12 +76,18 @@ function isNoted(hint: string | undefined, caution: string, issues: readonly str
   return issues.length + needs.length > 0 || caution !== "" || hint !== undefined;
 }
 
-function ariaOf(id: string, field: string | undefined, issues: readonly string[], noted: boolean): Aria {
+interface Where {
+  readonly field: string | undefined;
+  readonly place: string | undefined;
+}
+
+function ariaOf(id: string, where: Where, issues: readonly string[], noted: boolean): Aria {
   return {
     id,
     "aria-invalid": issues.length > 0 ? true : undefined,
     "aria-describedby": noted ? `${id}-notes` : undefined,
-    "data-field": field,
+    "data-field": where.field,
+    "data-place": where.place,
   };
 }
 
@@ -71,9 +95,10 @@ function FieldLabel({ id, label, group }: { readonly id: string; readonly label:
   return group ? <span id={`${id}-label`}>{label}</span> : <label htmlFor={id}>{label}</label>;
 }
 
-export function Field({ label, field, hint, caution = "", issues, needs = [], group = false, children }: FieldProps) {
+export function Field(props: FieldProps) {
+  const { label, field, place, hint, caution = "", issues, needs = [], group = false, reserve = false } = props;
   const id = useId();
-  const aria = ariaOf(id, field, issues, isNoted(hint, caution, issues, needs));
+  const aria = ariaOf(id, { field, place }, issues, isNoted(hint, caution, issues, needs));
   return (
     <div
       className={styles.field}
@@ -82,8 +107,8 @@ export function Field({ label, field, hint, caution = "", issues, needs = [], gr
     >
       <FieldLabel id={id} label={label} group={group} />
       <div className={styles.control}>
-        {children(aria)}
-        <Notes id={`${id}-notes`} hint={hint} caution={caution} issues={issues} needs={needs} />
+        {props.children(aria)}
+        <Notes id={`${id}-notes`} hint={hint} caution={caution} issues={issues} needs={needs} reserve={reserve} />
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import type { DeviceSession, Draft } from "../../../app/devices";
-import { interfaceIssues, twinNeedsOf } from "../../../app/devices";
+import { interfaceIssues, interfaceNeedsOf } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { stemOf } from "../../../model/devices";
-import { screen } from "../../primitives";
+import { screen, useStore } from "../../primitives";
 import { CommandForm } from "./CommandForm";
 import { DeviceBar } from "./DeviceBar";
 import { DeviceDetails } from "./DeviceDetails";
@@ -35,7 +35,7 @@ function ItemForm({ draft, devices, issues, needs }: FormProps & { readonly draf
 
 export function InterfaceStep({ draft, devices, navigation, tabs, focus }: InterfaceProps) {
   const issues = useMemo(() => interfaceIssues(draft), [draft]);
-  const needs = twinNeedsOf(draft);
+  const needs = interfaceNeedsOf(draft, useStore(devices.twin));
   const host = useFieldFocus(focus);
   return (
     <div className={screen.screen}>

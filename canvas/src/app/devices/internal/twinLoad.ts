@@ -15,7 +15,9 @@ import type { DeviceFailure, DevicesGateway, FileContent, Outcome } from "../../
 import { failure, success } from "../../ports";
 import { unreadable } from "./deviceFailures";
 import { loadCatalogue } from "./instrumentCatalogue";
-import type { Catalogue, TwinDraft } from "./twinDraft";
+import type { Catalogue, Held, TwinDraft } from "./twinDraft";
+import type { Suggestion } from "./twinSuggest";
+import { suggestFor } from "./twinSuggest";
 
 export interface Loaded {
   readonly choicesPath: string;
@@ -30,6 +32,12 @@ export interface Loaded {
   readonly onDisk: boolean;
   readonly etag: string;
   readonly domainEtag: string;
+  readonly held: readonly Held[];
+}
+
+interface LoadFailure {
+  readonly failure: DeviceFailure;
+  readonly held: readonly Held[];
 }
 
 export async function readMember(gateway: DevicesGateway, path: string): Promise<Outcome<Member, DeviceFailure>> {
@@ -77,34 +85,29 @@ function storedOf(file: Outcome<FileContent, DeviceFailure>): Outcome<StoredFile
   return file.failure.kind === "missing" ? success({ stored: null, etag: "" }) : failure(file.failure);
 }
 
-function baseOf(
-  stored: TwinChoices | null,
-  suggestion: Outcome<Readonly<Record<string, unknown>>, DeviceFailure>,
-): Outcome<TwinChoices, DeviceFailure> {
+function baseOf(stored: TwinChoices | null, suggestion: Suggestion): Outcome<TwinChoices, LoadFailure> {
   if (stored !== null) return success(stored);
-  return suggestion.ok ? success(choicesOfDocument(suggestion.value)) : failure(suggestion.failure);
+  const { outcome, held } = suggestion;
+  return outcome.ok ? success(choicesOfDocument(outcome.value)) : failure({ failure: outcome.failure, held });
 }
 
 export async function loadTwin(
   gateway: DevicesGateway,
   path: string,
   primary: KindFile,
-): Promise<Outcome<Loaded, DeviceFailure>> {
+): Promise<Outcome<Loaded, LoadFailure>> {
   const choicesPath = twinPath(stemOf(path));
-  const [file, listing, suggestion] = await Promise.all([
-    gateway.readFile(choicesPath),
-    gateway.listing(),
-    gateway.suggest(),
-  ]);
+  const [file, listing] = await Promise.all([gateway.readFile(choicesPath), gateway.listing()]);
   const read = storedOf(file);
-  if (!read.ok) return failure(read.failure);
+  if (!read.ok) return failure({ failure: read.failure, held: [] });
   const { stored, etag } = read.value;
-  const base = baseOf(stored, suggestion);
-  if (!base.ok) return failure(base.failure);
-  const suggested = suggestion.ok ? suggestion.value : null;
   const known = listing.ok ? listing.value.kinds : [];
   const lead = { path, kind: primary };
   const members = [lead, ...(await readOthers(gateway, known, lead, stored))];
+  const suggestion = await suggestFor(gateway, members);
+  const base = baseOf(stored, suggestion);
+  if (!base.ok) return failure(base.failure);
+  const suggested = suggestion.outcome.ok ? suggestion.outcome.value : null;
   const doc = settledChoices(base.value, members, suggested);
   const domains = listing.ok ? listing.value.domains : [];
   const domainEtag = await domainEtagOf(gateway, domains, doc.id);
@@ -122,6 +125,7 @@ export async function loadTwin(
     onDisk: domainEtag !== "",
     etag,
     domainEtag,
+    held: suggestion.held,
   });
 }
 

@@ -15,9 +15,11 @@ test("a device is created, defined, given a behaviour and made into a twin with 
   await page.keyboard.type("e2e_kbd");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("region", { name: "Editing e2e_kbd" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "e2e_kbd" })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 2, name: "Device", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Name", { exact: true })).toBeFocused();
 
-  await tabUntil(page, page.getByRole("button", { name: "Add a reading" }));
+  await tabUntil(page, page.getByRole("button", { name: "Add a reading" }), "Shift+Tab");
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Name", { exact: true })).toBeFocused();
   await page.keyboard.type("level");

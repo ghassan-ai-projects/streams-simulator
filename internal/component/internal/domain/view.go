@@ -2,12 +2,16 @@ package domain
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
 )
+
+var ErrReadingRange = errors.New("component: the reading range is not usable")
 
 func (l *Library) List() []Summary {
 	summaries := make([]Summary, 0, len(l.equipment)+len(l.instruments))
@@ -32,11 +36,43 @@ func summarizeInstrument(i *Instrument) Summary {
 		Unit: i.Unit, Range: i.Range}
 }
 
-func (l *Library) ListForUnit(unit string) []Summary {
-	if unit == "" {
-		return l.List()
+func (l *Library) ListForReading(unit string, low, high *float64) ([]Summary, error) {
+	eu, err := readingRange(unit, low, high)
+	if err != nil {
+		return nil, err
 	}
-	return l.InstrumentsForUnit(unit)
+	if unit == "" {
+		return l.List(), nil
+	}
+	return l.fitted(l.InstrumentsForUnit(unit), kindMetric{DataType: "number", Unit: unit, EURange: eu}), nil
+}
+
+func (l *Library) fitted(found []Summary, metric kindMetric) []Summary {
+	for i := range found {
+		verdict := l.fit(l.instruments[reference(found[i].ID, found[i].Version)], metric).Fit
+		found[i].Fit = &verdict
+	}
+	slices.SortStableFunc(found, func(a, b Summary) int { return cmp.Compare(fitRank(a), fitRank(b)) })
+	return found
+}
+
+func fitRank(summary Summary) int {
+	if summary.Fit.OK {
+		return 0
+	}
+	return 1
+}
+
+func readingRange(unit string, low, high *float64) (*Range, error) {
+	switch {
+	case low == nil && high == nil:
+		return nil, nil
+	case unit == "" || low == nil || high == nil:
+		return nil, fmt.Errorf("%w: give both a minimum and a maximum, with the unit they are in", ErrReadingRange)
+	case notFinite(*low) || notFinite(*high) || *low >= *high:
+		return nil, fmt.Errorf("%w: the minimum %v must be a number below the maximum %v", ErrReadingRange, *low, *high)
+	}
+	return &Range{Min: *low, Max: *high}, nil
 }
 
 func (l *Library) InstrumentsForUnit(unit string) []Summary {
@@ -70,6 +106,8 @@ func rankOf(match string) int {
 	}
 	return 1
 }
+
+func notFinite(number float64) bool { return math.IsNaN(number) || math.IsInf(number, 0) }
 
 func orEmpty(values []string) []string {
 	if values == nil {

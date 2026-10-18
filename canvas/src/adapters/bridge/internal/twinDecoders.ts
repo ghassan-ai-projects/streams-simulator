@@ -10,6 +10,18 @@ function matchOf(value: unknown): LibraryInstrument["match"] {
   return value === "exact" || value === "convertible" ? value : "";
 }
 
+const fitCodes: readonly NonNullable<LibraryInstrument["fit"]>["code"][] = [
+  "unit_incompatible",
+  "range_unstated",
+  "range_narrower",
+  "reading_not_number",
+];
+
+function fitOf(value: unknown): LibraryInstrument["fit"] {
+  if (!isRecord(value) || typeof value.ok !== "boolean") return null;
+  return { ok: value.ok, code: fitCodes.find((code) => code === value.code) ?? "", member: text(value.member) };
+}
+
 export function instrumentRefs(value: unknown): readonly LibraryInstrument[] | null {
   if (!isRecord(value) || !Array.isArray(value.components)) return null;
   return value.components
@@ -22,6 +34,7 @@ export function instrumentRefs(value: unknown): readonly LibraryInstrument[] | n
       min: bound(record(entry.range).min),
       max: bound(record(entry.range).max),
       match: matchOf(entry.match),
+      fit: fitOf(entry.fit),
     }));
 }
 

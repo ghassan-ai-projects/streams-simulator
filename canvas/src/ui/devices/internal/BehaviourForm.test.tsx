@@ -22,27 +22,31 @@ describe("the behaviour step", () => {
     expect(inReading("duty").getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
     expect(inReading("mode").getByText(/A plain reading: the twin reports it as it is/)).toBeInTheDocument();
     expect(inCommand("set_duty").getByLabelText("Response")).toHaveValue("direct");
-    expect(inCommand("set_duty").getByLabelText("Reading set by duty")).toHaveDisplayValue("duty");
+    expect(inCommand("set_duty").getByLabelText("Reading set by the duty value")).toHaveDisplayValue("duty");
     expect(screen.getByText("stop: a safe stop. The twin handles it itself.")).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 
-  it("changes the instrument of a reading from a list ranked by the binary, showing its unit, range and any conversion", async () => {
+  it("changes the instrument of a reading from a list ranked by the binary, showing its range and any conversion", async () => {
     const { fake } = await behaviourOf();
     const group = inReading("temperature");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
     const search = group.getByLabelText("Find an instrument for temperature");
     expect(search).toHaveFocus();
     expect(group.getByText("1 instrument")).toBeInTheDocument();
-    const list = group.getByRole("listbox", { name: "Instruments for temperature" });
-    expect(list).toHaveAttribute("size", "6");
+    const list = group.getByRole("radiogroup", { name: "Instruments for temperature" });
     expect(
       within(list)
-        .getAllByRole("option")
-        .map((option) => option.textContent),
-    ).toEqual(["No instrument: a plain reading", "Thermistor · degC · -40 to 125 · different unit — needs conversion"]);
+        .getAllByRole("radio")
+        .map((radio) => radio.closest("label")?.textContent),
+    ).toEqual(["No instrument: a plain reading", "Thermistor · -40 to 125 · measured in degC, converted"]);
+    within(list)
+      .getAllByRole("radio")
+      .forEach((radio) => {
+        expect(radio).toBeEnabled();
+      });
     fireEvent.change(search, { target: { value: "thermis" } });
-    fireEvent.change(list, { target: { value: "streamsim/thermistor@1" } });
+    fireEvent.click(within(list).getByRole("radio", { name: /Thermistor/ }));
     fireEvent.click(group.getByRole("button", { name: "Use this instrument" }));
     expect(group.getByLabelText("Instrument")).toHaveDisplayValue(/Thermistor/);
     expect(group.getByRole("button", { name: "Change the instrument of temperature" })).toHaveFocus();
@@ -53,15 +57,17 @@ describe("the behaviour step", () => {
     });
   });
 
-  it("asks the binary for the instruments of each unit, so a reading sees its own", async () => {
+  it("asks the binary for the instruments of each unit and range, so a reading sees its own", async () => {
     const { fake } = await behaviourOf();
     const group = inReading("duty");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of duty" }));
-    const list = group.getByRole("listbox", { name: "Instruments for duty" });
-    expect(within(list).getAllByRole("option")[1]).toHaveTextContent("Capacitive humidity sensor · %RH · 0 to 100");
+    const list = group.getByRole("radiogroup", { name: "Instruments for duty" });
+    expect(within(list).getAllByRole("radio")[1]?.closest("label")).toHaveTextContent(
+      "Capacitive humidity sensor · 0 to 100 · measured in %RH, converted",
+    );
     expect(fake.calls.filter((call) => call.name === "component.list").map((call) => call.args)).toEqual([
-      { unit: "Cel" },
-      { unit: "%" },
+      { unit: "Cel", min: 0, max: 100 },
+      { unit: "%", min: 0, max: 100 },
     ]);
   });
 
@@ -75,22 +81,22 @@ describe("the behaviour step", () => {
     expect(group.getByText('Nothing in the library matches "zzz".')).toBeInTheDocument();
     fireEvent.change(search, { target: { value: "" } });
     fireEvent.keyDown(search, { key: "Escape" });
-    expect(group.queryByRole("listbox")).toBeNull();
+    expect(group.queryByRole("radiogroup")).toBeNull();
     expect(group.getByRole("button", { name: "Change the instrument of temperature" })).toHaveFocus();
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
-    fireEvent.change(group.getByRole("listbox"), { target: { value: "none" } });
+    fireEvent.click(group.getByRole("radio", { name: "No instrument: a plain reading" }));
     fireEvent.click(group.getByRole("button", { name: "Use this instrument" }));
     expect(group.getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
     fireEvent.click(group.getByRole("button", { name: "Close the list for temperature" }));
-    expect(group.queryByRole("listbox")).toBeNull();
+    expect(group.queryByRole("radiogroup")).toBeNull();
   });
 
   it("does not pick an instrument that a later search hides", async () => {
     await behaviourOf();
     const group = inReading("temperature");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
-    fireEvent.change(group.getByRole("listbox"), { target: { value: "streamsim/thermistor@1" } });
+    fireEvent.click(group.getByRole("radio", { name: /Thermistor/ }));
     fireEvent.change(group.getByLabelText("Find an instrument for temperature"), { target: { value: "zzz" } });
     fireEvent.click(group.getByRole("button", { name: "Use this instrument" }));
     expect(group.getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
@@ -175,9 +181,9 @@ describe("the response of a command", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
-    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "" } });
+    fireEvent.change(command.getByLabelText("Reading set by the duty value"), { target: { value: "" } });
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
-    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "m2" } });
+    fireEvent.change(command.getByLabelText("Reading set by the duty value"), { target: { value: "m2" } });
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
   });
 
@@ -198,6 +204,8 @@ describe("the response of a command", () => {
     );
     fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "0" } });
     expect(effect.getByText("Must be above zero")).toBeInTheDocument();
+    expect(effect.getByText("Choose a time constant above zero.")).toBeInTheDocument();
+    expect(effect.queryByText(/every 0 seconds/)).toBeNull();
     fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "60" } });
     expect(effect.queryByText("Must be above zero")).toBeNull();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
@@ -217,16 +225,16 @@ describe("the response of a command", () => {
     expect(command.queryByRole("group", { name: "Effect 2 of set_duty" })).toBeNull();
     fireEvent.change(command.getByLabelText("Response"), { target: { value: "none" } });
     expect(command.queryByRole("group", { name: "Effect 1 of set_duty" })).toBeNull();
-    expect(command.queryByLabelText("Reading set by duty")).toBeNull();
+    expect(command.queryByLabelText("Reading set by the duty value")).toBeNull();
   });
 
   it("asks which reading an argument sets, in words, and lets an argument go unused", async () => {
     await behaviourOf();
     const command = inCommand("set_duty");
-    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "" } });
+    fireEvent.change(command.getByLabelText("Reading set by the duty value"), { target: { value: "" } });
     expect(command.getByText("Choose the reading this command sets.")).toBeInTheDocument();
-    expect(command.getByLabelText("Reading set by lease ms")).toHaveValue("");
-    fireEvent.change(command.getByLabelText("Reading set by lease ms"), { target: { value: "m2" } });
+    expect(command.getByLabelText("Reading set by the lease ms value")).toHaveValue("");
+    fireEvent.change(command.getByLabelText("Reading set by the lease ms value"), { target: { value: "m2" } });
     expect(command.queryByText("Choose the reading this command sets.")).toBeNull();
   });
 

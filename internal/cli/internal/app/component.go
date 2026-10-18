@@ -36,7 +36,7 @@ func componentVerb(options componentOptions, library *component.Library, directo
 	case len(options.args) > 0 && (options.verb == "list" || options.verb == "validate"):
 		return nil, usagef("component %s: unexpected argument %q", options.verb, options.args[0])
 	case options.verb == "list":
-		return map[string]any{"components": library.ListFor(options.unit)}, nil
+		return listComponents(library, options)
 	case options.verb == "validate":
 		return validateComponents(library, directories), nil
 	}
