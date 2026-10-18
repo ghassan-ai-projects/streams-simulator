@@ -442,7 +442,7 @@
       "folders": ["src/ui/launch"],
       "mayImport": ["app/launch", "model/launch", "model/plant", "model/shared", "ui/primitives"],
       "entrypoint": "src/ui/launch/index.ts",
-      "callers": ["ui/plant"]
+      "callers": ["test", "ui/plant"]
     },
     "ui/review": {
       "kind": "ui",

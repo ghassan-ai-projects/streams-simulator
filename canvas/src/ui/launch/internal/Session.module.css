@@ -55,17 +55,6 @@
   margin-top: var(--space-1);
 }
 
-.pane {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .note {
   color: var(--status-warn);
-}
-
-.pane[hidden] {
-  display: none;
 }

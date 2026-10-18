@@ -40,7 +40,9 @@ export function InstanceHeader({
       </span>
       {words !== null && (
         <span>
-          <OriginMark origin={data.live?.origin ?? null} voice="silent" />
+          <span className={styles.origin}>
+            <OriginMark origin={data.live?.origin ?? null} voice="silent" />
+          </span>
           <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
           {data.live !== null && data.live.fault !== "" && (
             <span className="sr-only">{`Fault: ${data.live.fault}`}</span>

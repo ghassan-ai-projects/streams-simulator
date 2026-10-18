@@ -31,7 +31,6 @@ export type {
   Draft,
   DraftCall,
   DraftFault,
-  InstanceRole,
   LaunchPlan,
   LaunchStep,
   CallProblem,

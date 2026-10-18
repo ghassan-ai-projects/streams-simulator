@@ -3,7 +3,6 @@ export type { Acknowledgement, CallOutcome, LaunchPlan, LaunchStep } from "./int
 export type { CallProblem, PlanProblem } from "./internal/planProblems";
 export type {
   BindingNote,
-  InstanceRole,
   PlanIssue,
   PlanMember,
   PlannedInstance,

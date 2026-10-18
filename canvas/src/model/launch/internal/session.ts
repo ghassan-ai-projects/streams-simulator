@@ -24,7 +24,7 @@ export interface PlanIssue {
   readonly member?: string;
 }
 
-export type InstanceRole = "real" | "simulated";
+type InstanceRole = "real" | "simulated";
 
 export interface PlannedInstance {
   readonly instance: string;

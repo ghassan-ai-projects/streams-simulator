@@ -33,6 +33,29 @@ function useFocusOnRefusal(state: ConnectState) {
   return form;
 }
 
+function SessionFooter({ checking, onCheck }: { readonly checking: boolean; readonly onCheck: () => void }) {
+  return (
+    <div className={launch.footer}>
+      <p id="session-summary" className={launch.summary}>
+        {sessionStartWords}
+      </p>
+      <button
+        type="button"
+        className={cx(shared.secondary, panel.secondary)}
+        aria-disabled={checking}
+        onClick={() => {
+          if (!checking) onCheck();
+        }}
+      >
+        Check the plan
+      </button>
+      <button type="submit" className={cx(shared.primary, panel.primary)} aria-describedby="session-summary">
+        Start the session
+      </button>
+    </div>
+  );
+}
+
 export function SessionForm({ plant, draft, change, state, connect }: SessionFormProps) {
   const issues = liveIssues(state);
   const checking = state.phase === "checking";
@@ -55,24 +78,12 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
         <RealRows plant={plant} draft={draft} change={change} issues={issues} />
         <CheckResult state={state} rows={draft.real.length} />
       </div>
-      <div className={launch.footer}>
-        <p id="session-summary" className={launch.summary}>
-          {sessionStartWords}
-        </p>
-        <button
-          type="button"
-          className={cx(shared.secondary, panel.secondary)}
-          aria-disabled={checking}
-          onClick={() => {
-            if (!checking) void connect.check(plant.id, draft);
-          }}
-        >
-          Check the plan
-        </button>
-        <button type="submit" className={cx(shared.primary, panel.primary)} aria-describedby="session-summary">
-          Start the session
-        </button>
-      </div>
+      <SessionFooter
+        checking={checking}
+        onCheck={() => {
+          void connect.check(plant.id, draft);
+        }}
+      />
     </form>
   );
 }
