@@ -91,6 +91,9 @@ design review at 1280 and 1440 px, light and dark) and a green `make phase-gate`
 - Canvas: the emitted-CSS oracle checks module import order; a new component importing a graph stylesheet early puts
   `graph` before `vendor-react-flow`. Keeping inactive panes mounted duplicates labels (two "Seed" inputs) and breaks
   locators; unmount them and keep drafts in the store.
+- `e2e/devices.spec.ts:115` (a device gets a twin) runs 7–12 s alone but once hit the 30 s test timeout in a full
+  `make phase-gate` on the M3 tip; it passed 5/5 alone and the full e2e (114) passed on rerun. Watch it in R10; if it
+  recurs, find what it waits on rather than raising the timeout.
 - The thermal LED/fan experiment must stay green (`go test ./internal/device/... ./internal/deviceworld/... ./test/contract/...`).
 
 ## Not in this repository (handoff briefs are part of R13)
