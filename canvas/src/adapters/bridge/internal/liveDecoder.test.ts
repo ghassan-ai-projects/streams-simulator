@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { benchGatewayLost, benchWarmingUp } from "../../../test/benchLiveFixture";
 import { liveWire } from "../../../test/liveFixture";
 import { journalEntry } from "./journalDecoder";
 
@@ -109,12 +110,38 @@ describe("binary session evidence", () => {
         { instance: "zone-01", origin: "real" },
       ],
     };
-    expect(journalEntry(JSON.stringify({ ...envelope, plan }))).toEqual({
+    expect(journalEntry(JSON.stringify({ ...envelope, plan: { ...plan, domain: "arduino-thermal" } }))).toEqual({
       kind: "session",
       atNs: 0,
+      domain: "arduino-thermal",
       simulated: ["fan-01"],
     });
     expect(journalEntry(JSON.stringify({ ...envelope, plan: {} }))).toBeNull();
     expect(journalEntry(JSON.stringify({ ...envelope, mode: "evaluate", plan }))).toBeNull();
+  });
+
+  it("reads the bench's own records: warming-up and simulated readings, and a lost gateway with no marks", () => {
+    expect(journalEntry(benchWarmingUp)).toMatchObject({
+      kind: "live",
+      live: {
+        marks: [],
+        devices: [
+          { health: "simulated", readings: [{ value: 0, state: "simulated" }] },
+          { health: "simulated", readings: [{ value: null, state: "untrusted", quality: "warming_up" }, {}] },
+          { environment: "hardware", health: "online", readings: [{ value: null, state: "untrusted" }, {}] },
+        ],
+      },
+    });
+    expect(journalEntry(benchGatewayLost)).toMatchObject({
+      kind: "live",
+      live: {
+        gateway: "offline",
+        marks: [
+          { subject: "gateway", label: "Gateway link offline" },
+          { subject: "device", entity: "zone-01" },
+        ],
+        devices: [{}, {}, { health: "offline", readings: [{ state: "disconnected" }, { state: "disconnected" }] }],
+      },
+    });
   });
 });

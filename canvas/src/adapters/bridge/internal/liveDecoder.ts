@@ -104,7 +104,7 @@ export function liveSnapshot(row: Record<string, unknown>): SessionLive | null {
   if (!choice(row.host, links) || !choice(row.gateway, links)) return null;
   const devices = rows(row.devices, device);
   const commands = rows(row.commands, command);
-  const marks = rows(row.marks, mark);
+  const marks = row.marks === null ? [] : rows(row.marks, mark);
   if (devices === null || commands === null || marks === null) return null;
   return {
     key: stateKey(row),

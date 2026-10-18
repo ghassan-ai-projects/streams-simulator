@@ -40,7 +40,7 @@ export function LiveSessionHold({
   readonly workspace: WorkspaceStore;
   readonly run: string;
 }) {
-  useReviewOpen(review, workspace, run);
+  useReviewOpen(review, workspace, run, "live");
   return null;
 }
 

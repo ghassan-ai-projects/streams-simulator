@@ -9,6 +9,7 @@ export type { ReviewPlant } from "./reviewPlant";
 export interface ReviewSession extends Store<ReviewState> {
   readonly index: PlaybackIndex;
   open(worldId: string, known?: RunEntry): void;
+  openLive(worldId: string, known?: RunEntry): void;
   refreshCompleted(worldId: string, known: RunEntry | undefined): void;
   close(): void;
   badgeFor(worldId: string): Badge | null;

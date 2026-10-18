@@ -3,10 +3,13 @@ import { useStore } from "../../primitives";
 import type { Stores } from "./stores";
 
 export function ReviewRoute({ stores, worldId }: { readonly stores: Stores; readonly worldId: string }) {
-  const live = useStore(stores.liveReview);
+  const held = useStore(stores.liveReview);
+  const connected = useStore(stores.launch.connect);
+  const live = connected.phase === "live" && connected.run === worldId;
   return (
     <ReviewScreen
-      review={live.worldId === worldId ? stores.liveReview : stores.review}
+      live={live}
+      review={live || held.worldId === worldId ? stores.liveReview : stores.review}
       plants={stores.plants}
       workspace={stores.workspace}
       navigation={stores.navigation}

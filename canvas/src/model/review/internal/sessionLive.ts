@@ -120,6 +120,6 @@ export function deviceReadings(device: SessionDevice): readonly ReadingView[] {
   return device.readings.map((reading) => {
     const value = reading.value;
     if (carriesValue(reading) && value !== null) return { channel: reading.name, value, unit: reading.unit };
-    return { channel: reading.name, value: readingWords(reading).stateWords, unit: "" };
+    return { channel: reading.name, value: readingStateWords[reading.state], unit: "" };
   });
 }

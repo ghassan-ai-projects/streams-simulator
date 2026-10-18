@@ -56,6 +56,7 @@ export interface ReviewState {
   readonly recordedOrigins: ReadonlyMap<string, InstanceOrigin>;
   readonly connection: "none" | "running" | "saved";
   readonly simulated: readonly string[];
+  readonly sessionDomain: string;
   readonly binding: TimedBinding | null;
 }
 
@@ -84,10 +85,16 @@ export const idle: ReviewState = {
   recordedOrigins: new Map(),
   connection: "none",
   simulated: [],
+  sessionDomain: "",
   binding: null,
 };
 
-export function connectionOf(known: RunEntry | undefined): ReviewState["connection"] {
+export function endedSinceReport(state: ReviewState, worldId: string, known: RunEntry | undefined): boolean {
+  const { report } = state;
+  return known?.ended === true && state.worldId === worldId && report.phase === "ready" && !report.value.ended;
+}
+
+function connectionOf(known: RunEntry | undefined): ReviewState["connection"] {
   return known?.connected ?? "none";
 }
 
@@ -103,7 +110,8 @@ export function withSessionEntry(state: ReviewState, entry: SessionEntry): Revie
   if (entry.kind === "closed")
     return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
   const connection = state.connection === "none" ? "saved" : state.connection;
-  if (entry.kind === "session") return { ...state, connection, simulated: entry.simulated };
+  if (entry.kind === "session")
+    return { ...state, connection, simulated: entry.simulated, sessionDomain: entry.domain };
   if (entry.kind === "origin")
     return {
       ...state,
@@ -137,9 +145,7 @@ export function knownUnfinished(known: RunEntry | undefined): known is RunEntry 
   return known !== undefined && !known.complete;
 }
 
-export function absentLoads(
-  known: RunEntry | undefined,
-): Pick<ReviewState, "verified" | "runDomain"> | Record<string, never> {
+function absentLoads(known: RunEntry | undefined): Pick<ReviewState, "verified" | "runDomain"> | Record<string, never> {
   if (!knownUnfinished(known)) return {};
   return {
     verified: {
@@ -151,4 +157,9 @@ export function absentLoads(
     },
     runDomain: { phase: "failed", failure: incomplete },
   };
+}
+
+export function visitState(worldId: string, known: RunEntry | undefined, openedAt: number): ReviewState {
+  const simulated = known?.simulated ?? [];
+  return { ...idle, worldId, openedAt, connection: connectionOf(known), simulated, ...absentLoads(known) };
 }

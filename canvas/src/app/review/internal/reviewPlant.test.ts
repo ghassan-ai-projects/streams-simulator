@@ -53,6 +53,17 @@ describe("the plant a review draws", () => {
     const loading = reviewState({ report: { phase: "loading" } });
     expect(reviewPlantFor(loading, idle, workspace)).toMatchObject({ fallback: undefined, key: "run:w-1" });
   });
+
+  it("draws a running session's plant from its recorded session before any report names it", () => {
+    const live = reviewState({ report: { phase: "loading" }, connection: "running", sessionDomain: "mini" });
+    expect(reviewPlantFor(live, idle, workspace)).toMatchObject({ fallback: "domains/mini.domain.json" });
+    const unnamed = reviewState({
+      report: { phase: "ready", value: { ...report, domainId: "" } },
+      connection: "running",
+      sessionDomain: "mini",
+    });
+    expect(reviewPlantFor(unnamed, idle, workspace)).toMatchObject({ fallback: "domains/mini.domain.json" });
+  });
 });
 
 function session() {

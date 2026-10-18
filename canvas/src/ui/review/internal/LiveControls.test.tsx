@@ -23,7 +23,7 @@ describe("live controls", () => {
     const backToLive = vi.fn();
     const state = reviewState({ connection: "running", following: false, lastLiveAtMs: 1_000 });
     const view = render(<LiveControls review={review(backToLive)} state={state} startNs={0} now={() => 13_400} />);
-    expect(screen.getByText("Last update 12 s ago")).toBeInTheDocument();
+    expect(screen.getByText("Last live snapshot 12 s ago")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back to live" }));
     expect(backToLive).toHaveBeenCalledOnce();
     expect(document.activeElement).toBe(screen.getByRole("status"));
@@ -40,7 +40,7 @@ describe("live controls", () => {
     });
     render(<LiveControls review={review()} state={state} startNs={0} now={() => 45_000} />);
     expect(screen.getByRole("status")).toHaveTextContent("Live · following newest record");
-    expect(screen.getByText("No update for 45 s")).toBeInTheDocument();
+    expect(screen.getByText("No live snapshot for 45 s")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "A live snapshot could not be read at 00:01:15; the view is not current.",
     );

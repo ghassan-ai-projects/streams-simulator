@@ -48,11 +48,11 @@ describe("session readings", () => {
     expect(readingWords(shown)).toEqual(words);
   });
 
-  it("puts the state in place of the value on the node readout", () => {
-    const device = { ...board, readings: [reading("good", "good"), reading("disconnected", "")] };
+  it("puts the short state in place of the value on the node readout", () => {
+    const device = { ...board, readings: [reading("good", "good"), reading("untrusted", "warming_up")] };
     expect(deviceReadings(device)).toEqual([
       { channel: "temperature_c", value: 28, unit: "degC" },
-      { channel: "temperature_c", value: "disconnected", unit: "" },
+      { channel: "temperature_c", value: "untrusted", unit: "" },
     ]);
   });
 });
@@ -78,11 +78,11 @@ describe("session devices and origins", () => {
   it("words health, reboots and the age of the last update", () => {
     expect(deviceLine({ ...board, reboots: 1 })).toBe("Online · board uno-07 · boot 61 · 1 reboot");
     expect(deviceLine({ ...board, health: "simulated", reboots: 2 })).toBe(
-      "Simulated · no link · board uno-07 · boot 61 · 2 reboots",
+      "Simulated · no link · board uno-07 · 2 reboots",
     );
     expect(deviceLine(board)).toBe("Online · board uno-07 · boot 61");
-    expect(updateAgeWords(12_400)).toBe("Last update 12 s ago");
-    expect(updateAgeWords(45_000)).toBe("No update for 45 s");
+    expect(updateAgeWords(12_400)).toBe("Last live snapshot 12 s ago");
+    expect(updateAgeWords(45_000)).toBe("No live snapshot for 45 s");
   });
 });
 

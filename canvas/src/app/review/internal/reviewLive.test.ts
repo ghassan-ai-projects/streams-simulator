@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { success } from "../../ports";
-import { FakeBridge } from "../../../test/fakeBridge";
+import { failure, success } from "../../ports";
+import { flushPromises } from "../../../test/deferred";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
-import { reportWire } from "../../../test/runFixture";
+import { observation, reportWire } from "../../../test/runFixture";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { liveWire } from "../../../test/liveFixture";
 import { ReviewStore } from "./reviewStore";
@@ -203,6 +204,43 @@ describe("live review cursor", () => {
     store.open("w-2");
     store.close();
     expect([...bridge.followers.keys()]).toEqual(["w-2"]);
+    store.close();
+    expect([...bridge.followers.keys()]).toEqual([]);
+  });
+
+  it("follows the newest observation as well as the newest snapshot", () => {
+    const { store, bridge, timers } = setup();
+    bridge.stream("w-2", [liveWire(10e9), observation(12, 30e9, "CH-1", "chiller.power", 92.7)], "caught_up");
+    timers.advance(250);
+    expect(store.snapshot()).toMatchObject({ following: true, positionNs: 30e9, live: { atNs: 10e9 } });
+    store.close();
+  });
+
+  it("asks for the report again once caught up when the session's first report failed", async () => {
+    const bridge = new FakeBridge();
+    bridge.actions.set("run.report", failure(cannedFailure("bridge_failed", 422, "too early")));
+    const timers = fakeClock();
+    const store = new ReviewStore(bridge.review, timers, timers);
+    const known = sampleWorkspace.runs.find((run) => run.worldId === "w-2");
+    if (known === undefined) throw new Error("missing fixture");
+    store.open("w-2", { ...known, connected: "running" });
+    await flushPromises();
+    expect(store.snapshot().report.phase).toBe("failed");
+    bridge.actions.set("run.report", success(reportWire));
+    bridge.stream("w-2", [liveWire(10e9)], "caught_up");
+    await flushPromises();
+    expect(store.snapshot()).toMatchObject({ caughtUp: true, report: { phase: "ready" } });
+    store.close();
+  });
+
+  it("follows a running session again after its stream failed, and keeps its holders", () => {
+    const { store, bridge, timers } = setup();
+    bridge.stream("w-2", [], "failed");
+    expect(store.snapshot().playback.phase).toBe("failed");
+    timers.advance(1000);
+    expect([...bridge.followers.keys()]).toEqual(["w-2"]);
+    bridge.stream("w-2", [liveWire(10e9)], "caught_up");
+    expect(store.snapshot()).toMatchObject({ caughtUp: true, positionNs: 10e9 });
     store.close();
     expect([...bridge.followers.keys()]).toEqual([]);
   });

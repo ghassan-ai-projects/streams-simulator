@@ -31,11 +31,10 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 
 func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) {
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: p.spec, Adapter: p.adapter, Seed: p.session.WorldSeed(),
-		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out})
+		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: sessionNote(p.result())})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}
-	r.JournalSession(sessionNote(p.result()))
 	return r, nil
 }
 

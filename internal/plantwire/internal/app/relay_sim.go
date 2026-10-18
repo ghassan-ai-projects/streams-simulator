@@ -65,14 +65,18 @@ func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, e
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: spec, Adapter: adapterSpec, Seed: o.Seed, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out})
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: simSession(o)})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	if o.Session.Domain != "" {
-		r.JournalSession(sessionNote(o.Session))
-	}
 	return r, nil
+}
+
+func simSession(o SimulatedOptions) map[string]any {
+	if o.Session.Domain == "" {
+		return nil
+	}
+	return sessionNote(o.Session)
 }
 
 func loadSimInputs(o SimulatedOptions) (*simdomain.Compiled, *model.Adapter, error) {

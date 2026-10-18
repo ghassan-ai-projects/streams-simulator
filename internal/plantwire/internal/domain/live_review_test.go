@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"slices"
@@ -272,5 +273,15 @@ func TestMarksCarryTheEventWordsAndASubject(t *testing.T) {
 	got := marksOf(l)
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("marks = %+v, want %+v", got, want)
+	}
+}
+
+func TestASnapshotWithNoMarksWritesAnEmptyListNotNull(t *testing.T) {
+	t.Parallel()
+	l := NewLive(true, nil, nil)
+	l.Fields()
+	encoded, err := json.Marshal(l.Fields()["marks"])
+	if err != nil || string(encoded) != "[]" {
+		t.Fatalf("marks = %s, %v, want [] (the journal schema requires an array)", encoded, err)
 	}
 }

@@ -92,7 +92,7 @@ func NewLive(gateway bool, instances map[string]string, bound []Bound) *Live {
 }
 
 func (l *Live) Fields() map[string]any {
-	marks := slices.Clone(l.marks[max(0, len(l.marks)-maxLiveMarks):])
+	marks := append([]LiveMark{}, l.marks[max(0, len(l.marks)-maxLiveMarks):]...)
 	l.marks = nil
 	return map[string]any{"host": l.host, "gateway": l.gateway, "devices": l.sortedDevices(), "commands": l.commandCopies(), "marks": marks, "commands_truncated": l.truncated}
 }

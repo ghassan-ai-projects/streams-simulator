@@ -58,14 +58,15 @@ function rebootWords(count: number): string {
 
 export function deviceLine(device: SessionDevice): string {
   const reboots = rebootWords(device.reboots);
-  return [healthWords[device.health], `board ${device.board}`, `boot ${device.bootId}`, reboots]
-    .filter((part) => part !== "")
-    .join(" · ");
+  const boot = device.health === "simulated" ? "" : `boot ${device.bootId}`;
+  return [healthWords[device.health], `board ${device.board}`, boot, reboots].filter((part) => part !== "").join(" · ");
 }
 
 const staleUpdateMs = 30_000;
 
 export function updateAgeWords(ageMs: number): string {
   const seconds = Math.max(0, Math.floor(ageMs / 1000));
-  return ageMs >= staleUpdateMs ? `No update for ${String(seconds)} s` : `Last update ${String(seconds)} s ago`;
+  return ageMs >= staleUpdateMs
+    ? `No live snapshot for ${String(seconds)} s`
+    : `Last live snapshot ${String(seconds)} s ago`;
 }

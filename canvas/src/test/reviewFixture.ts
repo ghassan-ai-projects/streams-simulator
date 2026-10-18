@@ -19,6 +19,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     recordedOrigins: new Map(),
     connection: "none",
     simulated: [],
+    sessionDomain: "",
     binding: null,
     following: false,
     newestNs: 0,

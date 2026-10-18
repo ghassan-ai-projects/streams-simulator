@@ -12,7 +12,7 @@ interface Observation {
 }
 
 export type JournalEntry =
-  | { readonly kind: "session"; readonly atNs: number; readonly simulated: readonly string[] }
+  | { readonly kind: "session"; readonly atNs: number; readonly domain: string; readonly simulated: readonly string[] }
   | { readonly kind: "live"; readonly live: SessionLive; readonly atNs: number }
   | { readonly kind: "live-unreadable"; readonly atNs: number }
   | { readonly kind: "observation"; readonly observation: Observation }

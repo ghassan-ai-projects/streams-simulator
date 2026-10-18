@@ -8,7 +8,14 @@ function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined
   return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
 }
 
-export function useReviewOpen(review: ReviewSession, workspace: WorkspaceStore, worldId: string): void {
+export type OpenMode = "review" | "live";
+
+export function useReviewOpen(
+  review: ReviewSession,
+  workspace: WorkspaceStore,
+  worldId: string,
+  mode: OpenMode = "review",
+): void {
   const listing = useStore(workspace);
   const known = useRef<RunEntry | undefined>(undefined);
   const settled = listing.phase !== "loading";
@@ -18,9 +25,10 @@ export function useReviewOpen(review: ReviewSession, workspace: WorkspaceStore, 
   }, [listing, worldId, review]);
   useEffect(() => {
     if (!settled) return undefined;
-    review.open(worldId, known.current);
+    if (mode === "live") review.openLive(worldId, known.current);
+    else review.open(worldId, known.current);
     return () => {
       review.close();
     };
-  }, [review, worldId, settled]);
+  }, [review, worldId, settled, mode]);
 }

@@ -685,7 +685,7 @@ Built as the decision above, with these details and deviations:
   the live bar says "A live snapshot could not be read at hh:mm:ss; the view is not current" until the next good snapshot.
 - **Catching up.** The bridge's run event stream sends `caught_up` once it has read the journal to its end; until then
   the live bar says "Catching up to live…" and the graph bar "catching up", not "following". The bar shows the age of the
-  last snapshot ("Last update 12 s ago"; from 30 s, a display-only rule, "No update for N s"). End on the timeline of a
+  last snapshot ("Last live snapshot 12 s ago"; from 30 s, a display-only rule, "No live snapshot for N s"). End on the timeline of a
   running session is "Back to live"; focus stays on the live status after "Back to live". The end-of-load seek no longer
   clears following for a running session.
 - **One live store.** The shell keeps a second review store open for the running session (`liveReview`), shared by the
@@ -696,5 +696,12 @@ Built as the decision above, with these details and deviations:
   up"); command rows show the side they were routed to, the run-clock time sent and coloured stage chips; the plant
   screen's primary action while live is "Open live view", and Recent runs marks the running session "Live".
 - **Bridge.** `RecordedSession` accepts the `session` record only as the first observer session record of the journal.
+- **Re-review fixes.** The bench recording showed `marks: null` in 523 of 529 `live` records (the binary wrote a nil
+  slice); the decoder reads a null `marks` as no marks, so those snapshots are no longer unreadable (the binary should
+  still write `[]`). The live view of a session loads its plant from the session record's domain before any report
+  exists, asks for a failed report again once caught up, follows the newer of the newest snapshot and the newest
+  observation, and follows a running session again (after 1 s) when its event stream fails, for example while the run
+  folder does not exist yet. Pills of session marks show the binary's event words and stay inside the timeline; a node
+  card shows the short reading state (the reason is in the inspectors); simulated rows show their board but no boot.
 - **Deferred.** De-collision of overlapping timeline pills, keeping fit-zoom across a scrub, the board-readings heading
   alignment and keeping the plan check in view are left to the next design review.

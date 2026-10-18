@@ -1,5 +1,6 @@
 import type { EventMark, InstanceOrigin, JournalEntry, PlaybackIndex, SessionLive } from "../../../model/review";
 import { originOf } from "../../../model/review";
+import type { RunEntry } from "../../../model/workspace";
 import type { LiveHistory, ReviewState } from "./reviewState";
 
 export type LiveItem =
@@ -119,7 +120,7 @@ function followsNewest(state: ReviewState): boolean {
   return state.following && state.connection === "running";
 }
 
-export function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: number): ReviewState {
+function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: number): ReviewState {
   if (items.length === 0) return state;
   const fresh = items.flatMap((item) => (item.kind === "snapshot" ? [item.live] : []));
   const liveHistory = appendSnapshots(state.liveHistory, fresh);
@@ -139,8 +140,23 @@ export function liveItemOf(entry: JournalEntry): LiveItem | null {
   return entry.kind === "live-unreadable" ? { kind: "unreadable", atNs: entry.atNs } : null;
 }
 
-export function caughtUpAt(state: ReviewState): ReviewState {
-  return { ...atPosition(state, followsNewest(state) ? state.newestNs : state.positionNs), caughtUp: true };
+function newestOf(state: ReviewState, index: PlaybackIndex): number {
+  return Math.max(state.newestNs, index.bounds()?.endNs ?? state.newestNs);
+}
+
+export function drained(
+  state: ReviewState,
+  items: readonly LiveItem[],
+  nowMs: number,
+  index: PlaybackIndex,
+): ReviewState {
+  const next = withLiveBatch(state, items, nowMs);
+  const newest = newestOf(next, index);
+  return followsNewest(next) && next.positionNs !== newest ? atPosition(next, newest) : next;
+}
+
+export function toLive(state: ReviewState, index: PlaybackIndex): ReviewState {
+  return { ...atPosition(state, newestOf(state, index)), playing: false, following: true };
 }
 
 export function loadStart(state: ReviewState, index: PlaybackIndex): number | null {
@@ -155,4 +171,9 @@ export function playStart(state: ReviewState, index: PlaybackIndex): ReviewState
   if (bounds === null || start === null) return null;
   const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
   return { ...atPosition(state, fresh ? start : state.positionNs), playing: true, following: false };
+}
+
+export function liveEntry(worldId: string, known: RunEntry | undefined): RunEntry {
+  const base = { incompleteReason: "", explore: false, seed: null, plant: "", durationS: 0, recordedAt: "", faults: 0 };
+  return { ...base, ...known, worldId, ended: false, complete: false, connected: "running" };
 }

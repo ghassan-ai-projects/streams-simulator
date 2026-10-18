@@ -23,15 +23,17 @@ interface ReviewScreenProps {
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
   readonly worldId: string;
+  readonly live?: boolean;
 }
 
-export function ReviewScreen({ review, plants, workspace, navigation, launch, worldId }: ReviewScreenProps) {
+export function ReviewScreen(props: ReviewScreenProps) {
+  const { review, plants, workspace, navigation, launch, worldId, live = false } = props;
   const stored = useStore(review);
   const view = useRunPlant(stored, plants, workspace);
   const { plant } = view;
   const state = useShownOrigins(stored, plant);
   const [hall, setHall] = useState<string | null>(null);
-  useReviewOpen(review, workspace, worldId);
+  useReviewOpen(review, workspace, worldId, live ? "live" : "review");
   useClosePlant(plants, worldId);
   usePlaybackKeys(review);
   const unit = useUnitOf(plant);

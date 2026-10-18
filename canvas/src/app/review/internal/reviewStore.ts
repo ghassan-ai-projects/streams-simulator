@@ -1,28 +1,28 @@
 import type { RunEntry } from "../../../model/workspace";
-import { PlaybackIndex, advance, badgeOf } from "../../../model/review";
+import { PlaybackIndex, advance } from "../../../model/review";
 import type { Badge, JournalEntry } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
+import { BadgeBook } from "./badgeBook";
 import { FrameLoop } from "./frameLoop";
 import type { LiveItem } from "./liveState";
-import { atPosition, caughtUpAt, liveItemOf, loadStart, playbackBounds, playStart, withLiveBatch } from "./liveState";
+import { atPosition, drained, liveEntry, liveItemOf, loadStart, playbackBounds, playStart, toLive } from "./liveState";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
 import {
-  absentLoads,
-  connectionOf,
+  endedSinceReport,
   finalLoadsFor,
   idle,
   knownUnfinished,
   toLoad,
   withListedConnection,
+  visitState,
   withSessionEntry,
 } from "./reviewState";
 
-export type { ReviewState } from "./reviewState";
 export class ReviewStore extends Observable<ReviewState> {
   index = new PlaybackIndex();
-  private readonly badges = new Map<string, Badge>();
+  private readonly badges = new BadgeBook();
   private stop: (() => void) | null = null;
   private readonly operations: OperationIdentity;
   private readonly reports = createOperationIdentity();
@@ -57,19 +57,38 @@ export class ReviewStore extends Observable<ReviewState> {
       void this.loadVerify(worldId, session);
       void this.loadRunDomain(worldId, session);
     }
-    this.stop = this.gateway.follow(worldId, {
+    this.stop = this.follow(worldId, session, known);
+  }
+
+  openLive(worldId: string, known?: RunEntry): void {
+    this.open(worldId, liveEntry(worldId, known));
+  }
+
+  private follow(worldId: string, session: Operation, known: RunEntry | undefined): () => void {
+    return this.gateway.follow(worldId, {
       entry: (entry) => {
         this.take(session, entry);
       },
       caughtUp: () => {
-        this.markCaughtUp(session);
+        this.markCaughtUp(worldId, session);
       },
       closed: () => {
         this.finish(worldId, session, "ready");
       },
       failed: () => {
         this.finish(worldId, session, "failed");
+        if (this.snapshot().connection === "running") this.retryLater(worldId, session, known);
       },
+    });
+  }
+
+  private retryLater(worldId: string, session: Operation, known: RunEntry | undefined): void {
+    this.scheduler.schedule(1000, () => {
+      if (!session.live()) return;
+      const holders = this.holders;
+      this.release();
+      this.open(worldId, known);
+      this.holders = holders;
     });
   }
 
@@ -79,9 +98,7 @@ export class ReviewStore extends Observable<ReviewState> {
     this.pending = 0;
     this.livePending = [];
     this.index = new PlaybackIndex();
-    const connection = connectionOf(known);
-    const simulated = known?.simulated ?? [];
-    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), connection, simulated, ...absentLoads(known) });
+    this.set(visitState(worldId, known, this.clock.nowMs()));
     return session;
   }
 
@@ -89,13 +106,7 @@ export class ReviewStore extends Observable<ReviewState> {
     const listed = withListedConnection(this.snapshot(), known);
     if (listed.worldId === worldId && listed !== this.snapshot()) this.set(listed);
     const state = this.snapshot();
-    if (
-      known?.ended !== true ||
-      state.worldId !== worldId ||
-      state.report.phase !== "ready" ||
-      state.report.value.ended
-    )
-      return;
+    if (!endedSinceReport(state, worldId, known)) return;
     const session = this.operations.current();
     if (session === null) return;
     this.set({ ...state, report: { phase: "loading" } });
@@ -117,14 +128,7 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   badgeFor(worldId: string): Badge | null {
-    return this.badges.get(worldId) ?? null;
-  }
-
-  private recordBadge(): void {
-    const { worldId, report, verified } = this.snapshot();
-    if (worldId !== null && report.phase === "ready" && verified.phase !== "loading") {
-      this.badges.set(worldId, badgeOf(report.value, verified));
-    }
+    return this.badges.of(worldId);
   }
 
   seek(positionNs: number): void {
@@ -135,11 +139,13 @@ export class ReviewStore extends Observable<ReviewState> {
     const state = this.drainLive();
     if (state.connection !== "running") return;
     this.pause();
-    this.set({ ...atPosition(state, state.newestNs), playing: false, following: true });
+    this.set(toLive(state, this.index));
   }
 
-  private markCaughtUp(session: Operation): void {
-    if (session.live()) this.set(caughtUpAt(this.drainLive()));
+  private markCaughtUp(worldId: string, session: Operation): void {
+    if (!session.live()) return;
+    this.set({ ...this.drainLive(), caughtUp: true });
+    if (this.snapshot().report.phase === "failed") void this.loadReport(worldId, session);
   }
 
   play(): void {
@@ -231,7 +237,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private drainLive(): ReviewState {
     const batch = this.livePending;
     this.livePending = [];
-    return withLiveBatch(this.snapshot(), batch, this.clock.nowMs());
+    return drained(this.snapshot(), batch, this.clock.nowMs(), this.index);
   }
 
   private async loadReport(worldId: string, session: Operation): Promise<void> {
@@ -242,14 +248,14 @@ export class ReviewStore extends Observable<ReviewState> {
       (state, report) => ({ ...state, report }),
     );
     if (!applied) return;
-    this.recordBadge();
+    this.badges.record(this.snapshot());
     this.resumeFinalLoads(worldId, session);
     this.refreshIfLive(worldId, session);
   }
 
   private resumeFinalLoads(worldId: string, session: Operation): void {
     const state = this.snapshot();
-    if (state.report.phase !== "ready" || !state.report.value.ended) return;
+    if (state.connection === "running" || state.report.phase !== "ready" || !state.report.value.ended) return;
     if (this.finals.deferred.delete("domain")) {
       this.set({ ...state, runDomain: { phase: "loading" } });
       void this.loadRunDomain(worldId, session);
@@ -278,7 +284,7 @@ export class ReviewStore extends Observable<ReviewState> {
       this.gateway.verify(worldId),
       (state, verified) => ({ ...state, verified }),
     );
-    if (applied) this.recordBadge();
+    if (applied) this.badges.record(this.snapshot());
   }
 
   private async loadInto<T>(

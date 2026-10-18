@@ -73,6 +73,7 @@ function projectEntry(entry: Record<string, unknown>): JournalEntry {
     return {
       kind: "session",
       atNs,
+      domain: text(record(entry.plan).domain),
       simulated: instances
         .filter((instance) => instance.origin === "simulated")
         .map((instance) => text(instance.instance)),
