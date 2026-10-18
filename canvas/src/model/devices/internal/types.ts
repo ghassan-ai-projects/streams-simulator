@@ -27,7 +27,8 @@ export interface ArgRow {
 }
 
 export type Arguments =
-  { readonly kind: "rows"; readonly rows: readonly ArgRow[] } | { readonly kind: "custom"; readonly schema: Fields };
+  | { readonly kind: "rows"; readonly rows: readonly ArgRow[]; readonly closed?: true }
+  | { readonly kind: "custom"; readonly schema: Fields };
 
 export interface Command {
   readonly key: string;

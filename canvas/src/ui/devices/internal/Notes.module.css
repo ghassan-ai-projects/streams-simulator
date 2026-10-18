@@ -62,11 +62,9 @@
 .readyBusy,
 .readyOk,
 .readyWarn {
-  flex: 0 1 auto;
-  max-width: 160px;
+  flex: 0 0 auto;
   font-size: var(--text-sm);
-  line-height: 1.2;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .readyIdle,
@@ -158,8 +156,13 @@
 
 .heldItem {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heldActions {
+  display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-2);
 }
 
@@ -171,7 +174,6 @@
 .heldText {
   display: flex;
   margin: 0;
-  flex: 1 1 200px;
   align-items: flex-start;
   gap: var(--space-1);
   color: var(--status-truth);

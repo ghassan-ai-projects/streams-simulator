@@ -11,6 +11,7 @@ interface ConfirmProps {
   readonly confirmWords: string;
   readonly needsConfirm: boolean;
   readonly disabled?: boolean;
+  readonly onAsking?: (asking: boolean) => void;
   readonly onConfirm: () => void;
 }
 
@@ -48,15 +49,23 @@ function Question({ question, confirmWords, onAnswer }: QuestionProps) {
   );
 }
 
-export function ConfirmButton(props: ConfirmProps) {
-  const { words, icon, title, question, confirmWords, needsConfirm, disabled = false, onConfirm } = props;
-  const [asking, setAsking] = useState(false);
+function useReturnFocusToTrigger(asking: boolean) {
   const trigger = useRef<HTMLButtonElement>(null);
   const wasAsking = useRef(false);
   useEffect(() => {
     if (wasAsking.current && !asking) trigger.current?.focus();
     wasAsking.current = asking;
   }, [asking]);
+  return trigger;
+}
+
+export function ConfirmButton(props: ConfirmProps) {
+  const { words, icon, title, question, confirmWords, needsConfirm, disabled = false, onAsking, onConfirm } = props;
+  const [asking, setAsking] = useState(false);
+  const trigger = useReturnFocusToTrigger(asking);
+  useEffect(() => {
+    onAsking?.(asking && needsConfirm);
+  }, [asking, needsConfirm, onAsking]);
   if (asking && needsConfirm) {
     return (
       <Question

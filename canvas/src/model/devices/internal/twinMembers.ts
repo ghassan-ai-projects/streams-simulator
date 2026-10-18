@@ -1,5 +1,6 @@
 import type { CommandChoice, KindChoice, MetricChoice } from "./twinTypes";
-import type { Command, KindFile, Metric } from "./types";
+import { record, text } from "../../shared/json";
+import type { Command, Fields, KindFile, Metric } from "./types";
 
 export const neutralMetric: MetricChoice = { instrument: "none", initial: null };
 
@@ -9,8 +10,15 @@ function numeric(type: string): boolean {
   return type === "number" || type === "integer";
 }
 
+function numericProperties(schema: Fields): readonly string[] {
+  const properties = record(schema.properties);
+  return Object.entries(properties)
+    .filter(([name, spec]) => name !== "" && numeric(text(record(spec).type)))
+    .map(([name]) => name);
+}
+
 export function numericArguments(command: Command): readonly string[] {
-  if (command.args.kind !== "rows") return [];
+  if (command.args.kind !== "rows") return numericProperties(command.args.schema);
   return command.args.rows.filter((row) => numeric(row.type) && row.name !== "").map((row) => row.name);
 }
 

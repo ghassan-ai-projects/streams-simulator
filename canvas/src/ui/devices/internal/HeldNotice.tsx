@@ -28,24 +28,26 @@ export function HeldNotice({ held, twin, navigation }: HeldProps) {
   if (held.length === 0) return null;
   return (
     <section className={notes.held} aria-label="Devices that are not ready for a twin">
-      {held.map((entry) => (
+      {held.map((entry, index) => (
         <div key={entry.path} className={notes.heldItem}>
           <p className={notes.heldText}>
             <Info size={14} aria-hidden="true" />
             {`${entry.words}.`}
           </p>
-          <button
-            type="button"
-            className={cx(shared.secondary, panel.secondary)}
-            onClick={() => {
-              navigation.go({ screen: "device", path: entry.path });
-            }}
-          >
-            {`Open ${entry.name}`}
-          </button>
+          <div className={notes.heldActions}>
+            <button
+              type="button"
+              className={cx(shared.secondary, panel.secondary)}
+              onClick={() => {
+                navigation.go({ screen: "device", path: entry.path });
+              }}
+            >
+              {`Open ${entry.name}`}
+            </button>
+            {index === held.length - 1 && <RetryButton twin={twin} />}
+          </div>
         </div>
       ))}
-      <RetryButton twin={twin} />
     </section>
   );
 }

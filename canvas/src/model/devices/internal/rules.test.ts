@@ -193,7 +193,8 @@ describe("arguments as rows and as a schema", () => {
 
   it.each([
     ["a missing type", { properties: {} }],
-    ["an extra keyword", { type: "object", properties: {}, additionalProperties: false }],
+    ["an open additionalProperties", { type: "object", properties: {}, additionalProperties: true }],
+    ["an extra keyword", { type: "object", properties: {}, title: "x" }],
     ["a required name that is not a property", { type: "object", properties: {}, required: ["a"] }],
     ["a property with extra keywords", { type: "object", properties: { a: { type: "string", pattern: "x" } } }],
     ["a property of another type", { type: "object", properties: { a: { type: "array" } } }],
@@ -201,6 +202,21 @@ describe("arguments as rows and as a schema", () => {
   ])("keeps a schema with %s as it is", (_name, schema) => {
     expect(argumentsOf(schema)).toEqual({ kind: "custom", schema });
     expect(schemaOf({ kind: "custom", schema })).toBe(schema);
+  });
+
+  it("reads a schema that forbids other arguments into rows, and writes the same schema back", () => {
+    const schema = {
+      type: "object",
+      properties: { position: { type: "number", minimum: 0, maximum: 100 } },
+      additionalProperties: false,
+    };
+    const args = argumentsOf(schema);
+    expect(args).toEqual({
+      kind: "rows",
+      rows: [{ name: "position", type: "number", min: 0, max: 100, required: false }],
+      closed: true,
+    });
+    expect(schemaOf(args)).toEqual(schema);
   });
 
   it("takes an empty schema for no arguments", () => {

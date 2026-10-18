@@ -2,7 +2,7 @@ import { isRecord, list } from "../../shared/json";
 import type { ArgRow, Arguments, Fields } from "./types";
 
 const argTypes: readonly string[] = ["number", "integer", "boolean", "string"];
-const schemaKeys: readonly string[] = ["type", "properties", "required"];
+const schemaKeys: readonly string[] = ["type", "properties", "required", "additionalProperties"];
 const propertyKeys: readonly string[] = ["type", "minimum", "maximum"];
 
 function bound(value: unknown): number | null {
@@ -21,6 +21,7 @@ function simple(schema: Fields): boolean {
   const names = isRecord(schema.properties) ? Object.keys(schema.properties) : [];
   return (
     schema.type === "object" &&
+    (schema.additionalProperties === undefined || schema.additionalProperties === false) &&
     Object.keys(schema).every((key) => schemaKeys.includes(key)) &&
     required.every((entry) => typeof entry === "string" && names.includes(entry))
   );
@@ -36,7 +37,7 @@ export function argumentsOf(schema: Fields): Arguments {
     if (row === null) return { kind: "custom", schema };
     rows.push(row);
   }
-  return { kind: "rows", rows };
+  return { kind: "rows", rows, ...(schema.additionalProperties === false ? { closed: true as const } : {}) };
 }
 
 function propertyOf(row: ArgRow): Fields {
@@ -54,6 +55,7 @@ export function schemaOf(args: Arguments): Fields {
     type: "object",
     properties: Object.fromEntries(args.rows.map((row) => [row.name, propertyOf(row)])),
     ...(required.length === 0 ? {} : { required }),
+    ...(args.closed === true ? { additionalProperties: false } : {}),
   };
 }
 

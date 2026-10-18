@@ -201,11 +201,11 @@
 .statusBusy,
 .statusOk,
 .statusWarn {
-  flex: 1 1 auto;
-  min-width: 120px;
-  line-height: 1.2;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--text-sm);
 }
 

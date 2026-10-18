@@ -11,7 +11,7 @@ import {
   removeItem,
   renameKind,
 } from "./kindEdits";
-import { blankKind, parseKind } from "./kindFile";
+import { blankKind, parseKind, serialiseKind } from "./kindFile";
 import type { KindFile } from "./types";
 
 function read(source: string): KindFile {
@@ -75,6 +75,16 @@ describe("editing the arguments of a command", () => {
     });
     const removed = removeArgument(changed, "c1", 0);
     expect(removed.commands[0]?.args).toMatchObject({ rows: [{ name: "duty" }] });
+  });
+
+  it("keeps a schema that forbids other arguments closed through an edit", () => {
+    const closed = read(
+      '{"kind":"k","commands":[{"name":"x","args_schema":{"type":"object","properties":{"position":{"type":"number"}},"additionalProperties":false}}]}',
+    );
+    const edited = addArgument(closed, "c1");
+    expect(edited.commands[0]?.args).toMatchObject({ kind: "rows", closed: true });
+    const written = JSON.parse(serialiseKind(edited)) as { commands: { args_schema: Record<string, unknown> }[] };
+    expect(written.commands[0]?.args_schema.additionalProperties).toBe(false);
   });
 
   it("leaves a command whose arguments it cannot show as it is", () => {

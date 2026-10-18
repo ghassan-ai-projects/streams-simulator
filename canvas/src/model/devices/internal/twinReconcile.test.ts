@@ -104,6 +104,11 @@ describe("what a command can set", () => {
     expect(askedCommands(cooler.kind).map((entry) => entry.name)).toEqual(["set_duty"]);
     expect(numericArguments(command)).toEqual(["duty", "lease_ms"]);
     expect(numericArguments({ ...stop, args: { kind: "custom", schema: {} } })).toEqual([]);
+    const schema = {
+      oneOf: [{ type: "object" }],
+      properties: { position: { type: "number" }, step: { type: "integer" }, label: { type: "string" }, odd: true },
+    };
+    expect(numericArguments({ ...stop, args: { kind: "custom", schema } })).toEqual(["position", "step"]);
   });
 
   it("answers for a reading or command it has no choice for", () => {

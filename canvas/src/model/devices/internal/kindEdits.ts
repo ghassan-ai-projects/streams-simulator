@@ -76,15 +76,10 @@ export function hasItem(kind: KindFile, selection: Selection): boolean {
   return true;
 }
 
-function rowsOf(command: Command): readonly ArgRow[] | null {
-  return command.args.kind === "rows" ? command.args.rows : null;
-}
-
 function withRows(kind: KindFile, key: string, edit: (rows: readonly ArgRow[]) => readonly ArgRow[]): KindFile {
-  const command = kind.commands.find((entry) => entry.key === key);
-  const rows = command === undefined ? null : rowsOf(command);
-  if (rows === null) return kind;
-  return changeCommand(kind, key, { args: { kind: "rows", rows: edit(rows) } });
+  const args = kind.commands.find((entry) => entry.key === key)?.args;
+  if (args?.kind !== "rows") return kind;
+  return changeCommand(kind, key, { args: { ...args, rows: edit(args.rows) } });
 }
 
 export function addArgument(kind: KindFile, key: string): KindFile {

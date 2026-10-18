@@ -1,4 +1,5 @@
 import { Cpu, RefreshCw, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import type { DeviceSession, Draft } from "../../../app/devices";
 import { canSave, isBusy, isDirty, rangeNeedsOf, saveStatusOf, twinReadiness } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
@@ -13,6 +14,10 @@ interface BarProps {
   readonly draft: Draft;
   readonly devices: DeviceSession;
   readonly navigation: NavigationStore;
+}
+
+interface AskProps {
+  readonly onAsking: (asking: boolean) => void;
 }
 
 const readyTones = {
@@ -46,7 +51,7 @@ function Reload({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
   );
 }
 
-function Revert({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
+function Revert({ draft, devices, onAsking }: Pick<BarProps, "draft" | "devices"> & AskProps) {
   return (
     <ConfirmButton
       words="Revert"
@@ -56,6 +61,7 @@ function Revert({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
       confirmWords="Discard them"
       needsConfirm
       disabled={!isDirty(draft) || isBusy(draft)}
+      onAsking={onAsking}
       onConfirm={() => {
         devices.revert();
       }}
@@ -100,6 +106,7 @@ function SaveButton({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
 
 export function DeviceBar({ draft, devices, navigation }: BarProps) {
   useDeviceKeys(devices);
+  const [asking, setAsking] = useState(false);
   const status = saveStatusOf(draft);
   const readiness = twinReadiness(draft, rangeNeedsOf(useStore(devices.twin)).length);
   return (
@@ -107,17 +114,19 @@ export function DeviceBar({ draft, devices, navigation }: BarProps) {
       <Cpu size={14} aria-hidden="true" />
       <DeviceTitle path={draft.path} tag="Editing" navigation={navigation} />
       <Reload draft={draft} devices={devices} />
-      <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
-        {status.text}
-      </span>
-      {readiness.text !== "" && (
-        <span role="status" className={readyTones[readiness.tone]}>
+      {!asking && (
+        <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
+          {status.text}
+        </span>
+      )}
+      {!asking && readiness.text !== "" && (
+        <span role="status" className={readyTones[readiness.tone]} title={readiness.text}>
           {readiness.text}
         </span>
       )}
-      <Revert draft={draft} devices={devices} />
-      <Check draft={draft} devices={devices} />
-      <SaveButton draft={draft} devices={devices} />
+      <Revert draft={draft} devices={devices} onAsking={setAsking} />
+      {!asking && <Check draft={draft} devices={devices} />}
+      {!asking && <SaveButton draft={draft} devices={devices} />}
     </div>
   );
 }
