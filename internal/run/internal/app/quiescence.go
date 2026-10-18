@@ -128,6 +128,12 @@ func (r *Run) JournalLive(fields map[string]any) {
 	r.journal.Live(r.journalNow(), fields)
 }
 
+func (r *Run) JournalInterrupt(fields map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Interrupt(r.journalNow(), fields)
+}
+
 func (r *Run) JournalSession(fields map[string]any) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()

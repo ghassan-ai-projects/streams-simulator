@@ -48,15 +48,15 @@ func (s *Session) handle(arrival domain.Inbound) error {
 	case "NCMD":
 		return s.rebirth()
 	}
-	return s.deviceRequest(arrival.Message)
+	return s.deviceRequest(arrival)
 }
 
-func (s *Session) deviceRequest(m domain.Message) error {
-	switch m.Type {
+func (s *Session) deviceRequest(in domain.Inbound) error {
+	switch in.Type {
 	case "DQUERY":
-		return s.send(s.devices.state(m.Device)...)
+		return s.send(s.devices.state(in.Device)...)
 	case "DCMD":
-		return s.command(m)
+		return s.command(in)
 	}
 	return nil
 }

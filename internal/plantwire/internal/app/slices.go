@@ -39,6 +39,13 @@ func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 	if err != nil {
 		return s.hostLost(inbound, err)
 	}
+	if err := s.interruptsAtBarrier(); err != nil {
+		return err
+	}
+	return s.settleBarrier(inbound, met)
+}
+
+func (s *Session) settleBarrier(inbound []domain.Inbound, met bool) error {
 	if processed := s.process(inbound); processed != nil || s.finished {
 		return processed
 	}

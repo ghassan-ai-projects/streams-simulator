@@ -120,5 +120,6 @@ type Run struct {
 	envTargets map[string]string
 	allowEnv   bool
 
-	fieldTraceDigest string
+	fieldTraceDigest   string
+	interruptLogDigest string
 }

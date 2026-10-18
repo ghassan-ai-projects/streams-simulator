@@ -65,17 +65,17 @@ func (g *Gateways) Close() error {
 		close(g.done)
 	}
 	err := g.listener.Close()
-	g.removeOwnSocket()
+	removeOwnSocket(g.path, g.socket)
 	if err != nil && !errors.Is(err, net.ErrClosed) {
 		return fmt.Errorf("plantwire relay: close: %w", err)
 	}
 	return nil
 }
 
-func (g *Gateways) removeOwnSocket() {
-	now, err := os.Lstat(g.path)
-	if err == nil && now.Mode().Type() == os.ModeSocket && os.SameFile(now, g.socket) {
-		_ = os.Remove(g.path)
+func removeOwnSocket(path string, socket os.FileInfo) {
+	now, err := os.Lstat(path)
+	if err == nil && now.Mode().Type() == os.ModeSocket && os.SameFile(now, socket) {
+		_ = os.Remove(path)
 	}
 }
 

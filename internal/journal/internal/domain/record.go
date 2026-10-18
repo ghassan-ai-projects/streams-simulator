@@ -53,6 +53,7 @@ const (
 	TypeOrigin           = "origin"
 	TypeBinding          = "binding"
 	TypeLive             = "live"
+	TypeInterrupt        = "interrupt"
 	TypeSession          = "session"
 	TypeKPITruth         = "kpi.truth"
 	TypeFaultTruth       = "fault.truth"
@@ -65,7 +66,7 @@ const (
 	keyAt     = "at_ns"
 )
 
-var sessionTypes = map[string]bool{TypeConsumerReported: true, TypePacing: true, TypeWire: true, TypeOrigin: true, TypeBinding: true, TypeLive: true, TypeSession: true}
+var sessionTypes = map[string]bool{TypeConsumerReported: true, TypePacing: true, TypeWire: true, TypeOrigin: true, TypeBinding: true, TypeLive: true, TypeInterrupt: true, TypeSession: true}
 
 func IsSession(recordType string) bool {
 	return sessionTypes[recordType]

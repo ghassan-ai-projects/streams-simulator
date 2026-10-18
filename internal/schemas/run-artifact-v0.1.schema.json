@@ -332,6 +332,11 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Optional. Present only for a run that took a field trace as an input (a plant wire relay session): the SHA-256 of field-trace.jsonl as written, whose lines are RFC 8785 canonical JSON of {ordinal, record}, one gateway record per line in the order the relay received them. `verify` and `report` compare the file on disk with this digest; a replay with a different trace therefore fails with file_differs. A run without a field trace leaves the member and the file out."
     },
+    "interrupt_log_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Optional. Present only for a run of a plant wire node that ran with a control socket (plantwire connect --control-socket): the SHA-256 of interrupts.jsonl as written, whose lines are RFC 8785 canonical JSON of {ordinal, record} (interrupt-log-v0.1): the node's hold, approval and emergency-stop controls and decisions. `verify` and `report` compare the file on disk with this digest, so a tampered log fails with file_differs; the decisions can be replayed from the inputs in the log. A run without a control socket leaves the member and the file out."
+    },
     "applied_perturbations": {
       "type": "array",
       "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",

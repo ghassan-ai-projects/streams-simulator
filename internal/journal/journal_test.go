@@ -1,6 +1,7 @@
 package journal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -146,5 +147,23 @@ func TestSessionAndLiveRecordsReachTheObserverStreamThroughTheFacade(t *testing.
 	records, err := Read(raw)
 	if err != nil || len(records) != 2 || records[0].Type != "session" || records[1].Type != "live" || records[1].Fields["gateway"] != "unknown" {
 		t.Fatalf("Read = %+v (%v), want the session record and the live snapshot", records, err)
+	}
+}
+
+func TestInterruptRecordsAreObserverSessionRecordsOutsideTheReplayableStream(t *testing.T) {
+	t.Parallel()
+	j := NewMemory(true)
+	j.ClockAdvanced(3, 3)
+	j.Interrupt(7, map[string]any{"event": "control", "op": "hold", "clock": "world", "node_ns": 7})
+	raw, err := j.Bytes(StreamObserver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := Read(raw)
+	if err != nil || len(records) != 2 || records[1].Type != "interrupt" || records[1].Fields["op"] != "hold" || records[1].AtNS != 3 || fmt.Sprint(records[1].Fields["node_ns"]) != "7" {
+		t.Fatalf("Read = %+v (%v), want the interrupt record at the stream clock with its node clock kept", records, err)
+	}
+	if Replayable([]byte(`{"type":"interrupt"}`)) {
+		t.Fatal("an interrupt record is a session record: it must stay out of the replayable stream digest")
 	}
 }

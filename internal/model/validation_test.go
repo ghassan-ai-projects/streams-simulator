@@ -124,7 +124,7 @@ func TestEveryContractMapsToAStableFailureCode(t *testing.T) {
 		ContractDeliveryLedger: "artifact_invalid", ContractStateHistory: "artifact_invalid",
 		ContractComponent: "component_invalid", ContractInstrument: "component_invalid", ContractVocabulary: "component_invalid",
 		ContractComposition: "composition_invalid", ContractKindFile: "kind_failed", ContractTwinChoices: "kind_failed",
-		ContractSessionPlan: "plantwire_failed",
+		ContractSessionPlan: "plantwire_failed", ContractNodeControl: "plantwire_failed", ContractInterruptLog: "plantwire_failed",
 	}
 	for contract, want := range cases {
 		if got, ok := contract.FailureCode(); !ok || got != want {

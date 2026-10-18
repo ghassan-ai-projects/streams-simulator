@@ -71,6 +71,10 @@ func (j *Journal) Live(atNS int64, fields map[string]any) {
 	j.observer.Append(TypeLive, atNS, fields)
 }
 
+func (j *Journal) Interrupt(atNS int64, fields map[string]any) {
+	j.observer.Append(TypeInterrupt, atNS, fields)
+}
+
 func (j *Journal) Session(atNS int64, fields map[string]any) {
 	j.observer.Append(TypeSession, atNS, fields)
 }

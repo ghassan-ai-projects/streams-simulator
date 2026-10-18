@@ -27,6 +27,7 @@ func (l *relayLoop) ensureHost(ctx context.Context) error {
 
 func (l *relayLoop) apply(moves domain.Moves) error {
 	l.rec.noted(moves.Notes)
+	l.interrupted(moves.Interrupt)
 	traced := l.record(moves.Trace)
 	upErr, downErr := l.sendUp(moves.Up), l.sendDown(moves.Down)
 	l.sim.deliver(moves.ToSim)
@@ -84,6 +85,7 @@ func (l *relayLoop) drainSim() error {
 
 func (l *relayLoop) applySim(moves domain.SimMoves) error {
 	l.rec.noted(moves.Notes)
+	l.interrupted(moves.Interrupt)
 	return errors.Join(l.record(moves.Trace), l.sendUp(moves.Up))
 }
 
@@ -104,6 +106,26 @@ func deliver(link *uds.Link, records []map[string]any, side string, lost func() 
 		return lost()
 	}
 	return nil
+}
+
+func (l *relayLoop) interrupted(entries []domain.InterruptEntry) {
+	if len(entries) == 0 {
+		return
+	}
+	l.rec.interrupts(entries)
+	view := l.relay.InterruptView()
+	l.options.Control.Publish(view)
+	l.rec.liveInterrupts(view)
+}
+
+func (l *relayLoop) serveControls() error {
+	var failed error
+	for call, ok := l.options.Control.take(); ok; call, ok = l.options.Control.take() {
+		reply, moves := l.relay.Control(call.Entry)
+		failed = errors.Join(failed, l.apply(moves))
+		call.Reply <- domain.ControlReply(reply)
+	}
+	return failed
 }
 
 func (l *relayLoop) loseHost() error {

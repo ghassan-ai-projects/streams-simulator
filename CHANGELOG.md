@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Interrupts at the node (R11, binary).** `plantwire connect --control-socket <path>` opens an owner-only socket on which an
+  operator holds, queues for approval or emergency-stops devices (all, a board or a device); the node only refuses or stops.
+  A held command is refused `local_control`, a command in approval mode is answered `queued` until approved (handed on
+  unchanged), denied (`local_control`) or past its deadline (`expired`), a host's own safe stop is never held, and an
+  emergency stop performs each safe stop in scope and latches a hold until released. One rule set serves a node of the world
+  and the relay (hardware and mixed). New contracts `node-control-v0.1` (the request and its answer) and `interrupt-log-v0.1`;
+  a session with a control socket writes `interrupts.jsonl`, covered by the optional `interrupt_log_digest` of `run.json` and
+  checked by `replay`, `verify` and `report` (an `interrupt_log` check), and journals each record as an observer `interrupt`
+  session record; the `live` snapshot gains the optional `interrupts` member. A run without a control socket has neither the
+  member nor the file, and no golden or pin changed. Gate edits: the I/O edge file `uds/control.go` is registered.
+
 - **The field trace as a run input, and mixed sessions.** `plantwire relay --out <dir>` now writes `field-trace.jsonl` beside
   its journal: every record the gateway sent, in the order the relay received it, one canonical `{ordinal, record}` line
   each and nothing else. `plantwire relay --domain <id> ...` adds the simulated world to the node: the gateway's boards

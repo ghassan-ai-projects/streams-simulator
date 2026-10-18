@@ -114,6 +114,7 @@ func (r *Relay) admittedRecord(m *Moves, in Inbound) {
 		r.stats.Dropped++
 	case in.Type == "NBIRTH":
 		r.rebirth(m, in)
+	case r.ownAnswer(m, in):
 	default:
 		r.forwardOrEnd(m, in)
 	}
@@ -185,6 +186,7 @@ func (r *Relay) track(in Inbound, seq uint64) {
 	switch in.Type {
 	case "DBIRTH":
 		r.gateway.born[in.Device] = in.BootID
+		r.noteKind(in)
 	case "DDEATH":
 		delete(r.gateway.born, in.Device)
 	case "NSYNC":

@@ -29,6 +29,7 @@ type Moves struct {
 	Err          error
 	CloseHost    bool
 	CloseGateway bool
+	Interrupt    []InterruptEntry
 	syncRouted   bool
 }
 
@@ -97,6 +98,7 @@ type Relay struct {
 	sim            *simSide
 	plan           relayPlan
 	routed         routeLedger
+	ints           *relayInterrupts
 }
 
 func NewRelay(tickMS int64) *Relay {

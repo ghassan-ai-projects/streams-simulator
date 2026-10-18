@@ -35,6 +35,10 @@ var (
 	ErrFieldTraceDigest    = layer.ErrFieldTraceDigest
 	ErrFieldTraceUncovered = layer.ErrFieldTraceUncovered
 	ErrFieldTraceFull      = layer.ErrFieldTraceFull
+
+	ErrInterruptLogMissing   = layer.ErrInterruptLogMissing
+	ErrInterruptLogDigest    = layer.ErrInterruptLogDigest
+	ErrInterruptLogUncovered = layer.ErrInterruptLogUncovered
 )
 
 const MaxStartNS = world.MaxStartNS

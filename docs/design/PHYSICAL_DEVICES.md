@@ -188,7 +188,7 @@ Rules:
 
 `streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]` is the lab shape for **hardware only**:
 gateway, relay and host, the relay being the host's one node. Simulated boards beside the gateway and the field trace as a run
-input came in R8 (below); clock pacing (D-71) and hold/approve/e-stop (R11) are not built.
+input came in R8 (below); clock pacing is not built (D-71); hold, approve and e-stop came in R11 (the last section).
 
 - **Two roles, one session each.** Toward the gateway the relay is a host: it creates the gateway socket (owner-only, the
   reference host's helper: a live socket, a regular file or a group/world-accessible directory is refused), reads the gateway's
@@ -705,3 +705,95 @@ Built as the decision above, with these details and deviations:
   card shows the short reading state (the reason is in the inspectors); simulated rows show their board but no boot.
 - **Deferred.** De-collision of overlapping timeline pills, keeping fit-zoom across a scrub, the board-readings heading
   alignment and keeping the plan check in view are left to the next design review.
+
+## R11 as-built (binary)
+
+Hold, approve each command and emergency stop (section 4.2), built in the binary; the canvas side is R11b. Decisions and
+deviations:
+
+- **One rule set, two nodes.** The rules are one pure state machine in the `plantwire` domain layer (`interrupts*.go`:
+  `Interrupts`, with `InterruptGate` wrapping it for the callers). It takes *entries* (records) and returns *entries*; it
+  never reads a clock, a socket or a map in output order. A simulated node (`Session`, a world speaking the plant wire) and the
+  relay (`Relay`, hardware only or mixed) each hold one gate and supply only records, the node's clock and the edge. A mixed
+  relay holds the one gate for both origins (the world's inner `Session` takes no controls), so a scope of `all` or a board
+  means the same for a gateway device and a simulated one.
+- **Scopes and precedence.** A scope is `{kind: all | board | device, id}` (no id for `all`; a board or device the node does
+  not have is refused `unknown_board` or `unknown_device`). Several scopes may match one device: **hold outranks approval
+  outranks nothing**. At most 64 scopes (holds and approval scopes together) are set (`too_many_scopes`; repeating a scope
+  already set is not a new one), and at most 64 commands wait, each with at most 8 repeats. Setting and clearing are explicit
+  and idempotent: `hold`, `release` (clears the hold, including a latch, on exactly that scope), `approve_mode` with `enabled`
+  true or false.
+- **Hold.** A `DCMD` in scope is refused `DRECEIPT refused, local_control` (boot id `none`, as every refusal before a boot is
+  involved) and never reaches the world or the gateway. A hold set while commands wait refuses them at once.
+- **Approve each command.** A `DCMD` in scope is answered `queued` (boot id of the device when known) and waits. `approve`
+  hands it on **unchanged**, exactly as if it had just arrived, so the normal checks (freshness, boot, epoch, policy, effector,
+  interlock) still accept or refuse it, and a hold set since then refuses it `local_control`; `deny` refuses it
+  `local_control`; a node clock past its `deadline_ns` refuses it `expired` (never later than the first barrier or tick after
+  the deadline); a command already past its deadline when it arrives is refused `expired` at once; a repeat of a waiting command
+  (same key and content) waits too and is answered with it, other content under the key is `duplicate`; a full queue refuses
+  `not_ready`. The clock is the world clock for a simulated device and the relay's wall clock (the tick time) for a hardware
+  device; an entry records which.
+- **Emergency stop.** `estop` for a scope performs the safe stop of every device in scope that declares one (a node of the
+  world invokes the domain's `safe_stop` effector through the run, so it is in the command log and replays with the world; a
+  relay sends the declared safe-stop `DCMD` to the gateway or the world, see D-82), reports `stopped` and `skipped` devices,
+  **and latches a hold on that scope** until the operator releases it: a real emergency stop does not release itself, and a host
+  that would resume the plant is answered `local_control`. This choice is deliberate and differs from a bare "send safe_stop".
+  A node of the world also sends the stopped device's `DSTATE`.
+- **Safety exemption.** A command the device's kind declares `safe_stop` is never held, queued or refused by a hold or an
+  approval mode.
+- **Never widens.** The node originates exactly one kind of command, the declared safe stop of an emergency stop, and
+  refusals and `queued` receipts. It never forwards what the host did not send, never alters a forwarded command, and consumes
+  the answers to its own stops so the host sees no receipt for a command it never issued. Without a control socket the relay is exactly
+  what "As built (R7b)" describes: it originates, answers and refuses no command.
+- **Control socket.** `plantwire connect --control-socket <path>` creates an owner-only socket (the kernel helper: owner-only
+  directory, no live socket or file at the path, removed at the end) at most 8 connections wide. One request per line
+  (`node-control-v0.1`, validated by the binary with specific reasons; the bridge validates nothing):
+
+  ```json
+  {"op": "hold", "scope": {"kind": "board", "id": "mega-01"}}
+  {"op": "approve_mode", "scope": {"kind": "all"}, "enabled": true}
+  {"op": "approve", "command_id": "cmd-7"}
+  {"op": "estop", "scope": {"kind": "device", "id": "fan-01"}}
+  {"op": "state"}
+  ```
+
+  One answer per request (`$defs/reply`): `{"result": "applied" | "refused", "reason"?, "op", "command_id"?, "stopped"?,
+  "skipped"?, "state": {...}}`. Reasons: `malformed`, `unknown_board`, `unknown_device`, `unknown_command` (approve or deny of an
+  id that does not wait), `too_many_scopes`, `node_busy`. `state` is answered at once from the last published view; every other
+  request is applied by the node and answered after (D-81). The state in every answer and in the live snapshot:
+
+  ```json
+  {"holds": [{"kind": "board", "id": "mega-01", "latched": true}], "approve": [{"kind": "all", "id": ""}],
+   "pending": [{"command_id": "cmd-7", "device": "fan-01", "command": "set_pwm_lease", "deadline_ns": 1767225780000000000,
+                "queued_at_ns": 1767225660000000000, "clock": "world"}],
+   "devices": [{"device": "fan-01", "board": "mega-01", "mode": "hold", "latched": true}]}
+  ```
+
+  `holds`, `approve` and `devices` are sorted (all, board, device; then id), `pending` is in arrival order, `devices` lists only
+  covered devices and `mode` is `hold` or `approve`.
+- **Storage and replay.** The decisions depend only on the entries and the node's clock reading in them, so they are a pure
+  function of a recorded input. The record is `interrupts.jsonl` in the run folder, owned by the `run` module like the field
+  trace (`run.NewInterruptLog`, `run.ReadInterruptLog`, `Run.SetInterruptLog`): canonical `{ordinal, record}` lines
+  (`interrupt-log-v0.1`), covered by the optional `interrupt_log_digest` of `run.json`. A run without a control socket has
+  neither the member nor the file, so no existing golden, pin or digest changes. Records: **inputs** `inventory` (the devices,
+  their boards, clocks and safe stops, written when it changes), `control`, `command` (every `DCMD` the node judged: id, key,
+  content digest, device, command, deadline, whether it is a safe stop), `clock` (a clock reading that settled waiting commands;
+  written only when it did) and `flush` (the host session ended with commands waiting; refused `session_ending`);
+  **decisions** `reply`, `verdict` (`pass`, `refuse` with a reason, or `queue`), `resolve` (a waiting command forwarded or
+  refused, with the repeats that waited with it) and `stop`; **evidence** `effect` (what a node's own stop produced). Every
+  entry carries `clock` (`world` or `wall`) and `node_ns` on that clock. `domain.ReplayInterrupts` feeds the inputs to a fresh
+  machine and requires the recorded decisions, in order, to equal what it decides (`ErrInterruptReplay`, naming the input's
+  record); `app.VerifyInterruptLog` reads the folder (digest against `run.json`), validates every record against its schema and
+  replays, and a session calls it when it ends: a log that does not replay is left out of `run.json`. `replay`, `verify` and
+  `report` check the file against the digest (`file_differs`, `file_missing`, a `interrupt_log` check). Held and denied
+  commands never reach the world; approved commands and emergency stops go through `InvokeEffector`, so they are in the command
+  log and the world replays byte for byte. The rules replay is not a subcommand (D-80).
+- **Journal.** Each entry is also an observer `interrupt` session record (outside the stream digest, like `live`), so a
+  reopened recording shows every control and decision in order. The `live` snapshot gains the optional member `interrupts`
+  (the state above), present from the first barrier or tick of a node that has a control socket and rewritten only when the state changes; a command refused
+  `local_control` is an ordinary `refused` command with that `reason`, and a command that waits stays at receipt `pending`
+  until its terminal receipt. The canvas adapter decodes strictly: R11b adds the member and the `interrupt` record type before
+  a session with a control socket is opened in the canvas, and registers `interrupts.jsonl` among the bridge's observer files.
+- **Deviations from section 4.2.** The table's "`accepted` after approval" is the normal terminal receipt of the forwarded
+  command, which can still be a refusal. Controls are served at barriers and relay ticks, not at once (D-81). Controls exist on
+  `plantwire connect` only (D-83). The relay's stop is described in D-82.

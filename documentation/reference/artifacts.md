@@ -36,6 +36,21 @@ recording and the run records no `field_trace_digest`, so `replay-trace` refuses
 document). A hardware-only relay (`--out` without `--domain`) writes the file and the wire journal but no artifact: with no
 `run.json` there is nothing to carry a digest, so that field trace has no digest cover (deferred D-75).
 
+## The interrupt log
+
+A session that ran with a control socket (`plantwire connect --control-socket`) writes `interrupts.jsonl` and records its digest in
+`run.json` as the optional member `interrupt_log_digest`: the SHA-256 of the file as written, whose lines are the canonical form of
+`{ordinal, record}` ([`interrupt-log-v0.1`](../../contracts/interrupt-log-v0.1.schema.json)). Its records are **inputs** (the
+devices the node can interrupt, an operator's control, a command of the host, a node clock reaching a time, the end of the host
+session) and the node's **decisions** about them (the answer to a control, a verdict on a command, a waiting command resolved, a
+stop ordered), plus the **effects** of the node's own stops, which are evidence and are not replayed. Replaying the inputs
+through the rules reproduces the decisions exactly; `replay`, `verify` and `report` compare the file with the digest like every
+other evidence file (`matches: false`, `reason: file_differs` or `file_missing`, `file: interrupts.jsonl`; `report` lists an
+`interrupt_log` check), and a session checks at its end that its own log replays and leaves the digest out of `run.json` if it
+does not. The same records are in the observer journal as `interrupt` session records, outside the stream digest. A run without a
+control socket has neither the member nor the file. What the world did because of an approval or an emergency stop is in the
+command log like any command, so the world replays as before.
+
 ## Artifact lifecycle
 
 `run.json` is written by `run.End`. `streamsim verify` loads it and replays the command log. A successful replay must match the expected trace digest and input digests. An incomplete run remains incomplete: `verify` answers `matches: false` with `reason: incomplete`, never `match`; do not normalize it into a successful artifact.

@@ -347,6 +347,7 @@ gateway, and every other instance is simulated.
 ```text
 streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir <dir>] [--adapters-dir <dir>]
                             [--kinds-dir <dir>]... [--policy <digest>]... [--slice-s 1] [--barrier-cap-ms 30000]
+                            [--control-socket <path>]
 ```
 
 ```json
@@ -367,6 +368,18 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   must be announced (`board_missing`), hold the device (`device_missing`), and announce the instance's kind
   (`kind_missing`) with the kind file's `kind_digest` (`kind_mismatch`), or the gateway is refused `inventory_mismatch`. A
   real instance is not announced by the world (it still simulates it, as the twin); its device is the board's.
+- `--control-socket <path>` — creates an owner-only unix socket (owner-only directory; a live socket or a regular file at the
+  path is refused) on which the session takes the operator's controls at the node, until it ends: **hold** (every command of the
+  host in scope is refused `local_control`), **approve each command** (a command in scope is answered `queued` and waits until the
+  operator approves it, denies it, or its deadline passes: `expired`) and **emergency stop** (the safe stop of every device in
+  scope, then a hold latched until the operator releases it), each for all devices, a board or a device. The node only refuses or
+  stops: it never originates an ordinary command, and the host's own safe-stop commands are never held. One request per line
+  (`node-control-v0.1`: `{"op": "hold" | "release" | "approve_mode" | "approve" | "deny" | "estop" | "state", "scope":
+  {"kind": "all" | "board" | "device", "id"}, "enabled", "command_id"}`), one answer per line (`{"result": "applied" | "refused",
+  "reason"?, "op", "command_id"?, "stopped"?, "skipped"?, "state": {"holds", "approve", "pending", "devices"}}`); a request the
+  node cannot take within 10 s is answered `refused` with the reason `node_busy`. Controls are applied at a barrier (a node of
+  the world) or on a 250 ms tick (a relay), never in between. The run then holds `interrupts.jsonl` ([the interrupt
+  log](artifacts.md#the-interrupt-log)). Without the flag nothing changes.
 - Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
   environment, boot id) and each gateway handshake of a plan that binds an instance with its outcome (`binding` records:
   matched or refused, with the issues).

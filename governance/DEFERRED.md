@@ -305,3 +305,30 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > taken. The binary writes the `session` record once, as the first observer record after `run.opened`, and a reader
 > must not trust a `session` record found anywhere else. Trigger to fix: a recording used as evidence of what a board did;
 > then the projection is derived again from the `wire` records on read.
+> D-80 (the rules of an interrupt log are replayed in-process only): a session replays its own `interrupts.jsonl` through the
+> rules when it ends (`app.VerifyInterruptLog`) and leaves `interrupt_log_digest` out of `run.json` when the log does not
+> replay; `replay`, `verify` and `report` check the file only against that digest. There is no `plantwire` subcommand that
+> re-runs the rules over a log found in a folder, so an edit that also rewrites `run.json` is caught only by a caller of the
+> function. Trigger to fix: a folder received from elsewhere that must be audited for its interrupts; then a read-only
+> `plantwire interrupts <run-dir>` command (one facade call) prints the verdict and the first record that does not replay.
+> D-81 (controls are served between steps, not at once): a simulated node (`Session`) takes controls at the end of a barrier,
+> before it processes the host's records of that barrier; a relay takes them on its 250 ms tick. An emergency stop therefore
+> acts at the next barrier or tick, not instantly, and a control sent while a barrier waits for a slow host waits with it
+> (the socket answers `refused` with `node_busy` after 10 s without having applied it, except for the narrow race where the
+> node takes the request at the same moment). The firmware's own lease and safe state remain the last line of defence
+> (PHYSICAL_DEVICES section 5). Trigger to fix: a bench that needs a stop in under a tick; then the relay serves the control
+> channel in its own select case and the world's barrier wait is made interruptible.
+> D-82 (the emergency stop of a relay, and what the host is told): a relay sends the declared safe-stop command to the gateway
+> (or to the simulated node) with arguments `{}`, a deadline 30 s ahead on the clock of the device's origin, the host's last
+> authority epoch and a zero policy digest, and consumes the receipt and result (the host never sent that command; they are
+> recorded as `effect` records). A safe-stop command that needs arguments cannot be stopped this way: the world refuses it
+> `out_of_range`, the effect is recorded, and the hold still latches. A relay sends no `DSTATE` for the stop (a node of the world
+> does, from its own state); the host learns of the hold from the `local_control` refusals that follow. A device not yet born,
+> or whose kind is not yet known to the relay, is reported `skipped` or recorded `device_not_born` and is not stopped.
+> D-83 (approvals that wait are not kept across the host): a command waiting for approval when the host is lost is refused
+> `session_ending` (relay) or abandoned with the session (node), never kept for a returning host; switching approval mode off
+> does not release or refuse commands already waiting (only the operator, the deadline, a hold or the end of the session do);
+> a hardware command waits against the relay's wall clock (the tick time), so a skew between the host's clock and the
+> relay's expires it early or late. Controls exist only on `plantwire connect`; `plantwire node` and `plantwire relay` take
+> none. The control socket has no authentication beyond its owner-only directory (SPEC section 2): any process of the same
+> user can hold or stop the node.

@@ -3,14 +3,12 @@ package run_test
 import (
 	"encoding/json"
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -30,7 +28,7 @@ type recordedRun struct {
 	artifact *model.RunArtifact
 }
 
-func runWithFieldTrace(t *testing.T, records ...map[string]any) recordedRun {
+func openedRun(t *testing.T) (string, *run.Run) {
 	t.Helper()
 	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
@@ -46,6 +44,24 @@ func runWithFieldTrace(t *testing.T, records ...map[string]any) recordedRun {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return dir, r
+}
+
+func endedRun(t *testing.T, dir string, r *run.Run) recordedRun {
+	t.Helper()
+	if _, err := r.Advance(t.Context(), model.DefaultStartTimeNS+300e9, false); err != nil {
+		t.Fatal(err)
+	}
+	art, err := r.End(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return recordedRun{dir: dir, dirs: run.Directories{Domains: testsupport.DomainsDir(), Adapters: testsupport.AdaptersDir()}, artifact: art}
+}
+
+func runWithFieldTrace(t *testing.T, records ...map[string]any) recordedRun {
+	t.Helper()
+	dir, r := openedRun(t)
 	trace, err := run.NewFieldTrace(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -59,74 +75,19 @@ func runWithFieldTrace(t *testing.T, records ...map[string]any) recordedRun {
 		t.Fatal(err)
 	}
 	r.SetFieldTrace(trace.Digest())
-	if _, err := r.Advance(t.Context(), model.DefaultStartTimeNS+300e9, false); err != nil {
-		t.Fatal(err)
-	}
-	art, err := r.End(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return recordedRun{dir: dir, dirs: run.Directories{Domains: testsupport.DomainsDir(), Adapters: testsupport.AdaptersDir()}, artifact: art}
+	return endedRun(t, dir, r)
 }
 
 func TestAFieldTraceIsARunInputAndItsDigestIsPartOfTheArtifact(t *testing.T) {
 	t.Parallel()
-	recorded := runWithFieldTrace(t, gatewayRecords()...)
-	raw, err := os.ReadFile(filepath.Join(recorded.dir, model.FileFieldTrace))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := canonical.DigestBytes(raw); recorded.artifact.FieldTraceDigest != want {
-		t.Fatalf("artifact field_trace_digest = %q, want the digest %q of %s", recorded.artifact.FieldTraceDigest, want, model.FileFieldTrace)
-	}
-	document, err := os.ReadFile(filepath.Join(recorded.dir, model.FileRunArtifact))
-	if err != nil || !strings.Contains(string(document), `"field_trace_digest": "`+recorded.artifact.FieldTraceDigest+`"`) {
-		t.Fatalf("run.json (%v) does not record the field trace digest", err)
-	}
-	if res, err := run.ReplayFile(t.Context(), filepath.Join(recorded.dir, model.FileRunArtifact), recorded.dirs); err != nil || !res.Matches {
-		t.Fatalf("replay of an untouched run with a field trace: %+v, %v, want a match", res, err)
-	}
-	records, digest, err := run.ReadFieldTrace(recorded.dir)
-	if err != nil || len(records) != 2 || digest != recorded.artifact.FieldTraceDigest || records[1]["type"] != "DDATA" {
-		t.Fatalf("ReadFieldTrace = %v, %q, %v, want both records in order under the recorded digest", records, digest, err)
-	}
+	checkSidecarIsEvidence(t, fieldTraceSidecar, runWithFieldTrace(t, gatewayRecords()...), func(records []map[string]any) bool {
+		return len(records) == 2 && records[1]["type"] == "DDATA"
+	})
 }
 
 func TestReplayingWithADifferentFieldTraceFailsVerification(t *testing.T) {
 	t.Parallel()
-	cases := map[string]struct {
-		change func(raw []byte) []byte
-		reason string
-		read   error
-	}{
-		"a value changed": {func(raw []byte) []byte { return []byte(strings.Replace(string(raw), "22.5", "99", 1)) }, "file_differs", run.ErrFieldTraceDigest},
-		"a record appended": {func(raw []byte) []byte {
-			return append(raw, []byte(`{"ordinal":2,"record":{"type":"DDATA"}}`+"\n")...)
-		}, "file_differs", run.ErrFieldTraceDigest},
-		"a record removed": {func(raw []byte) []byte { return raw[:strings.Index(string(raw), "\n")+1] }, "file_differs", run.ErrFieldTraceDigest},
-		"the file removed": {nil, "file_missing", run.ErrFieldTraceMissing},
-	}
-	for name, tc := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			recorded := runWithFieldTrace(t, gatewayRecords()...)
-			path := filepath.Join(recorded.dir, model.FileFieldTrace)
-			if tc.change == nil {
-				if err := os.Remove(path); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				rewrite(t, path, tc.change)
-			}
-			res, err := run.ReplayFile(t.Context(), filepath.Join(recorded.dir, model.FileRunArtifact), recorded.dirs)
-			if err != nil || res.Matches || res.Reason != tc.reason || res.File != model.FileFieldTrace {
-				t.Fatalf("replay = %+v, %v, want a verdict of %s on %s", res, err, tc.reason, model.FileFieldTrace)
-			}
-			if _, _, err := run.ReadFieldTrace(recorded.dir); !errors.Is(err, tc.read) {
-				t.Fatalf("ReadFieldTrace = %v, want %v", err, tc.read)
-			}
-		})
-	}
+	checkSidecarTampering(t, fieldTraceSidecar, func(t *testing.T) recordedRun { return runWithFieldTrace(t, gatewayRecords()...) })
 }
 
 func TestAMalformedFieldTraceDigestIsNotTolerated(t *testing.T) {
@@ -142,20 +103,7 @@ func TestAMalformedFieldTraceDigestIsNotTolerated(t *testing.T) {
 
 func TestARunWithoutAFieldTraceHasNeitherTheMemberNorTheFile(t *testing.T) {
 	t.Parallel()
-	dir, dirs := publishedRun(t)
-	document, err := os.ReadFile(filepath.Join(dir, model.FileRunArtifact))
-	if err != nil || strings.Contains(string(document), "field_trace") {
-		t.Fatalf("run.json (%v) names a field trace although the run took none", err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, model.FileFieldTrace)); !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("stat %s = %v, want it absent", model.FileFieldTrace, err)
-	}
-	if res, err := run.ReplayFile(t.Context(), filepath.Join(dir, model.FileRunArtifact), dirs); err != nil || !res.Matches {
-		t.Fatalf("replay = %+v, %v, want a match: a run without a trace is verified as before", res, err)
-	}
-	if _, _, err := run.ReadFieldTrace(dir); !errors.Is(err, run.ErrFieldTraceMissing) {
-		t.Fatalf("ReadFieldTrace = %v, want ErrFieldTraceMissing", err)
-	}
+	checkSidecarAbsent(t, fieldTraceSidecar)
 }
 
 func TestAFieldTraceNextToAnArtifactThatDoesNotCoverItIsRefused(t *testing.T) {

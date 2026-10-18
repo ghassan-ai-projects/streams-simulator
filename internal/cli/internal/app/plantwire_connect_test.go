@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -89,5 +91,18 @@ func TestAConnectPlanFileThatIsAbsentIsReportedAsSuch(t *testing.T) {
 	got := invoke(t, "plantwire", "connect", "--plan", filepath.Join(t.TempDir(), "absent.json"), "--check")
 	if body := got.failure(t); got.code != 1 || body["code"] != "file_not_found" {
 		t.Fatalf("exit %d with %v, want file_not_found", got.code, body)
+	}
+}
+
+func TestTheControlSocketFlagTakesAPathAndAConnectCheckStartsNothingForIt(t *testing.T) {
+	t.Parallel()
+	requireUsageRefusals(t, [][]string{{"plantwire", "connect", "--stdin", "--check", "--control-socket"}})
+	args := append(checkArgs(thermalDomains(t)), "--control-socket", filepath.Join(t.TempDir(), "c.sock"))
+	got := invokeWithInput(t, benchPlan("zone-01"), args...)
+	if got.code != 0 {
+		t.Fatalf("exit %d: %s %s, want a check that ignores the control socket: it starts no session", got.code, got.stdout, got.stderr)
+	}
+	if _, err := os.Stat(args[len(args)-1]); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("Stat of the control socket = %v, want a check to create none", err)
 	}
 }

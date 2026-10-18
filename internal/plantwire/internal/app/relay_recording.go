@@ -47,9 +47,29 @@ type recording struct {
 	live        *domain.Live
 	liveChanged bool
 	clock       func() int64
+	ints        *interruptFile
+	interrupt   func(map[string]any)
+	dir         string
 }
 
-func openRecording(dir string, sim *simNode) (recording, error) {
+func openRecording(dir string, sim *simNode, withControl bool) (recording, error) {
+	rec, err := openTrace(dir, sim)
+	if err != nil || !withControl || dir == "" {
+		return rec, err
+	}
+	return rec.withInterrupts()
+}
+
+func (c recording) withInterrupts() (recording, error) {
+	file, err := openInterruptFile(c.dir)
+	if err != nil {
+		return c, errors.Join(err, c.close())
+	}
+	c.ints = file
+	return c, nil
+}
+
+func openTrace(dir string, sim *simNode) (recording, error) {
 	if dir == "" {
 		return recording{}, nil
 	}
@@ -58,7 +78,7 @@ func openRecording(dir string, sim *simNode) (recording, error) {
 		return recording{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	if sim != nil {
-		return recording{wire: runWire{sim.run}, field: field, notes: sim.run,
+		return recording{wire: runWire{sim.run}, field: field, notes: sim.run, dir: dir, interrupt: sim.run.JournalInterrupt,
 			live: domain.NewLive(true, sim.instances, sim.bound), clock: func() int64 { return sim.run.Status().ClockNS }}, nil
 	}
 	return hardwareRecording(dir, field)
@@ -69,7 +89,7 @@ func hardwareRecording(dir string, field *run.FieldTrace) (recording, error) {
 	if err != nil {
 		return recording{}, errors.Join(fmt.Errorf("plantwire relay: %w", err), field.Close())
 	}
-	return recording{wire: trace, field: field, closeWire: trace.Close}, nil
+	return recording{wire: trace, field: field, closeWire: trace.Close, dir: dir, interrupt: trace.Interrupt}, nil
 }
 
 func (c *recording) empty() bool { return c.wire == nil && c.field == nil }
@@ -138,10 +158,18 @@ func (c *recording) close() error {
 	if c.field != nil {
 		fielded = c.field.Close()
 	}
-	if err := errors.Join(wired, fielded); err != nil {
+	if err := errors.Join(wired, fielded, c.ints.finish(c.dir)); err != nil {
 		return fmt.Errorf("plantwire relay: close trace: %w", err)
 	}
 	return nil
+}
+
+func (c *recording) interruptDigest() string {
+	return c.ints.digest()
+}
+
+func (c *recording) interrupts(entries []domain.InterruptEntry) {
+	recordInterrupts(entries, c.ints, c.interrupt)
 }
 
 func (c *recording) digest() string {

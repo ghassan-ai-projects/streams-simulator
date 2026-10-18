@@ -23,8 +23,8 @@ func TestTheRelayOffersNoOptionToAddAFaultAPerturbationOrAScript(t *testing.T) {
 	for _, field := range reflect.VisibleFields(reflect.TypeFor[RelayOptions]()) {
 		fields = append(fields, field.Name)
 	}
-	if want := []string{"GatewaySocket", "HostSocket", "Out", "Simulated", "Ready"}; !reflect.DeepEqual(fields, want) {
-		t.Fatalf("RelayOptions fields = %v, want %v: a hardware device's records are passed on untouched, so no option may act on them", fields, want)
+	if want := []string{"GatewaySocket", "HostSocket", "Out", "Simulated", "Ready", "Control"}; !reflect.DeepEqual(fields, want) {
+		t.Fatalf("RelayOptions fields = %v, want %v: no perturbation, wire fault or script may act on a hardware device's records; the operator control only refuses or stops", fields, want)
 	}
 }
 

@@ -187,11 +187,12 @@ func endedByRelay(err error) bool {
 	return errors.Is(err, context.Canceled) || errors.Is(err, uds.ErrSimClosed)
 }
 
-func (s *simNode) end(out, fieldTrace string) error {
+func (s *simNode) end(out, fieldTrace, interrupts string) error {
 	if s == nil {
 		return nil
 	}
 	s.run.SetFieldTrace(fieldTrace)
+	s.run.SetInterruptLog(interrupts)
 	if _, err := s.run.End(out); err != nil {
 		return fmt.Errorf("plantwire relay: end the run: %w", err)
 	}

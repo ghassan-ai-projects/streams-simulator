@@ -74,7 +74,7 @@ func (l *relayLoop) finish(cause error) error {
 	l.closeGateway()
 	stopped := l.sim.stop()
 	closed := l.rec.close()
-	ended := l.sim.end(l.options.Out, l.rec.digest())
+	ended := l.sim.end(l.options.Out, l.rec.digest(), l.rec.interruptDigest())
 	if err := errors.Join(cause, shutdown, l.gateways.Close(), closed, stopped, ended); err != nil {
 		return fmt.Errorf("plantwire relay: %w", err)
 	}
@@ -121,7 +121,8 @@ func (l *relayLoop) onHost(in domain.Inbound, open bool) error {
 func (l *relayLoop) onTick(ctx context.Context, at time.Time) error {
 	elapsed := l.elapsedSince(at)
 	l.rec.tickLive(elapsed)
-	if err := l.apply(l.relay.TickBy(elapsed)); err != nil {
+	l.relay.SetWall(at.UnixNano())
+	if err := errors.Join(l.apply(l.relay.TickBy(elapsed)), l.serveControls()); err != nil {
 		return err
 	}
 	return l.ensureHost(ctx)

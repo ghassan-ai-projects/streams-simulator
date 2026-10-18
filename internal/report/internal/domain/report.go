@@ -161,5 +161,6 @@ type Folder struct {
 	Ledger   Document
 	History  Document
 
-	FieldTrace Document
+	FieldTrace   Document
+	InterruptLog Document
 }
