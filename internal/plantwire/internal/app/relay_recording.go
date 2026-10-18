@@ -28,6 +28,7 @@ func (w runWire) Flush() error {
 type noteSink interface {
 	JournalOrigin(fields map[string]any)
 	JournalBinding(fields map[string]any)
+	JournalLive(fields map[string]any)
 }
 
 type fieldSink interface {
@@ -43,6 +44,8 @@ type recording struct {
 	notes      noteSink
 	closeWire  func() error
 	incomplete bool
+	live       *domain.Live
+	clock      func() int64
 }
 
 func openRecording(dir string, sim *simNode) (recording, error) {
@@ -54,7 +57,8 @@ func openRecording(dir string, sim *simNode) (recording, error) {
 		return recording{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	if sim != nil {
-		return recording{wire: runWire{sim.run}, field: field, notes: sim.run}, nil
+		return recording{wire: runWire{sim.run}, field: field, notes: sim.run,
+			live: domain.NewLive(true, sim.instances, sim.bound), clock: func() int64 { return sim.run.Status().ClockNS }}, nil
 	}
 	return hardwareRecording(dir, field)
 }
@@ -73,6 +77,7 @@ func (c *recording) note(line domain.Traced) error {
 	if c.wire != nil {
 		c.wire.Wire(line.Direction, line.Record)
 	}
+	c.liveRecord(line)
 	if c.field != nil && line.Field && !c.incomplete {
 		return c.addField(line.Record)
 	}
@@ -97,10 +102,17 @@ func (c *recording) noted(notes []domain.Note) {
 		return
 	}
 	for _, note := range notes {
-		if note.Type == domain.NoteOrigin {
-			c.notes.JournalOrigin(note.Fields)
-			continue
-		}
+		c.recordNote(note)
+	}
+}
+
+func (c *recording) recordNote(note domain.Note) {
+	switch note.Type {
+	case "connection":
+		c.liveConnection(note.Fields)
+	case domain.NoteOrigin:
+		c.notes.JournalOrigin(note.Fields)
+	default:
 		c.notes.JournalBinding(note.Fields)
 	}
 }

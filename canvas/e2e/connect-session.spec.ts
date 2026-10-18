@@ -45,6 +45,27 @@ test("a connected session links the plant to a host and a real board, and stops 
   await expect(panel.getByText(/^Connected session · run c-[0-9a-f]{8}$/)).toBeVisible();
   startGateway(open, "zone-01");
   await expect(panel.getByText(/announced every real board of the plan/)).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page
+      .getByRole("navigation", { name: "Outline" })
+      .getByRole("button", { name: /^zone-01.*Real · board uno-07 · boot 61$/ }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Connected session · running · Open live view", exact: true }).click();
+  await expect(page.getByText("Live · following newest record", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Connection health", exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Recording live. File verification and replay are available after Stop and save.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Not checked", { exact: true })).toBeHidden();
+  const scrubber = page.getByRole("slider", { name: "Playback time", exact: true });
+  await scrubber.focus();
+  await scrubber.press("Home");
+  await expect(page.getByText("Following paused · viewing history", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back to live", exact: true }).click();
+  await expect(page.getByText("Live · following newest record", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Open plant", exact: true }).click();
+  await page.getByRole("button", { name: "Run plant", exact: true }).click();
   await panel.getByRole("button", { name: "Stop and save" }).click();
   const saved = panel.getByText(/^The session was stopped and saved as run c-[0-9a-f]{8}\.$/);
   await expect(saved).toBeVisible({ timeout: 30_000 });
@@ -61,6 +82,9 @@ test("a connected session links the plant to a host and a real board, and stops 
   await expect(outline.getByRole("button", { name: /^fan-01.*Simulated · board mega-01$/ })).toBeVisible();
   const node = page.getByRole("group", { name: /^zone-01,.*Real · board uno-07 · boot 61/ });
   await expect(node).toBeVisible();
+  await expect(page.getByText("Connected session", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back to live", exact: true })).toBeHidden();
+  await page.reload();
   await expect(page.getByText("Connected session", { exact: true })).toBeVisible();
   await page.getByRole("application", { name: "Plant graph" }).focus();
   expect(await zoomOutTo(page, "compact", 8, () => Promise.resolve())).toBe("compact");

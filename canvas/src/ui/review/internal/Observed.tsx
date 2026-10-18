@@ -97,17 +97,43 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
   );
 }
 
-function RealBoardNote() {
+function RealBoardNote({ state, entity }: { readonly state: ReviewState; readonly entity: string }) {
+  const device = state.live?.devices.find((entry) => entry.instance === entity);
+  if (device !== undefined && device.readings.length > 0)
+    return (
+      <table className={cells.table}>
+        <caption>Board readings</caption>
+        <thead>
+          <tr>
+            <th scope="col">Reading</th>
+            <th scope="col">Value</th>
+            <th scope="col">Quality</th>
+          </tr>
+        </thead>
+        <tbody>
+          {device.readings.map((reading) => (
+            <tr key={reading.name}>
+              <th scope="row">{reading.name}</th>
+              <td>{reading.state === "good" ? `${String(reading.value)} ${reading.unit}` : "—"}</td>
+              <td>
+                {reading.state}
+                {reading.quality !== "" && ` · ${reading.quality}`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   return (
     <p className={parts.muted}>
-      This instance is a real board. Its own readings are not part of this review yet, and the values the simulator
-      computed for its twin are never shown as the board&apos;s.
+      This instance is a real board. Waiting for its own readings. The simulator&apos;s twin values are never shown as
+      the board&apos;s.
     </p>
   );
 }
 
 export function Observed({ review, state, plant, entity }: ObservedProps) {
-  if (isRealBoard(state.origins, entity)) return <RealBoardNote />;
+  if (isRealBoard(state.origins, entity)) return <RealBoardNote state={state} entity={entity} />;
   const readings = review.index.readings(entity, state.positionNs);
   if (readings.length === 0) return <HallNote plant={plant} entity={entity} />;
   const shown = abnormalFirst(

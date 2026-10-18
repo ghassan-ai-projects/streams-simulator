@@ -7,37 +7,43 @@ import { Graph } from "./ReviewGraph";
 import type { GraphProps } from "./ReviewGraph";
 import { Scrubber } from "./Scrubber";
 import styles from "./ReviewScreen.module.css";
+import { LiveControls } from "./LiveControls";
 
 function Timeline({ review, state }: { readonly review: ReviewSession; readonly state: ReviewState }) {
   const report = readyReport(state);
   const span = runSpan(report, review.index.bounds());
+  const startNs = Math.min(span.startNs, state.liveHistory?.startNs ?? span.startNs);
   return (
-    <Scrubber
-      startNs={span.startNs}
-      endNs={span.endNs}
-      positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
-      report={report}
-      origins={state.origins}
-      binding={state.binding}
-      playing={state.playing}
-      speed={state.speed}
-      onPlay={() => {
-        review.play();
-      }}
-      onPause={() => {
-        review.pause();
-      }}
-      onSpeed={(speed) => {
-        review.setSpeed(speed);
-      }}
-      onSeek={(ns) => {
-        review.seek(ns);
-      }}
-      onEvent={(mark) => {
-        if (mark.entity === "") review.seek(mark.atNs);
-        else review.reveal(mark.atNs, mark.entity);
-      }}
-    />
+    <div>
+      {state.connection === "running" && <LiveControls review={review} state={state} />}
+      <Scrubber
+        startNs={startNs}
+        endNs={Math.max(span.endNs, state.newestNs)}
+        liveMarks={state.liveMarks}
+        positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
+        report={report}
+        origins={state.origins}
+        binding={state.binding}
+        playing={state.playing}
+        speed={state.speed}
+        onPlay={() => {
+          review.play();
+        }}
+        onPause={() => {
+          review.pause();
+        }}
+        onSpeed={(speed) => {
+          review.setSpeed(speed);
+        }}
+        onSeek={(ns) => {
+          review.seek(ns);
+        }}
+        onEvent={(mark) => {
+          if (mark.entity === "") review.seek(mark.atNs);
+          else review.reveal(mark.atNs, mark.entity);
+        }}
+      />
+    </div>
   );
 }
 

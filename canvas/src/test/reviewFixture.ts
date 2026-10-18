@@ -19,6 +19,11 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     connection: "none",
     simulated: [],
     binding: null,
+    following: false,
+    newestNs: 0,
+    live: null,
+    liveHistory: null,
+    liveMarks: [],
     ...overrides,
   };
 }

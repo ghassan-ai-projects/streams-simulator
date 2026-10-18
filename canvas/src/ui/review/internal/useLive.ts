@@ -19,9 +19,18 @@ export function useLive(
   return useCallback(
     (id) =>
       hallLiveOf(
-        { index: review.index, plant: plant?.plant ?? null, view, faulted, effectors, origins, positionNs },
+        {
+          index: review.index,
+          plant: plant?.plant ?? null,
+          view,
+          faulted,
+          effectors,
+          origins,
+          positionNs,
+          sessionLive: state.live,
+        },
         id,
       ),
-    [review, positionNs, plant, view, faulted, effectors, origins],
+    [review, positionNs, plant, view, faulted, effectors, origins, state.live],
   );
 }

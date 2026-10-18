@@ -17,6 +17,7 @@ type Traced struct {
 	Direction string
 	Record    map[string]any
 	Field     bool
+	Admitted bool
 }
 
 type Moves struct {
@@ -59,6 +60,7 @@ type gatewaySide struct {
 	in       Receiver
 	out      *Transmitter
 	born     map[string]string
+	silent int64
 }
 
 type hostSide struct {

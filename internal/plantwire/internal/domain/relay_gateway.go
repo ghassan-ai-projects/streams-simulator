@@ -21,7 +21,14 @@ func (r *Relay) FromGateway(in Inbound) Moves {
 	}
 	r.gatewayRecord(&moves, in)
 	moves.Trace[0].Field = r.belongsToSession(in, admitted, session)
+	r.observeGatewayActivity(in, moves.Trace[0].Field)
 	return moves
+}
+
+func (r *Relay) observeGatewayActivity(in Inbound, admitted bool) {
+	if admitted && !r.strayDevice(in) && !r.forgedFromGateway(in) {
+		r.gateway.silent = 0
+	}
 }
 
 func (r *Relay) belongsToSession(in Inbound, admitted bool, session string) bool {
@@ -64,6 +71,7 @@ func (r *Relay) admit(m *Moves, in Inbound) {
 		r.noteBinding(m, in, refusal, reason)
 	default:
 		r.takeBirth(in)
+		m.Notes = append(m.Notes, connectionNote("gateway", "online"))
 		r.noteBinding(m, in, "", "")
 		r.afterBirth(m)
 	}
@@ -197,6 +205,7 @@ func (r *Relay) clearGateway() {
 
 func (r *Relay) GatewayLost() Moves {
 	moves := Moves{}
+	moves.Notes = append(moves.Notes, connectionNote("gateway", "offline"))
 	r.diedUp(&moves)
 	r.gateway.admitted = false
 	if r.host.connected && !r.host.shaken {

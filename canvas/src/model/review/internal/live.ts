@@ -4,6 +4,8 @@ import type { Plant } from "../../plant";
 import { channelOf } from "../../plant";
 import type { PlaybackIndex } from "./playback";
 import { readoutBody } from "./reviewRows";
+import type { SessionLive } from "./sessionLive";
+import { deviceReadings } from "./sessionLive";
 
 export interface LiveNode {
   readonly shown: readonly Shown[];
@@ -17,6 +19,7 @@ export interface LiveNode {
 }
 
 export interface LiveFacts {
+  readonly sessionLive?: SessionLive | null;
   readonly index: PlaybackIndex;
   readonly plant: Plant | null;
   readonly view: PlantView | null;
@@ -39,7 +42,10 @@ export function isRealBoard(origins: ReadonlyMap<string, InstanceOrigin>, id: st
 
 function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
   const { index, plant, positionNs } = facts;
-  if (isRealBoard(facts.origins, id)) return [];
+  if (isRealBoard(facts.origins, id)) {
+    const device = facts.sessionLive?.devices.find((entry) => entry.instance === id);
+    return device === undefined ? [] : deviceReadings(device).map((reading) => showReading(reading, null));
+  }
   return index
     .readings(id, positionNs)
     .map((reading) => showReading(reading, plant === null ? null : channelOf(plant, id, reading.channel)));
@@ -52,7 +58,7 @@ function readoutOf(facts: LiveFacts, id: string, shown: readonly Shown[], observ
 
 export function liveOf(facts: LiveFacts, id: string): LiveNode {
   const shown = shownAt(facts, id);
-  const observed = facts.index.observed(id);
+  const observed = new Set([...facts.index.observed(id), ...shown.map((reading) => reading.channel)]);
   return {
     shown,
     observed,

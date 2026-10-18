@@ -1,4 +1,5 @@
 export { noteLinesByEntity } from "./internal/noteLines";
+export type { SessionLive, SessionDevice, SessionReading, SessionCommand } from "./contract";
 export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";

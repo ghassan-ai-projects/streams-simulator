@@ -173,6 +173,14 @@ func (r *Run) JournalBinding(fields map[string]any) {
 	r.run.JournalBinding(fields)
 }
 
+func (r *Run) JournalLive(fields map[string]any) {
+	r.run.JournalLive(fields)
+}
+
+func (r *Run) JournalSession(fields map[string]any) {
+	r.run.JournalSession(fields)
+}
+
 func (r *Run) FlushJournal() error {
 	return r.run.FlushJournal()
 }

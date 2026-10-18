@@ -10,6 +10,7 @@ import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
+import { SessionEvidence } from "./SessionEvidence";
 import parts from "./ReportParts.module.css";
 import styles from "./RunPanel.module.css";
 
@@ -111,18 +112,22 @@ function ReportBody({
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
 }) {
+  if (state.connection === "running") return <SessionEvidence state={state} />;
   if (state.report.phase === "ready") {
     const { picked, positionNs } = state;
     const shown = picked !== null && picked.atNs === positionNs ? picked : null;
     return (
-      <ReportPanel
-        report={state.report.value}
-        unit={unit}
-        entity={null}
-        picked={shown}
-        verify={state.verified}
-        connection={state.connection}
-      />
+      <>
+        {state.connection === "saved" && <SessionEvidence state={state} />}
+        <ReportPanel
+          report={state.report.value}
+          unit={unit}
+          entity={null}
+          picked={shown}
+          verify={state.verified}
+          connection={state.connection}
+        />
+      </>
     );
   }
   if (state.report.phase === "loading")

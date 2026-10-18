@@ -173,6 +173,7 @@ func TestASessionWithoutAGatewayRunsTheWorldUntilStoppedAndSavesARunThatReplays(
 	if len(origins) != 3 || origins["zone-01"] != "simulated" || origins["fan-01"] != "simulated" {
 		t.Fatalf("origins = %v, want the three instances simulated", origins)
 	}
+	assertLiveRecording(t,out)
 	replaysWhole(t, out, options.DomainsDir)
 }
 
@@ -207,6 +208,7 @@ func TestARealBoardTakesItsInstancesPlaceAndEveryBirthIsJournalledWithItsOrigin(
 	}
 	assertOnlyTheBoardAnnouncesTheRealInstance(t, host.snapshot())
 	assertRealOrigin(t, out)
+	assertLiveRecording(t,out)
 	replaysWhole(t, out, options.DomainsDir)
 }
 

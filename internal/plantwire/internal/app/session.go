@@ -75,15 +75,20 @@ type Session struct {
 	queued    []domain.Command
 	version   int
 	safeStops int
+	live *domain.Live
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
 	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
+	if options.JournalOrigins && !options.NoWireJournal {
+		s.live = domain.NewLive(false,s.devices.instances(),options.Bound)
+	}
 	r.SetDeliveryObserver(func(event model.SimEvent) { s.events = append(s.events, event) })
 	return s
 }
 
 func (s *Session) Run(ctx context.Context) error {
+	defer s.endLive()
 	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded()); err != nil {
 		return fmt.Errorf("plantwire: %w", err)
 	}
@@ -154,6 +159,7 @@ func (s *Session) journalWire(direction string, record map[string]any) {
 	if !s.options.NoWireJournal {
 		s.run.JournalWire(direction, record)
 	}
+	s.journalLive(direction,record)
 	if s.options.JournalOrigins && direction == "node" && record["type"] == "DBIRTH" {
 		device, _ := record["device"].(string)
 		s.run.JournalOrigin(domain.OriginNote(record, domain.EnvironmentSimulated, s.devices.ids[device]).Fields)

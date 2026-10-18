@@ -32,6 +32,8 @@ func TestOriginAndBindingRecordsReachTheObserverJournalAndLeaveTheReplayUnchange
 	}
 	r.JournalOrigin(map[string]any{"instance": "zone-01", "device": "zone-01", "board": "uno-07", "environment": "hardware", "boot_id": "61"})
 	r.JournalBinding(map[string]any{"outcome": "matched", "issues": []any{}})
+	r.JournalSession(map[string]any{"mode":"connected","plan":map[string]any{"domain":"aquaculture-pond"}})
+	r.JournalLive(map[string]any{"host":"online","gateway":"not_applicable","devices":[]any{},"commands":[]any{},"marks":[]any{},"commands_truncated":false})
 	if err := r.FlushJournal(); err != nil {
 		t.Fatal(err)
 	}
@@ -44,6 +46,9 @@ func TestOriginAndBindingRecordsReachTheObserverJournalAndLeaveTheReplayUnchange
 	raw, err := os.ReadFile(filepath.Join(dir, journal.ObserverFile))
 	if err != nil || !strings.Contains(string(raw), `"type":"origin"`) || !strings.Contains(string(raw), `"type":"binding"`) {
 		t.Fatalf("observer journal = %q, %v, want the origin and the binding records", raw, err)
+	}
+	if !strings.Contains(string(raw), `"type":"session"`) || !strings.Contains(string(raw), `"type":"live"`) {
+		t.Fatalf("new session metadata and live evidence missing: %s",raw)
 	}
 	dirs := run.Directories{Domains: testsupport.DomainsDir(), Adapters: testsupport.AdaptersDir()}
 	if res, err := run.ReplayFile(t.Context(), filepath.Join(dir, model.FileRunArtifact), dirs); err != nil || !res.Matches {

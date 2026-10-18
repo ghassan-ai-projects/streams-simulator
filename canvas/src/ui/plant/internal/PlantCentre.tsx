@@ -14,6 +14,7 @@ import { ZoomBar } from "../../graph";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
+import type { Connected } from "./connected";
 
 export interface RunControls {
   readonly launching: boolean;
@@ -60,21 +61,17 @@ function Crumbs({
   return <Breadcrumb trail={trail} here={hall ?? title} heading={heading} />;
 }
 
-export function PlantCentre({
-  state,
-  hall,
-  plants,
-  navigation,
-  launch,
-  run,
-}: {
+interface PlantCentreProps {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
   readonly run: RunControls;
-}) {
+  readonly connected?: Connected;
+}
+
+export function PlantCentre({ state, hall, plants, navigation, launch, run, connected }: PlantCentreProps) {
   const running = useRunningHere(launch, state.plant.id);
   return (
     <section className={screen.center} aria-label={`Plant ${state.plant.id}`}>
@@ -85,8 +82,25 @@ export function PlantCentre({
         <EditButton composition={state.composition} running={running} navigation={navigation} />
         <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
         <ZoomBar />
+        {connected !== undefined && (
+          <button
+            type="button"
+            onClick={() => {
+              navigation.go({ screen: "review", worldId: connected.run });
+            }}
+          >
+            Live view
+          </button>
+        )}
       </div>
-      <PlantCanvas state={state} hall={hall} plants={plants} navigation={navigation} launch={launch} />
+      <PlantCanvas
+        state={state}
+        hall={hall}
+        plants={plants}
+        navigation={navigation}
+        launch={launch}
+        {...(connected === undefined ? {} : { connected })}
+      />
     </section>
   );
 }

@@ -15,7 +15,7 @@ func (h *Host) deviceBirth(m domain.Message) {
 		delete(h.devices, m.Device)
 		return
 	}
-	d := &device{boot: m.BootID, aliases: map[int64]string{}, values: map[string]float64{}, updated: map[string]int64{}}
+	d := &device{boot: m.BootID, aliases: map[int64]string{}, values: map[string]float64{}, updated: map[string]int64{}, valid: map[string]bool{}}
 	h.devices[m.Device] = d
 	for _, metric := range m.Metrics {
 		d.aliases[metric.Alias] = metric.Name
@@ -31,6 +31,7 @@ func (h *Host) data(m domain.Message) {
 		return
 	}
 	for _, metric := range m.Metrics {
+		d.valid[d.aliases[metric.Alias]] = metric.Quality == "good"
 		if metric.Quality == "good" {
 			h.sample(d, d.aliases[metric.Alias], metric.Value)
 		}
@@ -41,6 +42,7 @@ func (h *Host) sample(d *device, metric string, raw any) {
 	if value, numeric := jsonvalue.Number(raw); numeric {
 		h.samples++
 		d.values[metric], d.updated[metric] = value, h.samples
+		d.valid[metric] = true
 	}
 }
 

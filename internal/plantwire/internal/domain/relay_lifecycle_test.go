@@ -200,6 +200,7 @@ func TestARelayStopsCountingHeartbeatsOnlyOnceTheHostHasSentOne(t *testing.T) {
 			t.Fatal("a host that never sent a heartbeat was declared lost")
 		}
 	}
+	g.gw(DeviceData("P1","boot-1",false,[]map[string]any{Sample(1,20.0,"good",0)}))
 	g.hostSends(hostState(7, 1))
 	for i := range 11 {
 		if moves := g.relay.Tick(); moves.CloseHost {

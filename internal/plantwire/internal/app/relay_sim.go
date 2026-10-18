@@ -22,6 +22,7 @@ type SimulatedOptions struct {
 	Seed        uint64
 	BarrierCap  time.Duration
 	Node        Options
+	Session     ConnectCheck
 }
 
 type simNode struct {
@@ -67,6 +68,9 @@ func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, e
 		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire relay: %w", err)
+	}
+	if o.Session.Domain != "" {
+		r.JournalSession(map[string]any{"mode": "connected", "plan": o.Session})
 	}
 	return r, nil
 }

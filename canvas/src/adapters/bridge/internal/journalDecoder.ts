@@ -1,8 +1,11 @@
 import type { JournalEntry } from "../../../model/review";
-import { isRecord, number, record, text } from "../../../model/shared/json";
+import { isRecord, list, number, record, text } from "../../../model/shared/json";
 import { issueList } from "./http";
+import { liveSnapshot } from "./liveDecoder";
 
 const journalTypes = [
+  "live",
+  "session",
   "observation",
   "run.opened",
   "run.closed",
@@ -25,6 +28,10 @@ const journalTypes = [
 export function journalEntry(value: string): JournalEntry | null {
   const parsed = parseJson(value);
   if (!isRecord(parsed) || !validEnvelope(parsed) || !validEvent(parsed)) return null;
+  if (parsed.type === "live") {
+    const live = liveSnapshot(parsed);
+    return live === null ? null : { kind: "live", atNs: live.atNs, live };
+  }
   return projectEntry(parsed);
 }
 
@@ -41,6 +48,7 @@ function validEnvelope(entry: Record<string, unknown>): boolean {
 
 function validEvent(entry: Record<string, unknown>): boolean {
   if (entry.type === "observation") return typeof entry.line === "string";
+  if (entry.type === "session") return validSession(entry);
   if (entry.type === "run.opened") return openedRecord(entry);
   if (entry.type === "origin")
     return ["hardware", "simulated"].includes(text(entry.environment)) && text(entry.device) !== "";
@@ -49,12 +57,26 @@ function validEvent(entry: Record<string, unknown>): boolean {
   return entry.type !== "run.closed" || typeof entry.incomplete === "boolean";
 }
 
+function validSession(entry: Record<string, unknown>): boolean {
+  return entry.mode === "connected" && Array.isArray(record(entry.plan).instances);
+}
+
 function openedRecord(entry: Record<string, unknown>): boolean {
   return typeof entry.mode === "string" && text(record(entry.adapter).id) !== "";
 }
 
 function projectEntry(entry: Record<string, unknown>): JournalEntry {
   const atNs = number(entry.at_ns);
+  if (entry.type === "session") {
+    const instances = list(record(entry.plan).instances).map(record);
+    return {
+      kind: "session",
+      atNs,
+      simulated: instances
+        .filter((instance) => instance.origin === "simulated")
+        .map((instance) => text(instance.instance)),
+    };
+  }
   if (entry.type === "observation") return observation(entry, atNs);
   if (entry.type === "run.opened") {
     return { kind: "opened", atNs, mode: text(entry.mode), adapter: text(record(entry.adapter).id) };

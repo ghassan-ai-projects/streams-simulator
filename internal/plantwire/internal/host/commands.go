@@ -2,6 +2,7 @@ package host
 
 import (
 	"math"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
@@ -18,7 +19,7 @@ func (h *Host) sync(m domain.Message) []map[string]any {
 		}
 		h.script = h.script[1:]
 	}
-	records = append(records, control("HSYNC", map[string]any{"through_seq": m.Seq}))
+	records = append(records, h.barrier(m.Seq))
 	return h.reply(records...)
 }
 
@@ -31,6 +32,7 @@ func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
 		return domain.Record{}, false
 	}
 	h.issued[id], h.issuedAt[id], h.order = step, now, append(h.order, id)
+	h.issuedBoot[id] = d.boot
 	key := domain.Command{Device: step.Device, Name: step.Command, Args: step.Args, Boot: d.boot}.Content()
 	return control("DCMD", map[string]any{"command_id": id, "idempotency_key": key, "device": step.Device, "command": step.Command,
 		"args": step.Args, "expected_boot_id": d.boot, "deadline_ns": now + commandLifetimeNS, "not_before_ns": 0,
@@ -39,15 +41,17 @@ func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
 
 func (h *Host) answer(m domain.Message) {
 	status := h.report.Commands[m.CommandID]
-	if status == nil {
+	if status == nil || m.BootID != h.issuedBoot[m.CommandID] {
 		return
 	}
 	if m.Type == "DRECEIPT" {
 		status.Receipts = append(status.Receipts, receipt(m))
 		return
 	}
-	status.Result = m.ReportedOutcome
-	h.resultAt[m.CommandID] = h.samples
+	if status.Result == "" && slices.Contains(status.Receipts,"accepted") {
+		status.Result = m.ReportedOutcome
+		h.resultAt[m.CommandID] = h.samples
+	}
 }
 
 func receipt(m domain.Message) string {
@@ -66,12 +70,13 @@ func (h *Host) verify(now int64) {
 		observed := h.observedAfterResult(id, step)
 		if observed || now-h.issuedAt[id] >= step.Verify.WithinNS {
 			status.Verified = &observed
+			h.recordEvidence(id, step, observed)
 		}
 	}
 }
 
 func (h *Host) observedAfterResult(id string, step Scripted) bool {
 	d := h.devices[step.Device]
-	return d != nil && d.updated[step.Verify.Metric] > h.resultAt[id] &&
+	return d != nil && d.boot == h.issuedBoot[id] && d.valid[step.Verify.Metric] && d.updated[step.Verify.Metric] > h.resultAt[id] &&
 		math.Abs(d.values[step.Verify.Metric]-step.Verify.Equals) <= step.Verify.Tolerance
 }

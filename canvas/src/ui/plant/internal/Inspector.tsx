@@ -1,4 +1,5 @@
 import { shared } from "../../primitives";
+import type { ReactNode } from "react";
 import type { Instance, Plant } from "../../../model/plant";
 import type { ComponentSpec } from "../../../model/plant";
 import { linksOf } from "../../../model/plant";
@@ -103,19 +104,16 @@ function Head({
   );
 }
 
-function InstanceDetails({
-  plant,
-  instance,
-  onClose,
-  onSelect,
-  spec,
-}: {
+interface InstanceDetailsProps {
   readonly plant: Plant;
   readonly instance: Instance;
   readonly onClose: () => void;
   readonly onSelect: (id: string) => void;
   readonly spec: ComponentSpec | undefined;
-}) {
+  readonly liveDetail?: ReactNode;
+}
+
+function InstanceDetails({ plant, instance, onClose, onSelect, spec, liveDetail }: InstanceDetailsProps) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
   const { ref, cut } = useCutBottom<HTMLElement>();
@@ -128,6 +126,7 @@ function InstanceDetails({
       tabIndex={0}
     >
       <Head instance={instance} spec={spec} onClose={onClose} />
+      {liveDetail}
       <List
         title="Channels"
         items={(kind?.channels ?? []).map((channel) => channel.name)}
@@ -144,6 +143,7 @@ function InstanceDetails({
 }
 
 interface InspectorProps {
+  readonly liveDetail?: ReactNode;
   readonly plant: Plant;
   readonly selected: string | null;
   readonly onClose: () => void;
@@ -153,11 +153,20 @@ interface InspectorProps {
   readonly specs: ReadonlyMap<string, ComponentSpec>;
 }
 
-export function Inspector({ plant, selected, onClose, runs, onReview, onSelect, specs }: InspectorProps) {
+export function Inspector({ plant, selected, onClose, runs, onReview, onSelect, specs, liveDetail }: InspectorProps) {
   const instance = plant.instances.find((entry) => entry.id === selected);
   if (instance !== undefined) {
     const spec = instance.component === null ? undefined : specs.get(instance.component);
-    return <InstanceDetails plant={plant} instance={instance} onClose={onClose} onSelect={onSelect} spec={spec} />;
+    return (
+      <InstanceDetails
+        plant={plant}
+        instance={instance}
+        onClose={onClose}
+        onSelect={onSelect}
+        spec={spec}
+        liveDetail={liveDetail}
+      />
+    );
   }
   const members = selected === null ? [] : hallMembers(plant, selected);
   if (selected !== null && members.length > 0) return <HallSummary hall={selected} members={members} />;

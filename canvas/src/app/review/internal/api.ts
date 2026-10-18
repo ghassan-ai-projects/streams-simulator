@@ -13,6 +13,7 @@ export interface ReviewSession extends Store<ReviewState> {
   close(): void;
   badgeFor(worldId: string): Badge | null;
   seek(positionNs: number): void;
+  backToLive(): void;
   play(): void;
   pause(): void;
   setSpeed(speed: number): void;

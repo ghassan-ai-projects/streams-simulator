@@ -1,8 +1,17 @@
 import type { RunEntry } from "../../../model/workspace";
-import type { InstanceOrigin, JournalEntry, Report, Replay, TimedBinding } from "../../../model/review";
+import type {
+  EventMark,
+  InstanceOrigin,
+  JournalEntry,
+  Report,
+  Replay,
+  SessionLive,
+  TimedBinding,
+} from "../../../model/review";
 import { withOrigin } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
 import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
+import type { LiveHistory } from "./liveState";
 
 export type Load<T> =
   | { readonly phase: "loading" }
@@ -14,6 +23,11 @@ export function toLoad<T>(outcome: Outcome<T, ReviewFailure>): Load<T> {
 }
 
 export interface ReviewState {
+  readonly following: boolean;
+  readonly newestNs: number;
+  readonly live: SessionLive | null;
+  readonly liveHistory: LiveHistory | null;
+  readonly liveMarks: readonly EventMark[];
   readonly worldId: string | null;
   readonly report: Load<Report>;
   readonly verified: Load<Replay>;
@@ -36,6 +50,11 @@ export interface ReviewState {
 }
 
 export const idle: ReviewState = {
+  following: true,
+  newestNs: 0,
+  live: null,
+  liveHistory: null,
+  liveMarks: [],
   worldId: null,
   report: { phase: "loading" },
   verified: { phase: "loading" },
@@ -64,11 +83,13 @@ export function withListedConnection(state: ReviewState, known: RunEntry | undef
   return { ...state, connection: listed, simulated: known?.simulated ?? state.simulated };
 }
 
-type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" }>;
+type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" | "session" }>;
 
 export function withSessionEntry(state: ReviewState, entry: SessionEntry): ReviewState {
-  if (entry.kind === "closed") return state.connection === "running" ? { ...state, connection: "saved" } : state;
+  if (entry.kind === "closed")
+    return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
   const connection = state.connection === "none" ? "saved" : state.connection;
+  if (entry.kind === "session") return { ...state, connection, simulated: entry.simulated };
   if (entry.kind === "origin") return { ...state, connection, origins: withOrigin(state.origins, entry.origin) };
   return { ...state, connection, binding: { atNs: entry.atNs, binding: entry.binding } };
 }

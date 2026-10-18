@@ -1,12 +1,13 @@
 import type { RunEntry } from "../../../model/workspace";
 import { PlaybackIndex, advance } from "../../../model/review";
-import type { JournalEntry } from "../../../model/review";
+import type { JournalEntry, SessionLive } from "../../../model/review";
 import type { Badge } from "../../../model/review";
 import { badgeOf } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
 import { FrameLoop } from "./frameLoop";
+import { atPosition, playbackBounds, withLiveBatch } from "./liveState";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
 import {
   absentLoads,
@@ -27,6 +28,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private readonly operations: OperationIdentity;
   private readonly reports = createOperationIdentity();
   private pending = 0;
+  private livePending: SessionLive[] = [];
   private finals: FinalLoads = finalLoadsFor(undefined);
   private cancelFlush: (() => void) | null = null;
   private readonly frames: FrameLoop;
@@ -68,6 +70,7 @@ export class ReviewStore extends Observable<ReviewState> {
     const session = this.operations.begin();
     this.finals = finalLoadsFor(known);
     this.pending = 0;
+    this.livePending = [];
     this.index = new PlaybackIndex();
     const connection = connectionOf(known);
     const simulated = known?.simulated ?? [];
@@ -113,16 +116,27 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   seek(positionNs: number): void {
-    this.set({ ...this.snapshot(), positionNs });
+    this.set({ ...atPosition(this.drainLive(), positionNs), following: false });
+  }
+
+  backToLive(): void {
+    const state = this.drainLive();
+    if (state.connection !== "running") return;
+    this.pause();
+    this.set({ ...atPosition(state, state.newestNs), playing: false, following: true });
   }
 
   play(): void {
-    const bounds = this.index.bounds();
-    const settled = this.index.settled();
+    const state = this.drainLive();
+    const bounds = playbackBounds(state, this.index);
+    const settled =
+      state.liveHistory === null
+        ? this.index.settled()
+        : Math.min(state.liveHistory.startNs, this.index.settled() ?? state.liveHistory.startNs);
     if (bounds === null || settled === null) return;
-    const state = this.snapshot();
+    if (settled === undefined) return;
     const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
-    this.set({ ...state, playing: true, positionNs: fresh ? settled : state.positionNs });
+    this.set({ ...atPosition(state, fresh ? settled : state.positionNs), playing: true, following: false });
     this.frames.start((elapsedMs) => {
       this.tick(elapsedMs);
     });
@@ -139,11 +153,11 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private tick(elapsedMs: number): void {
     const state = this.snapshot();
-    const bounds = this.index.bounds();
+    const bounds = playbackBounds(state, this.index);
     if (!state.playing || bounds === null) return;
     const positionNs = advance(state.positionNs, elapsedMs, state.speed, bounds.endNs);
     if (positionNs >= bounds.endNs) this.frames.stop();
-    this.set({ ...state, positionNs, playing: positionNs < bounds.endNs });
+    this.set({ ...atPosition(state, positionNs), playing: positionNs < bounds.endNs });
   }
 
   select(entity: string | null): void {
@@ -151,7 +165,12 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   reveal(positionNs: number, entity: string): void {
-    this.set({ ...this.snapshot(), positionNs, selected: entity, picked: { atNs: positionNs, entity } });
+    this.set({
+      ...atPosition(this.drainLive(), positionNs),
+      following: false,
+      selected: entity,
+      picked: { atNs: positionNs, entity },
+    });
   }
 
   showTab(tab: ReviewState["tab"]): void {
@@ -160,9 +179,10 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private take(session: Operation, entry: JournalEntry): void {
     if (!session.live()) return;
+    if (entry.kind === "live") this.livePending.push(entry.live);
     if (entry.kind === "observation") this.index.add(entry.observation);
-    if (entry.kind === "origin" || entry.kind === "binding" || entry.kind === "closed") {
-      const next = withSessionEntry(this.snapshot(), entry);
+    if (entry.kind === "origin" || entry.kind === "binding" || entry.kind === "closed" || entry.kind === "session") {
+      const next = withSessionEntry(this.drainLive(), entry);
       if (next !== this.snapshot()) this.set(next);
     }
     this.pending += 1;
@@ -181,8 +201,8 @@ export class ReviewStore extends Observable<ReviewState> {
     this.update(session, { phase });
     if (phase === "ready") this.refreshIfLive(worldId, session);
     const state = this.snapshot();
-    const settled = this.index.settled();
-    const before = (this.index.bounds()?.startNs ?? 0) > state.positionNs;
+    const settled = this.index.settled() ?? state.liveHistory?.startNs ?? null;
+    const before = (playbackBounds(state, this.index)?.startNs ?? 0) > state.positionNs;
     if (settled !== null && before) this.seek(settled);
   }
 
@@ -196,8 +216,14 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private update(session: Operation, playback: Partial<ReviewState["playback"]>): void {
     if (!session.live()) return;
-    const state = this.snapshot();
+    const state = this.drainLive();
     this.set({ ...state, playback: { ...state.playback, records: this.index.size, ...playback } });
+  }
+
+  private drainLive(): ReviewState {
+    const batch = this.livePending;
+    this.livePending = [];
+    return withLiveBatch(this.snapshot(), batch);
   }
 
   private async loadReport(worldId: string, session: Operation): Promise<void> {

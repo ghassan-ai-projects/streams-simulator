@@ -35,6 +35,7 @@ func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) 
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}
+	r.JournalSession(map[string]any{"mode": "connected", "plan": p.result()})
 	return r, nil
 }
 
@@ -71,7 +72,7 @@ func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan) (Connec
 func (p *connectPlan) relayOptions(o ConnectOptions) RelayOptions {
 	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready,
 		Simulated: &SimulatedOptions{DomainsDir: o.DomainsDir, AdaptersDir: o.AdaptersDir, Domain: p.session.Domain, Adapter: connectAdapter,
-			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1")}}
+			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1"), Session: p.result()}}
 }
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {

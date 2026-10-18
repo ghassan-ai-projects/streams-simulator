@@ -74,6 +74,20 @@ func (s RunSummary) State(running bool) RunState {
 	return RunState{Ended: s.Closed && !running, Explore: s.Explore}
 }
 
+func RecordedSession(head []byte) (json.RawMessage, bool) {
+	for line := range bytes.SplitSeq(head, []byte("\n")) {
+		var note struct {
+			Type string `json:"type"`
+			Mode string `json:"mode"`
+			Plan json.RawMessage `json:"plan"`
+		}
+		if json.Unmarshal(line, &note) == nil && note.Type == "session" && note.Mode == "connected" && len(note.Plan) > 0 {
+			return note.Plan, true
+		}
+	}
+	return nil, false
+}
+
 // Complete is true for a run that ended without being abandoned or aborted.
 func (s RunSummary) Complete(running bool) bool {
 	return s.State(running).Ended && !s.Incomplete

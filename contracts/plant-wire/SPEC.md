@@ -1,6 +1,6 @@
 # Plant wire v1 — specification
 
-- **Status**: contract v1.2.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
+- **Status**: contract v1.3.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
   deployment.
 - **Scope**: the session between a **node** (a simulated world, or an edge gateway in front of hardware) and a **host** (a plant
   supervisor). Field protocols below a gateway are out of scope; section 13 maps the one this contract meets first.
@@ -77,7 +77,7 @@ Host → node:
 | `NCMD` | control | `command`: `rebirth` |
 | `DCMD` | control | `command_id`, `idempotency_key`, `device`, `command`, `args`, `expected_boot_id`, `deadline_ns`, `not_before_ns`, `authority_epoch`, `policy_digest`, `fallback_on_lease_loss` (`revert_to_local`, `hold_last`, `safe_off`) |
 | `DQUERY` | control | `device` |
-| `HSYNC` | control | `through_seq` |
+| `HSYNC` | control | `through_seq`, optional `command_evidence` |
 
 Ids and names (devices, kinds, metrics, commands, boards, hosts) match `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`: no spaces and no
 prose, so an id cannot carry an instruction.
@@ -162,6 +162,13 @@ the `NBIRTH` that answers it arrives.
   the wall clock.
 
 ## 9. Commands
+
+An optional HSYNC `command_evidence` array records a host's independent feedback decision. Each entry names
+`command_id`, `device`, `boot_id`, `metric`, `expected`, nonnegative `tolerance`, and `outcome`
+(`observed` or `not_observed`); `observed` requires `observed_value`. At most 128 entries are sent per barrier.
+The reference host checks only a good, nonhistorical sample from the same boot, newer than the device's successful
+result, against its explicit verification policy. A timeout is `not_observed`, not proof of failure. No evidence
+means unknown. A receipt, device result or self-reported state is never independent confirmation.
 
 **Lifecycle.** Each `DCMD` receives at most one `DRECEIPT {status: queued}` and then exactly one terminal `DRECEIPT`
 (`accepted` or `refused`); a terminal receipt supersedes a queued one. An accepted command receives exactly one `DRESULT`.
@@ -261,4 +268,5 @@ declares at most 256 kinds and 4096 boards of at most 4096 devices.
 | Version | Change |
 |---|---|
 | 1.2.0 | Every board in `NBIRTH.boards` carries `environment` (`simulated` or `hardware`, required); `NBIRTH.environment` gains `mixed`; the host checks the node against its boards and against its own setting, which now has the same three values (section 2). |
+| 1.3.0 | Optional HSYNC command_evidence carries explicit host feedback decisions, independently of board acknowledgement and self-report. |
 | 1.1.0 | Every entry of `NBIRTH.kinds` carries a `kind_digest`; the kind file (`KIND`) is the contract of a kind (section 5). |

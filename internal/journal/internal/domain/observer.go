@@ -67,6 +67,14 @@ func (j *Journal) Binding(atNS int64, fields map[string]any) {
 	j.observer.Append(TypeBinding, atNS, fields)
 }
 
+func (j *Journal) Live(atNS int64, fields map[string]any) {
+	j.observer.Append(TypeLive, atNS, fields)
+}
+
+func (j *Journal) Session(atNS int64, fields map[string]any) {
+	j.observer.Append(TypeSession, atNS, fields)
+}
+
 func (j *Journal) Pacing(atNS int64, throughSeq uint64, waitedMS int64, missed bool) {
 	j.observer.Append(TypePacing, atNS, map[string]any{"through_seq": throughSeq, "waited_ms": waitedMS, "missed": missed})
 }

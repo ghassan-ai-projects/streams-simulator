@@ -590,3 +590,24 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 - Knowledge of Agentic Stream's operator interface in the binary or the bridge.
 - Scoring a consumer against a device's self-reports.
 - Customer devices, mappings or recordings in any repository.
+
+## R10 design decision: recorded live evidence
+
+The live screen and a reopened session consume the same observer journal. Plant wire owns the interpretation of
+admitted records into connection health, reading quality and command stages. The bridge transports that projection;
+the canvas owns presentation and whether its cursor follows the newest record. Connected-session metadata and the
+checked plan are recorded with the session so a bridge restart cannot change its classification or origins.
+
+Receipt, board report and observed effect remain separate. The reference host already checks a declared feedback
+metric against an expectation using a sample received after a successful board report. Its decision previously stayed
+in its final report. R10 adds optional `command_evidence` to `HSYNC` to carry that decision through the existing host
+channel. Each decision identifies the command, device, boot and metric, with the expectation, tolerance and observed
+value when available. This is an additive plant-wire contract change; existing hosts may omit it, which leaves the
+effect unknown. The relay forwards host content unchanged and records only evidence matching the routed command and
+boot. A receipt or successful board report alone never confirms an effect. A host observation is recorded evidence,
+not independent proof of a physical effect on the bench.
+
+The existing plantwire domain layer owns these rules; its app and socket edge supply records and deterministic ticks.
+The existing run/journal modules persist observer records without interpreting plant-wire policies. No new package or
+dependency is required. Gateway silence uses a bounded watchdog even before a host heartbeat has been seen. Reading
+quality distinguishes implausible, stale and disconnected values from current readings using admitted capability data.

@@ -51,6 +51,13 @@ born = {"type": "object", "required": ["name", "alias", "value", "quality"], "pr
 sample = {"type": "object", "required": ["alias", "value", "quality", "event_time_ns", "time_source"], "properties": {
     "alias": u64, "value": value, "quality": quality, "event_time_ns": i64, "time_source": {"enum": ["device", "gateway", "receipt"]},
     "uncertainty_ms": {"type": "number", "minimum": 0}, "device_mono_us": u64}}
+evidence = {"type": "object", "additionalProperties": False,
+    "required": ["command_id", "device", "boot_id", "metric", "outcome", "expected", "tolerance"],
+    "properties": {"command_id": ident, "device": ident, "boot_id": ident, "metric": ident,
+        "outcome": {"enum": ["observed", "not_observed"]}, "expected": {"type": "number"},
+        "tolerance": {"type": "number", "minimum": 0}, "observed_value": {"type": "number"}},
+    "if": {"properties": {"outcome": {"const": "observed"}}},
+    "then": {"required": ["observed_value"]}}
 
 schemas = {
  "KIND": kind_file,
@@ -100,7 +107,8 @@ schemas = {
     "fallback_on_lease_loss": {"enum": ["revert_to_local", "hold_last", "safe_off"]}},
     "Device command with its safety fields: absolute deadline, boot identity, authority epoch and policy digest."),
  "DQUERY": envelope("DQUERY", "control", ["device"], {"device": ident}, "State query for reconciliation."),
- "HSYNC": envelope("HSYNC", "control", ["through_seq"], {"through_seq": u64},
+ "HSYNC": envelope("HSYNC", "control", ["through_seq"], {"through_seq": u64,
+    "command_evidence": {"type": "array", "maxItems": 128, "items": evidence}},
     "Barrier reply: the host has processed every node record up to through_seq and sent its commands for that slice."),
 }
 schemas["DCMD"]["additionalProperties"] = False

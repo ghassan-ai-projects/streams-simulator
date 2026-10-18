@@ -118,6 +118,7 @@ func (l *relayLoop) onHost(in domain.Inbound, open bool) error {
 }
 
 func (l *relayLoop) onTick(ctx context.Context) error {
+	l.rec.tickLive(relayTick.Milliseconds())
 	if err := l.apply(l.relay.Tick()); err != nil {
 		return err
 	}

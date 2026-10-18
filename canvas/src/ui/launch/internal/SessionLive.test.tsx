@@ -31,8 +31,8 @@ describe("a running connected session in the run panel", () => {
       );
     });
     expect(screen.getByText(/announced every real board/)).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /^To completion/ })).toBeDisabled();
-    expect(screen.getByRole("radio", { name: /^Connected session/ })).toBeChecked();
+    expect(screen.queryByRole("radio", { name: /^To completion/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: /^Connected session/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stop and save" }));
     expect(await screen.findByText("The session was stopped and saved as run c-1.")).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Open the review" }));

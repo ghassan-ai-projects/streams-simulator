@@ -65,6 +65,14 @@ func (j *Journal) Binding(atNS int64, fields map[string]any) {
 	j.impl.Binding(atNS, fields)
 }
 
+func (j *Journal) Live(atNS int64, fields map[string]any) {
+	j.impl.Live(atNS, fields)
+}
+
+func (j *Journal) Session(atNS int64, fields map[string]any) {
+	j.impl.Session(atNS, fields)
+}
+
 func (j *Journal) Pacing(atNS int64, throughSeq uint64, waitedMS int64, missed bool) {
 	j.impl.Pacing(atNS, throughSeq, waitedMS, missed)
 }

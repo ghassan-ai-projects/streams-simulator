@@ -40,6 +40,7 @@ func (r *Relay) loseHost(m *Moves) {
 	r.lastUp = saturatingInt64(r.host.out.LastSeq())
 	last := r.host.state
 	r.host = hostSide{}
+	m.Notes = append(m.Notes, connectionNote("host", "offline"))
 	r.gateway.asked = false
 	clear(r.gateway.born)
 	if r.gateway.admitted {
@@ -73,6 +74,9 @@ func (r *Relay) FromHost(in Inbound) Moves {
 
 func (r *Relay) hostRecord(m *Moves, in Inbound) {
 	in.Within(r.host.session, Version)
+	if in.Invalid == nil && hostRecords[in.Type] && (r.host.shaken || in.Type == "STATE") {
+		m.Trace[0].Admitted = true
+	}
 	switch {
 	case !r.host.shaken:
 		r.hostHandshake(m, in)
@@ -176,7 +180,7 @@ func (r *Relay) downward(in Inbound) (map[string]any, bool) {
 }
 
 func (r *Relay) Tick() Moves {
-	moves := Moves{}
+	moves := r.gatewayTick()
 	if !r.host.shaken || !r.host.beating {
 		return moves
 	}

@@ -72,7 +72,7 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      <RunMode kind={mode.kind} locked={lockWords(running, mode.held)} onKind={mode.choose} />
+      {!mode.held && <RunMode kind={mode.kind} locked={lockWords(running, mode.held)} onKind={mode.choose} />}
       {mode.kind === "session" ? (
         <Session launch={launch} plant={plant} onFinished={onFinished} />
       ) : (

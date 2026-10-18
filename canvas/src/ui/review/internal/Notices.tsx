@@ -29,6 +29,7 @@ function DomainNote({ state }: { readonly state: ReviewState }) {
 }
 
 export function Notices({ state }: { readonly state: ReviewState }) {
+  if (state.connection === "running") return null;
   const list = bannerWarnings(readyReport(state), state.verified, state.playback);
   return (
     <div className={styles.notices}>

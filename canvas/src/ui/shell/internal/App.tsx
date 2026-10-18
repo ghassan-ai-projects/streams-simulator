@@ -15,7 +15,7 @@ import { DeviceScreen } from "../../devices";
 import { EditorScreen } from "../../editor";
 import { CaptureScreen, WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
-import { PlantScreen } from "../../plant";
+import { PlantRoute } from "./PlantRoute";
 import { ReviewScreen } from "../../review";
 import { CrumbSlot } from "../../primitives";
 import { KeyHelp } from "./KeyHelp";
@@ -81,18 +81,7 @@ function Home({ stores, route }: { readonly stores: Stores; readonly route: Rout
 
 function Screen({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
   if (route.screen === "plant") {
-    return (
-      <PlantScreen
-        plants={stores.plants}
-        workspace={stores.workspace}
-        navigation={stores.navigation}
-        launch={stores.launch}
-        domain={route.domain}
-        hall={route.hall}
-        startLaunching={route.launch === true}
-        onShowDetails={stores.showDetails}
-      />
-    );
+    return <PlantRoute stores={stores} route={route} />;
   }
   if (route.screen === "edit" || route.screen === "device") return <Authoring stores={stores} route={route} />;
   if (route.screen === "review") {

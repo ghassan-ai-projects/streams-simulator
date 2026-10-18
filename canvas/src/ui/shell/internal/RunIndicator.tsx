@@ -1,4 +1,5 @@
 import { CircleAlert, CircleCheck, Loader, X } from "lucide-react";
+import { useEffect } from "react";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import { runProgressWords } from "../../../model/launch";
@@ -40,12 +41,30 @@ function dismiss(launch: LaunchStore) {
 
 export function RunIndicator(props: IndicatorProps) {
   const state = useStore(props.launch);
+  const connected = useStore(props.launch.connect);
+  useEffect(() => {
+    void props.launch.connect.resume();
+  }, [props.launch]);
   return (
     <>
       <p className="sr-only" role="status">
         {announcement(state)}
       </p>
       {state.phase !== "idle" && <Pill {...props} state={state} />}
+      {connected.phase === "live" && (
+        <div className={styles["run-running"]}>
+          <button
+            type="button"
+            className={styles.runOpen}
+            onClick={() => {
+              props.navigation.go({ screen: "review", worldId: connected.run });
+            }}
+          >
+            <Loader size={14} aria-hidden="true" />
+            Connected session · running · Open live view
+          </button>
+        </div>
+      )}
     </>
   );
 }

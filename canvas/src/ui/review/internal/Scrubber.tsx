@@ -13,6 +13,7 @@ import type { PlayProps } from "./PlayControls";
 import { PlayControls, StepButton } from "./PlayControls";
 
 interface ScrubberProps extends PlayProps {
+  readonly liveMarks?: readonly EventMark[];
   readonly startNs: number;
   readonly endNs: number;
   readonly positionNs: number;
@@ -168,17 +169,29 @@ function TimeRow(props: RowProps) {
   );
 }
 
+function seekByMinute(
+  event: KeyboardEvent<HTMLInputElement>,
+  positionNs: number,
+  clamp: (ns: number) => number,
+  onSeek: (ns: number) => void,
+): void {
+  if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+  event.preventDefault();
+  onSeek(clamp(positionNs + (event.key === "ArrowLeft" ? -60e9 : 60e9)));
+}
+
 export function Scrubber(props: ScrubberProps) {
   const { startNs, endNs, positionNs, report, onSeek, onEvent } = props;
   const span = Math.max(1, endNs - startNs);
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
-  const marks = useMemo(() => eventMarks(report, props.binding ?? null), [report, props.binding]);
+  const marks = useMemo(
+    () => [...eventMarks(report, props.binding ?? null), ...(props.liveMarks ?? [])].sort((a, b) => a.atNs - b.atNs),
+    [report, props.binding, props.liveMarks],
+  );
   const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
-    event.preventDefault();
-    onSeek(clamp(positionNs + (event.key === "ArrowLeft" ? -60e9 : 60e9)));
+    seekByMinute(event, positionNs, clamp, onSeek);
   };
   return (
     <div className={styles.scrubber}>
