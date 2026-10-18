@@ -18,6 +18,7 @@ var contractCodes = map[Contract]string{
 	ContractKindFile:        "kind_failed",
 	ContractTwinChoices:     "kind_failed",
 	ContractPlantWireBirth:  "kind_failed",
+	ContractSessionPlan:     "plantwire_failed",
 }
 
 func (c Contract) FailureCode() (string, bool) {

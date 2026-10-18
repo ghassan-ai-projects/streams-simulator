@@ -1,6 +1,7 @@
 // Package process is the process edge of the canvas bridge: the director it
 // drives over MCP (one `streamsim mcp --role director` child on stdio) and the
-// streamsim commands it runs for CLI actions. Both run the bridge's own
+// streamsim commands it runs for CLI actions, one of them a connected session
+// that lasts until it is interrupted. All run the bridge's own
 // executable with a scrubbed environment; arguments are separate argv entries.
 package process
 

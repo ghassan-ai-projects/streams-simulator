@@ -1,0 +1,60 @@
+.kinds {
+  flex: none;
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.realRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.rowField {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.rowField:first-child {
+  grid-column: 1;
+}
+
+.rowField small {
+  grid-column: 2;
+}
+
+.instances,
+.issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instances li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.developers {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.developers summary {
+  cursor: pointer;
+}
+
+.developers ul {
+  margin-top: var(--space-1);
+}
+
+.note {
+  color: var(--status-warn);
+}

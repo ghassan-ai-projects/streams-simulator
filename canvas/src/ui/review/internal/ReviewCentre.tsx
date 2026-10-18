@@ -17,6 +17,8 @@ function Timeline({ review, state }: { readonly review: ReviewSession; readonly 
       endNs={span.endNs}
       positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
       report={report}
+      origins={state.origins}
+      binding={state.binding}
       playing={state.playing}
       speed={state.speed}
       onPlay={() => {
@@ -32,7 +34,8 @@ function Timeline({ review, state }: { readonly review: ReviewSession; readonly 
         review.seek(ns);
       }}
       onEvent={(mark) => {
-        review.reveal(mark.atNs, mark.entity);
+        if (mark.entity === "") review.seek(mark.atNs);
+        else review.reveal(mark.atNs, mark.entity);
       }}
     />
   );

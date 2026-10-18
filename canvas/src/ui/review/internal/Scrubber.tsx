@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-r
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { Report } from "../../../model/review";
-import type { EventMark } from "../../../model/review";
+import type { EventMark, InstanceOrigin, TimedBinding } from "../../../model/review";
 import { eventMarks, firstEventLine, nextEvent, previousEvent, runClock, timeTicks } from "../../../model/review";
 import runStyles from "./PlayControls.module.css";
 import styles from "./Scrubber.module.css";
@@ -19,6 +19,8 @@ interface ScrubberProps extends PlayProps {
   readonly report: Report | null;
   readonly onSeek: (ns: number) => void;
   readonly onEvent: (mark: EventMark) => void;
+  readonly origins?: ReadonlyMap<string, InstanceOrigin>;
+  readonly binding?: TimedBinding | null;
 }
 
 interface TicksProps {
@@ -119,7 +121,18 @@ function FirstEvent({ report, startNs }: { readonly report: Report | null; reado
   );
 }
 
+function Foot({ report, startNs, marks }: { readonly marks: readonly EventMark[] } & Parameters<typeof FirstEvent>[0]) {
+  return (
+    <div className={styles.foot}>
+      <FirstEvent report={report} startNs={startNs} />
+      <Legend marks={marks} />
+    </div>
+  );
+}
+
 const unknownClock = "--:--:--";
+
+const noOrigins: ReadonlyMap<string, InstanceOrigin> = new Map();
 
 interface RowProps extends ScrubberProps {
   readonly marks: readonly EventMark[];
@@ -148,7 +161,6 @@ function TimeRow(props: RowProps) {
       <span className={styles.time}>{known ? runClock(positionNs, startNs) : unknownClock}</span>
       <span className={styles.span}>{`of ${known ? runClock(endNs, startNs) : unknownClock}`}</span>
       <span className={styles.controls}>
-        <Legend marks={marks} />
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
         <AlarmJump marks={marks} positionNs={positionNs} onEvent={onEvent} />
       </span>
@@ -161,7 +173,7 @@ export function Scrubber(props: ScrubberProps) {
   const span = Math.max(1, endNs - startNs);
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
-  const marks = useMemo(() => eventMarks(report), [report]);
+  const marks = useMemo(() => eventMarks(report, props.binding ?? null), [report, props.binding]);
   const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
@@ -189,8 +201,9 @@ export function Scrubber(props: ScrubberProps) {
         positionNs={positionNs}
         said={said}
         pick={pick}
+        origins={props.origins ?? noOrigins}
       />
-      <FirstEvent report={report} startNs={startNs} />
+      <Foot report={report} startNs={startNs} marks={marks} />
     </div>
   );
 }

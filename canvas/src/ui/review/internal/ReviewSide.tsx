@@ -28,6 +28,7 @@ export function Side({
             review.select(id);
           }}
           onOpenHall={onHall}
+          origins={state.origins}
         />
       )}
       <Navigator />

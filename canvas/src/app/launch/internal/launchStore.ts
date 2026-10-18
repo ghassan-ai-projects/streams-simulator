@@ -9,6 +9,7 @@ import type { LaunchOrigin } from "./runCursor";
 import { RunCursor } from "./runCursor";
 import { RunWatch } from "./runWatch";
 import type { LaunchStore as LaunchStoreApi } from "./api";
+import { ConnectStore } from "./connectStore";
 
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
 const noPlan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], calls: [] };
@@ -27,6 +28,7 @@ const broken: LaunchFailure = {
 export class LaunchStore extends Observable<LaunchState> {
   private cursor = new RunCursor(nowhere, noPlan, 0);
   private readonly proposals = new ProposalSlot();
+  readonly connect: ConnectStore;
 
   constructor(
     private readonly gateway: LaunchGateway,
@@ -34,6 +36,7 @@ export class LaunchStore extends Observable<LaunchState> {
     private readonly scheduler: Scheduler,
   ) {
     super({ phase: "idle" });
+    this.connect = new ConnectStore(gateway, scheduler);
   }
 
   propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {

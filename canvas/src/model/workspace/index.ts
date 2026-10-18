@@ -4,6 +4,7 @@ export {
   plantFacts,
   plantsOf,
   runFacts,
+  runModeWords,
   runRows,
   suggestedId,
   unfinishedReason,

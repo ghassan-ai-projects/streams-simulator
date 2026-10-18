@@ -1,8 +1,8 @@
-import { CircleCheck, CircleHelp, CircleX, Eye, Loader, Lock, TriangleAlert } from "lucide-react";
+import { Cable, CircleCheck, CircleHelp, CircleX, Eye, Loader, Lock, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
 import type { Badge, Report } from "../../../model/review";
-import { badgeLabels, badgeOf, modeWords } from "../../../model/review";
+import { badgeLabels, badgeOf, bindingLine, connectionWords, modeWords } from "../../../model/review";
 import { integrityLine, reportFacts, runIdentity } from "../../../model/review";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
@@ -62,7 +62,37 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
   );
 }
 
-function Mode({ report }: { readonly report: Report }) {
+const sessionWords =
+  "Connected session: the plant ran linked to a plant wire host, and through a gateway to real boards, until it was stopped.";
+
+function Connected({ state }: { readonly state: ReviewState }) {
+  if (state.connection === "none") return null;
+  const binding = state.binding?.binding ?? null;
+  return (
+    <>
+      <span className={styles.chip} title={sessionWords} data-part="connection">
+        <Cable size={13} aria-hidden="true" />
+        {connectionWords(state.connection)}
+      </span>
+      {binding !== null && (
+        <span className={binding.matched ? styles.chip : styles.incomplete} title={bindingLine(binding)}>
+          {binding.matched ? "Gateway matched" : "Gateway refused · real boards not bound"}
+        </span>
+      )}
+    </>
+  );
+}
+
+function Mode({ report, state }: { readonly report: Report; readonly state: ReviewState }) {
+  if (state.connection !== "none") {
+    return (
+      <>
+        <Connected state={state} />
+        <span className={styles.facts}>{reportFacts(report)}</span>
+        <RunInfo lines={[sessionWords, runIdentity(report)]} />
+      </>
+    );
+  }
   const explore = report.mode === "explore";
   return (
     <>
@@ -83,13 +113,15 @@ export function Status({ state, now }: { readonly state: ReviewState; readonly n
     return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
-  const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : badgeLabels[badge];
+  const running = state.connection === "running" && badge === "incomplete";
+  const shown = running ? "Running" : badgeLabels[badge];
+  const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : shown;
   return (
     <>
-      <Mode report={report} />
+      <Mode report={report} state={state} />
       <Chip badge={badge} label={label} title={integrityLine(report, state.verified)} />
-      {badge === "incomplete" && <Reason text={report.incompleteReason || "the run did not close."} />}
-      <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
+      {badge === "incomplete" && !running && <Reason text={report.incompleteReason || "the run did not close."} />}
+      <Announce text={badge === "verifying" ? "Verifying: replaying the run" : shown} />
     </>
   );
 }

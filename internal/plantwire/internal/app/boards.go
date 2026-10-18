@@ -30,20 +30,29 @@ func (d *devices) boot(id string) string { return d.board(id) + "-boot-1" }
 func (d *devices) boards() []model.Board {
 	boards := make([]model.Board, 0, len(d.spec.Spec.Boards))
 	for _, board := range d.spec.Spec.Boards {
-		boards = append(boards, model.Board{Name: board.Name, Members: d.wireMembers(board.Members), Environment: domain.EnvironmentSimulated})
+		boards = simulatedBoard(boards, board.Name, d.wireMembers(board.Members))
 	}
 	for _, id := range d.run.World.EntityIDs() {
 		if d.domainBoard(id) == "" {
-			boards = append(boards, model.Board{Name: d.wireOf(id), Members: []string{d.wireOf(id)}, Environment: domain.EnvironmentSimulated})
+			boards = simulatedBoard(boards, d.wireOf(id), d.wireMembers([]string{id}))
 		}
 	}
 	return boards
 }
 
+func simulatedBoard(boards []model.Board, name string, members []string) []model.Board {
+	if len(members) == 0 {
+		return boards
+	}
+	return append(boards, model.Board{Name: name, Members: members, Environment: domain.EnvironmentSimulated})
+}
+
 func (d *devices) wireMembers(members []string) []string {
-	out := make([]string, len(members))
-	for i, member := range members {
-		out[i] = d.wireOf(member)
+	out := make([]string, 0, len(members))
+	for _, member := range members {
+		if wireID := d.wireOf(member); !d.withheld[member] {
+			out = append(out, wireID)
+		}
 	}
 	return out
 }

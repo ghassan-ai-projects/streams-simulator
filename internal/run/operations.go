@@ -165,6 +165,18 @@ func (r *Run) JournalPacing(throughSeq uint64, waitedMS int64, missed bool) {
 	r.run.JournalPacing(throughSeq, waitedMS, missed)
 }
 
+func (r *Run) JournalOrigin(fields map[string]any) {
+	r.run.JournalOrigin(fields)
+}
+
+func (r *Run) JournalBinding(fields map[string]any) {
+	r.run.JournalBinding(fields)
+}
+
+func (r *Run) FlushJournal() error {
+	return r.run.FlushJournal()
+}
+
 func (r *Run) SetDeliveryObserver(fn func(model.SimEvent)) {
 	r.run.SetDeliveryObserver(fn)
 }

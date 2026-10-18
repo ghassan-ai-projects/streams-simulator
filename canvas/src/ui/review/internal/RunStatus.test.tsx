@@ -8,6 +8,27 @@ const parsed = report;
 const now = () => 0;
 
 describe("run status", () => {
+  it("labels a connected session as one, running while it runs, with its gateway binding, never Evaluate", () => {
+    const refused = { matched: false, refusal: "inventory_mismatch", reason: "", issues: [] };
+    const live = state({
+      connection: "running",
+      binding: { atNs: 0, binding: refused },
+      report: { phase: "ready", value: { ...parsed, ended: false, complete: false } },
+    });
+    const { unmount } = render(<Status state={live} now={now} />);
+    expect(screen.getByText("Connected session · running")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Running");
+    expect(screen.getByText("Gateway refused · real boards not bound")).toHaveAttribute(
+      "title",
+      expect.stringContaining("The gateway was refused (inventory_mismatch)"),
+    );
+    expect(screen.queryByText(/Evaluate|Did not finish/)).toBeNull();
+    unmount();
+    render(<Status state={state({ connection: "saved" })} now={now} />);
+    expect(screen.getByText("Connected session")).toBeInTheDocument();
+    expect(screen.queryByText(/Gateway/)).toBeNull();
+  });
+
   it("badges a divergent replay Not verified", () => {
     const divergent = state({
       verified: {

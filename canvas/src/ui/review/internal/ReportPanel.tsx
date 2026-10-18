@@ -75,20 +75,24 @@ interface TruthProps {
   readonly unit: (entity: string, state: string) => string;
   readonly entity: string | null;
   readonly only?: "kpi";
+  readonly connection?: "none" | "running" | "saved" | undefined;
 }
 
-function TruthNote({ report }: { readonly report: Report }) {
-  const text =
-    report.mode === "explore"
-      ? "Explore run: the true results below were visible while it ran."
-      : "Evaluate run: the true results below were hidden from the outside system while it ran and shown when it ended.";
-  return <p className={styles.truthNote}>{text}</p>;
+const connectedTruth =
+  "Connected session: the true results below are the simulator's own record of the plant while it was linked to the " +
+  "plant wire host.";
+
+function truthWords(report: Report, connection: TruthProps["connection"]): string {
+  if (connection !== undefined && connection !== "none") return connectedTruth;
+  return report.mode === "explore"
+    ? "Explore run: the true results below were visible while it ran."
+    : "Evaluate run: the true results below were hidden from the outside system while it ran and shown when it ended.";
 }
 
-function Truth({ report, unit, entity, picked = null }: TruthProps) {
+function Truth({ report, unit, entity, picked = null, connection }: TruthProps) {
   return (
     <>
-      <TruthNote report={report} />
+      <p className={styles.truthNote}>{truthWords(report, connection)}</p>
       <Events report={report} picked={picked} />
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarms">
@@ -169,6 +173,7 @@ export function ReportPanel({
   only,
   picked = null,
   verify = loading,
+  connection,
 }: TruthProps & { readonly verify?: VerifyState }) {
   if (only === "kpi") {
     return report.truthUnavailable || !report.ended ? null : (
@@ -189,7 +194,7 @@ export function ReportPanel({
           </p>
         </Section>
       ) : (
-        <Truth report={report} unit={unit} entity={entity} picked={picked} />
+        <Truth report={report} unit={unit} entity={entity} picked={picked} connection={connection} />
       )}
       <Scoring report={report} />
     </>

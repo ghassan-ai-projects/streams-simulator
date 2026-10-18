@@ -32,7 +32,17 @@ function row(overrides: Partial<ReadoutRow>): ReadoutRow {
 
 function live(overrides: Partial<NodeLive>): NodeLive {
   const readout = { rows: [row({})], hidden: 0, hiddenAttention: null };
-  return { shown: [], observed: new Set(), readout, status: null, count: 0, fault: "", effector: "", ...overrides };
+  return {
+    shown: [],
+    observed: new Set(),
+    readout,
+    status: null,
+    count: 0,
+    fault: "",
+    effector: "",
+    origin: null,
+    ...overrides,
+  };
 }
 
 function draw(props: Partial<PlantGraphProps>) {
@@ -46,6 +56,31 @@ function draw(props: Partial<PlantGraphProps>) {
 function node(id: string) {
   return screen.getByRole("group", { name: new RegExp(`^${id},`) });
 }
+
+describe("a graph drawn from a connected session", () => {
+  it("marks a real board and a simulated instance on their nodes, in words for every reader", () => {
+    const real = { instance: "CH-1", kind: "real", board: "uno-07", device: "ch-1", bootId: "61" } as const;
+    const simulated = { ...real, instance: "CT-1", kind: "simulated", board: "mega-01" } as const;
+    const origins = new Map<string, NodeLive["origin"]>([
+      ["CH-1", real],
+      ["CT-1", simulated],
+    ]);
+    draw({ live: (id) => live({ origin: origins.get(id) ?? null }) });
+    expect(node("CH-1").getAttribute("aria-label")).toContain("Real · board uno-07 · boot 61");
+    expect(node("CH-1").querySelector("[data-origin='real']")).not.toBeNull();
+    expect(node("CT-1").querySelector("[data-origin='simulated']")).not.toBeNull();
+    expect(node("MB-1").querySelector("[data-origin]")).toBeNull();
+    expect(node("CH-1").querySelector("[data-origin] .sr-only")).toBeNull();
+    expect(node("CH-1").querySelector("[data-origin] [data-origin-word]")).toHaveTextContent("Real");
+  });
+
+  it("marks an instance a connected run recorded no origin for as unknown, never simulated", () => {
+    const unknown = { instance: "CH-1", kind: "unknown", board: "", device: "", bootId: "" } as const;
+    draw({ live: (id) => live({ origin: id === "CH-1" ? unknown : null }) });
+    expect(node("CH-1").getAttribute("aria-label")).toContain("Origin unknown");
+    expect(node("CH-1").querySelector("[data-origin='unknown']")).not.toBeNull();
+  });
+});
 
 describe("a graph drawn from a run", () => {
   it("shows an alarm count, the fault behind it and an effector call on the instance", () => {

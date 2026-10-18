@@ -102,6 +102,12 @@
     },
     {
       "$ref": "#/$defs/plantwire_replay"
+    },
+    {
+      "$ref": "#/$defs/plantwire_connect"
+    },
+    {
+      "$ref": "#/$defs/plantwire_connect_check"
     }
   ],
   "$defs": {
@@ -1014,7 +1020,59 @@
           "type": "integer",
           "minimum": 0,
           "description": "Mixed session only: commands the relay refused with unknown_device because no board of the node holds the device."
+        },
+        "forged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records dropped (and also counted in dropped) because the gateway or the simulated world sent what only the other side could: an answer to a command it was not given, or a device birth on another board or of a kind its node birth never announced."
+        },
+        "simulated_lost": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: 1 once the simulated node ended before the relay did; its devices were reported offline to the host at once."
+        },
+        "trace_incomplete": {
+          "type": "boolean",
+          "description": "True when the field trace could not take a record (full or a line too long): the relay stopped recording, disconnected the gateway, kept the host session, and the run records no field_trace_digest so that replay-trace refuses the trace."
         }
+      }
+    },
+    "plantwire_connect_check": {
+      "type": "object",
+      "description": "plantwire connect --check: the session plan read against its domain and kind files; nothing is started. Each instance of the plant is real (a board the gateway must announce) or simulated.",
+      "required": ["domain", "environment", "instances", "implements_checked"],
+      "additionalProperties": false,
+      "properties": {
+        "domain": {"type": "string", "minLength": 1},
+        "environment": {"enum": ["simulated", "mixed"], "description": "mixed when the plan has a gateway: its boards are announced beside the world's."},
+        "instances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["instance", "origin", "kind"],
+            "properties": {
+              "instance": {"type": "string", "minLength": 1},
+              "origin": {"enum": ["real", "simulated"]},
+              "kind": {"type": "string", "minLength": 1},
+              "kind_digest": {"$ref": "#/$defs/digest", "description": "Real instances: the digest of the kind file the gateway must announce for the device."},
+              "board": {"type": "string", "minLength": 1},
+              "device": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "implements_checked": {"$ref": "#/$defs/implements_checked"}
+      }
+    },
+    "plantwire_connect": {
+      "type": "object",
+      "description": "plantwire connect: the connected session ran until it was stopped; out is an ordinary run folder.",
+      "required": ["out", "stopped"],
+      "additionalProperties": false,
+      "properties": {
+        "out": {"type": "string"},
+        "stopped": {"type": "boolean", "description": "True when an interrupt ended the session."},
+        "relay": {"$ref": "#/$defs/plantwire_relay", "description": "Present when a gateway socket was given."}
       }
     },
     "plantwire_replay": {

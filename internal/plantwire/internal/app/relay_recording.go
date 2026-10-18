@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -17,12 +18,31 @@ type runWire struct{ run *run.Run }
 
 func (w runWire) Wire(direction string, record map[string]any) { w.run.JournalWire(direction, record) }
 
-func (w runWire) Flush() error { return nil }
+func (w runWire) Flush() error {
+	if err := w.run.FlushJournal(); err != nil {
+		return fmt.Errorf("flush the run journal: %w", err)
+	}
+	return nil
+}
+
+type noteSink interface {
+	JournalOrigin(fields map[string]any)
+	JournalBinding(fields map[string]any)
+}
+
+type fieldSink interface {
+	Add(record map[string]any) error
+	Flush() error
+	Close() error
+	Digest() string
+}
 
 type recording struct {
-	wire      wireSink
-	field     *run.FieldTrace
-	closeWire func() error
+	wire       wireSink
+	field      fieldSink
+	notes      noteSink
+	closeWire  func() error
+	incomplete bool
 }
 
 func openRecording(dir string, sim *simNode) (recording, error) {
@@ -34,7 +54,7 @@ func openRecording(dir string, sim *simNode) (recording, error) {
 		return recording{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	if sim != nil {
-		return recording{wire: runWire{sim.run}, field: field}, nil
+		return recording{wire: runWire{sim.run}, field: field, notes: sim.run}, nil
 	}
 	return hardwareRecording(dir, field)
 }
@@ -53,12 +73,36 @@ func (c *recording) note(line domain.Traced) error {
 	if c.wire != nil {
 		c.wire.Wire(line.Direction, line.Record)
 	}
-	if c.field != nil && line.Direction == domain.TraceGateway {
-		if err := c.field.Add(line.Record); err != nil {
-			return fmt.Errorf("plantwire relay: field trace: %w", err)
-		}
+	if c.field != nil && line.Field && !c.incomplete {
+		return c.addField(line.Record)
 	}
 	return nil
+}
+
+func (c *recording) addField(record map[string]any) error {
+	err := c.field.Add(record)
+	if errors.Is(err, run.ErrFieldTraceFull) || errors.Is(err, run.ErrFieldTrace) {
+		slog.Warn("plantwire relay: the field trace is incomplete, the gateway is disconnected", "error", err)
+		c.incomplete = true
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("plantwire relay: field trace: %w", err)
+	}
+	return nil
+}
+
+func (c *recording) noted(notes []domain.Note) {
+	if c.notes == nil {
+		return
+	}
+	for _, note := range notes {
+		if note.Type == domain.NoteOrigin {
+			c.notes.JournalOrigin(note.Fields)
+			continue
+		}
+		c.notes.JournalBinding(note.Fields)
+	}
 }
 
 func (c *recording) flush() error {
@@ -87,7 +131,7 @@ func (c *recording) close() error {
 }
 
 func (c *recording) digest() string {
-	if c.field == nil {
+	if c.field == nil || c.incomplete {
 		return ""
 	}
 	return c.field.Digest()

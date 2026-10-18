@@ -22,6 +22,9 @@ type SimulatedOptions = app.SimulatedOptions
 type ReplayOptions = app.ReplayOptions
 
 type ReplayStats = app.ReplayStats
+type ConnectOptions = app.ConnectOptions
+type ConnectCheck = app.ConnectCheck
+type ConnectResult = app.ConnectResult
 
 type Scripted = host.Scripted
 
@@ -47,6 +50,7 @@ var (
 	ErrSealedStream     = domain.ErrSealedStream
 	ErrNoReplayBirth    = domain.ErrNoReplayBirth
 	ErrNotObserver      = domain.ErrNotObserver
+	ErrPlanRefused      = app.ErrPlanRefused
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap
 	ErrSocketNotPrivate = uds.ErrSocketNotPrivate

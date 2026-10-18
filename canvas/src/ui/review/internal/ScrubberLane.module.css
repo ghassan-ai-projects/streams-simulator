@@ -88,6 +88,7 @@
 
 .legend {
   display: flex;
+  flex: none;
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -132,4 +133,10 @@
 .mark-effector {
   border-radius: 2px;
   background: var(--accent);
+}
+
+.mark-binding {
+  border: 2px solid var(--origin-real);
+  border-radius: 2px;
+  background: var(--origin-real-bg);
 }

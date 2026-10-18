@@ -1,5 +1,6 @@
 import type { RunEntry } from "../../../model/workspace";
-import type { Report, Replay } from "../../../model/review";
+import type { InstanceOrigin, JournalEntry, Report, Replay, TimedBinding } from "../../../model/review";
+import { withOrigin } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
 import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
 
@@ -28,6 +29,10 @@ export interface ReviewState {
   readonly openedAt: number;
   readonly playing: boolean;
   readonly speed: number;
+  readonly origins: ReadonlyMap<string, InstanceOrigin>;
+  readonly connection: "none" | "running" | "saved";
+  readonly simulated: readonly string[];
+  readonly binding: TimedBinding | null;
 }
 
 export const idle: ReviewState = {
@@ -43,7 +48,30 @@ export const idle: ReviewState = {
   openedAt: 0,
   playing: false,
   speed: 60,
+  origins: new Map(),
+  connection: "none",
+  simulated: [],
+  binding: null,
 };
+
+export function connectionOf(known: RunEntry | undefined): ReviewState["connection"] {
+  return known?.connected ?? "none";
+}
+
+export function withListedConnection(state: ReviewState, known: RunEntry | undefined): ReviewState {
+  const listed = known?.connected;
+  if (listed === undefined || listed === state.connection) return state;
+  return { ...state, connection: listed, simulated: known?.simulated ?? state.simulated };
+}
+
+type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" }>;
+
+export function withSessionEntry(state: ReviewState, entry: SessionEntry): ReviewState {
+  if (entry.kind === "closed") return state.connection === "running" ? { ...state, connection: "saved" } : state;
+  const connection = state.connection === "none" ? "saved" : state.connection;
+  if (entry.kind === "origin") return { ...state, connection, origins: withOrigin(state.origins, entry.origin) };
+  return { ...state, connection, binding: { atNs: entry.atNs, binding: entry.binding } };
+}
 
 const incomplete: ReviewFailure = {
   kind: "run-incomplete",

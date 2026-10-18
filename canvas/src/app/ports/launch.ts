@@ -1,7 +1,8 @@
-import type { Acknowledgement } from "../../model/launch";
+import type { Acknowledgement, PlanIssue, SessionCheck } from "../../model/launch";
+import type { RunFollower } from "./review";
 import type { Diagnostic, Outcome } from "./shared";
 
-export type { Acknowledgement } from "../../model/launch";
+export type { Acknowledgement, PlannedInstance, SessionCheck } from "../../model/launch";
 
 export type LaunchFailure =
   | {
@@ -11,7 +12,34 @@ export type LaunchFailure =
     }
   | { readonly kind: "unavailable" | "unreadable"; readonly diagnostic: Diagnostic };
 
-export interface LaunchGateway {
+export type ConnectFailure =
+  | { readonly kind: "refused"; readonly diagnostic: Diagnostic; readonly issues: readonly PlanIssue[] }
+  | { readonly kind: "busy" | "unavailable" | "unreadable"; readonly diagnostic: Diagnostic };
+
+interface SessionFacts {
+  readonly run: string;
+  readonly domain: string;
+  readonly check: SessionCheck | null;
+}
+
+export type ConnectStatus =
+  | { readonly state: "none" }
+  | (SessionFacts & { readonly state: "starting" | "running" | "stopping" | "ended" })
+  | (SessionFacts & {
+      readonly state: "failed";
+      readonly diagnostic: Diagnostic;
+      readonly issues: readonly PlanIssue[];
+    });
+
+export interface ConnectGateway {
+  checkSession(plan: string): Promise<Outcome<SessionCheck, ConnectFailure>>;
+  startSession(plan: string): Promise<Outcome<ConnectStatus, ConnectFailure>>;
+  sessionStatus(): Promise<Outcome<ConnectStatus, ConnectFailure>>;
+  stopSession(): Promise<Outcome<ConnectStatus, ConnectFailure>>;
+  followSession(run: string, follower: RunFollower): () => void;
+}
+
+export interface LaunchGateway extends ConnectGateway {
   createWorld(input: {
     readonly domain: string;
     readonly seed: number;

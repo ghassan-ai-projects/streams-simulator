@@ -26,6 +26,7 @@ func (l *relayLoop) ensureHost(ctx context.Context) error {
 }
 
 func (l *relayLoop) apply(moves domain.Moves) error {
+	l.rec.noted(moves.Notes)
 	traced := l.record(moves.Trace)
 	upErr, downErr := l.sendUp(moves.Up), l.sendDown(moves.Down)
 	l.sim.deliver(moves.ToSim)
@@ -35,7 +36,14 @@ func (l *relayLoop) apply(moves domain.Moves) error {
 	if moves.CloseGateway {
 		l.closeGateway()
 	}
-	return errors.Join(moves.Err, traced, upErr, downErr)
+	return errors.Join(moves.Err, traced, upErr, downErr, l.endIncompleteTrace())
+}
+
+func (l *relayLoop) endIncompleteTrace() error {
+	if l.gateway == nil || !l.rec.incomplete {
+		return nil
+	}
+	return l.loseGateway()
 }
 
 func (l *relayLoop) record(traced []domain.Traced) error {
@@ -54,7 +62,9 @@ func (l *relayLoop) record(traced []domain.Traced) error {
 
 func (l *relayLoop) onSim() error {
 	pending := l.drainSim()
-	l.sim.reap()
+	if l.sim.reap() {
+		pending = errors.Join(pending, l.applySim(l.relay.SimLost()))
+	}
 	return pending
 }
 
@@ -73,6 +83,7 @@ func (l *relayLoop) drainSim() error {
 }
 
 func (l *relayLoop) applySim(moves domain.SimMoves) error {
+	l.rec.noted(moves.Notes)
 	return errors.Join(l.record(moves.Trace), l.sendUp(moves.Up))
 }
 

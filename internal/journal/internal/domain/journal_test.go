@@ -139,6 +139,8 @@ func TestWireAndPacingRecordsLeaveTheReplayableStreamUnchanged(t *testing.T) {
 		if withWire {
 			j.Wire(1, "node", map[string]any{"type": "NSYNC", "seq": 3})
 			j.Pacing(1, 3, 12, true)
+			j.Origin(1, map[string]any{"device": "zone-01", "board": "uno-07", "environment": "hardware", "boot_id": "61"})
+			j.Binding(1, map[string]any{"outcome": "refused", "refusal": "inventory_mismatch", "issues": []any{}})
 		}
 		j.Observation(2, `{"v":2}`)
 		observer, _ := j.Bytes(StreamObserver)
@@ -150,7 +152,8 @@ func TestWireAndPacingRecordsLeaveTheReplayableStreamUnchanged(t *testing.T) {
 		t.Fatalf("wire records changed the stream: %s vs %s", plain, wired)
 	}
 	records, err := Read(wiredBytes)
-	if err != nil || len(records) != 4 || records[1].Seq != records[3].Seq || records[1].Type != TypeWire || records[2].Type != TypePacing {
+	if err != nil || len(records) != 6 || records[1].Seq != records[5].Seq || records[1].Type != TypeWire || records[2].Type != TypePacing ||
+		records[3].Type != TypeOrigin || records[4].Type != TypeBinding {
 		t.Fatalf("records %+v, %v", records, err)
 	}
 }

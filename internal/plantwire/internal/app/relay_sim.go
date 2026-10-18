@@ -25,14 +25,16 @@ type SimulatedOptions struct {
 }
 
 type simNode struct {
-	run     *run.Run
-	link    *uds.SimLink
-	birth   domain.Inbound
-	begin   func()
-	done    <-chan error
-	cancel  context.CancelFunc
-	started bool
-	failure error
+	run       *run.Run
+	link      *uds.SimLink
+	birth     domain.Inbound
+	instances map[string]string
+	bound     []domain.Bound
+	begin     func()
+	done      <-chan error
+	cancel    context.CancelFunc
+	started   bool
+	failure   error
 }
 
 func openSim(ctx context.Context, options RelayOptions) (*simNode, error) {
@@ -90,7 +92,7 @@ func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, 
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	node := &simNode{run: r, link: link, birth: birth, cancel: cancel}
+	node := &simNode{run: r, link: link, birth: birth, instances: session.devices.instances(), bound: options.Bound, cancel: cancel}
 	node.arm(ctx, session)
 	return node, nil
 }
@@ -128,11 +130,13 @@ func (s *simNode) signal() <-chan struct{} {
 	return s.link.UpReady()
 }
 
-func (s *simNode) reap() {
+func (s *simNode) reap() bool {
 	select {
 	case err := <-s.done:
 		s.complete(err)
+		return true
 	default:
+		return false
 	}
 }
 

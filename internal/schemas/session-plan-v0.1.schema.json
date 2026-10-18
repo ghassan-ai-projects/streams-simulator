@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/session-plan-v0.1.schema.json",
+  "title": "session-plan-v0.1",
+  "description": "The plan of one connected session that streamsim plantwire connect runs until it is stopped: the plant, the plant wire host it links to, an optional gateway, and which plant instances are real boards behind that gateway. The plant does not change: every instance not named in real is simulated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "domain", "host_socket"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "domain": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$",
+      "x-expected": "a domain id: 3 to 64 lower-case letters, digits and hyphens, starting with a letter"
+    },
+    "seed": {"type": "integer", "minimum": 0, "description": "The world seed; 1 when absent."},
+    "host_socket": {"$ref": "#/$defs/socket", "description": "The owner-only unix socket the plant wire host listens on."},
+    "gateway_socket": {"$ref": "#/$defs/socket", "description": "The owner-only unix socket the session creates and a gateway dials; absent for a session of simulated boards only."},
+    "real": {
+      "type": "array",
+      "maxItems": 256,
+      "description": "The instances that are real boards: each is the device a gateway board announces. A real instance needs gateway_socket.",
+      "items": {"$ref": "#/$defs/binding"}
+    }
+  },
+  "$defs": {
+    "socket": {
+      "type": "string",
+      "pattern": "^/[^\\x00-\\x1f\\x7f-\\x9f]{1,102}$",
+      "not": {"pattern": "(^|/)\\.\\.(/|$)"},
+      "x-expected": "an absolute path of at most 103 characters without control characters or a .. component, the length a unix socket path may have"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instance", "board", "device"],
+      "properties": {
+        "instance": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$", "description": "The plant instance the real board stands for."},
+        "board": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The board the gateway announces in its NBIRTH."},
+        "device": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The device on that board that is the instance."}
+      }
+    }
+  }
+}

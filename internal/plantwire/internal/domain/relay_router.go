@@ -25,10 +25,17 @@ func (r *Relay) routeDown(m *Moves, in Inbound) {
 		r.routeSync(m, in)
 		return
 	}
-	switch r.OriginOf(in.Device) {
-	case OriginGateway:
+	r.routeToDevice(m, in, r.OriginOf(in.Device))
+}
+
+func (r *Relay) routeToDevice(m *Moves, in Inbound, origin Origin) {
+	r.routed.noteCommand(in, origin)
+	switch {
+	case origin == OriginGateway:
 		r.forwardDown(m, in)
-	case OriginSimulated:
+	case origin == OriginSimulated && r.sim.lost:
+		r.refuseCommand(m, in, "not_ready")
+	case origin == OriginSimulated:
 		r.sendSim(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: content(in.Record)})
 	default:
 		r.refuseUnknown(m, in)
@@ -36,12 +43,26 @@ func (r *Relay) routeDown(m *Moves, in Inbound) {
 }
 
 func (r *Relay) refuseUnknown(m *Moves, in Inbound) {
+	if r.gatewayLostWith(in.Device) {
+		r.refuseCommand(m, in, "not_ready")
+		return
+	}
+	r.refuseCommand(m, in, "unknown_device")
+}
+
+func (r *Relay) gatewayLostWith(device string) bool {
+	return !r.gateway.admitted && devicesOf(r.birth.Boards)[device]
+}
+
+func (r *Relay) refuseCommand(m *Moves, in Inbound, reason string) {
 	if in.Type != "DCMD" || in.CommandID == "" || WireID(in.CommandID) != in.CommandID {
 		r.stats.Dropped++
 		return
 	}
-	r.stats.UnknownDevice++
-	r.transmitUp(m, Receipt(in.CommandID, "refused", "unknown_device", "none"))
+	if reason == "unknown_device" {
+		r.stats.UnknownDevice++
+	}
+	r.transmitUp(m, Receipt(in.CommandID, "refused", reason, "none"))
 }
 
 func (r *Relay) routeSync(m *Moves, in Inbound) {

@@ -35,6 +35,8 @@ describe("run report", () => {
     expect(runSpan({ startNs: 0, endNs: 10 }, { startNs: 2, endNs: 8 })).toEqual({ startNs: 0, endNs: 10 });
     expect(runSpan({ startNs: 0, endNs: 0 }, { startNs: 2, endNs: 8 })).toEqual({ startNs: 2, endNs: 8 });
     expect(runSpan(null, null)).toEqual({ startNs: 0, endNs: 0 });
+    const epoch = 1_767_225_600_000_000_000;
+    expect(runSpan({ startNs: epoch, endNs: epoch }, null)).toEqual({ startNs: epoch, endNs: epoch });
   });
 
   it("prints simulated time of day in UTC, with the day after the first", () => {

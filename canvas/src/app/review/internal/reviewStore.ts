@@ -8,7 +8,16 @@ import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
 import { FrameLoop } from "./frameLoop";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
-import { absentLoads, finalLoadsFor, idle, knownUnfinished, toLoad } from "./reviewState";
+import {
+  absentLoads,
+  connectionOf,
+  finalLoadsFor,
+  idle,
+  knownUnfinished,
+  toLoad,
+  withListedConnection,
+  withSessionEntry,
+} from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export class ReviewStore extends Observable<ReviewState> {
@@ -60,11 +69,15 @@ export class ReviewStore extends Observable<ReviewState> {
     this.finals = finalLoadsFor(known);
     this.pending = 0;
     this.index = new PlaybackIndex();
-    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), ...absentLoads(known) });
+    const connection = connectionOf(known);
+    const simulated = known?.simulated ?? [];
+    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), connection, simulated, ...absentLoads(known) });
     return session;
   }
 
   refreshCompleted(worldId: string, known: RunEntry | undefined): void {
+    const listed = withListedConnection(this.snapshot(), known);
+    if (listed.worldId === worldId && listed !== this.snapshot()) this.set(listed);
     const state = this.snapshot();
     if (
       known?.ended !== true ||
@@ -148,6 +161,10 @@ export class ReviewStore extends Observable<ReviewState> {
   private take(session: Operation, entry: JournalEntry): void {
     if (!session.live()) return;
     if (entry.kind === "observation") this.index.add(entry.observation);
+    if (entry.kind === "origin" || entry.kind === "binding" || entry.kind === "closed") {
+      const next = withSessionEntry(this.snapshot(), entry);
+      if (next !== this.snapshot()) this.set(next);
+    }
     this.pending += 1;
     if (this.pending === 1) {
       this.cancelFlush = this.scheduler.schedule(250, () => {

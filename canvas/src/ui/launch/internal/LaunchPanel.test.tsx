@@ -46,7 +46,8 @@ describe("launch panel", () => {
     const fake = launchBridge();
     const { view, onFinished, timers } = renderPanel(fake);
     expect((await axe.run(view.container)).violations).toEqual([]);
-    expect(screen.getByLabelText("Seed")).toHaveFocus();
+    expect(screen.getByRole("radio", { name: /^To completion/ })).toHaveFocus();
+    expect(screen.getByLabelText("Seed")).not.toHaveFocus();
     change("Seed", "9");
     fireEvent.click(screen.getByRole("radio", { name: /^Evaluate/ }));
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));

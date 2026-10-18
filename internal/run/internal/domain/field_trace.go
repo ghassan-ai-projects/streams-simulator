@@ -12,7 +12,7 @@ import (
 
 const (
 	MaxFieldTraceBytes       = 64 << 20
-	MaxFieldTraceRecordBytes = 1 << 20
+	MaxFieldTraceRecordBytes = 8 << 20
 )
 
 var ErrFieldTrace = errors.New("run: invalid field trace")

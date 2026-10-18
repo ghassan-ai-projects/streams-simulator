@@ -27,6 +27,14 @@ func ReplayTrace(ctx context.Context, options ReplayOptions) (ReplayStats, error
 	return app.ReplayTrace(ctx, options)
 }
 
+func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error) {
+	return app.Connect(ctx, options)
+}
+
+func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
+	return app.CheckConnect(options)
+}
+
 func ParseScript(raw []byte) ([]Scripted, error) {
 	return host.ParseScript(raw)
 }

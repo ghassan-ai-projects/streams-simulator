@@ -11,6 +11,12 @@
   gap: var(--space-3);
 }
 
+.time,
+.span {
+  flex: none;
+  white-space: nowrap;
+}
+
 .time {
   font: 600 var(--text-lg) var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -126,8 +132,17 @@
   position: relative;
 }
 
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
 .first {
-  margin: var(--space-2) 0 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

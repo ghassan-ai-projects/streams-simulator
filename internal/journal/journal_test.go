@@ -102,13 +102,15 @@ func TestEveryRecordVerbReachesItsStream(t *testing.T) {
 	j.Outcome(5, Call{CommandID: "c"}, nil, "declined")
 	j.Wire(6, "node", map[string]any{"type": "NSYNC"})
 	j.Pacing(6, 1, 0, false)
+	j.Origin(6, map[string]any{"device": "zone-01", "board": "uno-07", "environment": "hardware", "boot_id": "61"})
+	j.Binding(6, map[string]any{"outcome": "matched", "issues": []any{}})
 	if err := j.Flush(); err != nil {
 		t.Fatal(err)
 	}
 	observer, _ := j.Bytes(StreamObserver)
 	director, _ := j.Bytes(StreamDirector)
-	if got, _ := Read(observer); len(got) != 7 {
-		t.Fatalf("observer records = %d, want 7", len(got))
+	if got, _ := Read(observer); len(got) != 9 || got[7].Type != "origin" || got[8].Type != "binding" {
+		t.Fatalf("observer records = %+v, want 9 ending with the origin and the binding", got)
 	}
 	if got, _ := Read(director); len(got) != 4 {
 		t.Fatalf("director records = %d, want 4", len(got))

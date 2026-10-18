@@ -110,6 +110,27 @@ func (r *Run) JournalWire(direction string, record map[string]any) {
 	r.journal.Wire(r.journalNow(), direction, record)
 }
 
+func (r *Run) JournalOrigin(fields map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Origin(r.journalNow(), fields)
+}
+
+func (r *Run) JournalBinding(fields map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Binding(r.journalNow(), fields)
+}
+
+func (r *Run) FlushJournal() error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if err := r.journal.Flush(); err != nil {
+		return fmt.Errorf("run: flush the journal: %w", err)
+	}
+	return nil
+}
+
 func (r *Run) JournalPacing(throughSeq uint64, waitedMS int64, missed bool) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()

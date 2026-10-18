@@ -8,11 +8,11 @@
   "properties": {
     "stream": {"enum": ["observer", "director"]},
     "seq": {"type": "integer", "minimum": 0, "description": "Numbers the replayable records of the stream from 0 without gaps. A session record (consumer.reported, pacing) carries the seq of the replayable record that follows it."},
-    "type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed"]},
+    "type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed"]},
     "at_ns": {"type": "integer", "description": "The world clock when the record was written; never a wall-clock read. A session record carries the time of the replayable record before it."}
   },
   "allOf": [
-    {"if": {"properties": {"stream": {"const": "observer"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "run.closed"]}}}},
+    {"if": {"properties": {"stream": {"const": "observer"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "run.closed"]}}}},
     {"if": {"properties": {"stream": {"const": "director"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed", "wire", "pacing"]}}}},
     {"if": {"properties": {"stream": {"const": "observer"}, "type": {"const": "run.opened"}}}, "then": {"$ref": "#/$defs/run_opened"}},
     {"if": {"properties": {"stream": {"const": "director"}, "type": {"const": "run.opened"}}}, "then": {"$ref": "#/$defs/director_opened"}},
@@ -22,6 +22,8 @@
     {"if": {"properties": {"type": {"const": "consumer.reported"}}}, "then": {"$ref": "#/$defs/consumer_reported"}},
     {"if": {"properties": {"type": {"const": "wire"}}}, "then": {"$ref": "#/$defs/wire"}},
     {"if": {"properties": {"type": {"const": "pacing"}}}, "then": {"$ref": "#/$defs/pacing"}},
+    {"if": {"properties": {"type": {"const": "origin"}}}, "then": {"$ref": "#/$defs/origin"}},
+    {"if": {"properties": {"type": {"const": "binding"}}}, "then": {"$ref": "#/$defs/binding"}},
     {"if": {"properties": {"type": {"const": "command"}}}, "then": {"$ref": "#/$defs/command"}},
     {"if": {"properties": {"type": {"const": "delivery"}}}, "then": {"$ref": "#/$defs/delivery"}},
     {"if": {"properties": {"type": {"const": "state"}}}, "then": {"$ref": "#/$defs/state"}},
@@ -101,6 +103,34 @@
       "description": "Observer, session. One plant wire barrier: the NSYNC seq it covered, the wall time the node waited and whether the wall cap expired first.",
       "required": ["through_seq", "waited_ms", "missed"],
       "properties": {"through_seq": {"type": "integer", "minimum": 0}, "waited_ms": {"type": "integer", "minimum": 0}, "missed": {"type": "boolean"}}
+    },
+    "origin": {
+      "description": "Observer, session. Where a device born to the host comes from, written each time its DBIRTH goes up in a connected session: the board that announced it, that board's environment (hardware: a real board behind the gateway; simulated: the world), its boot id, and the plant instance it is (absent for a gateway device the session plan does not bind). Outside the stream digest.",
+      "required": ["device", "board", "environment", "boot_id"],
+      "properties": {
+        "instance": {"type": "string"},
+        "device": {"type": "string"},
+        "board": {"type": "string"},
+        "environment": {"enum": ["simulated", "hardware"]},
+        "boot_id": {"type": "string"}
+      }
+    },
+    "binding": {
+      "description": "Observer, session. The kind match of a session plan against what a gateway announced, written at each gateway handshake of a plan that binds an instance (and when a bound device is born as another kind): matched, or refused with the refusal the gateway was given, the rule in words and one issue per binding that does not hold, each pointing into the session plan. Outside the stream digest.",
+      "required": ["outcome", "issues"],
+      "properties": {
+        "outcome": {"enum": ["matched", "refused"]},
+        "refusal": {"type": "string"},
+        "reason": {"type": "string"},
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pointer", "message", "keyword"],
+            "properties": {"pointer": {"type": "string"}, "message": {"type": "string"}, "keyword": {"type": "string"}, "member": {"type": "string"}}
+          }
+        }
+      }
     },
     "command": {
       "description": "Director. A command-log entry.",

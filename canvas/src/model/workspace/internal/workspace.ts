@@ -33,7 +33,14 @@ export function unfinishedReason(run: RunEntry): string {
 }
 
 export function outcomeWords(run: RunEntry): string {
+  if (run.connected === "running") return "";
   return run.ended && !run.complete ? `Did not finish: ${unfinishedReason(run)}` : "";
+}
+
+export function runModeWords(run: RunEntry): string {
+  if (run.connected === "running") return "Connected session · running";
+  if (run.connected === "saved") return "Connected session";
+  return run.explore ? "Explore" : "Evaluate";
 }
 
 export function runFacts(run: RunEntry): readonly string[] {

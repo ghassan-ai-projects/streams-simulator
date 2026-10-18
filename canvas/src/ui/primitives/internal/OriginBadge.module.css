@@ -1,0 +1,37 @@
+.origin {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+}
+
+.tag {
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.real {
+  color: var(--origin-real);
+}
+
+.simulated {
+  color: var(--origin-simulated);
+}
+
+.unknown {
+  color: var(--status-warn);
+}
+
+.tag.real {
+  background: var(--origin-real-bg);
+}
+
+.tag.simulated {
+  background: var(--origin-simulated-bg);
+}
+
+.tag.unknown {
+  background: var(--status-warn-bg);
+}

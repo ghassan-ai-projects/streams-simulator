@@ -11,6 +11,7 @@ func (r *Relay) GatewayAttached() {
 }
 
 func (r *Relay) FromGateway(in Inbound) Moves {
+	admitted, session := r.gateway.admitted, r.gateway.session
 	moves := Moves{Trace: []Traced{{Direction: TraceGateway, Record: in.Record}}}
 	switch arrivalOf(&r.gateway.in, in) {
 	case Duplicate:
@@ -19,7 +20,16 @@ func (r *Relay) FromGateway(in Inbound) Moves {
 		r.gatewayGap(&moves)
 	}
 	r.gatewayRecord(&moves, in)
+	moves.Trace[0].Field = r.belongsToSession(in, admitted, session)
 	return moves
+}
+
+func (r *Relay) belongsToSession(in Inbound, admitted bool, session string) bool {
+	if in.Type == "NBIRTH" {
+		return in.Invalid == nil && r.gateway.admitted && r.birth.SessionID == in.SessionID && r.birth.Seq == in.Seq
+	}
+	in.Within(session, Version)
+	return admitted && in.Invalid == nil && nodeRecords[in.Type]
 }
 
 func (r *Relay) gatewayGap(m *Moves) {
@@ -51,8 +61,10 @@ func (r *Relay) admit(m *Moves, in Inbound) {
 		r.stats.Dropped++
 	case refusal != "":
 		r.refuseGateway(m, in, refusal, reason)
+		r.noteBinding(m, in, refusal, reason)
 	default:
 		r.takeBirth(in)
+		r.noteBinding(m, in, "", "")
 		r.afterBirth(m)
 	}
 }
@@ -69,7 +81,7 @@ func (r *Relay) refuseGateway(m *Moves, in Inbound, refusal, reason string) {
 
 func (r *Relay) takeBirth(in Inbound) {
 	r.birth, r.gatewayDevices = in, devicesOf(in.Boards)
-	r.host.table = seqTable{}
+	r.host.table, r.host.gatewaySyncs = seqTable{}, syncLedger{}
 	r.gateway.admitted, r.gateway.answered, r.gateway.asked = true, false, false
 	r.gateway.session, r.gateway.out = in.SessionID, NewTransmitter(in.SessionID)
 	clear(r.gateway.born)
@@ -105,6 +117,8 @@ func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
 		r.gatewayEnded(m)
 	case r.strayDevice(in):
 		r.stats.Dropped++
+	case r.forgedFromGateway(in):
+		r.forged()
 	case r.host.shaken:
 		r.forwardUp(m, in)
 	default:
@@ -113,8 +127,9 @@ func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
 }
 
 func (r *Relay) rebirth(m *Moves, in Inbound) {
-	if refusal, _ := r.gatewayRefusal(in); refusal != "" {
+	if refusal, reason := r.gatewayRefusal(in); refusal != "" {
 		r.stats.Dropped++
+		r.noteBinding(m, in, refusal, reason)
 		return
 	}
 	r.birth, r.gateway.asked, r.gatewayDevices = in, false, devicesOf(in.Boards)
@@ -144,6 +159,8 @@ func (r *Relay) forwardUp(m *Moves, in Inbound) {
 	seq := r.transmitUp(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
 	r.host.table.add(in.Seq, seq)
 	r.track(in, seq)
+	r.noteMisbound(m, in)
+	r.noteOrigin(m, in, EnvironmentHardware)
 }
 
 func (r *Relay) upward(in Inbound) (map[string]any, bool) {
@@ -169,7 +186,13 @@ func (r *Relay) track(in Inbound, seq uint64) {
 
 func (r *Relay) gatewayEnded(m *Moves) {
 	r.diedUp(m)
-	r.gateway.admitted = false
+	r.clearGateway()
+}
+
+func (r *Relay) clearGateway() {
+	r.gateway = gatewaySide{born: map[string]string{}}
+	r.gatewayDevices = nil
+	r.host.gatewaySyncs = syncLedger{}
 }
 
 func (r *Relay) GatewayLost() Moves {
@@ -179,7 +202,7 @@ func (r *Relay) GatewayLost() Moves {
 	if r.host.connected && !r.host.shaken {
 		r.loseHost(&moves)
 	}
-	r.gateway = gatewaySide{born: map[string]string{}}
+	r.clearGateway()
 	return moves
 }
 

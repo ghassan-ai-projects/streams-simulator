@@ -88,6 +88,9 @@ func (l *relayLoop) hostIn() <-chan domain.Inbound {
 }
 
 func (l *relayLoop) attach(link *uds.Link) error {
+	if l.rec.incomplete {
+		return link.Close()
+	}
 	l.gateway = link
 	l.relay.GatewayAttached()
 	return link.Expect(uds.HandshakeWait)

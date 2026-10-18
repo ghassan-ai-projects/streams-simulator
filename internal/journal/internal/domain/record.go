@@ -50,6 +50,8 @@ const (
 	TypeRunClosed        = "run.closed"
 	TypePacing           = "pacing"
 	TypeWire             = "wire"
+	TypeOrigin           = "origin"
+	TypeBinding          = "binding"
 	TypeKPITruth         = "kpi.truth"
 	TypeFaultTruth       = "fault.truth"
 )
@@ -61,8 +63,10 @@ const (
 	keyAt     = "at_ns"
 )
 
+var sessionTypes = map[string]bool{TypeConsumerReported: true, TypePacing: true, TypeWire: true, TypeOrigin: true, TypeBinding: true}
+
 func IsSession(recordType string) bool {
-	return recordType == TypeConsumerReported || recordType == TypePacing || recordType == TypeWire
+	return sessionTypes[recordType]
 }
 
 type Record struct {

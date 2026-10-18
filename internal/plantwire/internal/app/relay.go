@@ -37,7 +37,9 @@ func serveRelay(ctx context.Context, options RelayOptions, ticks <-chan time.Tim
 		return domain.RelayStats{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	err = loop.serve(ctx)
-	return loop.relay.Stats(), err
+	stats := loop.relay.Stats()
+	stats.TraceIncomplete = loop.rec.incomplete
+	return stats, err
 }
 
 func openRelay(ctx context.Context, options RelayOptions, ticks <-chan time.Time) (*relayLoop, error) {
@@ -65,7 +67,11 @@ func newRelay(sim *simNode) (*domain.Relay, error) {
 	if sim == nil {
 		return domain.NewRelay(relayTick.Milliseconds()), nil
 	}
-	return domain.NewMixedRelay(relayTick.Milliseconds(), sim.birth)
+	relay, err := domain.NewMixedRelay(relayTick.Milliseconds(), sim.birth)
+	if err == nil {
+		relay.Plan(sim.instances, sim.bound)
+	}
+	return relay, err
 }
 
 func (l *relayLoop) open(ctx context.Context) error {

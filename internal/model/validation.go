@@ -25,6 +25,7 @@ const (
 	ContractVocabulary      Contract = "component-vocabulary-v0.1"
 	ContractKindFile        Contract = "kind-file-v0.1"
 	ContractTwinChoices     Contract = "twin-choices-v0.1"
+	ContractSessionPlan     Contract = "session-plan-v0.1"
 	ContractPlantWireBirth  Contract = "plant-wire-nbirth"
 )
 

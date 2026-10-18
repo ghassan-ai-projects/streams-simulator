@@ -14,3 +14,4 @@ export type {
   ViewPresentation,
   Viewport,
 } from "./internal/types";
+export type { InstanceOrigin } from "./internal/origin";

@@ -1,6 +1,7 @@
 export { noteLinesByEntity } from "./internal/noteLines";
 export { bannerWarnings } from "./internal/banners";
-export { hallLiveOf } from "./internal/live";
+export { hallLiveOf, isRealBoard } from "./internal/live";
+export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
 export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
 export {
@@ -38,6 +39,7 @@ export type {
   BannerWarning,
   ChipPlace,
   EventMark,
+  InstanceOrigin,
   JournalEntry,
   KpiRow,
   MarkKind,
@@ -45,5 +47,6 @@ export type {
   Replay,
   Report,
   Rerun,
+  TimedBinding,
   VerifyState,
 } from "./contract";

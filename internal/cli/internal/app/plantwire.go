@@ -13,16 +13,16 @@ import (
 )
 
 var plantWireCommands = map[string]func(*session, []string) (any, error){"node": cmdPlantWireNode, "host": cmdPlantWireHost,
-	"relay": cmdPlantWireRelay, "replay-trace": cmdPlantWireReplayTrace}
+	"relay": cmdPlantWireRelay, "replay-trace": cmdPlantWireReplayTrace, "connect": cmdPlantWireConnect}
 
 func cmdPlantWire(s *session, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, usagef("plantwire requires a subcommand: node, host, relay or replay-trace")
+		return nil, usagef("plantwire requires a subcommand: node, host, relay, replay-trace or connect")
 	}
 	if command, known := plantWireCommands[args[0]]; known {
 		return command(s, args[1:])
 	}
-	return nil, usagef("plantwire: unknown subcommand %q (want: node, host, relay, replay-trace)", args[0])
+	return nil, usagef("plantwire: unknown subcommand %q (want: node, host, relay, replay-trace, connect)", args[0])
 }
 
 func cmdPlantWireNode(s *session, args []string) (any, error) {

@@ -20,6 +20,7 @@ type simSide struct {
 	out     *Transmitter
 	in      Receiver
 	started bool
+	lost    bool
 	born    map[string]string
 }
 
@@ -67,6 +68,9 @@ func (r *Relay) gatewayRefusal(in Inbound) (refusal, reason string) {
 		return "", ""
 	}
 	if reason = Collision(in.Message, r.sim.message); reason != "" {
+		return "inventory_mismatch", reason
+	}
+	if reason = r.bindingRefusal(in.Message); reason != "" {
 		return "inventory_mismatch", reason
 	}
 	return "", ""

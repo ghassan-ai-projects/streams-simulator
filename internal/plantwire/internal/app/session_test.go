@@ -177,7 +177,7 @@ func TestDuplicateHostRecordsAreDroppedAndTheEpochOnlyRises(t *testing.T) {
 
 func TestDevicesOnABoardShareItsBoot(t *testing.T) {
 	t.Parallel()
-	d := newDevices(structuredRun(t))
+	d := newDevices(structuredRun(t), nil)
 	if d.board("T-main") == "T-main" || d.boot("T-main") != d.boot(d.spec.Spec.Boards[0].Members[1]) {
 		t.Fatalf("board of T-main %q, boots %q and %q", d.board("T-main"), d.boot("T-main"), d.boot(d.spec.Spec.Boards[0].Members[1]))
 	}

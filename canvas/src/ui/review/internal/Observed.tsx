@@ -6,7 +6,7 @@ import { shortChannel } from "../../../model/shared/words";
 import { hallOf } from "../../../model/graph";
 import type { Shown } from "../../../model/graph";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../../model/graph";
-import { effectorAt, faultedAt, runClock } from "../../../model/review";
+import { effectorAt, faultedAt, isRealBoard, runClock } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
 import parts from "./ReportParts.module.css";
@@ -97,7 +97,17 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
   );
 }
 
+function RealBoardNote() {
+  return (
+    <p className={parts.muted}>
+      This instance is a real board. Its own readings are not part of this review yet, and the values the simulator
+      computed for its twin are never shown as the board&apos;s.
+    </p>
+  );
+}
+
 export function Observed({ review, state, plant, entity }: ObservedProps) {
+  if (isRealBoard(state.origins, entity)) return <RealBoardNote />;
   const readings = review.index.readings(entity, state.positionNs);
   if (readings.length === 0) return <HallNote plant={plant} entity={entity} />;
   const shown = abnormalFirst(

@@ -9,7 +9,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-var ErrSimClosed = errors.New("plantwire: the link to the simulated node is closed")
+var (
+	ErrSimClosed   = errors.New("plantwire: the link to the simulated node is closed")
+	ErrSimOverflow = errors.New("plantwire: the simulated node's mailbox overflowed")
+)
 
 type SimLink struct {
 	up     *Mailbox[map[string]any]
@@ -23,10 +26,13 @@ func NewSimLink(wait time.Duration) *SimLink {
 }
 
 func (l *SimLink) Send(records []map[string]any) error {
-	if !l.up.Put(records...) {
+	if l.up.Put(records...) {
+		return nil
+	}
+	if l.up.IsShut() {
 		return ErrSimClosed
 	}
-	return nil
+	return ErrSimOverflow
 }
 
 func (l *SimLink) Deliver(in domain.Inbound) bool { return l.down.Put(in) }

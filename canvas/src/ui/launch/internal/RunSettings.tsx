@@ -1,7 +1,7 @@
 import { Dices, TriangleAlert } from "lucide-react";
 import type { Draft, PlanProblem } from "../../../model/launch";
 import { modeWords } from "../../../model/launch";
-import { cx, panel, useFocusOnMount } from "../../primitives";
+import { cx, panel } from "../../primitives";
 import type { Change } from "./FaultRows";
 import styles from "./LaunchPanel.module.css";
 
@@ -102,14 +102,12 @@ export function Mode({ draft, change }: Omit<DraftProps, "problems">) {
 }
 
 export function Seed({ draft, change, problems }: DraftProps) {
-  const seed = useFocusOnMount<HTMLInputElement>();
   return (
     <div className={panel.field}>
       <label htmlFor="launch-seed">Seed</label>
       <span className={styles.seed}>
         <input
           id="launch-seed"
-          ref={seed}
           inputMode="numeric"
           value={draft.seed}
           {...described(problems, "seed", "launch-seed-problem", "launch-seed-hint")}

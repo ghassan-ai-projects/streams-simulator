@@ -1,7 +1,7 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position, useStore } from "@xyflow/react";
 import type { CSSProperties } from "react";
-import { describeNode, headerHeight, idExtra } from "../../../model/graph";
+import { describeNode, headerHeight, idExtra, originWords } from "../../../model/graph";
 import type { ViewNode } from "../../../model/graph";
 import { cx } from "../../primitives";
 import type { InstanceNodeType } from "./flow";
@@ -23,7 +23,9 @@ function instanceStyle(view: ViewNode): CSSProperties {
 
 function instanceLabel(data: InstanceNodeType["data"], selected: boolean): string {
   const { status, fault, effector } = shownOf(data);
-  return describeNode(data.view, { selected, status, fault, effector }) + (data.flagged ? ", has issues" : "");
+  const origin = data.live?.origin ?? null;
+  const from = origin === null ? "" : `, ${originWords(origin)}`;
+  return describeNode(data.view, { selected, status, fault, effector }) + from + (data.flagged ? ", has issues" : "");
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {

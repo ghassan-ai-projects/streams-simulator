@@ -59,6 +59,14 @@ func (j *Journal) Wire(atNS int64, direction string, record map[string]any) {
 	j.observer.Append(TypeWire, atNS, map[string]any{"direction": direction, "record": record})
 }
 
+func (j *Journal) Origin(atNS int64, fields map[string]any) {
+	j.observer.Append(TypeOrigin, atNS, fields)
+}
+
+func (j *Journal) Binding(atNS int64, fields map[string]any) {
+	j.observer.Append(TypeBinding, atNS, fields)
+}
+
 func (j *Journal) Pacing(atNS int64, throughSeq uint64, waitedMS int64, missed bool) {
 	j.observer.Append(TypePacing, atNS, map[string]any{"through_seq": throughSeq, "waited_ms": waitedMS, "missed": missed})
 }

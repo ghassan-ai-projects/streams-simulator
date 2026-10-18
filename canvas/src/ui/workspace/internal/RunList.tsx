@@ -1,12 +1,12 @@
 import { shared } from "../../primitives";
-import { Eye, Lock, Radio, TriangleAlert } from "lucide-react";
+import { Cable, Eye, Lock, Radio, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../../app/shell";
 import type { Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
-import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
+import { counted, plantsOf, runFacts, runModeWords, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
 import { SectionHeading } from "./SectionHeading";
 import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
@@ -39,7 +39,7 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
     return (
       <span className={badgeStyles.unfinished}>
         <Radio size={12} aria-hidden="true" />
-        Did not finish
+        {row.run.connected === "running" ? "Running" : "Did not finish"}
       </span>
     );
   }
@@ -60,6 +60,20 @@ function unchecked(rows: readonly RunRow[], badgeFor: ListProps["badgeFor"]): bo
   return rows.some((row) => row.run.complete && (badgeFor(row.run.worldId) ?? "not-checked") === "not-checked");
 }
 
+function ModeIcon({ row }: { readonly row: RunRow }) {
+  if (row.run.connected !== undefined) return <Cable size={12} aria-hidden="true" />;
+  return row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />;
+}
+
+function ModeBadge({ row }: { readonly row: RunRow }) {
+  return (
+    <span className={row.run.explore || row.run.connected !== undefined ? badgeStyles.explore : badgeStyles.badge}>
+      <ModeIcon row={row} />
+      {runModeWords(row.run)}
+    </span>
+  );
+}
+
 function Row({
   row,
   badge,
@@ -72,10 +86,7 @@ function Row({
           <span className={rowStyles.name} title={row.plantTitle}>
             {row.plantTitle}
           </span>
-          <span className={row.run.explore ? badgeStyles.explore : badgeStyles.badge}>
-            {row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
-            {row.run.explore ? "Explore" : "Evaluate"}
-          </span>
+          <ModeBadge row={row} />
         </span>
         <span className={workspaceStyles.meta} title={detail(row)}>
           <MetaParts parts={detailParts(row)} />

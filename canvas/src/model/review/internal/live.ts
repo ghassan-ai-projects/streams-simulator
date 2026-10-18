@@ -1,4 +1,4 @@
-import type { NodeStatus, PlantView, ReadoutBody, Shown } from "../../graph";
+import type { InstanceOrigin, NodeStatus, PlantView, ReadoutBody, Shown } from "../../graph";
 import { attentionOf, hallOf, showReading, worstOf } from "../../graph";
 import type { Plant } from "../../plant";
 import { channelOf } from "../../plant";
@@ -13,6 +13,7 @@ export interface LiveNode {
   readonly count: number;
   readonly fault: string;
   readonly effector: string;
+  readonly origin: InstanceOrigin | null;
 }
 
 export interface LiveFacts {
@@ -21,6 +22,7 @@ export interface LiveFacts {
   readonly view: PlantView | null;
   readonly faulted: ReadonlyMap<string, readonly string[]>;
   readonly effectors: ReadonlyMap<string, string>;
+  readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly positionNs: number;
 }
 
@@ -31,8 +33,13 @@ function statusOf(attention: NodeStatus, faulted: boolean): NodeStatus {
   return faulted ? "fault" : attention;
 }
 
+export function isRealBoard(origins: ReadonlyMap<string, InstanceOrigin>, id: string): boolean {
+  return origins.get(id)?.kind === "real";
+}
+
 function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
   const { index, plant, positionNs } = facts;
+  if (isRealBoard(facts.origins, id)) return [];
   return index
     .readings(id, positionNs)
     .map((reading) => showReading(reading, plant === null ? null : channelOf(plant, id, reading.channel)));
@@ -54,6 +61,7 @@ export function liveOf(facts: LiveFacts, id: string): LiveNode {
     count: 0,
     fault: (facts.faulted.get(id) ?? []).join(", "),
     effector: facts.effectors.get(id) ?? "",
+    origin: facts.origins.get(id) ?? null,
   };
 }
 
@@ -66,6 +74,7 @@ function hallNode(worst: { readonly status: NodeStatus; readonly count: number }
     count: worst.count,
     fault: "",
     effector: "",
+    origin: null,
   };
 }
 

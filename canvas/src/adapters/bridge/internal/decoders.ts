@@ -4,8 +4,7 @@ import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../model/plant";
 import type { Replay, Report } from "../../../model/review";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
-import { isRecord, record, text } from "../../../model/shared/json";
-export { journalEntry } from "./journalDecoder";
+import { isRecord, list, record, text } from "../../../model/shared/json";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;
@@ -93,7 +92,20 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...connectedOf(entry),
   };
+}
+
+function connectedOf(entry: Record<string, unknown>): {
+  readonly connected?: "running" | "saved";
+  readonly simulated?: readonly string[];
+} {
+  if (entry.connected !== true) return {};
+  const planned = isRecord(entry.plan) ? list(entry.plan.instances).map(record) : [];
+  const simulated = planned
+    .filter((instance) => instance.origin === "simulated")
+    .map((instance) => text(instance.instance));
+  return { connected: entry.running === true ? "running" : "saved", simulated };
 }
 
 export function library(value: unknown): readonly LibraryEntry[] | null {

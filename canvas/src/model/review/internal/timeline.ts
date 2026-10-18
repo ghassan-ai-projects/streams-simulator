@@ -2,13 +2,14 @@ import type { Report } from "./report";
 import { callWords, faultNames } from "./report";
 import { clockOf } from "../../shared/duration";
 import { counted, humanise } from "../../shared/words";
+import type { BindingNote } from "../../launch";
 import { effectorShownS } from "../../launch";
 
 export function runClock(ns: number, startNs: number): string {
   return clockOf((ns - startNs) / 1e9);
 }
 
-export type MarkKind = "fault" | "cleared" | "disturbance" | "alarm" | "effector";
+export type MarkKind = "fault" | "cleared" | "disturbance" | "alarm" | "effector" | "binding";
 
 export const markWords: Readonly<Record<MarkKind, string>> = {
   fault: "Fault starts",
@@ -16,7 +17,29 @@ export const markWords: Readonly<Record<MarkKind, string>> = {
   disturbance: "Other disturbance",
   alarm: "Alarm",
   effector: "Effector call",
+  binding: "Gateway binding",
 };
+
+export interface TimedBinding {
+  readonly atNs: number;
+  readonly binding: BindingNote;
+}
+
+function bindingMarks(timed: TimedBinding | null): readonly EventMark[] {
+  if (timed === null) return [];
+  const { matched, refusal } = timed.binding;
+  return [
+    {
+      atNs: timed.atNs,
+      label: matched ? "Gateway matched the plan" : "Gateway refused",
+      raw: matched ? "binding matched" : `binding refused · ${refusal}`,
+      kind: "binding",
+      tone: "other",
+      entity: "",
+      untilNs: null,
+    },
+  ];
+}
 
 export interface EventMark {
   readonly atNs: number;
@@ -56,7 +79,7 @@ function endMarks(report: Report): readonly EventMark[] {
   );
 }
 
-export function eventMarks(report: Report | null): readonly EventMark[] {
+export function eventMarks(report: Report | null, binding: TimedBinding | null = null): readonly EventMark[] {
   if (report === null) return [];
   const disturbances = report.disturbances.map((d): EventMark => ({
     atNs: d.onsetNs,
@@ -85,7 +108,8 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     entity: a.entity,
     untilNs: null,
   }));
-  return [...disturbances, ...endMarks(report), ...calls, ...alarms].sort((a, b) => a.atNs - b.atNs);
+  const all = [...disturbances, ...endMarks(report), ...calls, ...alarms, ...bindingMarks(binding)];
+  return all.sort((a, b) => a.atNs - b.atNs);
 }
 
 export function previousEvent(marks: readonly EventMark[], atNs: number): number | null {
