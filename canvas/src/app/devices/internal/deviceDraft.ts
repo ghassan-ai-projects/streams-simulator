@@ -4,7 +4,8 @@ import type { DeviceFailure, KindChecked } from "../../ports";
 type SaveState =
   | { readonly kind: "idle" }
   | { readonly kind: "saving" }
-  | { readonly kind: "write-failed"; readonly failure: DeviceFailure };
+  | { readonly kind: "write-failed"; readonly failure: DeviceFailure }
+  | { readonly kind: "refused"; readonly failure: DeviceFailure };
 
 type CheckState =
   | { readonly kind: "unchecked" }
@@ -12,6 +13,12 @@ type CheckState =
   | { readonly kind: "valid"; readonly summary: KindChecked }
   | { readonly kind: "refused"; readonly failure: DeviceFailure }
   | { readonly kind: "failed"; readonly failure: DeviceFailure };
+
+export interface Review {
+  readonly state: "idle" | "checking" | "done" | "failed";
+  readonly schema: readonly FieldIssue[];
+  readonly needs: readonly FieldIssue[];
+}
 
 export interface Draft {
   readonly phase: "ready";
@@ -21,7 +28,7 @@ export interface Draft {
   readonly selected: Selection;
   readonly save: SaveState;
   readonly check: CheckState;
-  readonly issues: readonly FieldIssue[];
+  readonly review: Review;
 }
 
 export type DeviceState =

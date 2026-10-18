@@ -4,33 +4,18 @@ import type { Metric } from "./types";
 interface Entry {
   readonly ref: string;
   readonly title: string;
-}
-
-interface Spec {
-  readonly family: string;
   readonly unit: string;
   readonly min: number | null;
   readonly max: number | null;
+  readonly match: "exact" | "convertible" | "";
 }
-
-const sameScale: Readonly<Record<string, readonly string[]>> = {
-  Cel: ["degC"],
-  degC: ["Cel"],
-  "%": ["%RH"],
-  "%RH": ["%"],
-};
-
-const unknown: Spec = { family: "", unit: "", min: null, max: null };
 
 export const noInstrument = "none";
 
-export function instrumentOf(entry: Entry, spec: Spec | null): Instrument {
-  const known = spec ?? unknown;
-  return { ...entry, ...known, words: [entry.title, entry.ref, known.family, known.unit].join(" ").toLowerCase() };
-}
+export const conversionNote = "different unit — needs conversion";
 
-export function sortInstruments(list: readonly Instrument[]): readonly Instrument[] {
-  return [...list].sort((a, b) => a.title.localeCompare(b.title));
+export function instrumentOf(entry: Entry): Instrument {
+  return { ...entry, words: [entry.title, entry.ref, entry.unit].join(" ").toLowerCase() };
 }
 
 export function searchInstruments(list: readonly Instrument[], query: string): readonly Instrument[] {
@@ -45,7 +30,8 @@ export function rangeWords(min: number | null, max: number | null): string {
 }
 
 export function instrumentWords(instrument: Instrument): string {
-  return [instrument.title, instrument.unit, rangeWords(instrument.min, instrument.max)]
+  const note = instrument.match === "convertible" ? conversionNote : "";
+  return [instrument.title, instrument.unit, rangeWords(instrument.min, instrument.max), note]
     .filter((part) => part !== "")
     .join(" · ");
 }
@@ -61,24 +47,6 @@ export function instrumentCount(found: number, query: string): string {
   return found === 1 ? "1 instrument" : `${String(found)} instruments`;
 }
 
-function sameUnit(instrument: Instrument, unit: string): boolean {
-  if (instrument.unit === "") return false;
-  return instrument.unit === unit || (sameScale[unit] ?? []).includes(instrument.unit);
-}
-
-function covers(instrument: Instrument, metric: Metric): boolean {
-  const { min, max } = metric.range;
-  if (min === null || max === null) return false;
-  return (instrument.min === null || instrument.min <= min) && (instrument.max === null || instrument.max >= max);
-}
-
 export function takesInstrument(metric: Metric): boolean {
   return metric.dataType === "number" || metric.dataType === "integer";
-}
-
-export function suggestInstrument(metric: Metric, list: readonly Instrument[]): string {
-  if (!takesInstrument(metric) || metric.writable) return noInstrument;
-  return (
-    list.find((instrument) => sameUnit(instrument, metric.unit) && covers(instrument, metric))?.ref ?? noInstrument
-  );
 }

@@ -1,8 +1,9 @@
 import { isRecord, list, record, text } from "../../shared/json";
 import { noInstrument } from "./instruments";
 import type { CommandChoice, Drive, KindChoice, MetricChoice, Response, TwinChoices } from "./twinTypes";
+import type { Fields } from "./types";
 
-const known = new Set(["schema_version", "id", "title", "kinds"]);
+const known = new Set(["id", "title", "kinds"]);
 
 function number(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -52,14 +53,7 @@ function kindOf(source: unknown): KindChoice {
   };
 }
 
-export function parseChoices(source: string): TwinChoices | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(source);
-  } catch {
-    return null;
-  }
-  if (!isRecord(parsed)) return null;
+export function choicesOfDocument(parsed: Fields): TwinChoices {
   const extra = Object.entries(parsed).filter(([name]) => !known.has(name));
   return {
     id: text(parsed.id),
@@ -67,6 +61,16 @@ export function parseChoices(source: string): TwinChoices | null {
     kinds: list(parsed.kinds).map(kindOf),
     extra: Object.fromEntries(extra),
   };
+}
+
+export function parseChoices(source: string): TwinChoices | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    return null;
+  }
+  return isRecord(parsed) ? choicesOfDocument(parsed) : null;
 }
 
 function metricJson(choice: MetricChoice) {
@@ -104,14 +108,10 @@ function kindJson(choice: KindChoice) {
   };
 }
 
-export function serialiseChoices(choices: TwinChoices): string {
-  const document = {
-    schema_version: "0.1",
-    id: choices.id,
-    version: "0.1.0",
-    title: choices.title,
-    ...choices.extra,
-    kinds: choices.kinds.map(kindJson),
-  };
-  return `${JSON.stringify(document, null, 2)}\n`;
+export function choicesJson(choices: TwinChoices): Fields {
+  return { id: choices.id, title: choices.title, ...choices.extra, kinds: choices.kinds.map(kindJson) };
+}
+
+export function serialiseNamed(choices: TwinChoices): string {
+  return `${JSON.stringify(choicesJson(choices), null, 2)}\n`;
 }

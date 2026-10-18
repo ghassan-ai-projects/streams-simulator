@@ -26,10 +26,17 @@ function unsaved(draft: Draft): SaveStatus {
   return status(blocked ? "Unsaved changes. Name everything to save." : "Unsaved changes", "busy");
 }
 
+function refusedCount(draft: Draft, failure: DeviceFailure): string {
+  const issues = draft.review.schema.length;
+  return issues > 0 ? counted(issues, "issue") : failure.diagnostic.message;
+}
+
 function refused(draft: Draft, failure: DeviceFailure): SaveStatus {
-  const issues = draft.issues.length;
-  const text = issues > 0 ? counted(issues, "issue") : failure.diagnostic.message;
-  return status(`Saved, but the binary refuses it: ${text}.`, "warn");
+  return status(`Saved, but the binary refuses it: ${refusedCount(draft, failure)}.`, "warn");
+}
+
+function notSavedRefused(draft: Draft, failure: DeviceFailure): SaveStatus {
+  return status(`Not saved: the binary refuses it (${refusedCount(draft, failure)}). Fix it to save.`, "warn");
 }
 
 function checked(draft: Draft): SaveStatus {
@@ -53,5 +60,6 @@ export function saveStatusOf(draft: Draft): SaveStatus {
   const { save } = draft;
   if (save.kind === "saving") return status("Saving and checking…", "busy");
   if (save.kind === "write-failed") return writeFailed(save.failure);
+  if (save.kind === "refused") return notSavedRefused(draft, save.failure);
   return isDirty(draft) ? unsaved(draft) : checked(draft);
 }

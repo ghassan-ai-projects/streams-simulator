@@ -52,18 +52,25 @@ func TestKindValidateReportsEachKindFileWithItsDigest(t *testing.T) {
 func TestKindValidateRefusesWhatIsNotAKindFile(t *testing.T) {
 	t.Parallel()
 	thin := writeFile(t, "thin.kind.json", `{"kind": "thin"}`)
-	cases := []struct {
-		name   string
-		args   []string
-		code   string
-		status int
-	}{
+	assertFailureCodes(t, []failureCase{
 		{"no verb", []string{"kind"}, "usage_invalid", 2},
 		{"an unknown verb", []string{"kind", "check", thin}, "usage_invalid", 2},
 		{"no file", []string{"kind", "validate"}, "usage_invalid", 2},
 		{"a kind file without commands", []string{"kind", "validate", thin}, "kind_failed", 1},
 		{"a file that does not exist", []string{"kind", "validate", filepath.Join(t.TempDir(), "absent.kind.json")}, "file_not_found", 1},
-	}
+	})
+}
+
+// failureCase is one invocation expected to fail with an exit status and a failure code.
+type failureCase struct {
+	name   string
+	args   []string
+	code   string
+	status int
+}
+
+func assertFailureCodes(t *testing.T, cases []failureCase) {
+	t.Helper()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

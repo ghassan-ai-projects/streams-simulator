@@ -15,50 +15,76 @@ import { InterfaceNeeds } from "./InterfaceNeeds";
 import { choose, commit } from "./twinProps";
 import type { Reveal, TwinProps } from "./twinProps";
 
-interface RowProps extends Pick<TwinProps, "twin" | "issues"> {
+interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly reveal: Reveal | null;
-  readonly kind: string;
+  readonly member: string;
   readonly metric: Metric;
   readonly choice: MetricChoice;
   readonly instruments: readonly Instrument[] | null;
 }
 
-function Numeric({ twin, issues, kind, metric, choice, instruments }: RowProps) {
-  const on = (field: string) => twinIssuesOn(issues, { scope: "metric", kind, key: metric.name, field });
+type NumericFields = Pick<RowProps, "twin" | "member" | "metric" | "choice" | "instruments"> & {
+  readonly on: (field: string) => readonly string[];
+};
+
+function InstrumentField({ twin, member, metric, choice, instruments, on }: NumericFields) {
+  return (
+    <Field
+      label="Instrument"
+      field="instrument"
+      hint="What measures this reading, with its noise and faults."
+      issues={on("instrument")}
+    >
+      {(aria) => (
+        <InstrumentPicker
+          metric={metric.name}
+          value={choice.instrument}
+          instruments={instruments}
+          aria={aria}
+          onPick={(ref) => {
+            choose(twin, (choices) => chooseInstrument(choices, member, metric.key, ref));
+          }}
+        />
+      )}
+    </Field>
+  );
+}
+
+function InitialField({ twin, member, metric, choice, on }: NumericFields) {
+  return (
+    <Field
+      label="Starts at"
+      field="initial"
+      hint="Optional. The true value when the twin starts."
+      issues={on("initial")}
+    >
+      {(aria) => (
+        <NumberInput
+          aria={aria}
+          value={choice.initial}
+          onChange={(initial) => {
+            twin.edit((choices) => startAt(choices, member, metric.key, initial));
+          }}
+          onCommit={commit(twin)}
+        />
+      )}
+    </Field>
+  );
+}
+
+function Numeric({ twin, issues, member, metric, choice, instruments }: RowProps) {
+  const on = (field: string) => twinIssuesOn(issues, { scope: "metric", kind: member, key: metric.key, field });
+  const fields = { twin, member, metric, choice, instruments, on };
   return (
     <>
-      <Field label="Instrument" hint="What measures this reading, with its noise and faults." issues={on("instrument")}>
-        {(aria) => (
-          <InstrumentPicker
-            metric={metric.name}
-            value={choice.instrument}
-            instruments={instruments}
-            aria={aria}
-            onPick={(ref) => {
-              choose(twin, (choices) => chooseInstrument(choices, kind, metric.name, ref));
-            }}
-          />
-        )}
-      </Field>
-      <Field label="Starts at" hint="Optional. The true value when the twin starts." issues={on("initial")}>
-        {(aria) => (
-          <NumberInput
-            aria={aria}
-            name="Starts at"
-            value={choice.initial}
-            onChange={(initial) => {
-              twin.edit((choices) => startAt(choices, kind, metric.name, initial));
-            }}
-            onCommit={commit(twin)}
-          />
-        )}
-      </Field>
+      <InstrumentField {...fields} />
+      <InitialField {...fields} />
     </>
   );
 }
 
 export function ReadingRow(props: RowProps) {
-  const { issues, kind, metric } = props;
+  const { issues, member, metric } = props;
   const numeric = takesInstrument(metric);
   const facts = numeric
     ? `${readingFacts(metric)} · ${rangeWords(metric.range.min, metric.range.max)}`
@@ -69,15 +95,8 @@ export function ReadingRow(props: RowProps) {
         <strong>{metric.name}</strong>
         <span className={panel.hint}>{facts}</span>
       </h4>
-      <ItemIssues messages={twinIssuesOn(issues, { scope: "metric", kind, key: metric.name, field: "" })} />
-      <InterfaceNeeds
-        issues={issues}
-        scope="metric"
-        kind={kind}
-        name={metric.name}
-        selection={{ part: "metric", key: metric.key }}
-        reveal={props.reveal}
-      />
+      <ItemIssues messages={twinIssuesOn(issues, { scope: "metric", kind: member, key: metric.key, field: "" })} />
+      <InterfaceNeeds needs={props.needs} part="metric" itemKey={metric.key} reveal={props.reveal} />
       {numeric ? (
         <Numeric {...props} />
       ) : (

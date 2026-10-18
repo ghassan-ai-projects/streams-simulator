@@ -1,4 +1,4 @@
-import { Plus, TriangleAlert } from "lucide-react";
+import { Info, Plus, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DeviceSession, Draft } from "../../../app/devices";
 import { commandFacts, readingFacts } from "../../../model/devices";
@@ -10,6 +10,7 @@ interface OutlineProps {
   readonly draft: Draft;
   readonly devices: DeviceSession;
   readonly issues: readonly FieldIssue[];
+  readonly needs: readonly FieldIssue[];
 }
 
 interface ItemProps {
@@ -17,16 +18,18 @@ interface ItemProps {
   readonly facts: string;
   readonly current: boolean;
   readonly flagged: boolean;
+  readonly needed: boolean;
   readonly onSelect: () => void;
 }
 
-function Item({ name, facts, current, flagged, onSelect }: ItemProps) {
+function Item({ name, facts, current, flagged, needed, onSelect }: ItemProps) {
   return (
     <li>
       <button type="button" className={styles.item} aria-current={current ? "true" : undefined} onClick={onSelect}>
         <span className={styles.itemLine}>
           <span className={styles.itemName}>{name}</span>
           {flagged && <TriangleAlert className={styles.flag} size={13} role="img" aria-label="Has issues" />}
+          {needed && <Info className={styles.need} size={13} role="img" aria-label="Needed for a twin" />}
         </span>
         {facts !== "" && <span className={styles.itemFacts}>{facts}</span>}
       </button>
@@ -73,7 +76,7 @@ interface ListProps extends OutlineProps {
   readonly select: (selection: Selection) => () => void;
 }
 
-function Readings({ draft, devices, issues, select }: ListProps) {
+function Readings({ draft, devices, issues, needs, select }: ListProps) {
   const { doc, selected } = draft;
   const none = "No readings yet. Add what the device reports, such as a temperature.";
   return (
@@ -92,6 +95,7 @@ function Readings({ draft, devices, issues, select }: ListProps) {
           facts={readingFacts(metric)}
           current={chosen(selected, "metric", metric.key)}
           flagged={flaggedItem(issues, "metric", metric.key)}
+          needed={flaggedItem(needs, "metric", metric.key)}
           onSelect={select({ part: "metric", key: metric.key })}
         />
       ))}
@@ -99,7 +103,7 @@ function Readings({ draft, devices, issues, select }: ListProps) {
   );
 }
 
-function Commands({ draft, devices, issues, select }: ListProps) {
+function Commands({ draft, devices, issues, needs, select }: ListProps) {
   const { doc, selected } = draft;
   const none = "No commands yet. Add what the device can be told to do.";
   return (
@@ -118,6 +122,7 @@ function Commands({ draft, devices, issues, select }: ListProps) {
           facts={commandFacts(command)}
           current={chosen(selected, "command", command.key)}
           flagged={flaggedItem(issues, "command", command.key)}
+          needed={flaggedItem(needs, "command", command.key)}
           onSelect={select({ part: "command", key: command.key })}
         />
       ))}
@@ -126,7 +131,7 @@ function Commands({ draft, devices, issues, select }: ListProps) {
 }
 
 export function DeviceOutline(props: OutlineProps) {
-  const { draft, devices, issues } = props;
+  const { draft, devices, issues, needs } = props;
   const select = (selection: Selection) => () => {
     devices.select(selection);
   };
@@ -138,6 +143,7 @@ export function DeviceOutline(props: OutlineProps) {
           facts="Device"
           current={chosen(draft.selected, "kind", "")}
           flagged={flaggedItem(issues, "kind", "")}
+          needed={flaggedItem(needs, "kind", "")}
           onSelect={select({ part: "kind" })}
         />
       </ul>

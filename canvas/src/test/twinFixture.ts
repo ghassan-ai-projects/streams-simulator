@@ -1,13 +1,15 @@
-import { instrumentOf, parseKind, sortInstruments } from "../model/devices";
-import type { Instrument, KindFile, Metric } from "../model/devices";
+import { choicesOfDocument, instrumentOf, keyChoices, parseKind, reconcileChoices } from "../model/devices";
+import { list, record, text } from "../model/shared/json";
+import type { Instrument, KindFile, Member, Metric, TwinChoices } from "../model/devices";
 import { FakeBridge, cannedFailure } from "./fakeBridge";
+import { kindCheck } from "./kindCheckFake";
 import { failure, success } from "./outcome";
 import { sampleWorkspace } from "./workspaceFixture";
 
 export const coolerPath = "kinds/cooler.kind.json";
 export const sensorPath = "kinds/sensor.kind.json";
 export const choicesPath = "twins/cooler.twin.json";
-export const domainPath = "domains/cooler-twin.domain.json";
+export const domainPath = "domains/cooler-sensor-twin.domain.json";
 
 function argumentsOf(properties: Record<string, unknown>) {
   return { type: "object", properties, required: ["duty"] };
@@ -16,9 +18,9 @@ function argumentsOf(properties: Record<string, unknown>) {
 export const coolerDocument = {
   kind: "cooler",
   metrics: [
-    { name: "temperature", data_type: "number", unit: "Cel", eu_range: { min: 0, max: 100 } },
-    { name: "duty", data_type: "number", unit: "%", eu_range: { min: 0, max: 100 }, writable: true },
-    { name: "mode", data_type: "enum", enum_values: ["auto", "manual"] },
+    { name: "temperature", data_type: "number", unit: "Cel", eu_range: { min: 0, max: 100 }, resolution: 0.1 },
+    { name: "duty", data_type: "number", unit: "%", eu_range: { min: 0, max: 100 }, resolution: 1, writable: true },
+    { name: "mode", data_type: "enum", enum_values: ["auto", "manual"], resolution: 1 },
   ],
   commands: [
     {
@@ -32,7 +34,7 @@ export const coolerDocument = {
 
 export const sensorDocument = {
   kind: "sensor",
-  metrics: [{ name: "humidity", data_type: "number", unit: "%", eu_range: { min: 0, max: 100 } }],
+  metrics: [{ name: "humidity", data_type: "number", unit: "%", eu_range: { min: 0, max: 100 }, resolution: 1 }],
   commands: [],
 };
 
@@ -52,27 +54,52 @@ export function metricOf(extra: Record<string, unknown> = {}): Metric {
   return metric;
 }
 
-const library = [
-  {
-    id: "streamsim/thermistor",
-    title: "Thermistor",
-    family: "temperature",
-    unit: "degC",
-    range: { min: -40, max: 125 },
-  },
-  {
-    id: "streamsim/humidity",
-    title: "Capacitive humidity sensor",
-    family: "humidity",
-    unit: "%RH",
-    range: { min: 0, max: 100 },
-  },
-  { id: "streamsim/tachometer", title: "Tachometer", family: "speed", unit: "rpm", range: null },
+export const cooler: Member = { path: coolerPath, kind: kindOf(coolerDocument) };
+export const sensor: Member = { path: sensorPath, kind: kindOf(sensorDocument) };
+
+export const suggestion = {
+  schema_version: "0.1",
+  id: "cooler-sensor-twin",
+  version: "0.1.0",
+  title: "Twin of cooler, sensor",
+  kinds: [
+    {
+      kind: "cooler",
+      instance: "cooler-01",
+      metrics: { temperature: { instrument: "none" }, duty: { instrument: "none" }, mode: { instrument: "none" } },
+      commands: { set_duty: { response: "direct", sets: { duty: "duty" } } },
+    },
+    { kind: "sensor", instance: "sensor-01", metrics: { humidity: { instrument: "streamsim/humidity@1" } } },
+  ],
+};
+
+export function startingChoices(members: readonly Member[] = [cooler]): TwinChoices {
+  const suggested = keyChoices(choicesOfDocument(suggestion), members);
+  return reconcileChoices(suggested, members, suggested);
+}
+
+interface Entry {
+  readonly id: string;
+  readonly title: string;
+  readonly unit: string;
+  readonly range: { readonly min: number; readonly max: number } | null;
+}
+
+const library: readonly Entry[] = [
+  { id: "streamsim/thermistor", title: "Thermistor", unit: "degC", range: { min: -40, max: 125 } },
+  { id: "streamsim/humidity", title: "Capacitive humidity sensor", unit: "%RH", range: { min: 0, max: 100 } },
+  { id: "streamsim/tachometer", title: "Tachometer", unit: "rpm", range: null },
 ];
 
-function instrumentFrom(entry: (typeof library)[number]): Instrument {
-  const { id, title, family, unit, range } = entry;
-  return instrumentOf({ ref: `${id}@1`, title }, { family, unit, min: range?.min ?? null, max: range?.max ?? null });
+function instrumentFrom(entry: Entry, match: Instrument["match"] = ""): Instrument {
+  return instrumentOf({
+    ref: `${entry.id}@1`,
+    title: entry.title,
+    unit: entry.unit,
+    min: entry.range?.min ?? null,
+    max: entry.range?.max ?? null,
+    match,
+  });
 }
 
 function missing(): never {
@@ -81,29 +108,87 @@ function missing(): never {
 
 export const thermistor = instrumentFrom(library[0] ?? missing());
 export const humidity = instrumentFrom(library[1] ?? missing());
-export const tachometer = instrumentFrom(library[2] ?? missing());
-export const instruments: readonly Instrument[] = sortInstruments([thermistor, humidity, tachometer]);
+const tachometer = instrumentFrom(library[2] ?? missing());
+export const instruments: readonly Instrument[] = [thermistor, humidity, tachometer];
+export const convertibleThermistor = instrumentFrom(library[0] ?? missing(), "convertible");
 
-const libraryWire = {
-  components: [
-    ...library.map(({ id, title }) => ({ id, version: 1, kind: "instrument", title, class: "x", tags: [] })),
-    { id: "streamsim/pump", version: 1, kind: "equipment", title: "Pump", class: "process/pump", tags: [] },
-  ],
+const matches: Readonly<Record<string, Readonly<Record<string, "exact" | "convertible">>>> = {
+  Cel: { "streamsim/thermistor": "convertible" },
+  degC: { "streamsim/thermistor": "exact" },
+  "%": { "streamsim/humidity": "convertible" },
+  rpm: { "streamsim/tachometer": "exact" },
 };
 
-function specOf(ref: unknown) {
-  const found = library.find(({ id }) => `${id}@1` === ref);
-  if (found === undefined) return failure(cannedFailure("not_found", 404, "no such component"));
-  const document = {
-    unit_family: found.family,
-    unit: found.unit,
-    ...(found.range === null ? {} : { range: found.range }),
-  };
-  return success({ entry: { id: found.id }, document });
+function wire(entry: Entry, match?: string) {
+  const { id, title, unit, range } = entry;
+  const base = { id, version: 1, kind: "instrument", title, class: "x", tags: [], unit };
+  return { ...base, ...(range === null ? {} : { range }), ...(match === undefined ? {} : { match }) };
 }
 
-export function refusal(pointer: string, message: string) {
-  return failure({ ...cannedFailure("kind_failed", 422, "the choices are refused"), issues: [{ pointer, message }] });
+function listed(args: Readonly<Record<string, unknown>>) {
+  const equipment = {
+    id: "streamsim/pump",
+    version: 1,
+    kind: "equipment",
+    title: "Pump",
+    class: "process/pump",
+    tags: [],
+  };
+  const unit = typeof args.unit === "string" ? args.unit : "";
+  if (unit === "") return success({ components: [...library.map((entry) => wire(entry)), equipment] });
+  const found = matches[unit] ?? {};
+  const entries = library.flatMap((entry) => {
+    const match = found[entry.id];
+    return match === undefined ? [] : [wire(entry, match)];
+  });
+  return success({ components: entries });
+}
+
+interface RawIssue {
+  readonly pointer?: string;
+  readonly message: string;
+  readonly keyword?: string;
+  readonly member?: string;
+}
+
+export function refusal(...issues: readonly RawIssue[]) {
+  return failure({ ...cannedFailure("kind_failed", 422, "the choices are refused"), issues });
+}
+
+export function withPlant(fake: FakeBridge): FakeBridge {
+  const listing = fake.workspaceOutcome;
+  if (!listing.ok) throw new Error("no listing");
+  const domains = [{ path: domainPath, id: "cooler-sensor-twin", title: "Cooler", instances: 1 }];
+  fake.workspaceOutcome = success({ ...listing.value, domains });
+  fake.addFile(domainPath, { id: "cooler-sensor-twin" }, "d5");
+  return fake;
+}
+
+function lacksTwinMembers(content: string): boolean {
+  try {
+    const doc = record(JSON.parse(content) as unknown);
+    return list(doc.metrics)
+      .map(record)
+      .some((metric) => {
+        const numeric = metric.data_type === "number" || metric.data_type === "integer";
+        return metric.resolution === undefined || (numeric && text(metric.unit) === "");
+      });
+  } catch {
+    return false;
+  }
+}
+
+function suggested(fake: FakeBridge) {
+  const lacking = [...fake.files.entries()].some(
+    ([path, file]) => path.startsWith("kinds/") && file.ok && lacksTwinMembers(file.value.content),
+  );
+  const issue = {
+    pointer: "/kinds/0/kind",
+    message: 'needs "resolution"',
+    keyword: "twin_member_required",
+    member: "resolution",
+  };
+  return lacking ? refusal(issue) : success({ choices: suggestion });
 }
 
 export function twinBridge() {
@@ -121,12 +206,13 @@ export function twinBridge() {
     "kind.validate",
     success({ valid: true, kinds: [{ kind: "cooler", kind_digest: "sha256:abc", metrics: 3, commands: 2 }] }),
   );
-  fake.actions.set("component.list", success(libraryWire));
-  fake.handlers.set("component.show", (args) => specOf(args.ref));
+  fake.handlers.set("kind.check", kindCheck);
+  fake.handlers.set("kind.suggest", () => suggested(fake));
+  fake.handlers.set("component.list", listed);
   fake.handlers.set("kind.twin", (args) => {
-    fake.addFile(String(args.out), { id: "cooler-twin" }, "d1");
+    fake.addFile(String(args.out), { id: "cooler-sensor-twin" }, "d1");
     return success({
-      id: "cooler-twin",
+      id: "cooler-sensor-twin",
       digest: "sha256:t",
       channels: 3,
       faults: 2,
@@ -137,8 +223,8 @@ export function twinBridge() {
   });
   fake.actions.set(
     "domain.validate",
-    success({ id: "cooler-twin", digest: "sha256:t", channels: 3, effectors: 1, faults: 2, valid: true }),
+    success({ id: "cooler-sensor-twin", digest: "sha256:t", channels: 3, effectors: 1, faults: 2, valid: true }),
   );
-  fake.actions.set("domain.lint", success({ domain: "cooler-twin", findings: [], errors: 0, warnings: 0 }));
+  fake.actions.set("domain.lint", success({ domain: "cooler-sensor-twin", findings: [], errors: 0, warnings: 0 }));
   return fake;
 }

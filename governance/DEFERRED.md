@@ -223,3 +223,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > (no UCUM check), and does not limit how many commands of a kind are `safe_stop`. A kind with several safe stops is
 > legal today; the host takes safe stops from its commissioned inventory, not from the birth. Trigger to fix: a host
 > or gateway needs exactly one safe stop per kind, or a unit check is added to the contract.
+> D-65 (default instrument by unit): `kind twin --suggest` picks the first instrument that fits the unit and range of a
+> reading, exact unit first, then by id; units shared by several quantities (`%` is a fraction for a valve position and,
+> by conversion, a relative humidity) are told apart only by a reading named after the instrument. Trigger to fix: a
+> reading is suggested an instrument of another quantity that a user cannot tell from the unit; then an instrument
+> declares the quantity (a kind file would name it) and the match is by quantity, not by unit.

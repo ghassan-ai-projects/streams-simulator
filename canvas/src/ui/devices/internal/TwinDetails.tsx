@@ -1,23 +1,39 @@
 import { Info, TriangleAlert } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { TwinDraft } from "../../../app/devices";
 import { twinDomainPath, twinIssueTitle } from "../../../model/devices";
 import { cx, panel, shared, useCutBottom } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
 
+function useFocusFirst(build: TwinDraft["build"]) {
+  const first = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (build.kind === "refused") first.current?.focus();
+  }, [build]);
+  return first;
+}
+
 function Issues({ draft }: { readonly draft: TwinDraft }) {
+  const first = useFocusFirst(draft.build);
   if (draft.issues.length === 0) return null;
   return (
-    <section className={panel.group} aria-labelledby="twin-issues-title">
+    <section className={panel.group} aria-labelledby="twin-issues-title" role="alert">
       <h3 id="twin-issues-title">Issues</h3>
       <p className={panel.hint}>These come from the last attempt to create the twin.</p>
       <ul className={styles.issueList}>
         {draft.issues.map((issue, index) => (
-          <li key={`${String(index)}:${issue.message}`}>
+          <li key={`${String(index)}:${issue.message}`} ref={index === 0 ? first : undefined} tabIndex={-1}>
             <TriangleAlert size={14} aria-hidden="true" />
             <span className={tw.issueText}>
-              <strong>{twinIssueTitle(issue)}</strong>
-              {issue.message}
+              <strong>{twinIssueTitle(issue, draft.members)}</strong>
+              {issue.text}
+              {issue.message !== issue.text && (
+                <details>
+                  <summary>Details</summary>
+                  {issue.message}
+                </details>
+              )}
             </span>
           </li>
         ))}

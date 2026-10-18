@@ -5,6 +5,7 @@ import { partsWords } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
+import { FormTitle } from "./FormTitle";
 
 const icons = {
   ok: <CircleCheck size={16} className={tw.checkOk} aria-hidden="true" />,
@@ -26,13 +27,26 @@ function Item({ row }: { readonly row: CheckRow }) {
             ))}
           </ul>
         )}
+        {row.details.length > 0 && (
+          <details>
+            <summary>Details</summary>
+            {row.details.join(" ")}
+          </details>
+        )}
       </div>
     </li>
   );
 }
 
+function digestOf(built: Built): string {
+  const { made, implemented } = built;
+  if (made !== null) return made.digest;
+  return implemented.kind === "passed" ? implemented.checked.digest : "";
+}
+
 function Details({ built }: { readonly built: Built }) {
   const { made } = built;
+  const digest = digestOf(built);
   return (
     <details>
       <summary className={cx(shared.sectionTitle, shared.disclosure)}>Technical details</summary>
@@ -40,11 +54,15 @@ function Details({ built }: { readonly built: Built }) {
         <dt>Plant file</dt>
         <dd>{built.path}</dd>
         <dt>Digest</dt>
-        <dd>{made.digest === "" ? "Not reported" : made.digest}</dd>
-        <dt>Parts</dt>
-        <dd>{partsWords(made.channels, made.effectors, made.faults)}</dd>
-        <dt>Devices</dt>
-        <dd>{made.implements.join(", ")}</dd>
+        <dd>{digest === "" ? "Not reported" : digest}</dd>
+        {made !== null && (
+          <>
+            <dt>Parts</dt>
+            <dd>{partsWords(made.channels, made.effectors, made.faults)}</dd>
+            <dt>Devices</dt>
+            <dd>{made.implements.join(", ")}</dd>
+          </>
+        )}
       </dl>
     </details>
   );
@@ -54,9 +72,7 @@ export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; reado
   const built = builtOf(draft);
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="check-title">
-      <h2 id="check-title" className={styles.formTitle}>
-        Check
-      </h2>
+      <FormTitle id="check-title" words="Check" />
       {draft.build.kind === "idle" && (
         <p className={panel.hint}>
           Nothing to check yet. Choose how the twin behaves in the Behaviour step, then create it.

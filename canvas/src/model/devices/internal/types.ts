@@ -54,11 +54,21 @@ export type Selection =
 export interface RawIssue {
   readonly pointer: string;
   readonly message: string;
+  readonly keyword?: string;
+  readonly member?: string;
 }
 
 export interface FieldIssue {
   readonly part: "kind" | "metric" | "command" | "file";
   readonly key: string;
   readonly field: string;
+  readonly keyword: string;
   readonly message: string;
+  readonly text: string;
+  readonly twin: boolean;
+}
+
+export interface Member {
+  readonly path: string;
+  readonly kind: KindFile;
 }

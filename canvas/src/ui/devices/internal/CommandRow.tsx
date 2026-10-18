@@ -6,9 +6,10 @@ import {
   responseOf,
   setArgument,
   settableChoices,
+  spaced,
   twinIssuesOn,
 } from "../../../model/devices";
-import type { Command, CommandChoice, KindFile } from "../../../model/devices";
+import type { Command, CommandChoice, KindFile, Member } from "../../../model/devices";
 import { panel } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import { DriveRows } from "./DriveRows";
@@ -17,18 +18,19 @@ import { InterfaceNeeds } from "./InterfaceNeeds";
 import { choose } from "./twinProps";
 import type { Reveal, TwinProps } from "./twinProps";
 
-interface RowProps extends Pick<TwinProps, "twin" | "issues"> {
+interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly reveal: Reveal | null;
   readonly kind: KindFile;
-  readonly kinds: readonly KindFile[];
+  readonly members: readonly Member[];
+  readonly member: string;
   readonly command: Command;
   readonly choice: CommandChoice;
 }
 
-function Sets({ twin, issues, kind, command, choice }: RowProps) {
+function Sets({ twin, issues, kind, member, command, choice }: RowProps) {
   const numbers = numericArguments(command);
   const on = (field: string, spot = "") =>
-    twinIssuesOn(issues, { scope: "command", kind: kind.kind, key: command.name, field, spot });
+    twinIssuesOn(issues, { scope: "command", kind: member, key: command.key, field, spot });
   if (choice.response === "none") return null;
   if (numbers.length === 0) {
     return <ItemIssues messages={["This command has no number argument, so it cannot set a reading."]} />;
@@ -37,14 +39,14 @@ function Sets({ twin, issues, kind, command, choice }: RowProps) {
     <>
       <ItemIssues messages={on("sets")} />
       {numbers.map((argument) => (
-        <Field key={argument} label={`${argument} sets`} issues={on("sets", argument)}>
+        <Field key={argument} label={`Reading set by ${spaced(argument)}`} field="sets" issues={on("sets", argument)}>
           {(aria) => (
             <Select
               aria={aria}
               value={choice.sets[argument] ?? ""}
               choices={settableChoices(kind)}
               onChange={(reading) => {
-                choose(twin, (all) => setArgument(all, kind.kind, command.name, argument, reading));
+                choose(twin, (all) => setArgument(all, member, command.key, argument, reading));
               }}
             />
           )}
@@ -55,8 +57,8 @@ function Sets({ twin, issues, kind, command, choice }: RowProps) {
 }
 
 export function CommandRow(props: RowProps) {
-  const { twin, issues, kind, command, choice } = props;
-  const on = (field: string) => twinIssuesOn(issues, { scope: "command", kind: kind.kind, key: command.name, field });
+  const { twin, issues, member, command, choice } = props;
+  const on = (field: string) => twinIssuesOn(issues, { scope: "command", kind: member, key: command.key, field });
   return (
     <div role="group" aria-label={`Command ${command.name}`} className={tw.reading}>
       <h4 className={tw.readingHead}>
@@ -64,26 +66,19 @@ export function CommandRow(props: RowProps) {
         <span className={panel.hint}>{commandFacts(command)}</span>
       </h4>
       <ItemIssues messages={[...on(""), ...on("drives")]} />
-      <Field label="Response" issues={on("response")}>
+      <Field label="Response" field="response" issues={on("response")}>
         {(aria) => (
           <Select
             aria={aria}
             value={choice.response}
             choices={responseChoices}
             onChange={(value) => {
-              choose(twin, (all) => chooseResponse(all, kind.kind, command.name, responseOf(value)));
+              choose(twin, (all) => chooseResponse(all, member, command.key, responseOf(value)));
             }}
           />
         )}
       </Field>
-      <InterfaceNeeds
-        issues={issues}
-        scope="command"
-        kind={kind.kind}
-        name={command.name}
-        selection={{ part: "command", key: command.key }}
-        reveal={props.reveal}
-      />
+      <InterfaceNeeds needs={props.needs} part="command" itemKey={command.key} reveal={props.reveal} />
       <Sets {...props} />
       {choice.response === "first_order" && <DriveRows {...props} />}
     </div>

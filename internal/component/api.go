@@ -5,9 +5,12 @@ import (
 
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
 	specs "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 type Summary = layer.Summary
+
+type Issue = model.Issue
 
 type Detail = layer.Detail
 
@@ -17,7 +20,10 @@ type ExampleSummary = layer.ExampleSummary
 
 type NewPlant = layer.NewPlant
 
-var ErrUnknownExample = layer.ErrUnknownExample
+var (
+	ErrUnknownExample = layer.ErrUnknownExample
+	ErrNoKindFiles    = layer.ErrNoKindFiles
+)
 
 type DomainSummary = specs.Summary
 

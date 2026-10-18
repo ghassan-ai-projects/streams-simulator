@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Draft } from "../../../app/devices";
-import { deviceBridge, editingDevice, fan } from "../../../test/deviceHarness";
+import { deviceBridge, editingDevice, fan, valid } from "../../../test/deviceHarness";
 
 function choose(name: RegExp) {
   fireEvent.click(within(screen.getByRole("navigation", { name: "Device outline" })).getByRole("button", { name }));
@@ -18,12 +18,15 @@ function change(label: string, value: string) {
 }
 
 describe("the device name", () => {
-  it("renames the device, cautions about a name the binary is likely to refuse, and names a blank one", async () => {
+  it("renames the device, leaves the pattern to the binary, and names a blank one", async () => {
     const app = await editingDevice();
     change("Name", "cooling fan");
     expect(draftOf(app).doc.kind).toBe("cooling fan");
-    expect(screen.getByText("The binary is likely to refuse this name.")).toBeInTheDocument();
-    expect(screen.getByText("Letters, digits and . _ : - only, starting with a letter or digit.")).toBeInTheDocument();
+    expect(screen.queryByText(/likely to refuse/)).toBeNull();
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(/Use letters, digits and \. _ : - only/);
+    });
+    expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
     change("Name", "");
     expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getAllByText("Give the device a name.").length).toBeGreaterThan(0);
@@ -50,8 +53,10 @@ describe("a reading", () => {
     expect(document.querySelectorAll("datalist option").length).toBeGreaterThan(5);
   });
 
-  it("offers a range and a resolution for numbers only, and keeps a range that is already set", async () => {
-    await editingDevice();
+  it("offers a range and a resolution for numbers only", async () => {
+    const fake = deviceBridge();
+    fake.handlers.set("kind.check", () => valid);
+    await editingDevice(fake);
     choose(/^mode/);
     expect(screen.queryByLabelText("Resolution")).toBeNull();
     expect(screen.queryByLabelText("Minimum")).toBeNull();
@@ -59,6 +64,13 @@ describe("a reading", () => {
     expect(screen.getByLabelText("Resolution")).toBeInTheDocument();
     change("Type", "boolean");
     expect(screen.queryByLabelText("Resolution")).toBeNull();
+  });
+
+  it("shows a resolution a twin needs even on a reading that is not a number", async () => {
+    await editingDevice();
+    choose(/^mode/);
+    expect(screen.getByLabelText("Resolution")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Minimum")).toBeNull();
   });
 
   it("takes numbers as typed, refuses text in a number field, and warns when a range runs backwards", async () => {

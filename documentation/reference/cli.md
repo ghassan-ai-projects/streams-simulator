@@ -29,7 +29,14 @@ Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not
 `artifact_invalid`, `replay_mismatch`, `domain_lint`,
 `adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
 command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
-is known; `result` carries the command's report for a failed check (for example the replay
+is known; each issue is `{pointer?, message, keyword?, member?}`. `keyword` says why, for a
+program: the JSON Schema keyword that failed (`type`, `enum`, `pattern`, `required`,
+`additionalProperties`, `minimum`, `exclusiveMinimum`, `maxLength`, ...) or a stable rule code of the
+binary (`twin_member_required`, `twin_unit_required`, `twin_conversion_needed`, `twin_name_pattern`,
+`twin_range`, `kind_range_empty`, `domain_rule`, `implements_drift`, `json` for a document that is not
+JSON). `member` names the member a rule is about (`resolution`, `writable`, `safe_stop`, `unit`, or the
+missing or extra property of `required` and `additionalProperties`). `message` stays plain English; a
+surface never parses it. `result` carries the command's report for a failed check (for example the replay
 report of a failed `verify`). `mcp` owns its stdout for the protocol and reports failures on
 stderr only; `device serve` prints no success document while it serves.
 
@@ -63,18 +70,23 @@ streamsim domain validate <path> [--kinds-dir <dir>]...
 Checks one or more kind files against the plant wire kind schema and prints `{valid, kinds}`, where each kind is `{path, kind, kind_digest, metrics, commands}`. A kind file is one `NBIRTH.kinds` entry without its `kind_digest`; its digest is the one a host sees. A kind file that carries a `kind_digest` member is refused (issue at `/kind_digest`), even a correct one, because a stale digest would be accepted and ignored; a metric's `eu_range` and `instrument_range` need `min` below `max` (issue at `/metrics/<i>/eu_range`). The kind file is the contract: `implements` proves a domain equal to it, and only an announced `kind_digest` equal to the file's proves a device matches it.
 
 ```text
-streamsim kind validate <file.kind.json>...
+streamsim kind validate [--twin] (<file.kind.json>... | --stdin)
 ```
 
-A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`. A file that is not JSON or breaks the schema also carries `source` (the file) and `issues`, as `domain validate` does: one `{pointer, message}` per schema violation, sorted by pointer, with `pointer` an RFC 6901 pointer into the kind file (for example `/metrics/0/data_type`, `/commands` for a missing member), and `message` only for a file that is not JSON. A kind file that breaks the schema in a `--kinds-dir` fails `domain validate`, `domain compose` and `run` the same way.
+A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`. A file that is not JSON or breaks the schema also carries `source` (the file) and `issues`, as `domain validate` does: one `{pointer, message, keyword, member?}` per schema violation, sorted by pointer, with `pointer` an RFC 6901 pointer into the kind file (for example `/metrics/0/data_type`, `/commands` for a missing member), `keyword` the schema keyword that failed (`required`, `enum`, `pattern`, ...) and `member` the missing or extra property; a file that is not JSON has an issue with `message` and `keyword: "json"` only. A kind file that breaks the schema in a `--kinds-dir` fails `domain validate`, `domain compose` and `run` the same way.
+
+- `--stdin` — checks one kind document read from standard input instead of files: at most 1 MiB, decoded as strictly as a file (one JSON document, no member named twice, no number beyond a double), the same issues as a file with `source` `<stdin>`. It reads and writes no file; the output is `{valid, kinds}` with one kind whose `path` is `<stdin>`. Giving files beside `--stdin`, or neither, is a usage error.
+- `--twin` — also reports everything a twin of the kind needs that the document lacks, **all at once**, each as an issue at the member in the kind file with `keyword` `twin_member_required` (`resolution` and `writable` on a reading; `name`, `args_schema`, `risk_class` and `safe_stop` on a command), `twin_member_unsupported`, `twin_name_pattern`, `twin_type_unsupported` (an enum or string reading), `twin_unit_required` (a number or integer reading without a unit), `twin_unit_unexpected` (a boolean with a unit), `twin_range` (an `eu_range` with `min` not below `max`), `twin_risk_class` or `twin_not_object`, and `member` the member concerned. Schema violations are reported first and alone: fix them, then the twin requirements follow in one list. A kind file that passes `--twin` produces a twin with `kind twin` without refusal for the kind file (the choices can still be refused). `kind twin` reports the same rules for a kind file it is given, all of them, at `/kinds/<i>/kind` of the choices.
 
 ### `kind twin`
 
 Scaffolds a runnable twin of kind files: a domain whose kinds `implements` them. The binary does the work, so a surface needs no simulation knowledge of its own. Per metric, the choices name the library instrument that measures it (or `none` for a plain channel); per command that is not a safe stop, one of three fixed responses. Everything else comes from the kind files.
 
 ```text
-streamsim kind twin [<file.kind.json>...] --choices <choices.json> [--kinds-dir <dir>]... [--out <file>] [--components-dir <dir>]...
+streamsim kind twin [<file.kind.json>...] (--choices <choices.json> [--out <file>] | --suggest) [--kinds-dir <dir>]... [--components-dir <dir>]...
 ```
+
+- `--suggest` — prints, and writes nothing, a valid choices document with the binary's defaults for the kind files, as `{choices}`, so a surface needs no defaults of its own: `id` from the kind names, `version` `0.1.0`, a `title`, one `instance` per kind (`<kind>-01`, underscores as hyphens), per reading the library instrument that fits its unit and range (`none` when none does, for a boolean and for a reading without a unit or range), and per command that is not a safe stop `direct` when the command's numeric arguments are named for the writable readings of the kind and no other command claims them, else `none`. It takes no `--choices` or `--out`. The suggestion always passes the schema and, for kind files that meet the twin requirements, `kind twin --choices`; a kind file that does not is refused with every violation at once, as `kind validate --twin` reports them.
 
 - `--choices <file>` — the choices document, `twin-choices-v0.1` ([schema](../../contracts/twin-choices-v0.1.schema.json)): `id`, `version`, `title`, optional `description`, `site {name, area?}` and `board {name}`, and `kinds[]` in the order the domain declares them. Each entry is `{kind, instance, metrics, commands}`: `kind` names a kind file, `instance` is the one instance the twin has, `metrics` has one `{instrument, initial?}` for every metric of the kind file, `commands` one `{response, sets?, drives?}` for every command that is not a safe stop.
 - Kind files come from the arguments, from `--kinds-dir` (every `*.kind.json` there), or both; only the kinds the choices name are used.
@@ -91,7 +103,7 @@ Responses:
 
 A safe-stop command lowers every metric the kind's commands set to the low end of its range. A command whose arguments carry `lease_ms` (or `lease_s`) holds its effect for that lease and falls back to the low end of the range. An instrument keeps its noise, cadence, faults and tag; the kind file keeps the metric's unit, range and resolution, so the instrument must read in the metric's unit (an alias of the same quantity, such as `Cel` for `degC`, is accepted) and cover its range.
 
-It prints `{id, digest, channels, faults, effectors, implements}` and `composed` (the file written) or `domain`. The twin is checked against the same kind files before it is printed, so it always passes `domain validate --kinds-dir`. Choices that break their schema, name something the kind files do not hold, leave a metric or command undecided, or ask a response that does not fit fail with `kind_failed`, each issue at its pointer in the choices (`/kinds/2/commands/set_pwm_lease/drives/0/gain`); a kind file the twin cannot reproduce (a string metric, a member beyond the interface) fails the same way at `/kinds/<i>/kind`.
+It prints `{id, digest, channels, faults, effectors, implements}` and `composed` (the file written) or `domain`. The twin is checked against the same kind files before it is printed, so it always passes `domain validate --kinds-dir`. Choices that break their schema, name something the kind files do not hold, leave a metric or command undecided, or ask a response that does not fit fail with `kind_failed`, each issue at its pointer in the choices (`/kinds/2/commands/set_pwm_lease/drives/0/gain`) with a `keyword` (`twin_kind_missing`, `twin_name_collision`, `twin_unknown_choice`, `twin_choice_missing`, `twin_instrument_mismatch`, `twin_response_mismatch`, `twin_initial_range`, or `twin_conversion_needed` with `member` `unit` for an instrument whose unit needs a conversion); a kind file the twin cannot reproduce (a string metric, a member beyond the interface, a missing `resolution`) fails the same way at `/kinds/<i>/kind`, one issue per violation, each with the twin `keyword` and `member`.
 
 ### `domain lint`
 
@@ -133,7 +145,8 @@ Lists, shows and validates the component library: equipment, instruments and voc
 streamsim component [list|show <namespace/name[@major]>|validate|examples|example <id>] [--components-dir <dir>]...
 ```
 
-- `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
+- `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters, and the entry also carries its `unit` and, when it states one, its measuring `range {min, max}`.
+- `component list --unit <u>` — only the instruments that measure in `u` or in a unit convertible to it (the unit conversion `kind twin` uses), the exact unit first and then by id and version; each entry carries `match` (`exact` or `convertible`) beside its `unit` and `range`. A unit no family knows lists nothing. `--unit` belongs to `list` only.
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
 - `component examples` — the ready-to-run example plants shipped with the library, as `{id, title, description}`.
 - `component example <id>` — one example plant's composition, ready to copy into a workspace; an id that is not shipped fails with `component_failed`.

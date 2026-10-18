@@ -1,40 +1,69 @@
 import { Info, TriangleAlert } from "lucide-react";
 import type { DeviceSession, Draft } from "../../../app/devices";
-import { isDirty } from "../../../app/devices";
 import { issueSelection, issueTitle } from "../../../model/devices";
 import type { FieldIssue } from "../../../model/devices";
 import { cx, panel, shared, useCutBottom } from "../../primitives";
 import styles from "./Devices.module.css";
+import notes from "./Notes.module.css";
 
 interface DetailsProps {
   readonly draft: Draft;
   readonly devices: DeviceSession;
   readonly issues: readonly FieldIssue[];
+  readonly needs: readonly FieldIssue[];
 }
 
-function Issues({ draft, devices, issues }: DetailsProps) {
-  if (issues.length === 0) return null;
+interface ListProps extends Pick<DetailsProps, "draft" | "devices"> {
+  readonly id: string;
+  readonly title: string;
+  readonly items: readonly FieldIssue[];
+  readonly twin: boolean;
+}
+
+interface ItemProps extends Pick<ListProps, "draft" | "devices" | "twin"> {
+  readonly issue: FieldIssue;
+}
+
+function IssueItem({ draft, devices, issue, twin }: ItemProps) {
   return (
-    <section className={panel.group} aria-labelledby="issues-title">
-      <h3 id="issues-title">Issues</h3>
-      {isDirty(draft) && draft.issues.length > 0 && (
-        <p className={panel.hint}>Issues from the binary are from the last save. Save again to check your changes.</p>
-      )}
-      <ul className={styles.issueList}>
-        {issues.map((issue, index) => (
-          <li key={`${String(index)}:${issue.message}`}>
-            <TriangleAlert size={14} aria-hidden="true" />
-            <button
-              type="button"
-              className={styles.issueButton}
-              onClick={() => {
-                devices.select(issueSelection(issue));
-              }}
-            >
-              <strong>{issueTitle(draft.doc, issue)}</strong>
-              {issue.message}
-            </button>
-          </li>
+    <li>
+      {twin ? <Info size={14} aria-hidden="true" /> : <TriangleAlert size={14} aria-hidden="true" />}
+      <span className={notes.stack}>
+        <button
+          type="button"
+          className={styles.issueButton}
+          onClick={() => {
+            devices.select(issueSelection(issue));
+          }}
+        >
+          <strong>{issueTitle(draft.doc, issue)}</strong>
+          {issue.text}
+        </button>
+        {issue.message !== issue.text && (
+          <details>
+            <summary>Details</summary>
+            {issue.message}
+          </details>
+        )}
+      </span>
+    </li>
+  );
+}
+
+function IssueList({ id, title, items, twin, draft, devices }: ListProps) {
+  if (items.length === 0) return null;
+  return (
+    <section className={panel.group} aria-labelledby={id} aria-live="polite">
+      <h3 id={id}>{title}</h3>
+      <ul className={twin ? notes.needList : styles.issueList}>
+        {items.map((issue, index) => (
+          <IssueItem
+            key={`${String(index)}:${issue.message}`}
+            issue={issue}
+            twin={twin}
+            draft={draft}
+            devices={devices}
+          />
         ))}
       </ul>
     </section>
@@ -56,8 +85,9 @@ function Technical({ draft }: { readonly draft: Draft }) {
   );
 }
 
-export function DeviceDetails(props: DetailsProps) {
+export function DeviceDetails({ draft, devices, issues, needs }: DetailsProps) {
   const { ref, cut } = useCutBottom<HTMLElement>();
+  const list = { draft, devices };
   return (
     <aside
       ref={ref}
@@ -70,12 +100,13 @@ export function DeviceDetails(props: DetailsProps) {
         <h2 id="details-title">Device details</h2>
       </header>
       <div className={panel.body}>
-        <Issues {...props} />
+        <IssueList id="issues-title" title="Issues" items={issues} twin={false} {...list} />
+        <IssueList id="needs-title" title="Needed for a twin" items={needs} twin {...list} />
         <p className={panel.hint}>
           A device is the interface of a board: what it reports and what it accepts. It is saved in the workspace and
           checked by the binary each time you save.
         </p>
-        <Technical draft={props.draft} />
+        <Technical draft={draft} />
       </div>
     </aside>
   );

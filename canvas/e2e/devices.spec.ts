@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
+import { createDevice, outline, step, verdict } from "./support/devices";
 import { expect, test } from "./support/test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -8,27 +9,6 @@ interface KindFile {
   readonly kind: string;
   readonly metrics: readonly { readonly name: string; readonly data_type: string }[];
   readonly commands: readonly { readonly name: string }[];
-}
-
-function outline(page: Page) {
-  return page.getByRole("navigation", { name: "Device outline" });
-}
-
-function verdict(page: Page, text: string | RegExp) {
-  return page.getByRole("status").filter({ hasText: text });
-}
-
-async function createDevice(page: Page, name: string): Promise<void> {
-  await page.goto("/");
-  const devices = page.getByRole("region", { name: "Devices" });
-  await expect(devices.getByText(/No devices yet/)).toBeVisible();
-  await devices.getByRole("button", { name: "Create device" }).click();
-  const form = page.getByRole("form", { name: "New device" });
-  await form.getByLabel("Name").fill(name);
-  await form.getByRole("button", { name: "Create and open the device" }).click();
-  await expect(page.getByRole("region", { name: `Editing ${name}` })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveAccessibleName(name);
-  await expect(verdict(page, "Saved and valid.")).toBeVisible();
 }
 
 async function addReadingAndCommand(page: Page): Promise<void> {
@@ -72,17 +52,17 @@ test("a device with one reading and one command is created, saved, listed after 
     .click();
   const name = page.getByLabel("Name", { exact: true });
   await name.fill("bad name");
-  await expect(page.getByText("The binary is likely to refuse this name.")).toBeVisible();
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(verdict(page, /Saved, but the binary refuses it/)).toBeVisible();
   await expect(name).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByText(/does not match pattern/).first()).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(verdict(page, /Not saved: the binary refuses it/)).toBeVisible();
   await expect(page.getByRole("region", { name: "Issues" }).getByText("Reading bad name · Name")).toBeVisible();
+  const onDisk = JSON.parse(readFileSync(file, "utf8")) as KindFile;
+  expect(onDisk.metrics.map((metric) => metric.name)).toEqual(["duty_permille"]);
 
   await name.fill("duty_permille");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(verdict(page, "Saved and valid.")).toBeVisible();
   await expect(name).not.toHaveAttribute("aria-invalid", "true");
+  await expect(verdict(page, "Saved and valid.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveAttribute("aria-disabled", "true");
 });
 
 async function addNumberReading(page: Page, name: string, unit: string): Promise<void> {
@@ -95,7 +75,7 @@ async function addNumberReading(page: Page, name: string, unit: string): Promise
 
 async function defineCooler(page: Page): Promise<void> {
   await createDevice(page, "e2e_cooler");
-  await addNumberReading(page, "temperature", "Cel");
+  await addNumberReading(page, "temperature", "degC");
   await addNumberReading(page, "duty", "%");
   await page.getByLabel("Resolution", { exact: true }).fill("0.1");
   await page.getByLabel("Setpoint").check();
@@ -108,10 +88,6 @@ async function defineCooler(page: Page): Promise<void> {
   await page.getByLabel("Argument 1 maximum").fill("100");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
-}
-
-function step(page: Page, name: RegExp) {
-  return page.getByRole("navigation", { name: "Device steps" }).getByRole("button", { name });
 }
 
 async function chooseThermistor(page: Page): Promise<void> {
@@ -128,45 +104,44 @@ async function chooseGradualResponse(page: Page, timeConstant: string): Promise<
   const command = page.getByRole("group", { name: "Command set_duty" });
   await command.getByLabel("Response").selectOption({ label: "Sets a reading, and another reading follows gradually" });
   const effect = command.getByRole("group", { name: "Effect 1 of set_duty" });
-  await effect.getByLabel("Reading that follows").selectOption({ label: "e2e_cooler · temperature" });
+  await effect.getByLabel("Reading that follows").selectOption({ label: "temperature" });
   await effect.getByLabel("Gain").fill("-0.1");
   await effect.getByLabel("Time constant").fill(timeConstant);
 }
 
-test("a device gets a twin: an instrument and a gradual response are chosen, the binary's issue shows on its field, the twin is created, and the choices come back after a reload", async ({
+test("a device gets a twin: what it still needs is found before the behaviour, the instrument and a gradual response are chosen, the twin is created, and it is found created after a reload", async ({
   page,
   lab,
 }) => {
   await defineCooler(page);
+  await expect(page.getByText("Needed for a twin: 1")).toBeVisible();
+  await expect(step(page, /^Interface/)).toContainText("Valid");
   await step(page, /^Behaviour/).click();
-  await expect(page.getByRole("region", { name: "Behaviour of e2e_cooler" })).toBeVisible();
-  await expect(page.getByLabel("Twin name")).toHaveValue("e2e-cooler-twin");
-  await chooseThermistor(page);
-  await chooseGradualResponse(page, "-5");
-  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-
-  await page.getByRole("button", { name: "Create twin" }).click();
-  await expect(verdict(page, /The binary refuses the choices/)).toBeVisible();
-  const effect = page.getByRole("group", { name: "Effect 1 of set_duty" });
-  await expect(effect.getByLabel("Time constant")).toHaveAttribute("aria-invalid", "true");
-  await expect(
-    page.getByRole("region", { name: "Issues" }).getByText("e2e_cooler · set_duty · Time constant"),
-  ).toBeVisible();
-
-  await effect.getByLabel("Time constant").fill("180");
-  await page.getByRole("button", { name: "Create twin" }).click();
-  const reading = page.getByRole("group", { name: "Reading temperature" });
-  await expect(reading.getByText("Needs a resolution.")).toBeVisible();
-  await expect(effect.getByLabel("Time constant")).not.toHaveAttribute("aria-invalid", "true");
-  await reading.getByRole("button", { name: "Set it in the Interface step" }).click();
+  const first = page.getByRole("region", { name: "What the twin needs first" });
+  await expect(first).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create twin" })).toHaveCount(0);
+  await first.getByRole("button", { name: /temperature/ }).click();
   await expect(page.getByRole("region", { name: "Editing e2e_cooler" })).toBeVisible();
   await expect(page.getByLabel("Resolution", { exact: true })).toBeFocused();
   await page.getByLabel("Resolution", { exact: true }).fill("0.1");
   await expect(verdict(page, "Unsaved changes")).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
+  await expect(page.getByText("Ready for a twin")).toBeVisible();
+
   await step(page, /^Behaviour/).click();
   await expect(page.getByRole("region", { name: "Behaviour of e2e_cooler" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Twin", exact: true })).toBeFocused();
+  await expect(page.getByLabel("Twin name")).toHaveValue("e2e-cooler-twin");
+  await chooseThermistor(page);
+  await chooseGradualResponse(page, "-5");
+  const effect = page.getByRole("group", { name: "Effect 1 of set_duty" });
+  await expect(effect.getByText("Must be above zero")).toBeVisible();
+  await expect(effect.getByLabel("Time constant")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
+  await effect.getByLabel("Time constant").fill("180");
+  await expect(effect.getByText("Must be above zero")).toHaveCount(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole("button", { name: "Create twin" }).click();
   await expect(verdict(page, "Twin ready.")).toBeVisible();
@@ -176,6 +151,7 @@ test("a device gets a twin: an instrument and a gradual response are chosen, the
   expect(choices).toMatchObject({ id: "e2e-cooler-twin", kinds: [{ kind: "e2e_cooler" }] });
 
   await step(page, /^Check/).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Check", exact: true })).toBeFocused();
   const check = page.getByRole("region", { name: "Check of e2e_cooler" });
   await expect(check.getByText("The twin matches its device")).toBeVisible();
   await check.getByText("Technical details").click();
@@ -183,6 +159,7 @@ test("a device gets a twin: an instrument and a gradual response are chosen, the
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.reload();
+  await expect(step(page, /^Behaviour/)).toContainText("Created");
   await step(page, /^Behaviour/).click();
   await expect(page.getByLabel("Twin name")).toHaveValue("e2e-cooler-twin");
   const temperature = page.getByRole("group", { name: "Reading temperature" });
@@ -191,10 +168,10 @@ test("a device gets a twin: an instrument and a gradual response are chosen, the
   const again = page.getByRole("group", { name: "Effect 1 of set_duty" });
   await expect(again.getByLabel("Time constant")).toHaveValue("180");
   await expect(again.getByLabel("Gain")).toHaveValue("-0.1");
+  await expect(verdict(page, "Twin ready.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create twin" })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Create twin" }).click();
-  await expect(verdict(page, /A plant with this name already exists/)).toBeVisible();
-  await page.getByRole("button", { name: "Replace it" }).click();
+  await page.getByRole("button", { name: "Replace twin" }).click();
   await expect(verdict(page, "Twin ready.")).toBeVisible();
   await page.getByRole("button", { name: "Open as a plant" }).click();
   await expect(page).toHaveURL(/#\/plant\?domain=domains%2Fe2e-cooler-twin\.domain\.json/);

@@ -4,6 +4,18 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The binary tells the canvas everything a twin needs in one pass.** Every issue of `kind validate`, `kind twin` and
+  `domain validate` keeps `pointer` and `message` and gains `keyword` (the JSON Schema keyword that failed, or a stable
+  rule code such as `twin_member_required`, `twin_unit_required`, `twin_conversion_needed`, `twin_name_pattern`,
+  `twin_range`, `domain_rule`) and, for a rule about a named member, `member` (`resolution`, `writable`, `safe_stop`,
+  `unit`); `jsonschema.Error` and `model.Issue` carry them. The twin requirements of a kind file are reported all at once
+  (`component.TwinRequirements`, one implementation). New: `kind validate --stdin [--twin]` (one kind document from
+  standard input, at most 1 MiB, strict, writes nothing), `kind twin --suggest` (the binary's default choices for kind
+  files, `{choices}`, writes nothing), `component list --unit <u>` (instruments of that unit or a convertible one, exact
+  unit first, with `unit`, `range` and `match`). `cli-output-v0.1` gains `keyword`/`member` on issues, `kind_suggest`, and
+  `unit`/`range`/`match` on a component summary. The canvas bridge gains `kind.check` (`{content, twin?}`, the first
+  action with an input on standard input), `kind.suggest`, and `unit` on `component.list`.
+
 - **A kind file never carries `kind_digest`.** The `KIND` schema forbids the member (a stale digest used to be accepted and
   ignored), and `kind validate` and every `--kinds-dir` load refuse it at `/kind_digest`; a metric's `eu_range` and
   `instrument_range` need `min` below `max`. The plant wire contract digest changes (schema, one invalid fixture). The canvas

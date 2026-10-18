@@ -35,10 +35,20 @@ func (f *findings) examine(index int, kind *model.Kind, files KindFiles) {
 	digest, err := implementation(kind, files)
 	if err != nil {
 		f.problems = append(f.problems, err)
-		f.issues = append(f.issues, model.LocatedIssue(fmt.Sprintf("/kinds/%d/implements", index), err.Error()))
+		f.issues = append(f.issues, model.RuleIssue(fmt.Sprintf("/kinds/%d/implements", index), implementsKeyword(err), "implements", err.Error()))
 		return
 	}
 	f.checked = append(f.checked, model.ImplementsChecked{Kind: kind.Implements, KindDigest: digest})
+}
+
+func implementsKeyword(err error) string {
+	switch {
+	case errors.Is(err, ErrKindFileMissing):
+		return "implements_missing"
+	case errors.Is(err, ErrKindDrift):
+		return "implements_drift"
+	}
+	return "implements_failed"
 }
 
 func (f *findings) outcome(id string) ([]model.ImplementsChecked, error) {

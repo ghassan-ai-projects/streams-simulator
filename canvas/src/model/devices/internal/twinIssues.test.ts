@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { coolerDocument, instruments, kindOf, sensorDocument } from "../../../test/twinFixture";
-import { startingChoices } from "./twinDefaults";
-import { interfaceLabel, interfaceNeeds, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./twinIssues";
+import { cooler, coolerPath, sensor, startingChoices } from "../../../test/twinFixture";
+import { changeDrive, chooseInstrument, chooseResponse } from "./twinEdits";
+import { keepCurrentIssues, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./twinIssues";
 
-const kinds = [kindOf(coolerDocument), kindOf(sensorDocument)];
-const choices = startingChoices(kinds, instruments);
+const members = [cooler, sensor];
+const choices = startingChoices(members);
 
-function place(pointer: string, message = "refused") {
-  const [issue] = resolveTwinIssues(choices, [{ pointer, message }], kinds);
+function place(pointer: string, extra: { keyword?: string; member?: string } = {}) {
+  const [issue] = resolveTwinIssues(choices, [{ pointer, message: "raw words", ...extra }], members);
   if (issue === undefined) throw new Error("no issue");
   return issue;
 }
@@ -17,13 +17,13 @@ describe("placing the binary's issues", () => {
     ["/id", { scope: "twin", field: "id" }],
     ["/title", { scope: "twin", field: "title" }],
     ["/kinds", { scope: "twin", field: "kinds" }],
-    ["/kinds/0/kind", { scope: "kind", kind: "cooler", field: "kind" }],
-    ["/kinds/1/instance", { scope: "kind", kind: "sensor", field: "instance" }],
-    ["/kinds/0/metrics", { scope: "kind", kind: "cooler", field: "metrics" }],
-    ["/kinds/0/metrics/temperature", { scope: "metric", kind: "cooler", key: "temperature", field: "" }],
-    ["/kinds/0/metrics/temperature/instrument", { scope: "metric", key: "temperature", field: "instrument" }],
-    ["/kinds/0/metrics/duty/initial", { scope: "metric", key: "duty", field: "initial" }],
-    ["/kinds/0/commands/set_duty", { scope: "command", key: "set_duty", field: "", spot: "" }],
+    ["/kinds/0/kind", { scope: "kind", kind: coolerPath, field: "kind" }],
+    ["/kinds/1/instance", { scope: "kind", field: "instance" }],
+    ["/kinds/0/metrics", { scope: "kind", field: "metrics" }],
+    ["/kinds/0/metrics/temperature", { scope: "metric", kind: coolerPath, key: "m1", field: "" }],
+    ["/kinds/0/metrics/temperature/instrument", { scope: "metric", key: "m1", field: "instrument" }],
+    ["/kinds/0/metrics/duty/initial", { scope: "metric", key: "m2", field: "initial" }],
+    ["/kinds/0/commands/set_duty", { scope: "command", key: "c1", field: "", spot: "" }],
     ["/kinds/0/commands/set_duty/response", { scope: "command", field: "response", spot: "" }],
     ["/kinds/0/commands/set_duty/sets/duty", { scope: "command", field: "sets", spot: "duty" }],
     ["/kinds/0/commands/set_duty/drives", { scope: "command", field: "drives", spot: "" }],
@@ -33,7 +33,7 @@ describe("placing the binary's issues", () => {
     ["/kinds/0/commands/set_duty/drives/0/metric", { scope: "command", field: "follows", spot: "0" }],
     ["/kinds/0/commands/set_duty/drives/1/gain", { scope: "command", field: "gain", spot: "1" }],
     ["/kinds/0/commands/set_duty/drives/0/time_constant_s", { scope: "command", field: "time_constant_s", spot: "0" }],
-    ["/kinds/0/other", { scope: "kind", kind: "cooler", field: "other" }],
+    ["/kinds/0/other", { scope: "kind", kind: coolerPath, field: "other" }],
     ["", { scope: "elsewhere" }],
     ["/kinds/9/kind", { scope: "elsewhere" }],
     ["/kinds/x/kind", { scope: "elsewhere" }],
@@ -41,84 +41,75 @@ describe("placing the binary's issues", () => {
     expect(place(pointer)).toMatchObject(expected);
   });
 
-  it("unescapes pointer parts", () => {
-    expect(place("/kinds/0/metrics/a~1b~0c/unit")).toMatchObject({ scope: "metric", key: "a/b~c", field: "unit" });
+  it("names a reading that is not in the device with no key, and unescapes pointer parts", () => {
+    expect(place("/kinds/0/metrics/a~1b~0c/unit")).toMatchObject({ scope: "metric", key: "", field: "unit" });
+  });
+
+  it("says each issue in plain words and keeps the binary's own words aside", () => {
+    const issue = place("/kinds/0/commands/set_duty/drives/0/time_constant_s", { keyword: "exclusiveMinimum" });
+    expect(issue).toMatchObject({ text: "Must be above zero", message: "raw words", keyword: "exclusiveMinimum" });
+    expect(issue.pointer).toBe("/kinds/0/commands/set_duty/drives/0/time_constant_s");
+    expect(
+      place("/kinds/0/metrics/temperature/instrument", { keyword: "twin_conversion_needed", member: "unit" }).text,
+    ).toBe("This instrument measures a different unit");
+    expect(place("/kinds/0/kind", { keyword: "twin_member_required", member: "resolution" }).text).toBe(
+      "Needs a resolution",
+    );
+    expect(place("/id").text).toBe("The binary does not accept this");
   });
 
   it("finds the messages on one field", () => {
     const issues = resolveTwinIssues(
       choices,
       [
-        { pointer: "/kinds/0/commands/set_duty/drives/0/gain", message: "zero" },
-        { pointer: "/kinds/0/commands/set_duty/drives/1/gain", message: "other" },
+        { pointer: "/kinds/0/commands/set_duty/drives/0/gain", message: "zero", keyword: "minimum" },
+        { pointer: "/kinds/0/commands/set_duty/drives/1/gain", message: "other", keyword: "maximum" },
       ],
-      kinds,
+      members,
     );
-    const where = { scope: "command", kind: "cooler", key: "set_duty", field: "gain" } as const;
-    expect(twinIssuesOn(issues, { ...where, spot: "0" })).toEqual(["zero"]);
-    expect(twinIssuesOn(issues, { ...where, spot: "1" })).toEqual(["other"]);
+    const where = { scope: "command", kind: coolerPath, key: "c1", field: "gain" } as const;
+    expect(twinIssuesOn(issues, { ...where, spot: "0" })).toEqual(["Below the lowest allowed value"]);
+    expect(twinIssuesOn(issues, { ...where, spot: "1" })).toEqual(["Above the highest allowed value"]);
     expect(twinIssuesOn(issues, where)).toEqual([]);
   });
 
   it("titles an issue by the device, the item and the field", () => {
-    expect(twinIssueTitle(place("/kinds/0/commands/set_duty/drives/0/time_constant_s"))).toBe(
-      "cooler · set_duty · Time constant",
-    );
-    expect(twinIssueTitle(place("/id"))).toBe("Twin name");
-    expect(twinIssueTitle(place("/kinds/0/metrics/duty"))).toBe("cooler · duty");
-    expect(twinIssueTitle(place(""))).toBe("Twin");
-    expect(twinIssueTitle(place("/kinds/0/other"))).toBe("cooler");
+    const title = (pointer: string) => twinIssueTitle(place(pointer), members);
+    expect(title("/kinds/0/commands/set_duty/drives/0/time_constant_s")).toBe("cooler · set_duty · Time constant");
+    expect(title("/id")).toBe("Twin name");
+    expect(title("/kinds/0/metrics/duty")).toBe("cooler · duty");
+    expect(title("")).toBe("Twin");
+    expect(title("/kinds/0/other")).toBe("cooler");
+    expect(title("/kinds/1/instance")).toBe("sensor · Name in the twin");
   });
 });
 
-const refusal = (index: number, field = "resolution", section = "metrics") =>
-  `kind file "cooler": component: the kind file holds what a twin cannot reproduce: /${section}/${String(index)} needs "${field}": the interface a twin reproduces always states it`;
+describe("issues that no longer describe the choices", () => {
+  const first = chooseResponse(choices, coolerPath, "c1", "first_order");
+  const driven = changeDrive(first, { kind: coolerPath, command: "c1", index: 0 }, { timeConstantS: -5, gain: 1 });
+  const issues = resolveTwinIssues(
+    driven,
+    [
+      { pointer: "/kinds/0/commands/set_duty/drives/0/time_constant_s", message: "slow", keyword: "exclusiveMinimum" },
+      { pointer: "/kinds/0/metrics/temperature/instrument", message: "unit", keyword: "twin_conversion_needed" },
+      { pointer: "", message: "root" },
+    ],
+    members,
+  );
 
-describe("a kind file that lacks what a twin needs", () => {
-  it("is placed on the reading it names, in plain words", () => {
-    const issue = place("/kinds/0/kind", refusal(0));
-    expect(issue).toEqual({
-      scope: "metric",
-      kind: "cooler",
-      key: "temperature",
-      field: "resolution",
-      spot: "",
-      message: "Needs a resolution.",
-    });
-    expect(twinIssueTitle(issue)).toBe("cooler · temperature · Resolution");
-    expect(place("/kinds/0/kind", refusal(1, "scan_class"))).toMatchObject({
-      key: "duty",
-      message: "Needs a scan class.",
-    });
-    expect(place("/kinds/0/kind", refusal(0, "writable"))).toMatchObject({
-      field: "writable",
-      message: "Needs a writable.",
-    });
+  it("drops an issue when the value it points at has changed, and keeps the others", () => {
+    const corrected = changeDrive(driven, { kind: coolerPath, command: "c1", index: 0 }, { timeConstantS: 30 });
+    const kept = keepCurrentIssues(issues, driven, corrected, members);
+    expect(kept.map((issue) => issue.field)).toEqual(["instrument", ""]);
+    const otherwise = chooseInstrument(driven, coolerPath, "m1", "streamsim/thermistor@1");
+    expect(keepCurrentIssues(issues, driven, otherwise, members).map((issue) => issue.field)).toEqual([
+      "time_constant_s",
+      "",
+    ]);
   });
 
-  it("is placed on the command it names", () => {
-    const issue = place("/kinds/0/kind", refusal(0, "safe_stop", "commands"));
-    expect(issue).toMatchObject({ scope: "command", kind: "cooler", key: "set_duty", field: "safe_stop" });
-    expect(issue.message).toBe("Needs a safe stop.");
-    expect(interfaceNeeds([issue], "command", "cooler", "set_duty")).toEqual([issue]);
-    expect(interfaceNeeds([issue], "metric", "cooler", "set_duty")).toEqual([]);
-  });
-
-  it("stays on the device when the reading cannot be found or the message says something else", () => {
-    expect(place("/kinds/0/kind", refusal(9))).toMatchObject({ scope: "kind", field: "kind" });
-    expect(place("/kinds/0/kind", "no kind file defines it")).toMatchObject({ scope: "kind", field: "kind" });
-    expect(place("/kinds/0/instance", refusal(0))).toMatchObject({ scope: "kind", field: "instance" });
-  });
-
-  it("lists what a reading needs from its interface, and words the field for the interface form", () => {
-    const issues = resolveTwinIssues(choices, [{ pointer: "/kinds/0/kind", message: refusal(0) }], kinds);
-    expect(interfaceNeeds(issues, "metric", "cooler", "temperature")).toEqual(issues);
-    expect(interfaceNeeds(issues, "metric", "cooler", "duty")).toEqual([]);
-    const choiceIssue = place("/kinds/0/metrics/temperature/instrument");
-    expect(interfaceNeeds([choiceIssue], "metric", "cooler", "temperature")).toEqual([]);
-    expect(interfaceLabel("resolution")).toBe("Resolution");
-    expect(interfaceLabel("scan_class")).toBe("Scan class");
-    expect(interfaceLabel("writable")).toBe("Setpoint");
-    expect(interfaceLabel("safe_stop")).toBe("Safe stop");
+  it("keeps every issue while nothing it points at has changed", () => {
+    expect(keepCurrentIssues(issues, driven, driven, members)).toEqual(issues);
+    expect(keepCurrentIssues([], driven, first, members)).toEqual([]);
   });
 });

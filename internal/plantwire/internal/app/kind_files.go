@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -20,29 +21,58 @@ func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.Implem
 	return domain.CheckImplements(spec, kindFiles)
 }
 
-func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[string]map[string]any) (T, *model.DomainSpec, error)) (T, error) {
-	var none T
+func WithKindFiles[T any](paths, dirs []string, use func(map[string]map[string]any) (T, error)) (T, error) {
 	kindFiles, err := readKindFiles(paths, dirs)
 	if err != nil {
+		var none T
 		return none, err
 	}
-	built, spec, err := scaffold(kindFiles)
-	if err != nil {
-		return none, err
-	}
-	if _, err := domain.CheckImplements(spec, kindFiles); err != nil {
-		return none, fmt.Errorf("plantwire: check implements: %w", model.WithSource(err, source))
-	}
-	return built, nil
+	return use(kindFiles)
 }
 
-func ValidateKindFiles(paths []string) ([]domain.KindSummary, error) {
+func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[string]map[string]any) (T, *model.DomainSpec, error)) (T, error) {
+	return WithKindFiles(paths, dirs, func(kindFiles map[string]map[string]any) (T, error) {
+		var none T
+		built, spec, err := scaffold(kindFiles)
+		if err != nil {
+			return none, err
+		}
+		if _, err := domain.CheckImplements(spec, kindFiles); err != nil {
+			return none, fmt.Errorf("plantwire: check implements: %w", model.WithSource(err, source))
+		}
+		return built, nil
+	})
+}
+
+func ValidateKindFilesWith(paths []string, rules domain.TwinRules) ([]domain.KindSummary, error) {
 	sources, err := files.Paths(paths)
 	if err != nil {
 		return nil, err
 	}
-	_, summaries, err := domain.ParseKindFiles(sources)
-	return summaries, err
+	return validateSources(sources, rules)
+}
+
+func ValidateKindStream(reader io.Reader, rules domain.TwinRules) (domain.KindSummary, error) {
+	source, err := files.Stream(reader)
+	if err != nil {
+		return domain.KindSummary{}, err
+	}
+	summaries, err := validateSources([]domain.KindSource{source}, rules)
+	if err != nil {
+		return domain.KindSummary{}, err
+	}
+	return summaries[0], nil
+}
+
+func validateSources(sources []domain.KindSource, rules domain.TwinRules) ([]domain.KindSummary, error) {
+	kindFiles, summaries, err := domain.ParseKindFiles(sources)
+	if err != nil {
+		return nil, err
+	}
+	if err := domain.CheckTwinRules(kindFiles, summaries, rules); err != nil {
+		return nil, err
+	}
+	return summaries, nil
 }
 
 func readKindFiles(paths, dirs []string) (domain.KindFiles, error) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blankKind, changeMetric, addMetric } from "../../../model/devices";
+import { addMetric, blankKind, changeMetric, localIssue } from "../../../model/devices";
 import type { DeviceFailure } from "../../ports";
 import type { Draft } from "./deviceDraft";
 import { saveStatusOf } from "./saveStatus";
@@ -13,7 +13,7 @@ const draft: Draft = {
   selected: { part: "kind" },
   save: { kind: "idle" },
   check: { kind: "unchecked" },
-  issues: [],
+  review: { state: "idle", schema: [], needs: [] },
 };
 const failure = (kindName: DeviceFailure["kind"], message: string): DeviceFailure =>
   kindName === "refused"
@@ -27,6 +27,11 @@ describe("save status", () => {
     [
       { save: { kind: "write-failed", failure: failure("conflict", "changed") } },
       "Not saved: the file changed on disk. Reload it to continue.",
+      "warn",
+    ],
+    [
+      { save: { kind: "refused", failure: failure("refused", "bad") } },
+      "Not saved: the binary refuses it (bad). Fix it to save.",
       "warn",
     ],
     [{ check: { kind: "unchecked" } }, "Not checked yet.", ""],
@@ -60,9 +65,19 @@ describe("save status", () => {
     const refused = saveStatusOf({
       ...draft,
       check: { kind: "refused", failure: failure("refused", "bad") },
-      issues: [{ part: "kind", key: "", field: "kind", message: "x" }],
+      review: { state: "done", schema: [localIssue("kind", "", "kind", "x")], needs: [] },
     });
     expect(refused.text).toBe("Saved, but the binary refuses it: 1 issue.");
+    const blocked = saveStatusOf({
+      ...draft,
+      save: { kind: "refused", failure: failure("refused", "bad") },
+      review: {
+        state: "done",
+        schema: [localIssue("kind", "", "kind", "x"), localIssue("kind", "", "kind", "y")],
+        needs: [],
+      },
+    });
+    expect(blocked.text).toBe("Not saved: the binary refuses it (2 issues). Fix it to save.");
   });
 
   it("asks for names when the unsaved device cannot be saved yet", () => {

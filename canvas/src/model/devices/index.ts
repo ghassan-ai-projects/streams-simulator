@@ -8,6 +8,7 @@ export type {
   Instrument,
   KindChoice,
   KindFile,
+  Member,
   Metric,
   MetricChoice,
   Selection,
@@ -27,7 +28,16 @@ export {
   renameKind,
 } from "./internal/kindEdits";
 export { blankKind, parseKind, serialiseKind } from "./internal/kindFile";
-export { issueSelection, issueTitle, issuesOn, resolveIssues } from "./internal/issues";
+export {
+  issueSelection,
+  issueText,
+  issueTitle,
+  issuesOn,
+  localIssue,
+  resolveIssues,
+  schemaIssues,
+  twinNeeds,
+} from "./internal/issues";
 export {
   chosenInstrumentWords,
   instrumentCount,
@@ -36,29 +46,13 @@ export {
   noInstrument,
   rangeWords,
   searchInstruments,
-  sortInstruments,
   takesInstrument,
 } from "./internal/instruments";
 export { enumOptions, withEnumOptions } from "./internal/options";
-export {
-  deviceNameProblem,
-  devicePath,
-  draftProblems,
-  idRule,
-  looksLikeId,
-  rangeHint,
-  twinCommandRule,
-  twinKindRule,
-  twinReadingRule,
-} from "./internal/rules";
-export {
-  askedCommands,
-  commandChoiceOf,
-  metricChoiceOf,
-  numericArguments,
-  reconcileChoices,
-  startingChoices,
-} from "./internal/twinDefaults";
+export { spaced } from "../shared/words";
+export { deviceNameProblem, devicePath, draftProblems, rangeHint } from "./internal/rules";
+export { askedCommands, commandChoiceOf, metricChoiceOf, numericArguments } from "./internal/twinMembers";
+export { reconcileChoices } from "./internal/twinReconcile";
 export {
   addDrive,
   changeDrive,
@@ -71,15 +65,17 @@ export {
   setArgument,
   startAt,
 } from "./internal/twinEdits";
-export { parseChoices, responseOf, serialiseChoices } from "./internal/twinFile";
-export { interfaceLabel, interfaceNeeds, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
-export { choiceProblems, twinDomainPath, twinNameLooksRight, twinNameRule, twinPath } from "./internal/twinRules";
+export { choicesOfDocument, parseChoices, responseOf } from "./internal/twinFile";
+export { keyChoices, serialiseChoices } from "./internal/twinKeys";
+export { keepCurrentIssues, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
+export { choiceProblems, twinDomainPath, twinPath } from "./internal/twinRules";
 export {
   driveFollows,
   effectWords,
   followChoices,
   followTarget,
   gainHint,
+  noFollowerHint,
   partsWords,
   responseChoices,
   settableChoices,

@@ -10,6 +10,8 @@ export interface Transport {
 interface WireIssue {
   readonly pointer: string;
   readonly message: string;
+  readonly keyword?: string;
+  readonly member?: string;
 }
 
 export interface WireProblem {
@@ -126,7 +128,15 @@ function wireProblem(status: number, value: unknown): WireProblem {
 function issueList(value: unknown): readonly WireIssue[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
-    if (!isRecord(entry) || typeof entry.pointer !== "string" || typeof entry.message !== "string") return [];
-    return [{ pointer: entry.pointer, message: entry.message }];
+    if (!isRecord(entry) || typeof entry.message !== "string") return [];
+    const { keyword, member } = entry;
+    return [
+      {
+        pointer: text(entry.pointer),
+        message: entry.message,
+        ...(typeof keyword === "string" && keyword !== "" ? { keyword } : {}),
+        ...(typeof member === "string" && member !== "" ? { member } : {}),
+      },
+    ];
   });
 }

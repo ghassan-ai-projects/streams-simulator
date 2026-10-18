@@ -1,6 +1,17 @@
 package domain
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var errConversionNeeded = errors.New("component: the instrument's unit needs a conversion")
+
+type conversionNeeded struct{ message string }
+
+func (c conversionNeeded) Error() string { return c.message }
+
+func (c conversionNeeded) Is(target error) bool { return target == errConversionNeeded }
 
 func (t *twinBuild) attachInstrument(plan *metricPlan, at string) error {
 	if plan.choice.Instrument == instrumentNone {
@@ -8,10 +19,17 @@ func (t *twinBuild) attachInstrument(plan *metricPlan, at string) error {
 	}
 	instrument, err := t.lib.instrumentFor(plan.choice.Instrument, plan.file)
 	if err != nil {
-		return t.refuse(ErrInstrumentMismatch, at, "metric %q: %v", plan.file.Name, err)
+		return t.refuseRule(ErrInstrumentMismatch, instrumentRule(err), at, "metric %q: %v", plan.file.Name, err)
 	}
 	plan.instrument = instrument
 	return nil
+}
+
+func instrumentRule(err error) twinRule {
+	if errors.Is(err, errConversionNeeded) {
+		return twinRule{KeywordConversionNeeded, "unit"}
+	}
+	return ruleOf(ErrInstrumentMismatch)
 }
 
 func (l *Library) instrumentFor(ref string, metric kindMetric) (*Instrument, error) {
@@ -48,8 +66,8 @@ func (l *Library) sameUnit(instrument *Instrument, metric kindMetric) error {
 		return fmt.Errorf("%s measures %s in %s: %w", instrument.ID, instrument.UnitFamily, instrument.Unit, err)
 	}
 	if !conv.identity() {
-		return fmt.Errorf("%s reads in %s, which needs a conversion from the metric's %s: a twin keeps the unit of its kind file",
-			instrument.ID, instrument.Unit, metric.Unit)
+		return conversionNeeded{fmt.Sprintf("%s reads in %s, which needs a conversion from the metric's %s: a twin keeps the unit of its kind file",
+			instrument.ID, instrument.Unit, metric.Unit)}
 	}
 	return nil
 }

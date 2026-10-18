@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coolerDocument, instruments, kindOf } from "../../../test/twinFixture";
-import { startingChoices } from "./twinDefaults";
+import { coolerPath, startingChoices } from "../../../test/twinFixture";
 import {
   addDrive,
   changeDrive,
@@ -10,61 +9,63 @@ import {
   retitleTwin,
   setArgument,
 } from "./twinEdits";
-import { choiceProblems, twinDomainPath, twinNameLooksRight, twinPath } from "./twinRules";
+import { choiceProblems, twinDomainPath, twinPath } from "./twinRules";
 
-const start = startingChoices([kindOf(coolerDocument)], instruments);
-const at = { kind: "cooler", command: "set_duty", index: 0 };
+const start = startingChoices();
+const at = { kind: coolerPath, command: "c1", index: 0 };
 
-describe("twin names and paths", () => {
+describe("twin paths", () => {
   it("keeps the choices beside the device and the plant in domains", () => {
     expect(twinPath("cooler")).toBe("twins/cooler.twin.json");
     expect(twinDomainPath("cooler-twin")).toBe("domains/cooler-twin.domain.json");
   });
-
-  it("knows the name the binary accepts", () => {
-    expect(twinNameLooksRight("cooler-twin")).toBe(true);
-    expect(twinNameLooksRight("Cooler")).toBe(false);
-    expect(twinNameLooksRight("ab")).toBe(false);
-    expect(twinNameLooksRight("1abc")).toBe(false);
-  });
 });
 
 describe("what must be filled in before the binary is asked", () => {
-  it("accepts the starting choices", () => {
+  it("accepts the suggested choices", () => {
     expect(choiceProblems(start)).toEqual([]);
   });
 
-  it("asks for a name that can be a file, a title and a name for each device", () => {
-    const problems = choiceProblems(renameInstance(retitleTwin(renameTwin(start, "bad name"), " "), "cooler", " "));
+  it("asks for a name, a title and a name for each device, and leaves the pattern to the binary", () => {
+    const problems = choiceProblems(renameInstance(retitleTwin(renameTwin(start, " "), " "), coolerPath, " "));
     expect(problems.map((problem) => [problem.scope, problem.field])).toEqual([
       ["twin", "id"],
       ["twin", "title"],
       ["kind", "instance"],
     ]);
-    expect(choiceProblems(renameTwin(start, "")).map((problem) => problem.field)).toEqual(["id"]);
-    expect(choiceProblems(renameTwin(start, "Plant_A.1"))).toEqual([]);
+    expect(choiceProblems(renameTwin(start, "Plant A.1"))).toEqual([]);
   });
 
   it("asks which reading a command sets, and a complete effect for a first order response", () => {
-    const unset = setArgument(start, "cooler", "set_duty", "duty", "");
-    expect(choiceProblems(unset)).toMatchObject([{ scope: "command", key: "set_duty", field: "sets" }]);
-    const first = chooseResponse(start, "cooler", "set_duty", "first_order");
+    const unset = setArgument(start, coolerPath, "c1", "duty", "");
+    expect(choiceProblems(unset)).toMatchObject([{ scope: "command", key: "c1", field: "sets" }]);
+    const first = chooseResponse(start, coolerPath, "c1", "first_order");
     expect(choiceProblems(first)).toMatchObject([{ field: "drives" }]);
-    const full = changeDrive(first, at, { kind: "cooler", metric: "temperature", gain: 1, timeConstantS: 5 });
+    const full = changeDrive(first, at, { kind: coolerPath, metric: "m1", gain: 1, timeConstantS: 5 });
     expect(choiceProblems(full)).toEqual([]);
     const partial = changeDrive(full, at, { gain: null });
     expect(choiceProblems(partial)).toMatchObject([{ field: "drives" }]);
-    expect(choiceProblems(addDrive(full, "cooler", "set_duty"))).toMatchObject([{ field: "drives" }]);
+    expect(choiceProblems(addDrive(full, coolerPath, "c1"))).toMatchObject([{ field: "drives" }]);
     const bare = changeDrive(full, at, { from: "" });
     expect(choiceProblems(bare)).toHaveLength(1);
   });
 
+  it("says a time constant at or below zero must be above zero, on the effect that has it", () => {
+    const first = chooseResponse(start, coolerPath, "c1", "first_order");
+    const full = changeDrive(first, at, { kind: coolerPath, metric: "m1", gain: 1, timeConstantS: -5 });
+    expect(choiceProblems(full)).toMatchObject([
+      { scope: "command", key: "c1", field: "time_constant_s", spot: "0", text: "Must be above zero" },
+    ]);
+    expect(choiceProblems(changeDrive(full, at, { timeConstantS: 0 }))).toHaveLength(1);
+    expect(choiceProblems(changeDrive(full, at, { timeConstantS: 0.5 }))).toEqual([]);
+  });
+
   it("does not ask for a first order effect when there are none", () => {
-    const first = chooseResponse(start, "cooler", "set_duty", "first_order");
+    const first = chooseResponse(start, coolerPath, "c1", "first_order");
     const kind = first.kinds[0];
-    const command = kind?.commands.set_duty;
+    const command = kind?.commands.c1;
     if (kind === undefined || command === undefined) throw new Error("missing");
-    const empty = { ...first, kinds: [{ ...kind, commands: { set_duty: { ...command, drives: [] } } }] };
+    const empty = { ...first, kinds: [{ ...kind, commands: { c1: { ...command, drives: [] } } }] };
     expect(choiceProblems(empty)).toMatchObject([{ field: "drives" }]);
   });
 });

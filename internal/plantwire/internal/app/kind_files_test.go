@@ -125,18 +125,18 @@ func TestCheckImplementsRefusesAMalformedKindFileInAnyDirectoryOfADomainThatImpl
 func TestValidateKindFilesSummarisesEachFileAndNamesTheOneItCannotRead(t *testing.T) {
 	t.Parallel()
 	dir := kindsDirectoryWith(t, map[string]string{"pump.kind.json": pumpKindContent(t), "bad.kind.json": "{"})
-	summaries, err := ValidateKindFiles([]string{filepath.Join(dir, "pump.kind.json")})
+	summaries, err := ValidateKindFilesWith([]string{filepath.Join(dir, "pump.kind.json")}, nil)
 	if err != nil || len(summaries) != 1 || summaries[0].Kind != "pump" || summaries[0].Metrics != 2 || summaries[0].Commands != 3 {
-		t.Fatalf("ValidateKindFiles = %+v, %v, want the pump kind file summarized", summaries, err)
+		t.Fatalf("ValidateKindFilesWith = %+v, %v, want the pump kind file summarized", summaries, err)
 	}
 	bad := filepath.Join(dir, "bad.kind.json")
-	_, err = ValidateKindFiles([]string{bad})
+	_, err = ValidateKindFilesWith([]string{bad}, nil)
 	invalid, ok := model.AsValidationError(err)
 	if !ok || invalid.Contract != model.ContractKindFile || invalid.Source != bad || len(invalid.Issues) != 1 || invalid.Issues[0].Located ||
 		!strings.Contains(err.Error(), "plantwire: kind file "+bad) {
 		t.Fatalf("a file that is not JSON: err = %v, want one unlocated kind-file issue naming %s", err, bad)
 	}
-	if _, err := ValidateKindFiles([]string{filepath.Join(dir, "absent.kind.json")}); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := ValidateKindFilesWith([]string{filepath.Join(dir, "absent.kind.json")}, nil); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("a missing file: err = %v, want fs.ErrNotExist", err)
 	}
 }

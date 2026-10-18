@@ -38,10 +38,10 @@ export interface TwinChoices {
 export interface Instrument {
   readonly ref: string;
   readonly title: string;
-  readonly family: string;
   readonly unit: string;
   readonly min: number | null;
   readonly max: number | null;
+  readonly match: "exact" | "convertible" | "";
   readonly words: string;
 }
 
@@ -51,5 +51,8 @@ export interface TwinIssue {
   readonly key: string;
   readonly field: string;
   readonly spot: string;
+  readonly pointer: string;
+  readonly keyword: string;
   readonly message: string;
+  readonly text: string;
 }

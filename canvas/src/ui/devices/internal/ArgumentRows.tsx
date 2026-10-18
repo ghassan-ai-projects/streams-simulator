@@ -3,7 +3,7 @@ import { addArgument, argumentTypeChoices, changeArgument, issuesOn, removeArgum
 import type { ArgRow, Command } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import styles from "./Devices.module.css";
-import { ItemIssues, NumberInput, Select } from "./Field";
+import { ItemIssues, ItemNeeds, NumberInput, Select, Toggle } from "./Field";
 import type { FormProps } from "./formProps";
 
 interface RowProps {
@@ -17,7 +17,7 @@ function Limits({ row, label, change }: RowProps) {
     <>
       <NumberInput
         value={row.min}
-        name={`${label} minimum`}
+        label={`${label} minimum`}
         placeholder="min"
         onChange={(min) => {
           change({ min });
@@ -25,7 +25,7 @@ function Limits({ row, label, change }: RowProps) {
       />
       <NumberInput
         value={row.max}
-        name={`${label} maximum`}
+        label={`${label} maximum`}
         placeholder="max"
         onChange={(max) => {
           change({ max });
@@ -56,16 +56,13 @@ function ArgumentRow({ row, label, change, remove }: RowProps & { readonly remov
         }}
       />
       <Limits row={row} label={label} change={change} />
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          checked={row.required}
-          onChange={(event) => {
-            change({ required: event.target.checked });
-          }}
-        />
-        Required
-      </label>
+      <Toggle
+        checked={row.required}
+        words="Required"
+        onChange={(required) => {
+          change({ required });
+        }}
+      />
       <button type="button" className={panel.icon} aria-label={`Remove ${label.toLowerCase()}`} onClick={remove}>
         <X size={16} aria-hidden="true" />
       </button>
@@ -82,7 +79,7 @@ function AddArgument({ onAdd }: { readonly onAdd: () => void }) {
   );
 }
 
-export function ArgumentRows({ command, devices, issues }: FormProps & { readonly command: Command }) {
+export function ArgumentRows({ command, devices, issues, needs }: FormProps & { readonly command: Command }) {
   const { args } = command;
   if (args.kind === "custom") {
     return (
@@ -95,6 +92,7 @@ export function ArgumentRows({ command, devices, issues }: FormProps & { readonl
     <section aria-labelledby="arguments-title" className={panel.group}>
       <h3 id="arguments-title">Arguments</h3>
       <ItemIssues messages={issuesOn(issues, "command", command.key, "args_schema")} />
+      <ItemNeeds messages={issuesOn(needs, "command", command.key, "args_schema")} />
       <ul className={styles.argRows}>
         {args.rows.map((row, index) => (
           <ArgumentRow

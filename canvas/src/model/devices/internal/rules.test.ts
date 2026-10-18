@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { argumentsOf, schemaOf } from "./args";
-import { issueSelection, issueTitle, issuesOn, resolveIssues } from "./issues";
+import {
+  issueSelection,
+  issueText,
+  issueTitle,
+  issuesOn,
+  localIssue,
+  resolveIssues,
+  schemaIssues,
+  twinNeeds,
+} from "./issues";
 import { addArgument, addCommand, addMetric, changeArgument, changeMetric } from "./kindEdits";
 import { blankKind, parseKind } from "./kindFile";
 import { enumOptions, withEnumOptions } from "./options";
-import { deviceNameProblem, devicePath, draftProblems, looksLikeId, rangeHint } from "./rules";
+import { deviceNameProblem, devicePath, draftProblems, rangeHint } from "./rules";
 import { choicesFor, commandFacts, kindFacts, readingFacts, riskChoices, stemOf, typeChoices } from "./words";
 import type { KindFile } from "./types";
 
@@ -21,24 +30,13 @@ function fan(): KindFile {
 
 describe("name rules", () => {
   it.each([
-    ["fan", true],
-    ["fan-1.v2:a_b", true],
-    ["", false],
-    ["-fan", false],
-    ["fan one", false],
-    ["a".repeat(129), false],
-  ])("judges %j as a kind name: %s", (name, fits) => {
-    expect(looksLikeId(name)).toBe(fits);
-  });
-
-  it.each([
     ["", "Give the device a name."],
-    ["fan one", "Use letters, digits and . _ - only, starting with a letter or digit."],
-    ["fan:1", "Use letters, digits and . _ - only, starting with a letter or digit."],
+    ["  ", "Give the device a name."],
     ["Fan", "A device named Fan already exists."],
     ["fan", "A device named fan already exists."],
+    ["fan one", ""],
     ["pump", ""],
-  ])("judges %j as a new device name: %j", (name, problem) => {
+  ])("judges %j as a new device name: %j, and leaves the pattern to the binary", (name, problem) => {
     expect(deviceNameProblem(name, ["Fan"])).toBe(problem);
   });
 
@@ -79,28 +77,83 @@ describe("the binary's issues placed on the draft", () => {
 
   it("pins a pointer to the reading or command it names, by key", () => {
     const issues = resolveIssues(kind, [
-      { pointer: "/metrics/1/data_type", message: "bad type" },
-      { pointer: "/commands/0/args_schema/properties", message: "bad args" },
+      { pointer: "/metrics/1/data_type", message: "bad type", keyword: "enum" },
+      { pointer: "/commands/0/args_schema/properties", message: "bad args", keyword: "type" },
       { pointer: "/metrics/0", message: "whole reading" },
-      { pointer: "/kind", message: "bad name" },
-      { pointer: "/metrics", message: "too many" },
+      { pointer: "/kind", message: "bad name", keyword: "pattern" },
+      { pointer: "/metrics", message: "too many", keyword: "maxItems" },
       { pointer: "/metrics/9/name", message: "gone" },
       { pointer: "/metrics/x/name", message: "odd" },
-      { pointer: "", message: "root" },
+      { pointer: "", message: "root", keyword: "json" },
+      { pointer: "/colour", message: "unknown", keyword: "additionalProperties", member: "colour" },
     ]);
     expect(issues.map((issue) => `${issue.part}:${issue.key}:${issue.field}`)).toEqual([
       "metric:m2:data_type",
       "command:c1:args_schema",
       "metric:m1:",
       "kind::kind",
+      "kind::metrics",
       "file::",
       "file::",
       "file::",
-      "file::",
+      "kind::",
     ]);
-    expect(issuesOn(issues, "metric", "m2", "data_type")).toEqual(["bad type"]);
-    expect(issuesOn(issues, "metric", "m1", "")).toEqual(["whole reading"]);
+    expect(issuesOn(issues, "metric", "m2", "data_type")).toEqual(["Choose one of the offered values"]);
+    expect(issuesOn(issues, "metric", "m1", "")).toEqual(["The binary does not accept this"]);
     expect(issuesOn(issues, "metric", "m2", "name")).toEqual([]);
+  });
+
+  it("places a missing member on the field it names, and says it in plain words", () => {
+    const issues = resolveIssues(kind, [
+      {
+        pointer: "/metrics/0/resolution",
+        message: 'needs "resolution"',
+        keyword: "twin_member_required",
+        member: "resolution",
+      },
+      { pointer: "/metrics/0", message: "missing name", keyword: "required", member: "name" },
+      { pointer: "/metrics/0/unit", message: "metric needs a unit", keyword: "twin_unit_required", member: "unit" },
+      { pointer: "/metrics/0/eu_range", message: "min above max", keyword: "twin_range", member: "eu_range" },
+      {
+        pointer: "/metrics/1/resolution",
+        message: 'needs "resolution"',
+        keyword: "twin_member_required",
+        member: "resolution",
+      },
+      {
+        pointer: "/commands/0/safe_stop",
+        message: 'needs "safe_stop"',
+        keyword: "twin_member_required",
+        member: "safe_stop",
+      },
+    ]);
+    expect(issues.map((issue) => `${issue.part}:${issue.key}:${issue.field}:${issue.text}`)).toEqual([
+      "metric:m1:resolution:Needs a resolution",
+      "metric:m1:name:Name is required",
+      "metric:m1:unit:duty needs a unit",
+      "metric:m1:eu_range:The minimum must be below the maximum",
+      "metric:m2:resolution:Needs a resolution",
+      "command:c1:safe_stop:Needs a safe-stop choice",
+    ]);
+    expect(issues.map((issue) => issue.twin)).toEqual([true, false, true, true, true, true]);
+    expect(schemaIssues(issues)).toHaveLength(1);
+    expect(twinNeeds(issues)).toHaveLength(5);
+    expect(issues[0]?.message).toBe('needs "resolution"');
+    expect(issues[0]?.keyword).toBe("twin_member_required");
+  });
+
+  it("words an issue that has no place on its own", () => {
+    expect(issueText({ pointer: "/kinds/0/implements", message: "x", keyword: "implements_drift" })).toBe(
+      "The twin no longer matches this device",
+    );
+    expect(issueText({ pointer: "", message: "x", keyword: "required", member: "unit" })).toBe("Unit is required");
+    expect(issueText({ pointer: "", message: "x" })).toBe("The binary does not accept this");
+    expect(localIssue("kind", "", "kind", "Give the device a name.")).toMatchObject({
+      keyword: "",
+      twin: false,
+      text: "Give the device a name.",
+      message: "Give the device a name.",
+    });
   });
 
   it("says which item an issue is about, in words", () => {

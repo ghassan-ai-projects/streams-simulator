@@ -29,9 +29,9 @@ func (t *twinBuild) loadKind(i int, choice kindChoice, files map[string]map[stri
 	if !found {
 		return nil, t.refuse(ErrNoKindFile, at, "no kind file defines kind %q (%d kind files loaded)", choice.Kind, len(files))
 	}
-	file, err := readKind(doc)
-	if err != nil {
-		return nil, t.refuse(err, at, "kind file %q: %v", choice.Kind, err)
+	file, issues := readKind(doc)
+	if len(issues) > 0 {
+		return nil, t.refuseKindFile(choice.Kind, at, issues)
 	}
 	return &twinKind{index: i, choice: choice, file: file, actuated: map[string]bool{}}, nil
 }

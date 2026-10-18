@@ -1,26 +1,41 @@
+import { issueText } from "../../../model/devices";
 import { counted } from "../../../model/workspace";
 import type { DeviceFailure, LintReport } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
 import { isDirty } from "./deviceSelectors";
 import type { Built, TwinDraft } from "./twinDraft";
-import { builtOf } from "./twinSelectors";
+import { builtOf, verdictOf } from "./twinSelectors";
 
 export interface CheckRow {
   readonly id: "device" | "twin" | "implements" | "lint";
   readonly state: "ok" | "bad" | "pending" | "idle";
   readonly text: string;
   readonly notes: readonly string[];
+  readonly details: readonly string[];
 }
 
 const shown = 6;
 
-function row(id: CheckRow["id"], state: CheckRow["state"], text: string, notes: readonly string[] = []): CheckRow {
-  return { id, state, text, notes };
+function row(
+  id: CheckRow["id"],
+  state: CheckRow["state"],
+  text: string,
+  notes: readonly string[] = [],
+  details: readonly string[] = [],
+): CheckRow {
+  return { id, state, text, notes, details };
 }
 
-function failureNotes(failure: DeviceFailure): readonly string[] {
-  if (failure.kind !== "refused" || failure.issues.length === 0) return [failure.diagnostic.message];
-  return failure.issues.map((issue) => issue.message);
+function refusal(failure: DeviceFailure): { readonly notes: readonly string[]; readonly details: readonly string[] } {
+  if (failure.kind !== "refused" || failure.issues.length === 0) {
+    return { notes: [failure.diagnostic.message], details: [] };
+  }
+  return { notes: failure.issues.map(issueText), details: failure.issues.map((issue) => issue.message) };
+}
+
+function failureRow(id: CheckRow["id"], text: string, failure: DeviceFailure): CheckRow {
+  const { notes, details } = refusal(failure);
+  return row(id, "bad", text, notes, details);
 }
 
 function deviceRow(device: DeviceState): CheckRow {
@@ -29,7 +44,7 @@ function deviceRow(device: DeviceState): CheckRow {
   if (device.check.kind === "valid") return row("device", "ok", "The device definition is valid");
   if (device.check.kind === "refused")
     return row("device", "bad", "The device definition has issues", [
-      `${counted(device.issues.length, "issue")} in the interface step`,
+      `${counted(device.review.schema.length, "issue")} in the interface step`,
     ]);
   return row("device", "idle", "The device definition has not been checked");
 }
@@ -39,9 +54,10 @@ function twinRow(draft: TwinDraft): CheckRow {
   if (build.kind === "building") return row("twin", "pending", "Creating the twin…");
   if (build.kind === "exists") return row("twin", "bad", "A plant with this name already exists");
   if (build.kind === "refused" || build.kind === "failed") {
-    return row("twin", "bad", "The twin could not be created", failureNotes(build.failure));
+    return failureRow("twin", "The twin could not be created", build.failure);
   }
-  if (builtOf(draft) !== null) return row("twin", "ok", "Twin ready");
+  const built = builtOf(draft);
+  if (built !== null) return builtRow(built);
   const changed = build.kind === "built";
   return row(
     "twin",
@@ -50,13 +66,20 @@ function twinRow(draft: TwinDraft): CheckRow {
   );
 }
 
+function builtRow(built: Built): CheckRow {
+  const verdict = verdictOf(built);
+  if (verdict === "ready") return row("twin", "ok", "Twin ready");
+  if (verdict === "pending") return row("twin", "pending", "The twin was created and is being checked");
+  return row("twin", "bad", "The twin was created, but it has problems");
+}
+
 function implementsRow(built: Built | null): CheckRow {
   if (built === null) return row("implements", "idle", "Not checked yet");
   const { implemented } = built;
   if (implemented.kind === "checking")
     return row("implements", "pending", "Checking that the twin matches its device…");
   if (implemented.kind === "passed") return row("implements", "ok", "The twin matches its device");
-  return row("implements", "bad", "The twin does not match its device", failureNotes(implemented.failure));
+  return failureRow("implements", "The twin does not match its device", implemented.failure);
 }
 
 function findings(report: LintReport): readonly string[] {

@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DeviceSession, Draft, Step } from "../../../app/devices";
-import { isDirty, stepStatuses } from "../../../app/devices";
+import { hasUnsavedWork, stepStatuses } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
-import { interfaceLabel, stemOf } from "../../../model/devices";
+import { stemOf } from "../../../model/devices";
 import type { Selection } from "../../../model/devices";
 import { failureLine, screen, useStore } from "../../primitives";
 import { InterfaceStep } from "./InterfaceStep";
 import { PendingDeviceLeave } from "./LeaveDevice";
 import { StepTabs } from "./StepTabs";
 import { TwinStep } from "./TwinStep";
+import { StepFocusContext } from "./stepFocus";
 
 interface ScreenProps {
   readonly devices: DeviceSession;
@@ -16,49 +17,55 @@ interface ScreenProps {
   readonly path: string;
 }
 
-function useLeaveWarning(dirty: boolean) {
+function useLeaveWarning(devices: DeviceSession) {
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty) event.preventDefault();
+      if (hasUnsavedWork(devices.snapshot(), devices.twin.snapshot())) event.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
     return () => {
       window.removeEventListener("beforeunload", warn);
     };
-  }, [dirty]);
+  }, [devices]);
 }
 
 function Editing({ draft, devices, navigation }: Omit<ScreenProps, "path"> & { readonly draft: Draft }) {
-  useLeaveWarning(isDirty(draft));
+  useLeaveWarning(devices);
   const [step, setStep] = useState<Step>("interface");
-  const [focus, setFocus] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ readonly field: string; readonly at: number } | null>(null);
+  const [pending, setPending] = useState(false);
+  const done = useCallback(() => {
+    setPending(false);
+  }, []);
   const statuses = stepStatuses(draft, useStore(devices.twin));
   const pick = (next: Step) => {
     setFocus(null);
+    setPending(true);
     setStep(next);
   };
   const reveal = (selection: Selection, field: string) => {
     devices.select(selection);
-    setFocus(interfaceLabel(field));
+    setFocus((previous) => ({ field, at: (previous?.at ?? 0) + 1 }));
     setStep("interface");
   };
   const tabs = <StepTabs step={step} statuses={statuses} onPick={pick} />;
+  const stepFocus = useMemo(() => ({ pending, done }), [pending, done]);
   return (
-    <>
+    <StepFocusContext value={stepFocus}>
       {step === "interface" ? (
         <InterfaceStep draft={draft} devices={devices} navigation={navigation} tabs={tabs} focus={focus} />
       ) : (
         <TwinStep draft={draft} devices={devices} navigation={navigation} tabs={tabs} step={step} reveal={reveal} />
       )}
       <PendingDeviceLeave name={stemOf(draft.path)} devices={devices} navigation={navigation} />
-    </>
+    </StepFocusContext>
   );
 }
 
 export function DeviceScreen({ devices, navigation, path }: ScreenProps) {
   const state = useStore(devices);
   useEffect(() => {
-    const disposeGuard = navigation.guardUnsaved(() => isDirty(devices.snapshot()));
+    const disposeGuard = navigation.guardUnsaved(() => hasUnsavedWork(devices.snapshot(), devices.twin.snapshot()));
     void devices.open(path);
     return () => {
       disposeGuard();

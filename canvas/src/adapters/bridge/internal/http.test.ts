@@ -54,6 +54,30 @@ describe("bridge requests", () => {
     });
   });
 
+  it("keeps the keyword and the member of an issue, and an issue without a pointer", async () => {
+    const seen: RequestFailure[] = [];
+    const wire = bridgeTransport(() =>
+      respond(422, {
+        error: {
+          code: "kind_failed",
+          message: "bad",
+          issues: [
+            { pointer: "/metrics/0", message: "needs it", keyword: "twin_member_required", member: "resolution" },
+            { message: "not JSON", keyword: "json" },
+            { pointer: "/x", message: "plain", keyword: "", member: 4 },
+            { pointer: "/y" },
+          ],
+        },
+      }),
+    );
+    await request(wire, "/api/session", () => true, record(seen));
+    expect(problem(seen[0]).issues).toEqual([
+      { pointer: "/metrics/0", message: "needs it", keyword: "twin_member_required", member: "resolution" },
+      { pointer: "", message: "not JSON", keyword: "json" },
+      { pointer: "/x", message: "plain" },
+    ]);
+  });
+
   it("separates a transport that never answered from a body it cannot decode", async () => {
     const seen: RequestFailure[] = [];
     await request(

@@ -1,11 +1,8 @@
-import type { Instrument, KindFile, TwinChoices, TwinIssue } from "../../../model/devices";
+import type { Instrument, Member, TwinChoices, TwinIssue } from "../../../model/devices";
 import type { KindEntry } from "../../../model/workspace";
 import type { DeviceFailure, DomainChecked, LintReport, TwinMade } from "../../ports";
 
-export interface Member {
-  readonly path: string;
-  readonly kind: KindFile;
-}
+export type Catalogue = Readonly<Record<string, readonly Instrument[] | null>>;
 
 type ChoiceSave =
   | { readonly kind: "idle" }
@@ -24,7 +21,7 @@ type Plausibility =
 
 export interface Built {
   readonly kind: "built";
-  readonly made: TwinMade;
+  readonly made: TwinMade | null;
   readonly path: string;
   readonly fingerprint: string;
   readonly implemented: Implemented;
@@ -45,9 +42,13 @@ export interface TwinDraft {
   readonly choicesPath: string;
   readonly members: readonly Member[];
   readonly known: readonly KindEntry[];
-  readonly instruments: readonly Instrument[] | null;
+  readonly instruments: Catalogue;
+  readonly suggested: Readonly<Record<string, unknown>> | null;
+  readonly onDisk: boolean;
   readonly touched: boolean;
+  readonly edited: boolean;
   readonly saved: TwinChoices;
+  readonly written: string;
   readonly doc: TwinChoices;
   readonly save: ChoiceSave;
   readonly build: Build;

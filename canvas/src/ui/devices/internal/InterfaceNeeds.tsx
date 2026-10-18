@@ -1,24 +1,26 @@
-import { interfaceNeeds } from "../../../model/devices";
-import type { Selection, TwinIssue } from "../../../model/devices";
+import type { FieldIssue, Selection } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
-import { ItemIssues } from "./Field";
+import { ItemNeeds } from "./Field";
 import type { Reveal } from "./twinProps";
 
 interface NeedsProps {
-  readonly issues: readonly TwinIssue[];
-  readonly scope: "metric" | "command";
-  readonly kind: string;
-  readonly name: string;
+  readonly needs: readonly FieldIssue[];
+  readonly part: "metric" | "command";
+  readonly itemKey: string;
+  readonly reveal: Reveal | null;
+}
+
+interface BlockProps {
+  readonly own: readonly FieldIssue[];
   readonly selection: Selection;
   readonly reveal: Reveal | null;
 }
 
-export function InterfaceNeeds({ issues, scope, kind, name, selection, reveal }: NeedsProps) {
-  const needs = interfaceNeeds(issues, scope, kind, name);
-  const first = needs[0];
+function Block({ own, selection, reveal }: BlockProps) {
+  const first = own[0];
   return (
     <>
-      <ItemIssues messages={needs.map((issue) => issue.message)} />
+      <ItemNeeds messages={own.map((issue) => issue.text)} />
       {reveal !== null && first !== undefined && (
         <button
           type="button"
@@ -32,4 +34,14 @@ export function InterfaceNeeds({ issues, scope, kind, name, selection, reveal }:
       )}
     </>
   );
+}
+
+export function InterfaceNeeds({ needs, part, itemKey, reveal }: NeedsProps) {
+  const own = needs.filter((issue) => issue.part === part && issue.key === itemKey);
+  return <Block own={own} selection={{ part, key: itemKey }} reveal={reveal} />;
+}
+
+export function DeviceNeeds({ needs, reveal }: Pick<NeedsProps, "needs" | "reveal">) {
+  const own = needs.filter((issue) => issue.part === "kind" || issue.part === "file");
+  return <Block own={own} selection={{ part: "kind" }} reveal={reveal} />;
 }

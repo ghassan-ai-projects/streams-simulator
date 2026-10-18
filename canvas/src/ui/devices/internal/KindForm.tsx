@@ -1,27 +1,23 @@
-import { idRule, issuesOn, kindFacts, looksLikeId, renameKind, twinKindRule } from "../../../model/devices";
+import { issuesOn, kindFacts, renameKind } from "../../../model/devices";
 import type { KindFile } from "../../../model/devices";
 import { cx, panel, useFocusOnMount } from "../../primitives";
 import styles from "./Devices.module.css";
-import { Field, TextBox } from "./Field";
+import { Field, ItemIssues, ItemNeeds, TextBox } from "./Field";
+import { FormTitle } from "./FormTitle";
 import type { FormProps } from "./formProps";
 
-export function KindForm({ kind, devices, issues }: FormProps & { readonly kind: KindFile }) {
+export function KindForm({ kind, devices, issues, needs }: FormProps & { readonly kind: KindFile }) {
   const ref = useFocusOnMount<HTMLInputElement>({ when: kind.kind === "" });
-  const likely = kind.kind === "" || looksLikeId(kind.kind);
   const facts = kindFacts(kind.metrics.length, kind.commands.length);
+  const on = (field: string) => issuesOn(issues, "kind", "", field);
+  const need = (field: string) => issuesOn(needs, "kind", "", field);
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="device-title">
-      <h2 id="device-title" className={styles.formTitle}>
-        Device
-      </h2>
+      <FormTitle id="device-title" words="Device" />
       <p className={panel.hint}>{`${facts}. Choose one in the outline to edit it, or add a new one.`}</p>
-      <Field
-        label="Name"
-        hint={idRule}
-        also={twinKindRule}
-        caution={likely ? "" : "The binary is likely to refuse this name."}
-        issues={issuesOn(issues, "kind", "", "kind")}
-      >
+      <ItemIssues messages={[...on(""), ...on("metrics"), ...on("commands")]} />
+      <ItemNeeds messages={[...need("metrics"), ...need("commands")]} />
+      <Field label="Name" field="kind" issues={on("kind")} needs={need("kind")}>
         {(aria) => (
           <TextBox
             aria={aria}

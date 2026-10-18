@@ -13,14 +13,13 @@ import type { TwinProps } from "./twinProps";
 interface CardProps extends TwinProps {
   readonly kind: KindFile;
   readonly choice: KindChoice;
-  readonly kinds: readonly KindFile[];
 }
 
-function isOwn(draft: CardProps["draft"], kind: KindFile): boolean {
-  return draft.members[0]?.kind.kind === kind.kind;
+function isOwn(draft: CardProps["draft"], choice: KindChoice): boolean {
+  return draft.members[0]?.path === choice.kind;
 }
 
-function Readings({ twin, draft, issues, kind, choice, reveal }: CardProps) {
+function Readings({ twin, draft, issues, needs, kind, choice, reveal }: CardProps) {
   const named = kind.metrics.filter((metric) => metric.name !== "");
   if (named.length === 0) return <p className={panel.hint}>This device has no readings.</p>;
   return (
@@ -29,19 +28,20 @@ function Readings({ twin, draft, issues, kind, choice, reveal }: CardProps) {
         <ReadingRow
           key={metric.key}
           twin={twin}
-          reveal={isOwn(draft, kind) ? reveal : null}
+          reveal={isOwn(draft, choice) ? reveal : null}
           issues={issues}
-          kind={kind.kind}
+          needs={isOwn(draft, choice) ? needs : []}
+          member={choice.kind}
           metric={metric}
-          choice={metricChoiceOf(choice, metric.name)}
-          instruments={draft.instruments}
+          choice={metricChoiceOf(choice, metric.key)}
+          instruments={draft.instruments[metric.unit] ?? null}
         />
       ))}
     </>
   );
 }
 
-function Commands({ twin, draft, issues, kind, kinds, choice, reveal }: CardProps) {
+function Commands({ twin, draft, issues, needs, kind, choice, reveal }: CardProps) {
   const asked = askedCommands(kind);
   const stops = kind.commands.filter((command) => command.safeStop);
   return (
@@ -50,12 +50,14 @@ function Commands({ twin, draft, issues, kind, kinds, choice, reveal }: CardProp
         <CommandRow
           key={command.key}
           twin={twin}
-          reveal={isOwn(draft, kind) ? reveal : null}
+          reveal={isOwn(draft, choice) ? reveal : null}
           issues={issues}
+          needs={isOwn(draft, choice) ? needs : []}
           kind={kind}
-          kinds={kinds}
+          members={draft.members}
+          member={choice.kind}
           command={command}
-          choice={commandChoiceOf(choice, command.name)}
+          choice={commandChoiceOf(choice, command.key)}
         />
       ))}
       {stops.length > 0 && (
@@ -70,7 +72,7 @@ function Commands({ twin, draft, issues, kind, kinds, choice, reveal }: CardProp
 export function KindCard(props: CardProps) {
   const { twin, issues, kind, choice } = props;
   const title = useId();
-  const on = (field: string) => twinIssuesOn(issues, { scope: "kind", kind: kind.kind, key: "", field });
+  const on = (field: string) => twinIssuesOn(issues, { scope: "kind", kind: choice.kind, key: "", field });
   return (
     <section className={tw.card} aria-labelledby={title}>
       <h2 id={title} className={styles.formTitle}>
@@ -83,7 +85,7 @@ export function KindCard(props: CardProps) {
             aria={aria}
             value={choice.instance}
             onChange={(next) => {
-              twin.edit((choices) => renameInstance(choices, kind.kind, next));
+              twin.edit((choices) => renameInstance(choices, choice.kind, next));
             }}
             onCommit={commit(twin)}
           />

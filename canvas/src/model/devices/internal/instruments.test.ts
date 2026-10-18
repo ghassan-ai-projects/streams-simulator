@@ -1,34 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { humidity, instruments, metricOf, tachometer, thermistor } from "../../../test/twinFixture";
+import { convertibleThermistor, humidity, instruments, metricOf, thermistor } from "../../../test/twinFixture";
 import {
   chosenInstrumentWords,
+  conversionNote,
   instrumentCount,
   instrumentOf,
   instrumentWords,
   noInstrument,
   rangeWords,
   searchInstruments,
-  sortInstruments,
-  suggestInstrument,
   takesInstrument,
 } from "./instruments";
 
 describe("instruments", () => {
-  it("is built from a library entry and what the binary says about it, or from the entry alone", () => {
-    const known = instrumentOf({ ref: "a/b@1", title: "Probe" }, { family: "speed", unit: "rpm", min: 0, max: 9 });
-    expect(known).toMatchObject({ ref: "a/b@1", title: "Probe", unit: "rpm", min: 0, max: 9 });
-    expect(known.words).toBe("probe a/b@1 speed rpm");
-    const bare = instrumentOf({ ref: "a/c@1", title: "Bare" }, null);
-    expect(bare).toMatchObject({ family: "", unit: "", min: null, max: null });
+  it("is built from a library entry as the binary lists it for a unit", () => {
+    const known = instrumentOf({
+      ref: "a/b@1",
+      title: "Probe",
+      unit: "rpm",
+      min: 0,
+      max: 9,
+      match: "exact",
+    });
+    expect(known).toMatchObject({ ref: "a/b@1", title: "Probe", unit: "rpm", min: 0, max: 9, match: "exact" });
+    expect(known.words).toBe("probe a/b@1 rpm");
   });
 
-  it("sorts by title and searches every term in the words", () => {
-    expect(sortInstruments([thermistor, humidity]).map((entry) => entry.title)).toEqual([
-      "Capacitive humidity sensor",
+  it("searches every term in the words and keeps the order the binary ranked", () => {
+    expect(searchInstruments(instruments, "").map((entry) => entry.title)).toEqual([
       "Thermistor",
+      "Capacitive humidity sensor",
+      "Tachometer",
     ]);
-    expect(searchInstruments(instruments, "")).toHaveLength(3);
-    expect(searchInstruments(instruments, "TEMPERATURE therm").map((entry) => entry.title)).toEqual(["Thermistor"]);
+    expect(searchInstruments(instruments, "DEGC therm").map((entry) => entry.title)).toEqual(["Thermistor"]);
     expect(searchInstruments(instruments, "nothing here")).toEqual([]);
   });
 
@@ -39,28 +43,19 @@ describe("instruments", () => {
     expect(rangeWords(null, null)).toBe("no stated range");
   });
 
-  it("describes an instrument and a choice, and counts a search", () => {
+  it("says when an instrument measures a different unit and needs a conversion", () => {
     expect(instrumentWords(thermistor)).toBe("Thermistor · degC · -40 to 125");
-    expect(instrumentWords(instrumentOf({ ref: "x@1", title: "Bare" }, null))).toBe("Bare · no stated range");
+    expect(instrumentWords(convertibleThermistor)).toBe(`Thermistor · degC · -40 to 125 · ${conversionNote}`);
+    expect(conversionNote).toBe("different unit — needs conversion");
+  });
+
+  it("describes a choice and counts a search", () => {
     expect(chosenInstrumentWords(noInstrument, instruments)).toBe("No instrument: a plain reading");
-    expect(chosenInstrumentWords("streamsim/thermistor@1", instruments)).toContain("Thermistor");
+    expect(chosenInstrumentWords("streamsim/humidity@1", instruments)).toBe(instrumentWords(humidity));
     expect(chosenInstrumentWords("gone@1", instruments)).toBe("gone@1");
     expect(instrumentCount(0, " zz ")).toBe('Nothing in the library matches "zz".');
     expect(instrumentCount(1, "")).toBe("1 instrument");
     expect(instrumentCount(3, "")).toBe("3 instruments");
-  });
-
-  it("suggests an instrument that measures the unit and covers the range, and otherwise none", () => {
-    expect(suggestInstrument(metricOf(), instruments)).toBe("streamsim/thermistor@1");
-    expect(suggestInstrument(metricOf({ unit: "%" }), instruments)).toBe("streamsim/humidity@1");
-    expect(suggestInstrument(metricOf({ unit: "degC" }), instruments)).toBe("streamsim/thermistor@1");
-    expect(suggestInstrument(metricOf({ eu_range: { min: -90, max: 50 } }), instruments)).toBe(noInstrument);
-    expect(suggestInstrument(metricOf({ eu_range: { min: 0 } }), instruments)).toBe(noInstrument);
-    expect(suggestInstrument(metricOf({ unit: "rpm" }), [tachometer])).toBe("streamsim/tachometer@1");
-    expect(suggestInstrument(metricOf({ unit: "furlong" }), instruments)).toBe(noInstrument);
-    expect(suggestInstrument(metricOf({ writable: true }), instruments)).toBe(noInstrument);
-    expect(suggestInstrument(metricOf({ data_type: "boolean" }), instruments)).toBe(noInstrument);
-    expect(suggestInstrument(metricOf(), [instrumentOf({ ref: "a@1", title: "A" }, null)])).toBe(noInstrument);
   });
 
   it("takes an instrument for numbers only", () => {

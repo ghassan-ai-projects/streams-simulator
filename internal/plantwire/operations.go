@@ -2,6 +2,7 @@ package plantwire
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -34,6 +35,14 @@ func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[stri
 	return app.Scaffold(paths, dirs, source, scaffold)
 }
 
-func ValidateKindFiles(paths []string) ([]KindSummary, error) {
-	return app.ValidateKindFiles(paths)
+func WithKindFiles[T any](paths, dirs []string, use func(map[string]map[string]any) (T, error)) (T, error) {
+	return app.WithKindFiles(paths, dirs, use)
+}
+
+func ValidateKindFilesWith(paths []string, rules TwinRules) ([]KindSummary, error) {
+	return app.ValidateKindFilesWith(paths, rules)
+}
+
+func ValidateKindStream(reader io.Reader, rules TwinRules) (KindSummary, error) {
+	return app.ValidateKindStream(reader, rules)
 }

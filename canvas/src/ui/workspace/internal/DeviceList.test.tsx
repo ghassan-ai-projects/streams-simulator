@@ -1,8 +1,11 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
+import { deferred } from "../../../test/deferred";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import type { Canned } from "../../../test/fakeFailures";
+import { kindCheck } from "../../../test/kindCheckFake";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { navigation, show } from "../../../test/workspaceHarness";
 
@@ -18,6 +21,7 @@ function withDevices() {
     commands: [{ name: "stop" }],
   });
   bridge.addFile(pump.path, "not json");
+  bridge.handlers.set("kind.check", kindCheck);
   return bridge;
 }
 
@@ -42,6 +46,22 @@ describe("the devices section", () => {
     expect(devices().getAllByRole("listitem")).toHaveLength(2);
     fireEvent.click(devices().getByRole("button", { name: "Edit fan" }));
     expect(nav.location.hash).toBe("#/device?device=kinds%2Ffan.kind.json");
+  });
+
+  it("says whether each device is valid and has a twin, from what the workspace already lists", async () => {
+    const bridge = withDevices();
+    const listed = bridge.workspaceOutcome;
+    if (!listed.ok) throw new Error("no workspace");
+    const kinds = [fan, pump, { path: "kinds/heater.kind.json", kind: "heater", title: "" }];
+    const made = { path: "domains/heater-twin.domain.json", id: "heater-twin", title: "Heater", instances: 1 };
+    bridge.workspaceOutcome = success({ ...listed.value, kinds, domains: [...listed.value.domains, made] });
+    bridge.addFile("kinds/heater.kind.json", { kind: "heater", metrics: [], commands: [] });
+    bridge.addFile("twins/heater.twin.json", { id: "heater-twin", kinds: [] });
+    await show(bridge);
+    const row = (name: string) => within(devices().getByText(name).closest("li") as HTMLElement);
+    expect(await row("heater").findByText("Twin ready")).toBeInTheDocument();
+    expect(row("fan").getByText("Needs a twin")).toBeInTheDocument();
+    expect(row("pump").getByText("Not valid")).toBeInTheDocument();
   });
 
   it("shows the devices while their files are still being read", async () => {
@@ -72,14 +92,40 @@ describe("creating a device", () => {
     expect(within(form).getByText("Give the device a name.")).toBeInTheDocument();
     const name = within(form).getByLabelText("Name");
     expect(name).toHaveFocus();
-    fireEvent.change(name, { target: { value: "bad name" } });
-    expect(within(form).getByText(/Use letters, digits/)).toBeInTheDocument();
+    fireEvent.change(name, { target: { value: "FAN" } });
+    expect(within(form).getByText("A device named FAN already exists.")).toBeInTheDocument();
     expect(within(form).getByRole("button", { name: "Create and open the device" })).toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    fireEvent.change(name, { target: { value: "FAN" } });
-    expect(within(form).getByText("A device named FAN already exists.")).toBeInTheDocument();
+  });
+
+  it("leaves the pattern of a name to the binary, which refuses it in plain words before anything is written", async () => {
+    const { bridge, form } = await opened();
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "bad name" } });
+    expect(within(form).getByRole("button", { name: "Create and open the device" })).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    );
+    fireEvent.submit(form);
+    expect(await within(form).findByRole("alert")).toHaveTextContent("Use letters, digits and . _ : - only");
+    expect(bridge.writes).toHaveLength(0);
+  });
+
+  it("submits once however often it is submitted, and says it is working", async () => {
+    const { bridge, nav, form } = await opened();
+    const gate = deferred<Canned<unknown>>();
+    bridge.handlers.set("kind.check", () => gate.promise);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "heater" } });
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(within(form).getByRole("status")).toHaveTextContent("Creating the device…");
+    gate.resolve(kindCheck({ content: '{"kind":"heater"}', twin: false }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/device?device=kinds%2Fheater.kind.json");
+    });
+    expect(bridge.writes).toHaveLength(1);
+    expect(bridge.calls.filter((call) => call.name === "kind.check")).toHaveLength(1);
   });
 
   it("writes an empty device and opens it in the editor", async () => {

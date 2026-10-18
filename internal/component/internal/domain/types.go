@@ -139,6 +139,11 @@ const (
 	KindInstrument Kind = "instrument"
 )
 
+const (
+	MatchExact       = "exact"
+	MatchConvertible = "convertible"
+)
+
 type Summary struct {
 	ID      string   `json:"id"`
 	Version int      `json:"version"`
@@ -147,6 +152,9 @@ type Summary struct {
 	Class   string   `json:"class"`
 	Tags    []string `json:"tags"`
 	Digest  string   `json:"digest"`
+	Unit    string   `json:"unit,omitempty"`
+	Range   *Range   `json:"range,omitempty"`
+	Match   string   `json:"match,omitempty"`
 }
 
 type Detail struct {

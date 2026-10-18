@@ -14,10 +14,13 @@ type CommandResult struct {
 	ExitCode int
 }
 
-func Run(ctx context.Context, executable, dir string, argv []string) (CommandResult, error) {
+func RunWithInput(ctx context.Context, executable, dir string, argv []string, stdin []byte) (CommandResult, error) {
 	//nolint:gosec // G204: the bridge's own executable with argv entries the bridge built (governance/DEFERRED.md D-64)
 	command := exec.CommandContext(ctx, executable, argv...)
 	command.Dir, command.Env = dir, []string{}
+	if stdin != nil {
+		command.Stdin = bytes.NewReader(stdin)
+	}
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	return exitOf(command.Run(), CommandResult{Stdout: stdout.Bytes(), Stderr: stderr.Bytes()}, argv)

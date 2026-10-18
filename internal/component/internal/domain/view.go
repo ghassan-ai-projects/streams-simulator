@@ -28,7 +28,47 @@ func summarizeEquipment(e *Equipment) Summary {
 }
 
 func summarizeInstrument(i *Instrument) Summary {
-	return Summary{ID: i.ID, Version: i.Version, Kind: KindInstrument, Title: i.Title, Class: i.UnitFamily, Tags: []string{i.Tag}, Digest: i.Digest}
+	return Summary{ID: i.ID, Version: i.Version, Kind: KindInstrument, Title: i.Title, Class: i.UnitFamily, Tags: []string{i.Tag}, Digest: i.Digest,
+		Unit: i.Unit, Range: i.Range}
+}
+
+func (l *Library) ListForUnit(unit string) []Summary {
+	if unit == "" {
+		return l.List()
+	}
+	return l.InstrumentsForUnit(unit)
+}
+
+func (l *Library) InstrumentsForUnit(unit string) []Summary {
+	found := []Summary{}
+	for _, key := range slices.Sorted(maps.Keys(l.instruments)) {
+		if match := l.unitMatch(l.instruments[key], unit); match != "" {
+			summary := summarizeInstrument(l.instruments[key])
+			summary.Match = match
+			found = append(found, summary)
+		}
+	}
+	slices.SortStableFunc(found, func(a, b Summary) int {
+		return cmp.Or(cmp.Compare(rankOf(a.Match), rankOf(b.Match)), strings.Compare(a.ID, b.ID), cmp.Compare(a.Version, b.Version))
+	})
+	return found
+}
+
+func (l *Library) unitMatch(instrument *Instrument, unit string) string {
+	if _, err := l.vocabulary.convert(instrument.UnitFamily, unit, instrument.Unit); err != nil {
+		return ""
+	}
+	if instrument.Unit == unit {
+		return MatchExact
+	}
+	return MatchConvertible
+}
+
+func rankOf(match string) int {
+	if match == MatchExact {
+		return 0
+	}
+	return 1
 }
 
 func orEmpty(values []string) []string {

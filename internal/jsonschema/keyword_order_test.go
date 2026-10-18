@@ -14,7 +14,8 @@ func TestValidationPreservesKeywordOrderAndTypeShortCircuit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []Error{{Msg: "value not in enum"}, {Msg: "string does not match pattern ^x"}, {Msg: "string shorter than minLength 5"}, {Msg: "value does not match const"}}
+	want := []Error{{Msg: "value not in enum", Keyword: "enum"}, {Msg: "string does not match pattern ^x", Keyword: "pattern"},
+		{Msg: "string shorter than minLength 5", Keyword: "minLength"}, {Msg: "value does not match const", Keyword: "const"}}
 	if got := schema.Validate("a"); !reflect.DeepEqual(got, want) {
 		t.Fatalf("errors=%+v, want %+v", got, want)
 	}

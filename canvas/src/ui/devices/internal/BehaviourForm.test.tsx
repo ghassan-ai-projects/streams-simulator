@@ -16,41 +16,53 @@ describe("the behaviour step", () => {
     expect(steps.getByRole("button", { name: /^Behaviour/ })).toHaveAttribute("aria-current", "step");
     expect(steps.getByRole("button", { name: /^Behaviour/ })).toHaveTextContent("Not started");
     expect(steps.getByRole("button", { name: /^Check/ })).toHaveTextContent("Not run");
-    expect(screen.getByLabelText("Twin name")).toHaveValue("cooler-twin");
-    expect(screen.getByLabelText("Title")).toHaveValue("cooler twin");
-    expect(inReading("temperature").getByLabelText("Instrument")).toHaveDisplayValue(/Thermistor · degC/);
+    expect(screen.getByLabelText("Twin name")).toHaveValue("cooler-sensor-twin");
+    expect(screen.getByLabelText("Title")).toHaveValue("Twin of cooler, sensor");
+    expect(inReading("temperature").getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
     expect(inReading("duty").getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
     expect(inReading("mode").getByText(/A plain reading: the twin reports it as it is/)).toBeInTheDocument();
     expect(inCommand("set_duty").getByLabelText("Response")).toHaveValue("direct");
-    expect(inCommand("set_duty").getByLabelText("duty sets")).toHaveValue("duty");
+    expect(inCommand("set_duty").getByLabelText("Reading set by duty")).toHaveDisplayValue("duty");
     expect(screen.getByText("stop: a safe stop. The twin handles it itself.")).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 
-  it("changes the instrument of a reading from a searchable list showing its unit and range, and saves the choice", async () => {
+  it("changes the instrument of a reading from a list ranked by the binary, showing its unit, range and any conversion", async () => {
     const { fake } = await behaviourOf();
     const group = inReading("temperature");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
     const search = group.getByLabelText("Find an instrument for temperature");
     expect(search).toHaveFocus();
-    expect(group.getByText("3 instruments")).toBeInTheDocument();
-    fireEvent.change(search, { target: { value: "humid" } });
     expect(group.getByText("1 instrument")).toBeInTheDocument();
     const list = group.getByRole("listbox", { name: "Instruments for temperature" });
+    expect(list).toHaveAttribute("size", "6");
     expect(
       within(list)
         .getAllByRole("option")
         .map((option) => option.textContent),
-    ).toEqual(["No instrument: a plain reading", "Capacitive humidity sensor · %RH · 0 to 100"]);
-    fireEvent.change(list, { target: { value: "streamsim/humidity@1" } });
+    ).toEqual(["No instrument: a plain reading", "Thermistor · degC · -40 to 125 · different unit — needs conversion"]);
+    fireEvent.change(search, { target: { value: "thermis" } });
+    fireEvent.change(list, { target: { value: "streamsim/thermistor@1" } });
     fireEvent.click(group.getByRole("button", { name: "Use this instrument" }));
-    expect(group.getByLabelText("Instrument")).toHaveDisplayValue(/Capacitive humidity sensor/);
+    expect(group.getByLabelText("Instrument")).toHaveDisplayValue(/Thermistor/);
     expect(group.getByRole("button", { name: "Change the instrument of temperature" })).toHaveFocus();
     await vi.waitFor(() => {
       expect(lastChoices(fake)).toMatchObject({
-        kinds: [{ metrics: { temperature: { instrument: "streamsim/humidity@1" } } }],
+        kinds: [{ metrics: { temperature: { instrument: "streamsim/thermistor@1" } } }],
       });
     });
+  });
+
+  it("asks the binary for the instruments of each unit, so a reading sees its own", async () => {
+    const { fake } = await behaviourOf();
+    const group = inReading("duty");
+    fireEvent.click(group.getByRole("button", { name: "Change the instrument of duty" }));
+    const list = group.getByRole("listbox", { name: "Instruments for duty" });
+    expect(within(list).getAllByRole("option")[1]).toHaveTextContent("Capacitive humidity sensor · %RH · 0 to 100");
+    expect(fake.calls.filter((call) => call.name === "component.list").map((call) => call.args)).toEqual([
+      { unit: "Cel" },
+      { unit: "%" },
+    ]);
   });
 
   it("closes the list on Escape, says when nothing matches, and chooses no instrument", async () => {
@@ -78,15 +90,15 @@ describe("the behaviour step", () => {
     await behaviourOf();
     const group = inReading("temperature");
     fireEvent.click(group.getByRole("button", { name: "Change the instrument of temperature" }));
-    fireEvent.change(group.getByRole("listbox"), { target: { value: "streamsim/tachometer@1" } });
-    fireEvent.change(group.getByLabelText("Find an instrument for temperature"), { target: { value: "humid" } });
+    fireEvent.change(group.getByRole("listbox"), { target: { value: "streamsim/thermistor@1" } });
+    fireEvent.change(group.getByLabelText("Find an instrument for temperature"), { target: { value: "zzz" } });
     fireEvent.click(group.getByRole("button", { name: "Use this instrument" }));
     expect(group.getByLabelText("Instrument")).toHaveDisplayValue("No instrument: a plain reading");
   });
 
   it("offers only plain readings when the instrument list cannot be read", async () => {
     const fake = twinBridge();
-    fake.actions.delete("component.list");
+    fake.handlers.delete("component.list");
     await behaviourOf(fake);
     const group = inReading("temperature");
     expect(group.getByText(/The instrument list could not be read/)).toBeInTheDocument();
@@ -100,24 +112,24 @@ describe("the behaviour step", () => {
     fireEvent.change(start, { target: { value: "20" } });
     fireEvent.blur(start);
     const state = stores.devices.twin.snapshot();
-    expect(state.phase === "ready" && state.doc.kinds[0]?.metrics.temperature?.initial).toBe(20);
+    expect(state.phase === "ready" && state.doc.kinds[0]?.metrics.m1?.initial).toBe(20);
     await vi.waitFor(() => {
       expect(lastChoices(fake)).toMatchObject({ kinds: [{ metrics: { temperature: { initial: 20 } } }] });
     });
   });
 
-  it("names the twin, cautions about a name the binary is likely to refuse, and keeps Create off for a name that cannot be a file", async () => {
+  it("names the twin, leaves the pattern to the binary, and keeps Create off only for a name that is missing", async () => {
     const { fake } = await behaviourOf();
     const name = screen.getByLabelText("Twin name");
-    fireEvent.change(name, { target: { value: "Cooler" } });
-    expect(screen.getByText("The binary is likely to refuse this name.")).toBeInTheDocument();
+    expect(screen.getByText("The plant made from the twin is saved under this name.")).toBeInTheDocument();
+    fireEvent.change(name, { target: { value: "Bad Name" } });
+    expect(screen.queryByText(/likely to refuse/)).toBeNull();
+    expect(name).not.toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
-    fireEvent.change(name, { target: { value: "bad name" } });
-    expect(screen.getByText("Give the twin a name: letters, digits and - only.")).toBeInTheDocument();
+    fireEvent.change(name, { target: { value: "" } });
+    expect(screen.getByText("Give the twin a name.")).toBeInTheDocument();
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
-    fireEvent.change(name, { target: { value: "" } });
-    expect(screen.getByText(/3 to 64 lower-case letters/)).toBeInTheDocument();
     fireEvent.change(name, { target: { value: "cooler-b" } });
     fireEvent.blur(name);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Cooler B" } });
@@ -147,8 +159,14 @@ describe("the response of a command", () => {
     expect(command.getByText("Fill in every part of the effect.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
     const effect = within(command.getByRole("group", { name: "Effect 1 of set_duty" }));
-    expect(effect.getByLabelText("Reading it sets")).toHaveValue("duty");
-    fireEvent.change(effect.getByLabelText("Reading that follows"), { target: { value: "cooler/temperature" } });
+    expect(effect.queryByLabelText("Reading it sets")).toBeNull();
+    const follows = effect.getByLabelText("Reading that follows");
+    expect(
+      within(follows)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Choose…", "temperature"]);
+    fireEvent.change(follows, { target: { value: `m1@${coolerPath}` } });
     fireEvent.change(effect.getByLabelText("Gain"), { target: { value: "-0.5" } });
     fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "120" } });
     expect(
@@ -157,9 +175,31 @@ describe("the response of a command", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
-    fireEvent.change(effect.getByLabelText("Reading it sets"), { target: { value: "" } });
+    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "" } });
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
-    fireEvent.change(effect.getByLabelText("Reading it sets"), { target: { value: "duty" } });
+    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "m2" } });
+    expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
+  });
+
+  it("says a time constant at or below zero must be above zero, before anything is created, and clears it when it is corrected", async () => {
+    await behaviourOf();
+    const command = inCommand("set_duty");
+    fireEvent.change(command.getByLabelText("Response"), { target: { value: "first_order" } });
+    const effect = within(command.getByRole("group", { name: "Effect 1 of set_duty" }));
+    fireEvent.change(effect.getByLabelText("Reading that follows"), { target: { value: `m1@${coolerPath}` } });
+    fireEvent.change(effect.getByLabelText("Gain"), { target: { value: "1" } });
+    fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "-5" } });
+    expect(effect.getByText("Must be above zero")).toBeInTheDocument();
+    expect(effect.getByLabelText("Time constant")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute(
+      "title",
+      "Finish the choices marked in the form first.",
+    );
+    fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "0" } });
+    expect(effect.getByText("Must be above zero")).toBeInTheDocument();
+    fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "60" } });
+    expect(effect.queryByText("Must be above zero")).toBeNull();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
   });
 
@@ -177,16 +217,16 @@ describe("the response of a command", () => {
     expect(command.queryByRole("group", { name: "Effect 2 of set_duty" })).toBeNull();
     fireEvent.change(command.getByLabelText("Response"), { target: { value: "none" } });
     expect(command.queryByRole("group", { name: "Effect 1 of set_duty" })).toBeNull();
-    expect(command.queryByLabelText("duty sets")).toBeNull();
+    expect(command.queryByLabelText("Reading set by duty")).toBeNull();
   });
 
-  it("asks which reading an argument sets, and lets an argument go unused", async () => {
+  it("asks which reading an argument sets, in words, and lets an argument go unused", async () => {
     await behaviourOf();
     const command = inCommand("set_duty");
-    fireEvent.change(command.getByLabelText("duty sets"), { target: { value: "" } });
+    fireEvent.change(command.getByLabelText("Reading set by duty"), { target: { value: "" } });
     expect(command.getByText("Choose the reading this command sets.")).toBeInTheDocument();
-    expect(command.getByLabelText("lease_ms sets")).toHaveValue("");
-    fireEvent.change(command.getByLabelText("lease_ms sets"), { target: { value: "duty" } });
+    expect(command.getByLabelText("Reading set by lease ms")).toHaveValue("");
+    fireEvent.change(command.getByLabelText("Reading set by lease ms"), { target: { value: "m2" } });
     expect(command.queryByText("Choose the reading this command sets.")).toBeNull();
   });
 

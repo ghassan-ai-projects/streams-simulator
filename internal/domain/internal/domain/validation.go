@@ -63,7 +63,7 @@ func (checks domainChecks) bad(member, format string, args ...any) error {
 
 func invalidDomain(src, pointer, message string) *model.ValidationError {
 	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src,
-		Summary: fmt.Sprintf("domain: %s: %s", src, message), Issues: []model.Issue{model.LocatedIssue(pointer, message)}}
+		Summary: fmt.Sprintf("domain: %s: %s", src, message), Issues: []model.Issue{model.RuleIssue(pointer, "domain_rule", "", message)}}
 }
 
 func (checks domainChecks) each(section string, count int, check func(domainChecks, int) error) error {

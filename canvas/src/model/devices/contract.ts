@@ -1,4 +1,4 @@
-export type { ArgRow, Command, FieldIssue, KindFile, Metric, Selection } from "./internal/types";
+export type { ArgRow, Command, FieldIssue, KindFile, Member, Metric, Selection } from "./internal/types";
 export type {
   CommandChoice,
   Drive,

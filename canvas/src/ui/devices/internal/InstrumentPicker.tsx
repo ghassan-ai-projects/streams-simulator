@@ -10,6 +10,7 @@ import type { Instrument } from "../../../model/devices";
 import { panel, shared, useFocusOnMount } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import type { Aria } from "./Field";
+import notes from "./Notes.module.css";
 
 interface ListingProps {
   readonly metric: string;
@@ -72,7 +73,8 @@ function Listing({ metric, value, instruments, onPick, onDone }: ListingProps) {
     >
       <Search metric={metric} query={query} onQuery={setQuery} />
       <select
-        size={Math.min(6, found.length + 1)}
+        size={6}
+        className={notes.listbox}
         aria-label={`Instruments for ${metric}`}
         value={picked}
         onChange={(event) => {

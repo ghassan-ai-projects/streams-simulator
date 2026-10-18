@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { bridgeTransport } from "../../../test/bridgeTransport";
 import { respond } from "../../../test/fakeWire";
 import { bridgeAdapter } from "..";
-import { domainChecked, instrumentRefs, instrumentSpec, lintReport, twinMade } from "./twinDecoders";
+import { deviceListing, domainChecked, instrumentRefs, lintReport, suggestedChoices, twinMade } from "./twinDecoders";
 
 function devices(handler: Parameters<typeof bridgeTransport>[0]) {
   const transport = bridgeTransport(handler);
@@ -13,10 +13,10 @@ const issues = [{ pointer: "/kinds/0/commands/set/drives/0/gain", message: "a dr
 const refusal = respond(422, { error: { code: "kind_failed", message: "refused", issues } });
 
 describe("the device list", () => {
-  it("reads the kind files of the workspace", async () => {
+  it("reads the kind files and the plants of the workspace", async () => {
     const wire = {
       name: "lab",
-      domains: [],
+      domains: [{ path: "domains/a.domain.json", id: "a", title: "A", instances: 1 }],
       compositions: [],
       scenarios: [],
       kinds: [{ path: "kinds/a.kind.json", kind: "a", title: "A" }, { path: "kinds/b.kind.json" }],
@@ -24,61 +24,96 @@ describe("the device list", () => {
       runs: [],
     };
     const { gateway, transport } = devices(() => respond(200, wire));
-    expect(await gateway.kinds()).toEqual({
+    expect(await gateway.listing()).toEqual({
       ok: true,
-      value: [
-        { path: "kinds/a.kind.json", kind: "a", title: "A" },
-        { path: "kinds/b.kind.json", kind: "", title: "" },
-      ],
+      value: {
+        kinds: [
+          { path: "kinds/a.kind.json", kind: "a", title: "A" },
+          { path: "kinds/b.kind.json", kind: "", title: "" },
+        ],
+        domains: ["domains/a.domain.json"],
+      },
     });
     expect(transport.fetch.mock.calls[0]?.[0]).toBe("/api/workspace");
+    expect(deviceListing(null)).toBeNull();
   });
 
   it("says when the workspace listing cannot be read", async () => {
     const { gateway } = devices(() => respond(200, { name: 3 }));
-    expect(await gateway.kinds()).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
+    expect(await gateway.listing()).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
   });
 });
 
 describe("the instrument library", () => {
-  it("lists the instruments of the component library with a reference to each", async () => {
-    const components = [
-      { id: "streamsim/rtd", version: 2, kind: "instrument", title: "RTD" },
-      { id: "streamsim/bare", kind: "instrument" },
-      { id: "", kind: "instrument" },
-      { id: "streamsim/pump", version: 1, kind: "equipment", title: "Pump" },
-    ];
+  const components = [
+    {
+      id: "streamsim/rtd",
+      version: 2,
+      kind: "instrument",
+      title: "RTD",
+      unit: "degC",
+      range: { min: -50, max: 200 },
+      match: "exact",
+    },
+    { id: "streamsim/bare", kind: "instrument", match: "other" },
+    { id: "", kind: "instrument" },
+    { id: "streamsim/pump", version: 1, kind: "equipment", title: "Pump" },
+    {
+      id: "streamsim/thermistor",
+      version: 1,
+      kind: "instrument",
+      title: "Thermistor",
+      unit: "degC",
+      match: "convertible",
+    },
+  ];
+
+  it("lists the instruments for a unit, as the binary ranks them, with their unit, range and match", async () => {
     const { gateway, transport } = devices(() => respond(200, { result: { components } }));
-    expect(await gateway.instruments()).toEqual({
+    expect(await gateway.instruments("Cel")).toEqual({
       ok: true,
       value: [
-        { ref: "streamsim/rtd@2", title: "RTD" },
-        { ref: "streamsim/bare@1", title: "streamsim/bare" },
+        { ref: "streamsim/rtd@2", title: "RTD", unit: "degC", min: -50, max: 200, match: "exact" },
+        { ref: "streamsim/bare@1", title: "streamsim/bare", unit: "", min: null, max: null, match: "" },
+        {
+          ref: "streamsim/thermistor@1",
+          title: "Thermistor",
+          unit: "degC",
+          min: null,
+          max: null,
+          match: "convertible",
+        },
       ],
     });
     expect(transport.fetch.mock.calls[0]?.[0]).toBe("/api/actions/component.list");
+    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: { unit: "Cel" } }) });
+  });
+
+  it("lists every instrument when the reading has no unit", async () => {
+    const { gateway, transport } = devices(() => respond(200, { result: { components } }));
+    await gateway.instruments("");
+    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: {} }) });
     expect(instrumentRefs({ components: "no" })).toBeNull();
     expect(instrumentRefs(null)).toBeNull();
   });
+});
 
-  it("reads the unit and the range of one instrument", async () => {
-    const document = { unit_family: "temperature", unit: "degC", range: { min: -50, max: 200 } };
-    const { gateway, transport } = devices(() => respond(200, { result: { entry: {}, document } }));
-    expect(await gateway.instrument("streamsim/rtd@1")).toEqual({
-      ok: true,
-      value: { family: "temperature", unit: "degC", min: -50, max: 200 },
-    });
-    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({
-      body: JSON.stringify({ args: { ref: "streamsim/rtd@1" } }),
-    });
-    expect(instrumentSpec({ document: { unit: "A", range: { min: "x" } } })).toEqual({
-      family: "",
-      unit: "A",
-      min: null,
-      max: null,
-    });
-    expect(instrumentSpec({ document: 1 })).toBeNull();
-    expect(instrumentSpec(null)).toBeNull();
+describe("the binary's suggestion for a twin", () => {
+  it("asks for the choices it would start from and writes nothing", async () => {
+    const choices = { id: "fan-twin", kinds: [] };
+    const { gateway, transport } = devices(() => respond(200, { result: { choices } }));
+    expect(await gateway.suggest()).toEqual({ ok: true, value: choices });
+    expect(transport.fetch.mock.calls[0]?.[0]).toBe("/api/actions/kind.suggest");
+    expect(transport.fetch.mock.calls[0]?.[1]).toMatchObject({ body: JSON.stringify({ args: {} }) });
+    expect(suggestedChoices({ choices: 1 })).toBeNull();
+    expect(suggestedChoices(null)).toBeNull();
+  });
+
+  it("says why there is no suggestion", async () => {
+    const { gateway } = devices(() => refusal.clone());
+    expect(await gateway.suggest()).toMatchObject({ ok: false, failure: { kind: "refused", issues } });
+    const down = devices(() => respond(500, "broken"));
+    expect(await down.gateway.suggest()).toMatchObject({ ok: false, failure: { kind: "unavailable" } });
   });
 });
 

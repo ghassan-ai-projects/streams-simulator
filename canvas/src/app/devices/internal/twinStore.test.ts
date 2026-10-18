@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { chooseInstrument, renameTwin, startAt } from "../../../model/devices";
+import type { KindFile } from "../../../model/devices";
 import { flushPromises } from "../../../test/deferred";
-import { cannedFailure, cannedFile } from "../../../test/fakeBridge";
+import { cannedFailure } from "../../../test/fakeBridge";
 import type { FakeBridge } from "../../../test/fakeBridge";
 import { failure } from "../../../test/outcome";
-import { choicesPath, coolerPath, sensorDocument, sensorPath, twinBridge } from "../../../test/twinFixture";
+import { choicesPath, cooler, coolerPath, kindOf, sensorPath, thermistor, twinBridge } from "../../../test/twinFixture";
 import type { TwinDraft } from "./twinDraft";
-import { canCreate, isChoicesDirty, othersOf, pairsOf } from "./twinSelectors";
+import { canCreate, hasUnsavedChoices, isChoicesDirty, othersOf, pairsOf } from "./twinSelectors";
 import { createTwinSession } from "./twinStore";
 
 function ready(twin: ReturnType<typeof createTwinSession>): TwinDraft {
@@ -15,48 +16,49 @@ function ready(twin: ReturnType<typeof createTwinSession>): TwinDraft {
   return state;
 }
 
-async function opened(fake: FakeBridge = twinBridge()) {
-  const twin = createTwinSession(fake.devices);
+async function opened(fake: FakeBridge = twinBridge(), lead: () => KindFile | null = () => cooler.kind) {
+  const twin = createTwinSession(fake.devices, lead);
   await twin.open(coolerPath);
   return { twin, fake };
 }
 
-function kindDocument() {
-  return { kind: "cooler", metrics: [], commands: [] };
+function calls(fake: FakeBridge, name: string) {
+  return fake.calls.filter((call) => call.name === name);
 }
 
 describe("opening the behaviour of a device", () => {
-  it("reads the device, its choices file, the other devices and the instrument library, and suggests by unit", async () => {
+  it("reads the choices file, the device list, the binary's suggestion and the instruments for each unit", async () => {
     const { twin, fake } = await opened();
     const draft = ready(twin);
     expect(draft.choicesPath).toBe(choicesPath);
     expect(draft.members.map((member) => member.kind.kind)).toEqual(["cooler"]);
     expect(draft.touched).toBe(false);
+    expect(draft.edited).toBe(false);
     expect(draft.saved).toBe(draft.doc);
-    expect(draft.doc.kinds[0]?.metrics.temperature?.instrument).toBe("streamsim/thermistor@1");
-    expect(draft.instruments?.map((instrument) => instrument.title)).toEqual([
-      "Capacitive humidity sensor",
-      "Tachometer",
-      "Thermistor",
-    ]);
+    expect(draft.doc).toMatchObject({ id: "cooler-sensor-twin", title: "Twin of cooler, sensor" });
+    expect(draft.doc.kinds[0]?.metrics.m1?.instrument).toBe("none");
+    expect(Object.keys(draft.instruments)).toEqual(["Cel", "%"]);
+    expect(draft.instruments.Cel?.map((instrument) => instrument.match)).toEqual(["convertible"]);
+    expect(calls(fake, "component.list").map((call) => call.args)).toEqual([{ unit: "Cel" }, { unit: "%" }]);
+    expect(calls(fake, "kind.suggest")).toHaveLength(1);
     expect(othersOf(draft).map((entry) => entry.path)).toEqual([sensorPath]);
-    expect(fake.calls.filter((call) => call.name === "component.show")).toHaveLength(3);
     expect(fake.reads).toContain(choicesPath);
     expect(pairsOf(draft)).toHaveLength(1);
     expect(isChoicesDirty(draft)).toBe(false);
+    expect(draft.onDisk).toBe(false);
   });
 
   it("reopens with the choices saved before, with the other devices they name", async () => {
     const fake = twinBridge();
     const first = await opened(fake);
     await first.twin.include(sensorPath);
-    first.twin.edit((choices) => chooseInstrument(choices, "cooler", "temperature", "none"));
-    first.twin.edit((choices) => startAt(choices, "cooler", "temperature", 20));
+    first.twin.edit((choices) => chooseInstrument(choices, coolerPath, "m1", thermistor.ref));
+    first.twin.edit((choices) => startAt(choices, coolerPath, "m1", 20));
     await first.twin.persist();
     const draft = ready((await opened(fake)).twin);
     expect(draft.members.map((member) => member.kind.kind)).toEqual(["cooler", "sensor"]);
     expect(draft.touched).toBe(true);
-    expect(draft.doc.kinds[0]?.metrics.temperature).toEqual({ instrument: "none", initial: 20 });
+    expect(draft.doc.kinds[0]?.metrics.m1).toEqual({ instrument: thermistor.ref, initial: 20 });
     expect(isChoicesDirty(draft)).toBe(false);
     expect(othersOf(draft)).toEqual([]);
   });
@@ -66,40 +68,51 @@ describe("opening the behaviour of a device", () => {
     const first = await opened(fake);
     first.twin.edit((choices) => renameTwin(choices, "kept-twin"));
     await first.twin.persist();
-    fake.addFile(coolerPath, { ...kindDocument(), metrics: [{ name: "pressure", data_type: "number" }] }, "k9");
-    const draft = ready((await opened(fake)).twin);
+    const metric = { name: "pressure", data_type: "number", unit: "Pa", resolution: 1 };
+    const grown = { kind: "cooler", metrics: [metric], commands: [] };
+    const named = kindOf(grown);
+    const draft = ready((await opened(fake, () => named)).twin);
     expect(draft.doc.id).toBe("kept-twin");
-    expect(Object.keys(draft.doc.kinds[0]?.metrics ?? {})).toEqual(["pressure"]);
+    expect(Object.keys(draft.doc.kinds[0]?.metrics ?? {})).toEqual(["m1"]);
     expect(isChoicesDirty(draft)).toBe(true);
+    expect(hasUnsavedChoices(draft)).toBe(false);
   });
 
-  it("opens without the library or the device list", async () => {
+  it("opens without the library or the device list, and says the instruments could not be read", async () => {
     const fake = twinBridge();
-    fake.actions.delete("component.list");
+    fake.handlers.set("component.list", () => failure(cannedFailure("boom", 500)));
     fake.workspaceOutcome = failure(cannedFailure("boom", 500));
     const draft = ready((await opened(fake)).twin);
-    expect(draft.instruments).toBeNull();
+    expect(draft.instruments).toEqual({ Cel: null, "%": null });
     expect(draft.known).toEqual([]);
-    expect(draft.doc.kinds[0]?.metrics.temperature?.instrument).toBe("none");
+    expect(draft.doc.kinds[0]?.metrics.m1?.instrument).toBe("none");
   });
 
-  it("keeps an instrument the binary cannot describe, without a unit", async () => {
+  it("goes on with its saved choices when the binary has no suggestion, and says why when it has no choices either", async () => {
     const fake = twinBridge();
-    fake.handlers.set("component.show", () => failure(cannedFailure("not_found", 404)));
+    const first = await opened(fake);
+    first.twin.edit((choices) => renameTwin(choices, "kept-twin"));
+    await first.twin.persist();
+    fake.handlers.delete("kind.suggest");
     const draft = ready((await opened(fake)).twin);
-    expect(draft.instruments).toHaveLength(3);
-    expect(draft.doc.kinds[0]?.metrics.temperature?.instrument).toBe("none");
+    expect(draft.doc.id).toBe("kept-twin");
+    expect(draft.suggested).toBeNull();
+    fake.files.delete(choicesPath);
+    const { twin } = await opened(fake);
+    expect(twin.snapshot()).toMatchObject({ phase: "failed", failure: { kind: "unreadable" } });
+    fake.handlers.set("kind.suggest", () => failure(cannedFailure("kind_failed", 422, "refused")));
+    expect((await opened(fake)).twin.snapshot()).toMatchObject({ phase: "failed", failure: { kind: "refused" } });
+  });
+
+  it("starts from the suggestion when the saved choices file is not a document", async () => {
+    const fake = twinBridge();
+    fake.addFile(choicesPath, "not json", "c1");
+    const draft = ready((await opened(fake)).twin);
+    expect(draft.doc.id).toBe("cooler-sensor-twin");
+    expect(draft.touched).toBe(false);
   });
 
   it.each([
-    ["the device is missing", (fake: FakeBridge) => fake.files.delete(coolerPath), "missing"],
-    [
-      "the device is not a kind file",
-      (fake: FakeBridge) => {
-        fake.addFile(coolerPath, "[1]");
-      },
-      "unreadable",
-    ],
     [
       "the choices file cannot be read",
       (fake: FakeBridge) => fake.files.set(choicesPath, failure(cannedFailure("boom", 500))),
@@ -112,49 +125,26 @@ describe("opening the behaviour of a device", () => {
     expect(twin.snapshot()).toMatchObject({ phase: "failed", path: coolerPath, failure: { kind } });
   });
 
+  it("says why it cannot open when the device is not open", async () => {
+    const { twin } = await opened(twinBridge(), () => null);
+    expect(twin.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { diagnostic: { message: "The device is not open." } },
+    });
+  });
+
   it("ignores an answer that arrives after it was closed", async () => {
     const fake = twinBridge();
-    const gates = fake.holdRead(coolerPath, 1);
-    const twin = createTwinSession(fake.devices);
+    const gates = fake.holdRead(choicesPath, 1);
+    const twin = createTwinSession(fake.devices, () => cooler.kind);
     const opening = twin.open(coolerPath);
     expect(twin.snapshot()).toEqual({ phase: "loading", path: coolerPath });
     await flushPromises();
     twin.close();
-    gates[0]?.resolve(cannedFile(coolerPath, kindDocument(), "k1"));
+    gates[0]?.resolve(failure(cannedFailure("not_found", 404)));
     await opening;
     expect(twin.snapshot()).toEqual({ phase: "idle" });
     await twin.reload();
-    expect(twin.snapshot()).toEqual({ phase: "idle" });
-  });
-});
-
-describe("the other devices of a twin", () => {
-  it("adds a device with its default choices and leaves it out again, never the first one", async () => {
-    const { twin } = await opened();
-    await twin.include(sensorPath);
-    await twin.include(sensorPath);
-    expect(ready(twin).doc.kinds.map((kind) => kind.kind)).toEqual(["cooler", "sensor"]);
-    expect(ready(twin).touched).toBe(true);
-    expect(othersOf(ready(twin))).toEqual([]);
-    twin.leave("cooler");
-    expect(ready(twin).members).toHaveLength(2);
-    twin.leave("sensor");
-    expect(ready(twin).doc.kinds.map((kind) => kind.kind)).toEqual(["cooler"]);
-    expect(othersOf(ready(twin)).map((entry) => entry.path)).toEqual([sensorPath]);
-  });
-
-  it("does not add a device it cannot read, or one that was added while it waited", async () => {
-    const { twin, fake } = await opened();
-    fake.files.delete(sensorPath);
-    await twin.include(sensorPath);
-    expect(ready(twin).members).toHaveLength(1);
-    fake.addFile(sensorPath, sensorDocument, "k2");
-    const gates = fake.holdRead(sensorPath, 1);
-    const including = twin.include(sensorPath);
-    await flushPromises();
-    twin.close();
-    gates[0]?.resolve(cannedFile(sensorPath, sensorDocument, "k2"));
-    await including;
     expect(twin.snapshot()).toEqual({ phase: "idle" });
   });
 });
@@ -165,14 +155,16 @@ describe("saving the choices", () => {
     await twin.persist();
     expect(fake.writes).toHaveLength(0);
     twin.edit((choices) => renameTwin(choices, "plant-a"));
+    expect(hasUnsavedChoices(ready(twin))).toBe(true);
     const first = twin.persist();
     twin.edit((choices) => renameTwin(choices, "plant-b"));
     const second = twin.persist();
     await Promise.all([first, second]);
     expect(fake.writes.map((write) => write.etag)).toEqual(["", "e1"]);
-    expect(JSON.parse(fake.writes[1]?.content ?? "{}")).toMatchObject({ id: "plant-b" });
+    expect(JSON.parse(fake.writes[1]?.content ?? "{}")).toMatchObject({ id: "plant-b", version: "0.1.0" });
     expect(ready(twin).save).toEqual({ kind: "idle" });
     expect(isChoicesDirty(ready(twin))).toBe(false);
+    expect(hasUnsavedChoices(ready(twin))).toBe(false);
   });
 
   it("says when the file changed on disk and does not write over it", async () => {
@@ -181,6 +173,7 @@ describe("saving the choices", () => {
     twin.edit((choices) => renameTwin(choices, "plant-a"));
     await twin.persist();
     expect(ready(twin).save).toMatchObject({ kind: "write-failed", failure: { kind: "conflict" } });
+    expect(hasUnsavedChoices(ready(twin))).toBe(true);
     expect(canCreate(ready(twin), { phase: "idle" })).toBe(false);
     await twin.create();
     expect(fake.calls.some((call) => call.name === "kind.twin")).toBe(false);
@@ -201,10 +194,15 @@ describe("saving the choices", () => {
     expect(fake.writes).toHaveLength(1);
   });
 
-  it("keeps the state when an edit changes nothing", async () => {
+  it("keeps the state when an edit changes nothing, and drops edits on request", async () => {
     const { twin } = await opened();
     const before = ready(twin);
     twin.edit((choices) => choices);
     expect(ready(twin)).toBe(before);
+    twin.edit((choices) => renameTwin(choices, "plant-a"));
+    twin.discard();
+    expect(ready(twin).doc).toBe(before.doc);
+    expect(ready(twin).edited).toBe(false);
+    expect(hasUnsavedChoices(ready(twin))).toBe(false);
   });
 });

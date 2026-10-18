@@ -9,6 +9,8 @@
 | Session | The paired browser, identified by an `HttpOnly`, `SameSite=Strict` cookie |
 | Admission | The check every API request passes: the bridge's host, its origin, a same-origin fetch |
 | Action | A canvas operation in the registry, mapped to one director MCP tool or one streamsim command |
+| Action input | The one argument of an action whose text goes on the command's standard input and nowhere else; `kind.check` has `content`; capped at 1 MiB (`Action.Input`, `Action.Stdin`) |
+| Issue | `{pointer?, message, keyword?, member?}`: where, in words, why for a program, and which named member; relayed unchanged from the command, never parsed by the bridge |
 | Effector call | The canvas's `effector.list` and `effector.invoke` actions: the director lists a world's effectors and invokes one on an entity; the result is the operator acknowledgement, the capability token stays in the director |
 | Truth gate | The rule that keeps a run's sealed files from the canvas until the run ends (or from the start of an Explore run) |
 | Follow | Streaming a run's observer journal to the page as Server-Sent Events, by line index |

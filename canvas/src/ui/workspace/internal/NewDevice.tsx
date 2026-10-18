@@ -1,5 +1,5 @@
 import type { SyntheticEvent } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { DeviceDesk } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { deviceNameProblem } from "../../../model/devices";
@@ -18,9 +18,14 @@ interface NewDeviceProps {
 function useCreateDevice({ desk, navigation }: Pick<NewDeviceProps, "desk" | "navigation">) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
+  const sending = useRef(false);
   const create = (name: string) => {
+    if (sending.current) return;
+    sending.current = true;
     setBusy(true);
+    setFailure("");
     void desk.create(name).then((made) => {
+      sending.current = false;
       setBusy(false);
       if (made.ok) navigation.go({ screen: "device", path: made.value });
       else setFailure(made.failure.diagnostic.message);
@@ -46,6 +51,23 @@ function DeviceActions({ blocked, reason, onCancel }: ActionsProps) {
       </button>
       <span className={workspaceStyles.meta}>{reason}</span>
     </span>
+  );
+}
+
+function DeviceStatus({ busy, failure }: { readonly busy: boolean; readonly failure: string }) {
+  return (
+    <>
+      {busy && (
+        <p role="status" className={workspaceStyles.meta}>
+          Creating the device…
+        </p>
+      )}
+      {failure !== "" && (
+        <p role="alert" className={styles.newFailure}>
+          {failure}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -78,11 +100,7 @@ export function NewDeviceForm(props: NewDeviceProps) {
         problem={typed ? problem : ""}
       />
       <DeviceActions blocked={problem !== "" || busy} reason={typed ? "" : problem} onCancel={props.onCancel} />
-      {failure !== "" && (
-        <p role="alert" className={styles.newFailure}>
-          {failure}
-        </p>
-      )}
+      <DeviceStatus busy={busy} failure={failure} />
     </form>
   );
 }

@@ -155,7 +155,7 @@ func recordSession(listener net.Listener, received chan<- []map[string]any) {
 
 func kindDigests(t *testing.T) map[string]string {
 	t.Helper()
-	summaries, err := ValidateKindFiles(arduinoKindFiles(t))
+	summaries, err := ValidateKindFilesWith(arduinoKindFiles(t), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

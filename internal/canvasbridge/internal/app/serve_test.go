@@ -48,7 +48,7 @@ func TestTheWiredBridgeKnowsItsAbsoluteFoldersAndAFreshCode(t *testing.T) {
 	if bridge.edges.RunCommand == nil || bridge.edges.StartDirector == nil || bridge.edges.Tick == nil || bridge.edges.NewSession == nil {
 		t.Fatal("every edge is wired")
 	}
-	if result, err := bridge.edges.RunCommand(context.Background(), nil); err != nil || result.ExitCode != 1 {
+	if result, err := bridge.edges.RunCommand(context.Background(), nil, nil); err != nil || result.ExitCode != 1 {
 		t.Fatalf("the command edge runs the configured executable: %+v, %v", result, err)
 	}
 }

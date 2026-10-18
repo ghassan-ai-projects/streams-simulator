@@ -4,6 +4,8 @@ import type { Diagnostic, FileContent, Outcome } from "./shared";
 interface KindIssue {
   readonly pointer: string;
   readonly message: string;
+  readonly keyword?: string;
+  readonly member?: string;
 }
 
 export interface KindChecked {
@@ -16,14 +18,18 @@ export interface KindChecked {
 export interface LibraryInstrument {
   readonly ref: string;
   readonly title: string;
-}
-
-export interface InstrumentSpec {
-  readonly family: string;
   readonly unit: string;
   readonly min: number | null;
   readonly max: number | null;
+  readonly match: "exact" | "convertible" | "";
 }
+
+interface DeviceListing {
+  readonly kinds: readonly KindEntry[];
+  readonly domains: readonly string[];
+}
+
+type SuggestedChoices = Readonly<Record<string, unknown>>;
 
 export interface TwinMade {
   readonly id: string;
@@ -61,9 +67,10 @@ export interface DevicesGateway {
   readFile(path: string): Promise<Outcome<FileContent, DeviceFailure>>;
   writeFile(path: string, content: string, etag: string): Promise<Written>;
   check(path: string): Promise<Outcome<KindChecked, DeviceFailure>>;
-  kinds(): Promise<Outcome<readonly KindEntry[], DeviceFailure>>;
-  instruments(): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
-  instrument(ref: string): Promise<Outcome<InstrumentSpec, DeviceFailure>>;
+  checkContent(content: string, twin: boolean): Promise<Outcome<KindChecked, DeviceFailure>>;
+  listing(): Promise<Outcome<DeviceListing, DeviceFailure>>;
+  instruments(unit: string): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
+  suggest(): Promise<Outcome<SuggestedChoices, DeviceFailure>>;
   twin(input: {
     readonly choices: string;
     readonly out: string;

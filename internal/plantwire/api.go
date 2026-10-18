@@ -21,10 +21,13 @@ type WireFault = domain.WireFault
 
 type KindSummary = domain.KindSummary
 
+type TwinRules = domain.TwinRules
+
 var (
 	ErrKindFileMissing  = domain.ErrKindFileMissing
 	ErrKindDrift        = domain.ErrKindDrift
 	ErrNotCanonical     = domain.ErrNotCanonical
+	ErrTwinRequirements = domain.ErrTwinRequirements
 	ErrDuplicateMember  = domain.ErrDuplicateMember
 	ErrRefused          = domain.ErrRefused
 	ErrHostLost         = app.ErrHostLost

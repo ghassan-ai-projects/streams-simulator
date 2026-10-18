@@ -1,8 +1,9 @@
 import { Cpu, Play, RefreshCw, Wrench } from "lucide-react";
 import type { Draft, Step, TwinDraft, TwinSession } from "../../../app/devices";
-import { builtOf, canCreate, createBlock, twinStatusOf } from "../../../app/devices";
+import { builtOf, canCreate, createBlock, twinStatusOf, verdictOf } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { screen, shared } from "../../primitives";
+import { ConfirmButton } from "./ConfirmButton";
 import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
 
@@ -26,16 +27,17 @@ const tones = {
 function Reload({ draft, twin }: PartProps) {
   if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
   return (
-    <button
-      type="button"
-      className={shared.secondary}
-      onClick={() => {
+    <ConfirmButton
+      words="Reload from disk"
+      icon={<RefreshCw size={14} aria-hidden="true" />}
+      title="Read the choices from disk again"
+      question="Reload and lose your choices?"
+      confirmWords="Reload and lose them"
+      needsConfirm={draft.edited}
+      onConfirm={() => {
         void twin.reload();
       }}
-    >
-      <RefreshCw size={14} aria-hidden="true" />
-      Reload from disk
-    </button>
+    />
   );
 }
 
@@ -56,7 +58,7 @@ function Replace({ draft, twin }: PartProps) {
 
 function OpenPlant({ draft, navigation }: Pick<BarProps, "draft" | "navigation">) {
   const built = builtOf(draft);
-  if (built === null) return null;
+  if (built === null || verdictOf(built) === "failed") return null;
   return (
     <button
       type="button"
@@ -73,18 +75,22 @@ function OpenPlant({ draft, navigation }: Pick<BarProps, "draft" | "navigation">
 
 function Create({ draft, device, twin }: Pick<BarProps, "draft" | "device" | "twin">) {
   const allowed = canCreate(draft, device);
+  const again = draft.onDisk || builtOf(draft) !== null;
   return (
     <button
       type="button"
       className={shared.primary}
       aria-disabled={!allowed}
-      title={createBlock(draft, device) ?? "Create the twin from these choices"}
+      title={
+        createBlock(draft, device) ??
+        (again ? "Replace the twin with these choices" : "Create the twin from these choices")
+      }
       onClick={() => {
         if (allowed) void twin.create();
       }}
     >
       <Wrench size={14} aria-hidden="true" />
-      Create twin
+      {again ? "Replace twin" : "Create twin"}
     </button>
   );
 }

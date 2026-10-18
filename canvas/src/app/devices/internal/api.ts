@@ -10,10 +10,11 @@ export interface DeviceRow {
   readonly name: string;
   readonly metrics: number | null;
   readonly commands: number | null;
+  readonly status: "invalid" | "needs-twin" | "twin-ready";
 }
 
 export interface DeviceDesk {
-  rows(entries: readonly KindEntry[]): Promise<readonly DeviceRow[]>;
+  rows(entries: readonly KindEntry[], domains: readonly string[]): Promise<readonly DeviceRow[]>;
   create(name: string): Promise<Outcome<string, DeviceFailure>>;
 }
 
@@ -23,8 +24,9 @@ export interface TwinSession extends Store<TwinState> {
   close(): void;
   edit(change: (choices: TwinChoices) => TwinChoices): void;
   include(path: string): Promise<void>;
-  leave(kind: string): void;
+  leave(path: string): void;
   persist(): Promise<void>;
+  discard(): void;
   create(): Promise<void>;
   replace(): Promise<void>;
 }

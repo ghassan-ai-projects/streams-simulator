@@ -31,6 +31,8 @@ type Issue struct {
 	Pointer string
 	Located bool
 	Message string
+	Keyword string
+	Member  string
 }
 
 func LocatedIssue(pointer, message string) Issue {
@@ -41,6 +43,14 @@ func UnlocatedIssue(message string) Issue {
 	return Issue{Message: message}
 }
 
+func RuleIssue(pointer, keyword, member, message string) Issue {
+	return Issue{Pointer: pointer, Located: true, Message: message, Keyword: keyword, Member: member}
+}
+
+func UnlocatedRuleIssue(keyword, message string) Issue {
+	return Issue{Message: message, Keyword: keyword}
+}
+
 func (i Issue) MarshalJSON() ([]byte, error) {
 	raw, err := json.Marshal(i.wire())
 	if err != nil {
@@ -49,22 +59,29 @@ func (i Issue) MarshalJSON() ([]byte, error) {
 	return raw, nil
 }
 
+type locatedWire struct {
+	Pointer string `json:"pointer"`
+	Message string `json:"message"`
+	Keyword string `json:"keyword,omitempty"`
+	Member  string `json:"member,omitempty"`
+}
+
+type unlocatedWire struct {
+	Message string `json:"message"`
+	Keyword string `json:"keyword,omitempty"`
+}
+
 func (i Issue) wire() any {
 	if !i.Located {
-		return struct {
-			Message string `json:"message"`
-		}{i.Message}
+		return unlocatedWire{Message: i.Message, Keyword: i.Keyword}
 	}
-	return struct {
-		Pointer string `json:"pointer"`
-		Message string `json:"message"`
-	}{i.Pointer, i.Message}
+	return locatedWire{Pointer: i.Pointer, Message: i.Message, Keyword: i.Keyword, Member: i.Member}
 }
 
 func SchemaIssues(errs []jsonschema.Error) []Issue {
 	issues := make([]Issue, len(errs))
 	for i, e := range errs {
-		issues[i] = LocatedIssue(e.Path, e.Msg)
+		issues[i] = RuleIssue(e.Path, e.Keyword, e.Member, e.Msg)
 	}
 	return issues
 }
@@ -83,7 +100,7 @@ func (e *ValidationError) Unwrap() error { return e.Cause }
 
 func NotJSONError(contract Contract, source, prefix string, cause error) *ValidationError {
 	return &ValidationError{Contract: contract, Source: source, Summary: fmt.Sprintf("%s: %v", prefix, cause),
-		Issues: []Issue{UnlocatedIssue(cause.Error())}, Cause: cause}
+		Issues: []Issue{UnlocatedRuleIssue("json", cause.Error())}, Cause: cause}
 }
 
 func WithSource(err error, source string) error {

@@ -1,10 +1,12 @@
 import { Cpu, RefreshCw, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import type { DeviceSession, Draft } from "../../../app/devices";
-import { canSave, isBusy, isDirty, saveStatusOf } from "../../../app/devices";
+import { canSave, isBusy, isDirty, saveStatusOf, twinReadiness } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { screen, shared } from "../../primitives";
+import { ConfirmButton } from "./ConfirmButton";
 import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
+import notes from "./Notes.module.css";
 import { useDeviceKeys } from "./useDeviceKeys";
 
 interface BarProps {
@@ -12,6 +14,13 @@ interface BarProps {
   readonly devices: DeviceSession;
   readonly navigation: NavigationStore;
 }
+
+const readyTones = {
+  busy: notes.readyBusy,
+  warn: notes.readyWarn,
+  ok: notes.readyOk,
+  "": notes.readyIdle,
+} as const;
 
 const tones = {
   busy: styles.statusBusy,
@@ -23,33 +32,34 @@ const tones = {
 function Reload({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
   if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
   return (
-    <button
-      type="button"
-      className={shared.secondary}
-      onClick={() => {
+    <ConfirmButton
+      words="Reload from disk"
+      icon={<RefreshCw size={14} aria-hidden="true" />}
+      title="Read the file from disk again"
+      question="Reload and lose your changes?"
+      confirmWords="Reload and lose them"
+      needsConfirm={isDirty(draft)}
+      onConfirm={() => {
         void devices.reload();
       }}
-    >
-      <RefreshCw size={14} aria-hidden="true" />
-      Reload from disk
-    </button>
+    />
   );
 }
 
 function Revert({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
   return (
-    <button
-      type="button"
-      className={shared.secondary}
-      aria-disabled={!isDirty(draft) || isBusy(draft)}
+    <ConfirmButton
+      words="Revert"
+      icon={<RotateCcw size={14} aria-hidden="true" />}
       title="Discard the changes since the last save"
-      onClick={() => {
+      question="Discard your changes?"
+      confirmWords="Discard them"
+      needsConfirm
+      disabled={!isDirty(draft) || isBusy(draft)}
+      onConfirm={() => {
         devices.revert();
       }}
-    >
-      <RotateCcw size={14} aria-hidden="true" />
-      Revert
-    </button>
+    />
   );
 }
 
@@ -91,6 +101,7 @@ function SaveButton({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
 export function DeviceBar({ draft, devices, navigation }: BarProps) {
   useDeviceKeys(devices);
   const status = saveStatusOf(draft);
+  const readiness = twinReadiness(draft);
   return (
     <div className={screen.bar}>
       <Cpu size={14} aria-hidden="true" />
@@ -99,6 +110,11 @@ export function DeviceBar({ draft, devices, navigation }: BarProps) {
       <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
         {status.text}
       </span>
+      {readiness.text !== "" && (
+        <span role="status" className={readyTones[readiness.tone]}>
+          {readiness.text}
+        </span>
+      )}
       <Revert draft={draft} devices={devices} />
       <Check draft={draft} devices={devices} />
       <SaveButton draft={draft} devices={devices} />

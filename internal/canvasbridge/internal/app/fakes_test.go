@@ -50,6 +50,7 @@ type harness struct {
 	dir       string
 	directors []*fakeDirector
 	argv      [][]string
+	stdin     [][]byte
 	command   process.CommandResult
 	ticks     chan time.Time
 	prepare   func(*fakeDirector)
@@ -91,8 +92,9 @@ func (h *harness) startDirector(context.Context) (Director, error) {
 	return director, nil
 }
 
-func (h *harness) runCommand(_ context.Context, argv []string) (process.CommandResult, error) {
+func (h *harness) runCommand(_ context.Context, argv []string, stdin []byte) (process.CommandResult, error) {
 	h.argv = append(h.argv, argv)
+	h.stdin = append(h.stdin, stdin)
 	return h.command, nil
 }
 

@@ -145,8 +145,8 @@ func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOne(t *testing.T) 
 	if failure["code"] != "kind_failed" || !strings.Contains(message, "kinds/thin.kind.json") || strings.Contains(message, workspace) {
 		t.Fatalf("a bad kind file = %v", failure)
 	}
-	wantIssues := []any{map[string]any{"pointer": "/commands", "message": `missing required property "commands"`},
-		map[string]any{"pointer": "/metrics", "message": `missing required property "metrics"`}}
+	wantIssues := []any{map[string]any{"pointer": "/commands", "message": `missing required property "commands"`, "keyword": "required", "member": "commands"},
+		map[string]any{"pointer": "/metrics", "message": `missing required property "metrics"`, "keyword": "required", "member": "metrics"}}
 	if !jsonEqual(failure["issues"], wantIssues) {
 		t.Fatalf("the issues of a bad kind file = %v, want %v", failure["issues"], wantIssues)
 	}

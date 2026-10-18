@@ -1,8 +1,13 @@
-import type { DomainChecked, InstrumentSpec, LibraryInstrument, LintReport, TwinMade } from "../../../app/ports";
+import type { DomainChecked, LibraryInstrument, LintReport, TwinMade } from "../../../app/ports";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
+import { workspace } from "./decoders";
 
 function bound(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function matchOf(value: unknown): LibraryInstrument["match"] {
+  return value === "exact" || value === "convertible" ? value : "";
 }
 
 export function instrumentRefs(value: unknown): readonly LibraryInstrument[] | null {
@@ -13,19 +18,20 @@ export function instrumentRefs(value: unknown): readonly LibraryInstrument[] | n
     .map((entry) => ({
       ref: `${text(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
       title: text(entry.title) || text(entry.id),
+      unit: text(entry.unit),
+      min: bound(record(entry.range).min),
+      max: bound(record(entry.range).max),
+      match: matchOf(entry.match),
     }));
 }
 
-export function instrumentSpec(value: unknown): InstrumentSpec | null {
-  if (!isRecord(value) || !isRecord(value.document)) return null;
-  const document = value.document;
-  const range = record(document.range);
-  return {
-    family: text(document.unit_family),
-    unit: text(document.unit),
-    min: bound(range.min),
-    max: bound(range.max),
-  };
+export function deviceListing(value: unknown) {
+  const known = workspace(value);
+  return known === null ? null : { kinds: known.kinds, domains: known.domains.map((domain) => domain.path) };
+}
+
+export function suggestedChoices(value: unknown): Readonly<Record<string, unknown>> | null {
+  return isRecord(value) && isRecord(value.choices) ? value.choices : null;
 }
 
 export function twinMade(value: unknown): TwinMade | null {

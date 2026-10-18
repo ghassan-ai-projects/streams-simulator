@@ -1,35 +1,18 @@
-import { useState } from "react";
-import {
-  changeMetric,
-  enumOptions,
-  idRule,
-  issuesOn,
-  looksLikeId,
-  rangeHint,
-  twinReadingRule,
-  typeChoices,
-  unitChoices,
-  withEnumOptions,
-} from "../../../model/devices";
+import { changeMetric, issuesOn, rangeHint, typeChoices, unitChoices } from "../../../model/devices";
 import type { Metric } from "../../../model/devices";
 import { cx, panel, useFocusOnMount } from "../../primitives";
 import styles from "./Devices.module.css";
-import { Field, ItemIssues, NumberInput, RemoveButton, Select, TextBox } from "./Field";
-import type { FormProps, MetricEdit } from "./formProps";
+import { Field, ItemIssues, ItemNeeds, NumberInput, RemoveButton, Select, TextBox } from "./Field";
+import { FormTitle } from "./FormTitle";
+import type { FormProps, MetricEdit, MetricFields } from "./formProps";
+import { Behaviour } from "./MetricExtras";
+import notes from "./Notes.module.css";
 
-interface MetricFields {
-  readonly metric: Metric;
-  readonly on: (field: string) => readonly string[];
-  readonly change: (edit: MetricEdit) => void;
-}
-
-function Identity({ metric, on, change }: MetricFields) {
+function Identity({ metric, on, need, change }: MetricFields) {
   const ref = useFocusOnMount<HTMLInputElement>({ when: metric.name === "" });
-  const likely = metric.name === "" || looksLikeId(metric.name);
-  const caution = likely ? "" : "The binary is likely to refuse this name.";
   return (
     <>
-      <Field label="Name" hint={idRule} also={twinReadingRule} caution={caution} issues={on("name")}>
+      <Field label="Name" field="name" issues={on("name")} needs={need("name")}>
         {(aria) => (
           <TextBox
             aria={aria}
@@ -41,7 +24,7 @@ function Identity({ metric, on, change }: MetricFields) {
           />
         )}
       </Field>
-      <Field label="Type" issues={on("data_type")}>
+      <Field label="Type" field="data_type" issues={on("data_type")} needs={need("data_type")}>
         {(aria) => (
           <Select
             aria={aria}
@@ -57,9 +40,15 @@ function Identity({ metric, on, change }: MetricFields) {
   );
 }
 
-function Units({ metric, on, change }: MetricFields) {
+function Units({ metric, on, need, change }: MetricFields) {
   return (
-    <Field label="Unit" hint="A unit code such as Cel, %, Pa or rpm." issues={on("unit")}>
+    <Field
+      label="Unit"
+      field="unit"
+      hint="A unit code such as Cel, %, Pa or rpm."
+      issues={on("unit")}
+      needs={need("unit")}
+    >
       {(aria) => (
         <>
           <TextBox
@@ -81,47 +70,65 @@ function Units({ metric, on, change }: MetricFields) {
   );
 }
 
-function Bounds({ metric, on, change }: MetricFields) {
+function Bounds({ metric, on, need, change }: MetricFields) {
   const { range } = metric;
   return (
-    <Field label="Range" caution={rangeHint(range)} issues={on("eu_range")}>
+    <Field
+      label="Range"
+      field="eu_range"
+      group
+      caution={rangeHint(range)}
+      issues={on("eu_range")}
+      needs={need("eu_range")}
+    >
       {(aria) => (
-        <span className={panel.pair}>
-          <NumberInput
-            value={range.min}
-            aria={aria}
-            name="Minimum"
-            onChange={(min) => {
-              change({ range: { ...range, min } });
-            }}
-          />
-          <NumberInput
-            value={range.max}
-            aria={{ ...aria, id: `${aria.id}-max` }}
-            name="Maximum"
-            onChange={(max) => {
-              change({ range: { ...range, max } });
-            }}
-          />
+        <span className={notes.bounds}>
+          <span className={notes.bound}>
+            <label htmlFor={aria.id}>Minimum</label>
+            <NumberInput
+              value={range.min}
+              aria={aria}
+              onChange={(min) => {
+                change({ range: { ...range, min } });
+              }}
+            />
+          </span>
+          <span className={notes.bound}>
+            <label htmlFor={`${aria.id}-max`}>Maximum</label>
+            <NumberInput
+              value={range.max}
+              aria={{ ...aria, id: `${aria.id}-max`, "data-field": undefined }}
+              onChange={(max) => {
+                change({ range: { ...range, max } });
+              }}
+            />
+          </span>
         </span>
       )}
     </Field>
   );
 }
 
-function Numbers({ metric, on, change }: MetricFields) {
+function Numbers(fields: MetricFields) {
+  const { metric, on, need, change } = fields;
   const numeric = metric.dataType === "number" || metric.dataType === "integer";
   const ranged = metric.range.min !== null || metric.range.max !== null;
+  const stated = metric.resolution !== null || need("resolution").length > 0;
   return (
     <>
-      {(numeric || ranged) && <Bounds metric={metric} on={on} change={change} />}
-      {numeric && (
-        <Field label="Resolution" hint="The smallest step the reading can show." issues={on("resolution")}>
+      {(numeric || ranged) && <Bounds {...fields} />}
+      {(numeric || stated) && (
+        <Field
+          label="Resolution"
+          field="resolution"
+          hint="The smallest step the reading can show."
+          issues={on("resolution")}
+          needs={need("resolution")}
+        >
           {(aria) => (
             <NumberInput
               value={metric.resolution}
               aria={aria}
-              name="Resolution"
               onChange={(resolution) => {
                 change({ resolution });
               }}
@@ -133,92 +140,22 @@ function Numbers({ metric, on, change }: MetricFields) {
   );
 }
 
-function Options({ metric, on, change }: MetricFields) {
-  const [typed, setTyped] = useState(() => enumOptions(metric));
-  return (
-    <Field label="Options" hint="The values the reading can have, separated by commas." issues={on("enum_values")}>
-      {(aria) => (
-        <TextBox
-          aria={aria}
-          value={typed}
-          onChange={(next) => {
-            setTyped(next);
-            change({ extra: withEnumOptions(metric.extra, next) });
-          }}
-        />
-      )}
-    </Field>
-  );
-}
-
-function Setpoint({ metric, on, change }: MetricFields) {
-  return (
-    <Field label="Setpoint" issues={on("writable")}>
-      {(aria) => (
-        <label className={styles.check}>
-          <input
-            {...aria}
-            aria-label="Setpoint"
-            type="checkbox"
-            checked={metric.writable}
-            onChange={(event) => {
-              change({ writable: event.target.checked });
-            }}
-          />
-          A command can set this reading
-        </label>
-      )}
-    </Field>
-  );
-}
-
-function Behaviour({ metric, on, change }: MetricFields) {
-  return (
-    <>
-      {metric.dataType === "enum" && <Options metric={metric} on={on} change={change} />}
-      <Field label="Scan class" hint="How often it is read, such as fast or slow." issues={on("scan_class")}>
-        {(aria) => (
-          <TextBox
-            aria={aria}
-            value={metric.scanClass}
-            onChange={(scanClass) => {
-              change({ scanClass });
-            }}
-          />
-        )}
-      </Field>
-      <Setpoint metric={metric} on={on} change={change} />
-      <Field label="Description" hint="Up to 200 characters." issues={on("description")}>
-        {(aria) => (
-          <TextBox
-            aria={aria}
-            maxLength={200}
-            value={metric.description}
-            onChange={(description) => {
-              change({ description });
-            }}
-          />
-        )}
-      </Field>
-    </>
-  );
-}
-
-export function MetricForm({ metric, devices, issues }: FormProps & { readonly metric: Metric }) {
+export function MetricForm({ metric, devices, issues, needs }: FormProps & { readonly metric: Metric }) {
   const on = (field: string) => issuesOn(issues, "metric", metric.key, field);
+  const need = (field: string) => issuesOn(needs, "metric", metric.key, field);
   const change = (edit: MetricEdit) => {
     devices.edit((kind) => changeMetric(kind, metric.key, edit));
   };
+  const fields = { metric, on, need, change };
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="reading-title">
-      <h2 id="reading-title" className={styles.formTitle}>
-        Reading
-      </h2>
+      <FormTitle id="reading-title" words="Reading" />
       <ItemIssues messages={on("")} />
-      <Identity metric={metric} on={on} change={change} />
-      <Units metric={metric} on={on} change={change} />
-      <Numbers metric={metric} on={on} change={change} />
-      <Behaviour metric={metric} on={on} change={change} />
+      <ItemNeeds messages={need("")} />
+      <Identity {...fields} />
+      <Units {...fields} />
+      <Numbers {...fields} />
+      <Behaviour {...fields} />
       <RemoveButton
         words="Remove this reading"
         onRemove={() => {

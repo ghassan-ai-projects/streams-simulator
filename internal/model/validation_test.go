@@ -19,6 +19,10 @@ func TestIssueMarshalsItsPointerOnlyWhenLocated(t *testing.T) {
 		{"located", LocatedIssue("/channels/0", "bad"), `{"pointer":"/channels/0","message":"bad"}`},
 		{"whole document", LocatedIssue("", "whole document"), `{"pointer":"","message":"whole document"}`},
 		{"unlocated", UnlocatedIssue("cross-reference"), `{"message":"cross-reference"}`},
+		{"a rule on a member", RuleIssue("/metrics/0/resolution", "twin_member_required", "resolution", "needs it"),
+			`{"pointer":"/metrics/0/resolution","message":"needs it","keyword":"twin_member_required","member":"resolution"}`},
+		{"a rule without a member", RuleIssue("/id", "pattern", "", "bad"), `{"pointer":"/id","message":"bad","keyword":"pattern"}`},
+		{"an unlocated rule", UnlocatedRuleIssue("json", "not JSON"), `{"message":"not JSON","keyword":"json"}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -38,6 +42,15 @@ func TestSchemaIssuesKeepEveryViolationAndItsPath(t *testing.T) {
 	t.Parallel()
 	got := SchemaIssues([]jsonschema.Error{{Path: "", Msg: "missing"}, {Path: "/id", Msg: "pattern"}})
 	want := []Issue{LocatedIssue("", "missing"), LocatedIssue("/id", "pattern")}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("SchemaIssues = %+v, want %+v", got, want)
+	}
+}
+
+func TestSchemaIssuesCarryTheFailedKeywordAndTheNamedMember(t *testing.T) {
+	t.Parallel()
+	got := SchemaIssues([]jsonschema.Error{{Path: "/a/resolution", Msg: "missing", Keyword: "required", Member: "resolution"}, {Path: "/id", Msg: "bad", Keyword: "pattern"}})
+	want := []Issue{RuleIssue("/a/resolution", "required", "resolution", "missing"), RuleIssue("/id", "pattern", "", "bad")}
 	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Fatalf("SchemaIssues = %+v, want %+v", got, want)
 	}

@@ -5,6 +5,7 @@ import type { NavigationStore } from "../../../app/shell";
 import { kindFacts, stemOf } from "../../../model/devices";
 import type { Workspace } from "../../../model/workspace";
 import { shared } from "../../primitives";
+import badgeStyles from "./Badge.module.css";
 import { NewDeviceForm } from "./NewDevice";
 import { SectionHeading } from "./SectionHeading";
 import rowStyles from "./ListSection.module.css";
@@ -21,17 +22,23 @@ interface Shown {
   readonly loaded: boolean;
 }
 
-function useDeviceRows(desk: DeviceDesk, kinds: Workspace["kinds"]): readonly DeviceRow[] | null {
+function useDeviceRows(desk: DeviceDesk, workspace: Workspace): readonly DeviceRow[] | null {
   const [rows, setRows] = useState<readonly DeviceRow[] | null>(null);
+  const { kinds, domains } = workspace;
   useEffect(() => {
     let live = true;
-    void desk.rows(kinds).then((next) => {
-      if (live) setRows(next);
-    });
+    void desk
+      .rows(
+        kinds,
+        domains.map((domain) => domain.path),
+      )
+      .then((next) => {
+        if (live) setRows(next);
+      });
     return () => {
       live = false;
     };
-  }, [desk, kinds]);
+  }, [desk, kinds, domains]);
   return rows;
 }
 
@@ -40,10 +47,16 @@ function shownRows(kinds: Workspace["kinds"], rows: readonly DeviceRow[] | null)
     const found = rows?.find((row) => row.path === entry.path);
     if (found !== undefined) return { row: found, loaded: true };
     const name = entry.kind === "" ? stemOf(entry.path) : entry.kind;
-    return { row: { path: entry.path, name, metrics: null, commands: null }, loaded: false };
+    return { row: { path: entry.path, name, metrics: null, commands: null, status: "invalid" }, loaded: false };
   });
   return shown.sort((a, b) => a.row.name.localeCompare(b.row.name));
 }
+
+const statusBadge = {
+  invalid: { words: "Not valid", style: "unfinished" },
+  "needs-twin": { words: "Needs a twin", style: "badge" },
+  "twin-ready": { words: "Twin ready", style: "verified" },
+} as const;
 
 function DeviceItem({ item, navigation }: { readonly item: Shown; readonly navigation: NavigationStore }) {
   const { row, loaded } = item;
@@ -55,6 +68,9 @@ function DeviceItem({ item, navigation }: { readonly item: Shown; readonly navig
           <span className={rowStyles.name} title={row.name}>
             {row.name}
           </span>
+          {loaded && (
+            <span className={badgeStyles[statusBadge[row.status].style]}>{statusBadge[row.status].words}</span>
+          )}
         </span>
         <span className={workspaceStyles.meta}>
           {loaded ? kindFacts(row.metrics, row.commands) : "Reading the file…"}
@@ -87,7 +103,7 @@ function NoDevices() {
 }
 
 export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
-  const rows = useDeviceRows(desk, workspace.kinds);
+  const rows = useDeviceRows(desk, workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const taken = workspace.kinds.flatMap((entry) => [entry.kind, stemOf(entry.path)]).filter((name) => name !== "");

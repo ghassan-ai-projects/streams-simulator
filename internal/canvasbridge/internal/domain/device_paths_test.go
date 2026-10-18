@@ -173,10 +173,10 @@ func TestComponentValidateChecksTheWholeLibraryAndTakesNoArguments(t *testing.T)
 	}
 }
 
-func TestOnlyDomainValidateComposeAndTwinCarryTheWorkspaceKinds(t *testing.T) {
+func TestOnlyDomainValidateComposeTwinAndSuggestCarryTheWorkspaceKinds(t *testing.T) {
 	t.Parallel()
 	for _, action := range Actions() {
-		want := action.Name == "domain.validate" || action.Name == "domain.compose" || action.Name == "kind.twin"
+		want := action.Name == "domain.validate" || action.Name == "domain.compose" || action.Name == "kind.twin" || action.Name == "kind.suggest"
 		if action.Kinds != want {
 			t.Errorf("%s: Kinds = %v, want %v", action.Name, action.Kinds, want)
 		}

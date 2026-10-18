@@ -7,7 +7,7 @@ import { kindChecked } from "./kindIssues";
 const path = "kinds/fan.kind.json";
 const summary = { path, kind: "fan", kind_digest: "sha256:abc", metrics: 2, commands: 1 };
 
-function refusal(message: string, issues: readonly { pointer: string; message: string }[] = []) {
+function refusal(message: string, issues: readonly object[] = []) {
   return respond(422, { error: { code: "kind_failed", message, issues } });
 }
 
@@ -51,15 +51,50 @@ describe("devices adapter", () => {
     });
   });
 
-  it("refuses with its message alone when the binary names no located issue", async () => {
-    const { gateway } = devices(() =>
-      respond(422, {
-        error: { code: "kind_failed", message: "kind file is not JSON", issues: [{ message: "not JSON" }] },
-      }),
-    );
-    expect(await gateway.check(path)).toMatchObject({
+  it("keeps the keyword and the member of an issue, and an issue the binary places nowhere", async () => {
+    const issues = [
+      { pointer: "/metrics/0/resolution", message: "needs it", keyword: "twin_member_required", member: "resolution" },
+      { message: "not JSON", keyword: "json" },
+      { pointer: "/kind", message: "bad", keyword: 3, member: "" },
+    ];
+    const { gateway } = devices(() => refusal("kind file is not JSON", issues));
+    const failure = await gateway.check(path);
+    expect(failure).toMatchObject({
       ok: false,
-      failure: { kind: "refused", diagnostic: { message: "kind file is not JSON" }, issues: [] },
+      failure: {
+        kind: "refused",
+        diagnostic: { message: "kind file is not JSON" },
+        issues: [
+          { pointer: "/metrics/0/resolution", keyword: "twin_member_required", member: "resolution" },
+          { pointer: "", message: "not JSON", keyword: "json" },
+          { pointer: "/kind", message: "bad" },
+        ],
+      },
+    });
+    const third = !failure.ok && failure.failure.kind === "refused" ? failure.failure.issues[2] : undefined;
+    expect(third).toEqual({ pointer: "/kind", message: "bad" });
+  });
+
+  it("checks a document that is not a file, with or without what a twin needs, and writes nothing", async () => {
+    const { transport, gateway } = devices(() => respond(200, { result: { valid: true, kinds: [summary] } }));
+    expect(await gateway.checkContent('{"kind":"fan"}', true)).toEqual({
+      ok: true,
+      value: { kind: "fan", digest: "sha256:abc", metrics: 2, commands: 1 },
+    });
+    expect(await gateway.checkContent("{}", false)).toMatchObject({ ok: true });
+    const [first, second] = transport.fetch.mock.calls;
+    expect(first?.[0]).toBe("/api/actions/kind.check");
+    expect(first?.[1]).toMatchObject({ body: JSON.stringify({ args: { content: '{"kind":"fan"}', twin: true } }) });
+    expect(second?.[1]).toMatchObject({ body: JSON.stringify({ args: { content: "{}", twin: false } }) });
+    expect(transport.fetch.mock.calls.every((call) => call[1]?.method === "POST")).toBe(true);
+  });
+
+  it("says why a document was refused without a file", async () => {
+    const issues = [{ pointer: "/kind", message: "bad", keyword: "pattern" }];
+    const { gateway } = devices(() => refusal("refused", issues));
+    expect(await gateway.checkContent("{}", true)).toMatchObject({
+      ok: false,
+      failure: { kind: "refused", issues },
     });
   });
 

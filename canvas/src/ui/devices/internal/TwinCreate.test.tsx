@@ -6,17 +6,17 @@ import { stubResizeObserver } from "../../../test/dom";
 import { cannedFailure } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { failure, success } from "../../../test/outcome";
-import { domainPath, refusal, twinBridge } from "../../../test/twinFixture";
+import { coolerPath, domainPath, refusal, twinBridge } from "../../../test/twinFixture";
 import { behaviourOf, createTwin, inCommand, inReading, pickStep } from "../../../test/twinHarness";
 
 const pointer = "/kinds/0/commands/set_duty/drives/0/time_constant_s";
-const madeWire = { id: "cooler-twin", digest: "d", channels: 1, faults: 1, effectors: 1, implements: [] };
+const madeWire = { id: "cooler-sensor-twin", digest: "d", channels: 1, faults: 1, effectors: 1, implements: [] };
 
 function finishEffect(timeConstant: string) {
   const command = inCommand("set_duty");
   fireEvent.change(command.getByLabelText("Response"), { target: { value: "first_order" } });
   const effect = within(command.getByRole("group", { name: "Effect 1 of set_duty" }));
-  fireEvent.change(effect.getByLabelText("Reading that follows"), { target: { value: "cooler/temperature" } });
+  fireEvent.change(effect.getByLabelText("Reading that follows"), { target: { value: `m1@${coolerPath}` } });
   fireEvent.change(effect.getByLabelText("Gain"), { target: { value: "-0.5" } });
   fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: timeConstant } });
   return effect;
@@ -75,74 +75,56 @@ describe("creating the twin from the screen", () => {
     expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
   });
 
-  it("puts the binary's issue on the field it names, in the issue list, and in the status", async () => {
+  it("puts the binary's issue in plain words on the field it names, moves to it, and drops it when the value is corrected", async () => {
     const fake = twinBridge();
-    fake.handlers.set("kind.twin", () => refusal(pointer, "must be above zero"));
+    fake.handlers.set("kind.twin", () => refusal({ pointer, message: "must be > 0", keyword: "exclusiveMinimum" }));
     await behaviourOf(fake);
-    const effect = finishEffect("-5");
+    const effect = finishEffect("5");
     createTwin();
     expect(await screen.findByText("The binary refuses the choices: 1 issue.")).toBeInTheDocument();
     expect(effect.getByLabelText("Time constant")).toHaveAttribute("aria-invalid", "true");
-    expect(effect.getByText("must be above zero")).toBeInTheDocument();
-    const list = within(screen.getByRole("region", { name: "Issues" }));
+    expect(effect.getByText("Must be above zero")).toBeInTheDocument();
+    const list = within(screen.getByRole("alert", { name: "Issues" }));
     expect(list.getByText("cooler · set_duty · Time constant")).toBeInTheDocument();
+    expect(list.getByText("must be > 0")).toBeInTheDocument();
+    expect(list.getByRole("listitem")).toHaveFocus();
     expect(stepChip(/^Behaviour/)).toHaveTextContent("Needs attention");
     fireEvent.change(effect.getByLabelText("Time constant"), { target: { value: "30" } });
+    expect(effect.queryByText("Must be above zero")).toBeNull();
+    expect(screen.queryByRole("alert", { name: "Issues" })).toBeNull();
     fake.handlers.set("kind.twin", () => success(madeWire));
     createTwin();
     expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Issues" })).toBeNull();
   });
 
-  it("puts a missing resolution on the reading and leads to the field in the interface step", async () => {
+  it("puts what the binary says of another device's reading on that device, with no way to the interface", async () => {
     const fake = twinBridge();
-    const message = `kind file "cooler": component: the kind file holds what a twin cannot reproduce: /metrics/0 needs "resolution": the interface a twin reproduces always states it`;
-    fake.handlers.set("kind.twin", () => refusal("/kinds/0/kind", message));
-    await behaviourOf(fake);
-    createTwin();
-    const reading = inReading("temperature");
-    expect(await reading.findByText("Needs a resolution.")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("region", { name: "Issues" })).getByText("cooler · temperature · Resolution"),
-    ).toBeInTheDocument();
-    fireEvent.click(reading.getByRole("button", { name: "Set it in the Interface step" }));
-    expect(await screen.findByRole("region", { name: "Editing cooler" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Resolution")).toHaveFocus();
-    expect(screen.getByLabelText("Name")).toHaveValue("temperature");
-  });
-
-  it("leads from a command that lacks a safe-stop statement to the toggle in the interface step", async () => {
-    const fake = twinBridge();
-    const message = `x: /commands/0 needs "safe_stop": y`;
-    fake.handlers.set("kind.twin", () => refusal("/kinds/0/kind", message));
-    await behaviourOf(fake);
-    createTwin();
-    const command = inCommand("set_duty");
-    expect(await command.findByText("Needs a safe stop.")).toBeInTheDocument();
-    fireEvent.click(command.getByRole("button", { name: "Set it in the Interface step" }));
-    expect(await screen.findByRole("region", { name: "Editing cooler" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Safe stop")).toHaveFocus();
-  });
-
-  it("offers no way to the interface for a reading of another device", async () => {
-    const fake = twinBridge();
-    const message = `x: /metrics/0 needs "resolution": y`;
-    fake.handlers.set("kind.twin", () => refusal("/kinds/1/kind", message));
+    const issue = {
+      pointer: "/kinds/1/kind",
+      message: 'needs "resolution"',
+      keyword: "twin_member_required",
+      member: "resolution",
+    };
+    fake.handlers.set("kind.twin", () => refusal(issue));
     await behaviourOf(fake);
     fireEvent.click(screen.getByRole("button", { name: "Add sensor to the twin" }));
     await screen.findByRole("group", { name: "Reading humidity" });
     createTwin();
-    expect(await inReading("humidity").findByText("Needs a resolution.")).toBeInTheDocument();
+    const section = screen.getByRole("heading", { level: 2, name: "sensor" }).closest("section");
+    if (section === null) throw new Error("the sensor has no card");
+    const card = within(section);
+    expect(await card.findByText("Needs a resolution")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Set it in the Interface step" })).toBeNull();
   });
 
   it("lists an issue that names nothing in the form under the issues", async () => {
     const fake = twinBridge();
-    fake.handlers.set("kind.twin", () => refusal("/kinds/7/kind", "no kind file defines it"));
+    fake.handlers.set("kind.twin", () => refusal({ pointer: "/kinds/7/kind", message: "no kind file defines it" }));
     await behaviourOf(fake);
     createTwin();
-    const list = within(await screen.findByRole("region", { name: "Issues" }));
+    const list = within(await screen.findByRole("alert", { name: "Issues" }));
     expect(list.getByText("Twin")).toBeInTheDocument();
+    expect(list.getByText("The binary does not accept this")).toBeInTheDocument();
     expect(list.getByText("no kind file defines it")).toBeInTheDocument();
     expect(screen.getAllByText("no kind file defines it")).toHaveLength(1);
   });
@@ -170,14 +152,22 @@ describe("creating the twin from the screen", () => {
 
   it("says when the twin does not match its device, and what the plausibility check found", async () => {
     const fake = twinBridge();
-    fake.actions.set("domain.validate", refusal("/kinds/0/implements", "differs from the kind file"));
+    const drift = {
+      pointer: "/kinds/0/implements",
+      message: "differs from the kind file",
+      keyword: "implements_drift",
+    };
+    fake.actions.set("domain.validate", refusal(drift));
     await behaviourOf(fake);
     createTwin();
     expect(await screen.findByText("Twin created, but it does not match its device.")).toBeInTheDocument();
+    expect(screen.queryByText("Twin ready.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open as a plant" })).toBeNull();
     expect(stepChip(/^Check/)).toHaveTextContent("Failed");
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
     expect(check.getByText("The twin does not match its device")).toBeInTheDocument();
+    expect(check.getByText("The twin no longer matches this device")).toBeInTheDocument();
     expect(check.getByText("differs from the kind file")).toBeInTheDocument();
   });
 
@@ -191,7 +181,10 @@ describe("creating the twin from the screen", () => {
     fake.actions.set("domain.lint", failure({ ...cannedFailure("domain_lint", 422, "errors"), result: report }));
     await behaviourOf(fake);
     createTwin();
-    await screen.findByText("Twin ready.");
+    expect(await screen.findByText("Twin created, but the plausibility check found 1 error.")).toBeInTheDocument();
+    expect(screen.queryByText("Twin ready.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open as a plant" })).toBeNull();
+    expect(stepChip(/^Check/)).toHaveTextContent("Failed");
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
     expect(await check.findByText("The plausibility check found 1 error")).toBeInTheDocument();

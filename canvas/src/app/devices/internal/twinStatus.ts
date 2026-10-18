@@ -1,10 +1,10 @@
 import { counted } from "../../../model/workspace";
 import type { DeviceFailure } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
-import { isDirty } from "./deviceSelectors";
+import { isDirty, twinNeedsOf } from "./deviceSelectors";
 import type { SaveStatus } from "./saveStatus";
 import type { Built, TwinDraft } from "./twinDraft";
-import { isStale, problemsOf } from "./twinSelectors";
+import { isStale, problemsOf, verdictOf } from "./twinSelectors";
 
 function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
   return { text, detail, tone };
@@ -30,15 +30,21 @@ function refused(draft: TwinDraft, failure: DeviceFailure): SaveStatus {
 function created(draft: TwinDraft, built: Built): SaveStatus {
   if (isStale(draft))
     return status("Choices changed since the twin was created. Create it again to update it.", "warn");
-  const { implemented } = built;
-  if (implemented.kind === "checking") return status("Checking the twin…", "busy");
-  if (implemented.kind === "passed") return status("Twin ready.", "ok", built.path);
-  return status("Twin created, but it does not match its device.", "warn", implemented.failure.diagnostic.message);
+  const { implemented, lint } = built;
+  const verdict = verdictOf(built);
+  if (verdict === "pending") return status("Checking the twin…", "busy");
+  if (verdict === "ready") return status("Twin ready.", "ok", built.path);
+  if (implemented.kind === "failed") {
+    return status("Twin created, but it does not match its device.", "warn", implemented.failure.diagnostic.message);
+  }
+  const errors = lint.kind === "done" ? lint.report.errors : 0;
+  return status(`Twin created, but the plausibility check found ${counted(errors, "error")}.`, "warn", built.path);
 }
 
 function idle(draft: TwinDraft): SaveStatus {
   if (problemsOf(draft).length > 0) return status("Finish the choices marked in the form.", "warn");
-  return status("Choices are ready. Create the twin when you are.", "");
+  const words = draft.onDisk ? "Replace the twin when you are." : "Create the twin when you are.";
+  return status(`Choices are ready. ${words}`, "");
 }
 
 function buildStatus(draft: TwinDraft): SaveStatus {
@@ -49,7 +55,7 @@ function buildStatus(draft: TwinDraft): SaveStatus {
     case "exists":
       return status("A plant with this name already exists. Replace it, or choose another name.", "warn");
     case "refused":
-      return refused(draft, build.failure);
+      return draft.issues.length === 0 ? idle(draft) : refused(draft, build.failure);
     case "failed":
       return status(`The twin could not be created: ${build.failure.diagnostic.message}`, "warn");
     case "built":
@@ -62,5 +68,8 @@ function buildStatus(draft: TwinDraft): SaveStatus {
 export function twinStatusOf(draft: TwinDraft, device: DeviceState): SaveStatus {
   if (draft.save.kind === "write-failed") return notSaved(draft.save.failure);
   if (isDirty(device)) return status("Save the interface first: the twin is made from the saved device.", "warn");
+  if (device.phase === "ready" && twinNeedsOf(device).length > 0 && draft.build.kind === "idle") {
+    return status("Set what the twin needs in the Interface step first.", "warn");
+  }
   return buildStatus(draft);
 }

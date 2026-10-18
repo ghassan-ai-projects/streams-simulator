@@ -32,6 +32,14 @@ func (b *Bridge) runCommand(ctx context.Context, action domain.Action, args map[
 	if err != nil {
 		return nil, err
 	}
+	stdin, err := action.Stdin(args)
+	if err != nil {
+		return nil, err
+	}
+	return b.runGuarded(ctx, action, args, parts, stdin)
+}
+
+func (b *Bridge) runGuarded(ctx context.Context, action domain.Action, args map[string]any, parts []domain.ArgvPart, stdin []byte) (json.RawMessage, error) {
 	guard, guarded, err := action.Guarded(args)
 	if err != nil {
 		return nil, err
@@ -39,7 +47,7 @@ func (b *Bridge) runCommand(ctx context.Context, action domain.Action, args map[
 	if guarded {
 		return b.executeGuarded(ctx, action, parts, guard)
 	}
-	return b.execute(ctx, action, parts)
+	return b.execute(ctx, action, parts, stdin)
 }
 
 func (b *Bridge) executeGuarded(ctx context.Context, action domain.Action, parts []domain.ArgvPart, guard domain.Guard) (json.RawMessage, error) {
@@ -48,7 +56,7 @@ func (b *Bridge) executeGuarded(ctx context.Context, action domain.Action, parts
 	if err := b.checkVersion(guard); err != nil {
 		return nil, err
 	}
-	return b.execute(ctx, action, parts)
+	return b.execute(ctx, action, parts, nil)
 }
 
 func (b *Bridge) checkVersion(guard domain.Guard) error {
@@ -62,8 +70,8 @@ func (b *Bridge) checkVersion(guard domain.Guard) error {
 	return nil
 }
 
-func (b *Bridge) execute(ctx context.Context, action domain.Action, parts []domain.ArgvPart) (json.RawMessage, error) {
-	result, err := b.edges.RunCommand(ctx, append(b.absolute(parts), b.flags(action)...))
+func (b *Bridge) execute(ctx context.Context, action domain.Action, parts []domain.ArgvPart, stdin []byte) (json.RawMessage, error) {
+	result, err := b.edges.RunCommand(ctx, append(b.absolute(parts), b.flags(action)...), stdin)
 	if err != nil {
 		return nil, err
 	}

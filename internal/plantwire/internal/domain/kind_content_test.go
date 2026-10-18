@@ -70,7 +70,8 @@ func TestCheckKindRefusesAnEmptyRangeOfAHandBuiltEntryAndNamesEachMetric(t *test
 		map[string]any{"name": "b", "data_type": "number", "instrument_range": map[string]any{"min": float64(3), "max": float64(1)}},
 	}}
 	invalid, ok := model.AsValidationError(CheckKind(entry))
-	want := []model.Issue{model.LocatedIssue("/metrics/0/eu_range", "min 0 is not below max 0"), model.LocatedIssue("/metrics/1/instrument_range", "min 3 is not below max 1")}
+	want := []model.Issue{model.RuleIssue("/metrics/0/eu_range", KeywordRangeEmpty, "eu_range", "min 0 is not below max 0"),
+		model.RuleIssue("/metrics/1/instrument_range", KeywordRangeEmpty, "instrument_range", "min 3 is not below max 1")}
 	if !ok || !errors.Is(invalid, ErrEmptyRange) || invalid.Contract != model.ContractKindFile || len(invalid.Issues) != 2 || invalid.Issues[0] != want[0] || invalid.Issues[1] != want[1] {
 		t.Fatalf("CheckKind = %+v, want a kind-file error caused by ErrEmptyRange with issues %+v", invalid, want)
 	}

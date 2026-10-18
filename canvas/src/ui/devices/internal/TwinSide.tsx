@@ -14,8 +14,8 @@ interface SideProps {
 function Members({ twin, draft }: SideProps) {
   return (
     <ul className={tw.members}>
-      {draft.members.map(({ kind }, index) => (
-        <li key={kind.kind} className={tw.member}>
+      {draft.members.map(({ path, kind }, index) => (
+        <li key={path} className={tw.member}>
           <span className={tw.memberText}>
             <span className={styles.itemName}>{kind.kind}</span>
             <span className={styles.itemFacts}>{kindFacts(kind.metrics.length, kind.commands.length)}</span>
@@ -26,7 +26,7 @@ function Members({ twin, draft }: SideProps) {
               className={panel.icon}
               aria-label={`Leave ${kind.kind} out of the twin`}
               onClick={() => {
-                twin.leave(kind.kind);
+                twin.leave(path);
               }}
             >
               <X size={16} aria-hidden="true" />

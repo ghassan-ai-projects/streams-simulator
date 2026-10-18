@@ -1,36 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { coolerDocument, instruments, kindOf } from "../../../test/twinFixture";
-import { startingChoices } from "./twinDefaults";
-import { chooseResponse, changeDrive, startAt } from "./twinEdits";
-import { parseChoices, responseOf, serialiseChoices } from "./twinFile";
+import { cooler, coolerPath, startingChoices, suggestion } from "../../../test/twinFixture";
+import { changeDrive, chooseResponse, startAt } from "./twinEdits";
+import { choicesOfDocument, choicesJson, parseChoices, responseOf, serialiseNamed } from "./twinFile";
+import { keyChoices, serialiseChoices } from "./twinKeys";
 
-const cooler = kindOf(coolerDocument);
+const members = [cooler];
+const at = { kind: coolerPath, command: "c1", index: 0 };
+
+function decided() {
+  const first = chooseResponse(startingChoices(), coolerPath, "c1", "first_order");
+  const driven = changeDrive(first, at, { kind: coolerPath, metric: "m1", gain: -0.5, timeConstantS: 120 });
+  return startAt(driven, coolerPath, "m1", 30);
+}
 
 describe("the twin choices file", () => {
-  it("writes the document the binary reads and reads it back", () => {
-    const first = chooseResponse(startingChoices([cooler], instruments), "cooler", "set_duty", "first_order");
-    const driven = changeDrive(
-      first,
-      { kind: "cooler", command: "set_duty", index: 0 },
-      {
-        kind: "cooler",
-        metric: "temperature",
-        gain: -0.5,
-        timeConstantS: 120,
-      },
-    );
-    const choices = startAt(driven, "cooler", "temperature", 30);
-    const written = JSON.parse(serialiseChoices(choices)) as Record<string, unknown>;
+  it("writes the document the binary reads, by name, and reads it back by key", () => {
+    const choices = decided();
+    const written = JSON.parse(serialiseChoices(choices, members)) as Record<string, unknown>;
     expect(written).toMatchObject({
       schema_version: "0.1",
-      id: "cooler-twin",
+      id: "cooler-sensor-twin",
       version: "0.1.0",
-      title: "cooler twin",
+      title: "Twin of cooler, sensor",
       kinds: [
         {
           kind: "cooler",
           instance: "cooler-01",
-          metrics: { temperature: { instrument: "streamsim/thermistor@1", initial: 30 }, duty: { instrument: "none" } },
+          metrics: { temperature: { instrument: "none", initial: 30 }, duty: { instrument: "none" } },
           commands: {
             set_duty: {
               response: "first_order",
@@ -41,14 +37,22 @@ describe("the twin choices file", () => {
         },
       ],
     });
-    expect(serialiseChoices(choices).endsWith("\n")).toBe(true);
-    expect(parseChoices(serialiseChoices(choices))).toEqual({ ...choices, extra: { version: "0.1.0" } });
+    expect(serialiseChoices(choices, members).endsWith("\n")).toBe(true);
+    const named = parseChoices(serialiseChoices(choices, members));
+    expect(named === null ? null : keyChoices(named, members)).toEqual(choices);
+  });
+
+  it("takes everything but the name, the title and the kinds from the document it was given", () => {
+    const named = choicesOfDocument(suggestion);
+    expect(named.extra).toEqual({ schema_version: "0.1", version: "0.1.0" });
+    expect(JSON.parse(serialiseNamed(named))).toMatchObject({ schema_version: "0.1", version: "0.1.0" });
+    expect(Object.keys(choicesJson(named)).slice(0, 2)).toEqual(["id", "title"]);
   });
 
   it("leaves out what has not been decided, and keeps what the editor does not show", () => {
-    const first = chooseResponse(startingChoices([cooler], instruments), "cooler", "set_duty", "first_order");
+    const first = chooseResponse(startingChoices(), coolerPath, "c1", "first_order");
     const written = JSON.parse(
-      serialiseChoices({ ...first, extra: { description: "Kept", site: { name: "bench" } } }),
+      serialiseChoices({ ...first, extra: { description: "Kept", site: { name: "bench" } } }, members),
     ) as {
       readonly description: string;
       readonly site: unknown;
@@ -57,11 +61,11 @@ describe("the twin choices file", () => {
     expect(written.description).toBe("Kept");
     expect(written.site).toEqual({ name: "bench" });
     expect(written.kinds[0]?.commands.set_duty.drives[0]).toEqual({ from: "duty", kind: "", metric: "" });
-    const none = chooseResponse(first, "cooler", "set_duty", "none");
-    expect(JSON.parse(serialiseChoices(none))).toMatchObject({
+    const none = chooseResponse(first, coolerPath, "c1", "none");
+    expect(JSON.parse(serialiseChoices(none, members))).toMatchObject({
       kinds: [{ commands: { set_duty: { response: "none" } } }],
     });
-    const plain = serialiseChoices(none);
+    const plain = serialiseChoices(none, members);
     expect(plain).not.toContain('"sets"');
     expect(plain).not.toContain('"initial"');
   });

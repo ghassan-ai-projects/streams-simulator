@@ -1,5 +1,5 @@
 import type { TwinDraft, TwinSession } from "../../../app/devices";
-import type { Selection, TwinChoices, TwinIssue } from "../../../model/devices";
+import type { FieldIssue, Selection, TwinChoices, TwinIssue } from "../../../model/devices";
 
 export type Reveal = (selection: Selection, field: string) => void;
 
@@ -7,6 +7,7 @@ export interface TwinProps {
   readonly twin: TwinSession;
   readonly draft: TwinDraft;
   readonly issues: readonly TwinIssue[];
+  readonly needs: readonly FieldIssue[];
   readonly reveal: Reveal;
 }
 

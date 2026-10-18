@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import { expect, vi } from "vitest";
 import { mountApp } from "./appHarness";
 import { FakeBridge, cannedFailure } from "./fakeBridge";
+import { kindCheck } from "./kindCheckFake";
 import { failure, success } from "./outcome";
 
 export const path = "kinds/fan.kind.json";
@@ -32,10 +33,10 @@ export const valid = success({
   kinds: [{ path, kind: "fan", kind_digest: "sha256:abc", metrics: 2, commands: 2 }],
 });
 
-export function refusal(pointer: string, message: string) {
+export function refusal(pointer: string, message: string, keyword = "pattern", member?: string) {
   return failure({
     ...cannedFailure("command_failed", 422, "kind file fails its schema"),
-    issues: [{ pointer, message }],
+    issues: [{ pointer, message, keyword, ...(member === undefined ? {} : { member }) }],
   });
 }
 
@@ -44,6 +45,7 @@ export function deviceBridge(file: unknown = fan) {
   fake.sessionOutcome = success(true);
   fake.addFile(path, file, "k1");
   fake.actions.set("kind.validate", valid);
+  fake.handlers.set("kind.check", kindCheck);
   return fake;
 }
 
@@ -52,7 +54,7 @@ export async function editingDevice(fake = deviceBridge()) {
   await screen.findByRole("region", { name: "Editing fan" });
   await vi.waitFor(() => {
     const state = app.stores.devices.snapshot();
-    expect(state.phase === "ready" && state.check.kind !== "checking").toBe(true);
+    expect(state.phase === "ready" && state.check.kind !== "checking" && state.review.state !== "checking").toBe(true);
   });
   return { ...app, fake };
 }

@@ -18,9 +18,13 @@ import (
 )
 
 type Error struct {
-	Path string
-	Msg  string
+	Path    string
+	Msg     string
+	Keyword string
+	Member  string
 }
+
+type failFunc func(keyword, message string)
 
 func (e Error) Error() string {
 	if e.Path == "" {

@@ -88,7 +88,7 @@ func checkCanonical(entry map[string]any) error {
 		return nil
 	}
 	return &model.ValidationError{Contract: model.ContractKindFile, Summary: "plantwire: kind file has no canonical form: " + err.Error(),
-		Issues: []model.Issue{model.UnlocatedIssue(err.Error())}, Cause: err}
+		Issues: []model.Issue{model.UnlocatedRuleIssue("canonical", err.Error())}, Cause: err}
 }
 
 func sortedByPointer(issues []model.Issue) []model.Issue {

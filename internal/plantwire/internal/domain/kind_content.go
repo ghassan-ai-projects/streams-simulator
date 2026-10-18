@@ -5,11 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-const kindDigestMember = "kind_digest"
+const (
+	kindDigestMember       = "kind_digest"
+	KeywordDigestForbidden = "kind_digest_forbidden"
+	KeywordRangeEmpty      = "kind_range_empty"
+)
 
 var (
 	ErrKindDigestInFile = errors.New("plantwire: a kind file carries no kind_digest")
@@ -21,7 +26,7 @@ var rangeMembers = []string{"eu_range", "instrument_range"}
 func digestInKindFile() error {
 	message := "a kind file must not carry kind_digest: it is computed from the file, so remove the member"
 	return &model.ValidationError{Contract: model.ContractKindFile, Summary: "plantwire: kind file fails its schema: /kind_digest: " + message,
-		Issues: []model.Issue{model.LocatedIssue("/"+kindDigestMember, message)}, Cause: ErrKindDigestInFile}
+		Issues: []model.Issue{model.RuleIssue("/"+kindDigestMember, KeywordDigestForbidden, kindDigestMember, message)}, Cause: ErrKindDigestInFile}
 }
 
 func checkKindContent(entry map[string]any) error {
@@ -61,7 +66,8 @@ func emptyRange(value any, pointer string) (model.Issue, bool) {
 	if !lowKnown || !highKnown || low < high {
 		return model.Issue{}, false
 	}
-	return model.LocatedIssue(pointer, fmt.Sprintf("min %v is not below max %v", low, high)), true
+	member := pointer[strings.LastIndex(pointer, "/")+1:]
+	return model.RuleIssue(pointer, KeywordRangeEmpty, member, fmt.Sprintf("min %v is not below max %v", low, high)), true
 }
 
 func numberOf(value any) (float64, bool) {

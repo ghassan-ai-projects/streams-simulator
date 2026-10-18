@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { mountApp } from "../../../test/appHarness";
 import { cannedFailure } from "../../../test/fakeBridge";
@@ -36,12 +36,17 @@ describe("the devices of a twin", () => {
 describe("opening and leaving the behaviour", () => {
   it("waits while the choices are read and says why they could not be", async () => {
     const fake = twinBridge();
-    const gates = fake.holdRead(choicesPath, 1);
+    const gates = fake.holdRead(choicesPath);
     mountApp(fake, hash);
     await screen.findByRole("region", { name: "Editing cooler" });
     pickStep(/^Behaviour/);
     expect(await screen.findByText("Opening the behaviour…")).toBeInTheDocument();
-    gates[0]?.resolve(failure(cannedFailure("boom", 500, "the bridge broke")));
+    await vi.waitFor(() => {
+      expect(gates.length).toBeGreaterThan(1);
+    });
+    gates.forEach((gate) => {
+      gate.resolve(failure(cannedFailure("boom", 500, "the bridge broke")));
+    });
     expect(await screen.findByRole("alert")).toHaveTextContent("The behaviour could not be opened: the bridge broke");
   });
 
@@ -65,8 +70,9 @@ describe("opening and leaving the behaviour", () => {
     expect(await screen.findByText(/Choices not saved: the file changed on disk/)).toBeInTheDocument();
     fake.writeOutcomes.clear();
     fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reload and lose them" }));
     await vi.waitFor(() => {
-      expect(screen.getByLabelText("Twin name")).toHaveValue("cooler-twin");
+      expect(screen.getByLabelText("Twin name")).toHaveValue("cooler-sensor-twin");
     });
   });
 
@@ -79,5 +85,60 @@ describe("opening and leaving the behaviour", () => {
       expect(screen.getByLabelText("Twin name")).toHaveValue("cooler-b");
     });
     expect(fake.writes.some((write) => write.path === choicesPath)).toBe(true);
+  });
+});
+
+describe("leaving the behaviour with choices that are not saved", () => {
+  function home() {
+    return screen.getByRole("button", { name: "Streams Simulator, workspace home" });
+  }
+
+  it("warns before the tab closes while choices wait to be saved, and not after", async () => {
+    await behaviourOf();
+    const clean = new Event("beforeunload", { cancelable: true });
+    act(() => {
+      window.dispatchEvent(clean);
+    });
+    expect(clean.defaultPrevented).toBe(false);
+    const name = screen.getByLabelText("Twin name");
+    fireEvent.change(name, { target: { value: "cooler-b" } });
+    const dirty = new Event("beforeunload", { cancelable: true });
+    act(() => {
+      window.dispatchEvent(dirty);
+    });
+    expect(dirty.defaultPrevented).toBe(true);
+    fireEvent.blur(name);
+    await vi.waitFor(() => {
+      const saved = new Event("beforeunload", { cancelable: true });
+      act(() => {
+        window.dispatchEvent(saved);
+      });
+      expect(saved.defaultPrevented).toBe(false);
+    });
+  });
+
+  it("asks before leaving, and says why the choices could not be saved instead of leaving without them", async () => {
+    const { fake } = await behaviourOf();
+    fake.writeOutcomes.set(choicesPath, failure(cannedFailure("conflict", 409, "changed")));
+    fireEvent.change(screen.getByLabelText("Twin name"), { target: { value: "cooler-b" } });
+    fireEvent.click(home());
+    const dialog = screen.getByRole("dialog", { name: "Leave with unsaved changes?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(/Choices not saved: the file changed on disk/);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Discard and leave" }));
+    expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
+  });
+
+  it("leaves without asking when the choices were saved", async () => {
+    const { stores } = await behaviourOf();
+    const name = screen.getByLabelText("Twin name");
+    fireEvent.change(name, { target: { value: "cooler-b" } });
+    fireEvent.blur(name);
+    await vi.waitFor(() => {
+      const state = stores.devices.twin.snapshot();
+      expect(state.phase === "ready" && state.edited).toBe(false);
+    });
+    fireEvent.click(home());
+    expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
   });
 });

@@ -11,10 +11,13 @@ export async function behaviourOf(fake: FakeBridge = twinBridge()) {
   await screen.findByRole("region", { name: "Editing cooler" });
   await vi.waitFor(() => {
     const state = app.stores.devices.snapshot();
-    expect(state.phase === "ready" && state.check.kind !== "checking").toBe(true);
+    expect(state.phase === "ready" && state.check.kind !== "checking" && state.review.state !== "checking").toBe(true);
   });
   fireEvent.click(screen.getByRole("button", { name: /^Behaviour/ }));
   await screen.findByRole("region", { name: "Behaviour of cooler" });
+  await vi.waitFor(() => {
+    expect(app.stores.devices.twin.snapshot().phase).toBe("ready");
+  });
   return { ...app, fake };
 }
 

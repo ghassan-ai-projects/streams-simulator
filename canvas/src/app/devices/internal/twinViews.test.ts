@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { renameKind, serialiseChoices } from "../../../model/devices";
+import { localIssue, renameKind, serialiseChoices } from "../../../model/devices";
 import type { DeviceFailure } from "../../ports";
 import { coolerPath, domainPath, twinBridge } from "../../../test/twinFixture";
 import { checkRows } from "./checkRows";
 import type { Draft } from "./deviceDraft";
 import { createDeviceSession } from "./deviceStore";
-import { stepStatuses } from "./stepStatus";
+import { stepStatuses, twinReadiness } from "./stepStatus";
 import type { Built, TwinDraft } from "./twinDraft";
 import { canCreate, createBlock } from "./twinSelectors";
 import { twinStatusOf } from "./twinStatus";
@@ -15,7 +15,7 @@ const conflict: DeviceFailure = { kind: "conflict", diagnostic: { message: "chan
 const refused: DeviceFailure = {
   kind: "refused",
   diagnostic: { message: "refused", displayCode: "kind_failed" },
-  issues: [{ pointer: "/x", message: "differs" }],
+  issues: [{ pointer: "/x", message: "differs", keyword: "implements_drift" }],
 };
 const bare: DeviceFailure = {
   kind: "refused",
@@ -27,7 +27,6 @@ async function drafts() {
   const fake = twinBridge();
   const session = createDeviceSession(fake.devices);
   await session.open(coolerPath);
-  await session.twin.open(coolerPath);
   const device = session.snapshot();
   const twin = session.twin.snapshot();
   if (device.phase !== "ready" || twin.phase !== "ready") throw new Error("not ready");
@@ -40,7 +39,7 @@ function built(twin: TwinDraft, over: Partial<Built> = {}): TwinDraft {
     kind: "built",
     made,
     path: domainPath,
-    fingerprint: serialiseChoices(twin.doc),
+    fingerprint: serialiseChoices(twin.doc, twin.members),
     implemented: { kind: "passed", checked: { id: "cooler-twin", digest: "d" } },
     lint: { kind: "done", report: { errors: 0, warnings: 0, findings: [] } },
     ...over,
@@ -54,6 +53,8 @@ describe("the state of each step", () => {
     const status = (draft: Draft) => stepStatuses(draft, twin).interface;
     expect(status(device)).toEqual({ text: "Valid", tone: "ok" });
     expect(status({ ...device, check: { kind: "refused", failure: refused } })).toMatchObject({ text: "Has issues" });
+    const flagged = { ...device.review, schema: [localIssue("kind", "", "kind", "x")] };
+    expect(status({ ...device, review: flagged })).toEqual({ text: "Has issues", tone: "warn" });
     expect(status({ ...device, check: { kind: "checking" } })).toEqual({ text: "Checking", tone: "busy" });
     expect(status({ ...device, check: { kind: "unchecked" } })).toEqual({ text: "Not checked", tone: "" });
     expect(status({ ...device, doc: renameKind(device.doc, "other") })).toEqual({ text: "Unsaved", tone: "warn" });
@@ -89,6 +90,9 @@ describe("the state of each step", () => {
     expect(status(twin)).toEqual({ text: "Not run", tone: "" });
     expect(status(built(twin))).toEqual({ text: "Passed", tone: "ok" });
     expect(status(built(twin, { implemented: { kind: "checking" } }))).toEqual({ text: "Checking", tone: "busy" });
+    const errors = { errors: 2, warnings: 0, findings: [] };
+    expect(status(built(twin, { lint: { kind: "done", report: errors } }))).toEqual({ text: "Failed", tone: "warn" });
+    expect(status(built(twin, { lint: { kind: "running" } }))).toEqual({ text: "Checking", tone: "busy" });
     expect(status(built(twin, { implemented: { kind: "failed", failure: refused } }))).toEqual({
       text: "Failed",
       tone: "warn",
@@ -97,6 +101,26 @@ describe("the state of each step", () => {
       text: "Not run",
       tone: "",
     });
+  });
+});
+
+describe("what a twin needs of the interface", () => {
+  it("is a second status beside the first: valid, and still lacking something for a twin", async () => {
+    const { device } = await drafts();
+    expect(twinReadiness(device)).toEqual({ text: "Ready for a twin", tone: "ok" });
+    const need = { ...localIssue("metric", "m1", "resolution", "Needs a resolution"), twin: true };
+    const lacking = { ...device, review: { state: "done" as const, schema: [], needs: [need, need] } };
+    expect(twinReadiness(lacking)).toEqual({ text: "Needed for a twin: 2", tone: "warn" });
+    expect(stepStatuses(lacking, { phase: "idle" }).interface).toEqual({ text: "Valid", tone: "ok" });
+    expect(twinReadiness({ ...device, review: { ...device.review, state: "checking" } })).toEqual({
+      text: "Checking what a twin needs",
+      tone: "busy",
+    });
+    expect(twinReadiness({ ...device, review: { state: "failed", schema: [], needs: [] } })).toEqual({
+      text: "",
+      tone: "",
+    });
+    expect(twinReadiness({ phase: "idle" })).toEqual({ text: "", tone: "" });
   });
 });
 
@@ -114,6 +138,20 @@ describe("what blocks the creation of a twin", () => {
     expect(createBlock(unfinished, device)).toMatch(/Finish the choices/);
     expect(canCreate({ ...twin, save: { kind: "saving" } }, device)).toBe(true);
   });
+
+  it("names what the interface lacks for a twin before the form's own gaps", async () => {
+    const { device, twin } = await drafts();
+    const need = { ...localIssue("metric", "m1", "resolution", "Needs a resolution"), twin: true };
+    const lacking = { ...device, review: { state: "done" as const, schema: [], needs: [need] } };
+    expect(createBlock(twin, lacking)).toBe("Set what the twin needs in the Interface step first.");
+    expect(canCreate(twin, lacking)).toBe(false);
+    expect(createBlock({ ...twin, doc: { ...twin.doc, title: "" } }, lacking)).toMatch(/Interface step/);
+    expect(twinStatusOf(twin, lacking)).toEqual({
+      text: "Set what the twin needs in the Interface step first.",
+      tone: "warn",
+      detail: null,
+    });
+  });
 });
 
 describe("the headline of the behaviour step", () => {
@@ -128,6 +166,7 @@ describe("the headline of the behaviour step", () => {
       /Save the interface first/,
     );
     expect(text(twin)).toMatchObject({ text: "Choices are ready. Create the twin when you are.", tone: "" });
+    expect(text({ ...twin, onDisk: true }).text).toBe("Choices are ready. Replace the twin when you are.");
     expect(text({ ...twin, doc: { ...twin.doc, title: "" } }).text).toBe("Finish the choices marked in the form.");
     expect(text({ ...twin, build: { kind: "building" } }).text).toBe("Creating the twin…");
     expect(text({ ...twin, build: { kind: "exists" } }).tone).toBe("warn");
@@ -135,9 +174,10 @@ describe("the headline of the behaviour step", () => {
       "The twin could not be created: down",
     );
     expect(text({ ...twin, build: { kind: "refused", failure: bare } }).text).toBe(
-      "The binary refuses the choices: refused.",
+      "Choices are ready. Create the twin when you are.",
     );
-    const issues = [{ scope: "elsewhere" as const, kind: "", key: "", field: "", spot: "", message: "m" }];
+    const issue = { scope: "elsewhere" as const, kind: "", key: "", field: "", spot: "" };
+    const issues = [{ ...issue, pointer: "", keyword: "", message: "m", text: "m" }];
     expect(text({ ...twin, build: { kind: "refused", failure: refused }, issues }).text).toBe(
       "The binary refuses the choices: 1 issue.",
     );
@@ -150,6 +190,13 @@ describe("the headline of the behaviour step", () => {
     const failed = built(twin, { implemented: { kind: "failed", failure: refused } });
     expect(twinStatusOf(failed, device)).toMatchObject({ tone: "warn", detail: "refused" });
     expect(twinStatusOf(failed, device).text).toMatch(/does not match its device/);
+    const errors = { errors: 3, warnings: 0, findings: [] };
+    const unplausible = twinStatusOf(built(twin, { lint: { kind: "done", report: errors } }), device);
+    expect(unplausible).toMatchObject({
+      tone: "warn",
+      text: "Twin created, but the plausibility check found 3 errors.",
+    });
+    expect(twinStatusOf(built(twin, { lint: { kind: "running" } }), device).text).toBe("Checking the twin…");
     const stale = built({ ...twin, doc: { ...twin.doc, id: "other-twin" } }, { fingerprint: "old" });
     expect(twinStatusOf(stale, device).text).toMatch(/Choices changed since/);
   });
@@ -187,9 +234,18 @@ describe("the rows of the check", () => {
       state: "bad",
       notes: ["down"],
     });
-    expect(row({ ...twin, build: { kind: "refused", failure: refused } })).toMatchObject({ notes: ["differs"] });
+    expect(row({ ...twin, build: { kind: "refused", failure: refused } })).toMatchObject({
+      notes: ["The twin no longer matches this device"],
+      details: ["differs"],
+    });
     expect(row({ ...twin, build: { kind: "refused", failure: bare } })).toMatchObject({ notes: ["refused"] });
     expect(row(built(twin))).toMatchObject({ state: "ok", text: "Twin ready" });
+    const errors = { errors: 1, warnings: 0, findings: [] };
+    expect(row(built(twin, { lint: { kind: "done", report: errors } }))).toMatchObject({
+      state: "bad",
+      text: "The twin was created, but it has problems",
+    });
+    expect(row(built(twin, { implemented: { kind: "checking" } }))).toMatchObject({ state: "pending" });
     const stale = built({ ...twin, doc: { ...twin.doc, id: "other-twin" } }, { fingerprint: "old" });
     expect(row(stale)).toMatchObject({ state: "idle", text: "The choices changed since the twin was created" });
   });
@@ -201,7 +257,8 @@ describe("the rows of the check", () => {
     expect(rows({ implemented: { kind: "checking" } })[2]).toMatchObject({ state: "pending" });
     expect(rows({ implemented: { kind: "failed", failure: refused } })[2]).toMatchObject({
       state: "bad",
-      notes: ["differs"],
+      notes: ["The twin no longer matches this device"],
+      details: ["differs"],
     });
     expect(rows({})[3]).toMatchObject({ id: "lint", state: "ok", text: "The readings stay plausible" });
     expect(rows({ lint: { kind: "running" } })[3]).toMatchObject({ state: "pending" });

@@ -103,8 +103,11 @@ change first.
 - the response templates, as `kind twin`: it scaffolds a twin from kind files and a small choices document in the
   workspace folder `twins/` (`twin-choices-v0.1`: per metric the library instrument or `none`, per command one of `direct`,
   `first_order`, `none`), through the bridge action `kind.twin`;
-- structured issues: every refusal of a kind file, a choices file or the check is `{pointer, message}` per violation, a
-  pointer into the file (or `/kinds/<i>/implements` in a domain), so the canvas shows the member and parses no text;
+- structured issues: every refusal of a kind file, a choices file or the check is `{pointer, message, keyword, member?}` per
+  violation, a pointer into the file (or `/kinds/<i>/implements` in a domain), the schema keyword or rule code that failed and
+  the named member, so the canvas shows the member and parses no text; the twin requirements of a kind file are all reported at
+  once (`kind validate --twin`, bridge `kind.check`), the binary's defaults for a twin come from `kind twin --suggest` (bridge
+  `kind.suggest`) and the instruments of a unit from `component list --unit` (G3);
 - capturing a kind from an `NBIRTH` as a draft kind file (M2, not built).
 
 **Capture from a connected board.** When a real board announces itself, its kinds can be saved as draft kind files. The

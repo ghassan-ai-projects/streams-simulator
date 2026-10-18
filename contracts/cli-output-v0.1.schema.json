@@ -44,6 +44,9 @@
       "$ref": "#/$defs/kind_twin"
     },
     {
+      "$ref": "#/$defs/kind_suggest"
+    },
+    {
       "$ref": "#/$defs/component_examples"
     },
     {
@@ -171,6 +174,16 @@
                   "message": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "keyword": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Why the issue exists, for a program: the JSON Schema keyword that failed (type, enum, pattern, required, additionalProperties, minimum, ...) or a stable rule code of the binary (twin_member_required, twin_unit_required, twin_conversion_needed, twin_name_pattern, twin_range, domain_rule, implements_drift, ...). Never parse message."
+                  },
+                  "member": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The named member the rule is about (resolution, writable, safe_stop, unit, ...), present when the rule is about one."
                   }
                 }
               }
@@ -970,6 +983,35 @@
         },
         "digest": {
           "$ref": "#/$defs/digest"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "description": "An instrument's unit."
+        },
+        "range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min",
+            "max"
+          ],
+          "description": "An instrument's measuring range.",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        },
+        "match": {
+          "enum": [
+            "exact",
+            "convertible"
+          ],
+          "description": "Only with component list --unit: whether the instrument measures in the asked unit or in a convertible one."
         }
       }
     },
@@ -1136,6 +1178,19 @@
               }
             }
           }
+        }
+      }
+    },
+    "kind_suggest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "choices"
+      ],
+      "description": "A valid twin-choices-v0.1 document with the binary's defaults for the kind files; nothing is written.",
+      "properties": {
+        "choices": {
+          "type": "object"
         }
       }
     },

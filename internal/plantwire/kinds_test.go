@@ -44,8 +44,8 @@ func TestCheckImplementsAcceptsAMatchingKindFileAndRefusesTheMissingOne(t *testi
 func TestValidateKindFilesReturnsTheKindAndItsDigest(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(pumpKindsDirectory(t), "pump.kind.json")
-	summaries, err := ValidateKindFiles([]string{path})
+	summaries, err := ValidateKindFilesWith([]string{path}, nil)
 	if err != nil || len(summaries) != 1 || summaries[0].Kind != "pump" || summaries[0].Path != path || !strings.HasPrefix(summaries[0].KindDigest, "sha256:") {
-		t.Fatalf("ValidateKindFiles = %+v, %v, want the pump kind file with its digest", summaries, err)
+		t.Fatalf("ValidateKindFilesWith = %+v, %v, want the pump kind file with its digest", summaries, err)
 	}
 }

@@ -18,6 +18,7 @@ type Build struct{ Version, Commit string }
 
 type session struct {
 	build  Build
+	stdin  io.Reader
 	stderr io.Writer
 	now    func() time.Time
 	getenv func(string) string
@@ -56,7 +57,7 @@ func Main(args []string, version, commit string) int {
 }
 
 func Run(args []string, build Build, env process.Env) int {
-	s := &session{build: build, stderr: env.Stderr, now: env.Now, getenv: env.Getenv}
+	s := &session{build: build, stdin: env.Stdin, stderr: env.Stderr, now: env.Now, getenv: env.Getenv}
 	if len(args) < 2 {
 		s.usage()
 		return s.fail(env.Stdout, "", usageExit{code: 2, message: "a command is required"})
@@ -137,10 +138,13 @@ Commands:
                                         kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
-  kind validate <file>...               Validate kind files (*.kind.json) against the plant wire kind schema
+  kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
+                                        against the plant wire kind schema (--twin: also what a twin needs)
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
                                         instruments and command responses (--kinds-dir, --out)
-  component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
+  kind twin <file>... --suggest         Print default choices for kind files; writes nothing
+  component list [--unit u]|show <ref>|validate
+                                        The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
                                         (built in; --components-dir adds customer

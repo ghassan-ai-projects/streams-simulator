@@ -33,7 +33,8 @@ type ArgvPart struct {
 }
 
 var (
-	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true}
+	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true,
+		CLIArgs: []CLIArg{{Key: "unit", Flag: "--unit", Shape: ShapeText}}}
 	cliComponentShow = Action{Name: "component.show", Kind: KindCLI, Command: []string{"component", "show"}, Library: true,
 		CLIArgs: []CLIArg{{Key: "ref", Shape: ShapeText, Required: true}}}
 	cliExamples = Action{Name: "component.examples", Kind: KindCLI, Command: []string{"component", "examples"}}
@@ -46,7 +47,10 @@ var (
 	cliComponentValidate = Action{Name: "component.validate", Kind: KindCLI, Command: []string{"component", "validate"}, Library: true}
 	cliKindValidate      = Action{Name: "kind.validate", Kind: KindCLI, Command: []string{"kind", "validate"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
-	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Kinds: true, Mutating: true, Etag: true,
+	cliKindCheck = Action{Name: "kind.check", Kind: KindCLI, Command: []string{"kind", "validate", "--stdin"}, Input: inputKey,
+		CLIArgs: []CLIArg{{Key: "twin", Flag: "--twin", Shape: ShapeFlag}}}
+	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true, Kinds: true}
+	cliKindTwin    = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Kinds: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "choices", Flag: "--choices", Shape: ShapePath, Class: ClassTwin, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Kinds: true, Mutating: true, Etag: true,
@@ -116,7 +120,7 @@ func (a Action) closedArguments(args map[string]any) error {
 }
 
 func (a Action) takes(key string) bool {
-	if a.Etag && key == etagKey {
+	if (a.Etag && key == etagKey) || (a.Input != "" && key == a.Input) {
 		return true
 	}
 	for _, spec := range a.CLIArgs {

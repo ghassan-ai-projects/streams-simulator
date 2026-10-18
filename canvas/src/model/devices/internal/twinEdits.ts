@@ -1,3 +1,4 @@
+import { settleCommand } from "./twinMembers";
 import type { CommandChoice, Drive, KindChoice, MetricChoice, Response, TwinChoices } from "./twinTypes";
 
 const blankDrive: Drive = { from: "", kind: "", metric: "", gain: null, timeConstantS: null };
@@ -52,16 +53,17 @@ export function startAt(choices: TwinChoices, kind: string, metric: string, init
 
 function withDrives(current: CommandChoice, response: Response): readonly Drive[] {
   if (response !== "first_order") return [];
-  if (current.drives.length > 0) return current.drives;
-  return [{ ...blankDrive, from: Object.values(current.sets)[0] ?? "" }];
+  return current.drives.length > 0 ? current.drives : [blankDrive];
 }
 
 export function chooseResponse(choices: TwinChoices, kind: string, command: string, response: Response): TwinChoices {
-  return changeCommandChoice(choices, kind, command, (current) => ({
-    response,
-    sets: response === "none" ? {} : current.sets,
-    drives: withDrives(current, response),
-  }));
+  return changeCommandChoice(choices, kind, command, (current) =>
+    settleCommand({
+      response,
+      sets: response === "none" ? {} : current.sets,
+      drives: withDrives(current, response),
+    }),
+  );
 }
 
 export function setArgument(
@@ -74,15 +76,14 @@ export function setArgument(
   return changeCommandChoice(choices, kind, command, (current) => {
     const rest = Object.entries(current.sets).filter(([name]) => name !== argument);
     const next = reading === "" ? rest : [...rest, [argument, reading] as const];
-    return { ...current, sets: Object.fromEntries(next) };
+    return settleCommand({ ...current, sets: Object.fromEntries(next) });
   });
 }
 
 export function addDrive(choices: TwinChoices, kind: string, command: string): TwinChoices {
-  return changeCommandChoice(choices, kind, command, (current) => ({
-    ...current,
-    drives: [...current.drives, { ...blankDrive, from: Object.values(current.sets)[0] ?? "" }],
-  }));
+  return changeCommandChoice(choices, kind, command, (current) =>
+    settleCommand({ ...current, drives: [...current.drives, blankDrive] }),
+  );
 }
 
 export function changeDrive(

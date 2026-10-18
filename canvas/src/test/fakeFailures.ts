@@ -1,8 +1,10 @@
 import type { Outcome } from "../app/ports";
 
 interface CannedIssue {
-  readonly pointer: string;
+  readonly pointer?: string;
   readonly message: string;
+  readonly keyword?: string;
+  readonly member?: string;
 }
 
 interface CannedFailure {

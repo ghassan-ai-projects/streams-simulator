@@ -116,18 +116,20 @@ describe("the device editor screen", () => {
     expect(await screen.findByText("Saved and valid.")).toBeInTheDocument();
   });
 
-  it("puts the binary's issue next to the field it names, in the details list, and in the status", async () => {
+  it("puts the binary's issue in plain words next to the field it names, in the details list, and in the status", async () => {
     const fake = deviceBridge();
-    fake.actions.set("kind.validate", refusal("/metrics/0/data_type", "unknown type"));
+    fake.actions.set("kind.validate", refusal("/metrics/0/data_type", "unknown type", "enum"));
+    fake.handlers.set("kind.check", () => refusal("/metrics/0/data_type", "unknown type", "enum"));
     const { stores } = await editingDevice(fake);
     expect(await screen.findByText("Saved, but the binary refuses it: 1 issue.")).toBeInTheDocument();
     expect(outline().getByRole("img", { name: "Has issues" })).toBeInTheDocument();
     const list = within(screen.getByRole("region", { name: "Issues" }));
     expect(list.getByText("Reading duty · Type")).toBeInTheDocument();
-    fireEvent.click(list.getByRole("button", { name: /unknown type/ }));
+    expect(list.getByText("unknown type")).toBeInTheDocument();
+    fireEvent.click(list.getByRole("button", { name: /Choose one of the offered values/ }));
     const type = screen.getByLabelText("Type");
     expect(type).toHaveAttribute("aria-invalid", "true");
-    expect(type).toHaveAccessibleDescription(/unknown type/);
+    expect(type).toHaveAccessibleDescription(/Choose one of the offered values/);
     expect(stores.devices.snapshot()).toMatchObject({ selected: { part: "metric", key: "m1" } });
   });
 
@@ -166,6 +168,7 @@ describe("the device editor screen", () => {
     expect(outline().queryByRole("button", { name: /^stop/ })).toBeNull();
     expect(screen.getByRole("heading", { name: "Device" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard them" }));
     expect(outline().getByRole("button", { name: /^mode/ })).toBeInTheDocument();
     expect(outline().getByRole("button", { name: /^stop/ })).toBeInTheDocument();
     expect(stores.devices.snapshot()).toMatchObject({ selected: { part: "kind" } });
@@ -180,6 +183,7 @@ describe("the device editor screen", () => {
     expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
     fake.addFile(path, { ...fan, kind: "fan3" }, "k2");
     fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reload and lose them" }));
     await vi.waitFor(() => {
       expect(screen.getByLabelText("Name")).toHaveValue("fan3");
     });
@@ -201,16 +205,15 @@ describe("the device editor screen", () => {
     expect(stores.devices.snapshot()).toEqual({ phase: "idle" });
   });
 
-  it("discards the changes when asked to, and stays when saving is refused", async () => {
+  it("discards the changes when asked to, and explains why it stays when saving is refused", async () => {
     const { fake } = await editingDevice();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Streams Simulator, workspace home" }));
     fireEvent.click(screen.getByRole("button", { name: "Save and leave" }));
-    await vi.waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
+    const dialog = screen.getByRole("dialog", { name: "Leave with unsaved changes?" });
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Unsaved changes. Name everything to save.");
     expect(fake.writes).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Streams Simulator, workspace home" }));
+    expect(screen.getByRole("region", { name: "Editing fan" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Discard and leave" }));
     expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
   });

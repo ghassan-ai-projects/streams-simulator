@@ -1,64 +1,89 @@
-import { Trash2, TriangleAlert } from "lucide-react";
+import { Info, Trash2, TriangleAlert } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { useId, useState } from "react";
 import { choicesFor } from "../../../model/devices";
 import type { Choices } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import styles from "./Devices.module.css";
+import notes from "./Notes.module.css";
 
 export interface Aria {
   readonly id: string;
   readonly "aria-invalid": true | undefined;
   readonly "aria-describedby": string | undefined;
+  readonly "data-field": string | undefined;
 }
 
 interface FieldProps {
   readonly label: string;
+  readonly field?: string;
   readonly hint?: string | undefined;
-  readonly also?: string | undefined;
   readonly caution?: string;
   readonly issues: readonly string[];
+  readonly needs?: readonly string[];
+  readonly group?: boolean;
   readonly children: (aria: Aria) => ReactNode;
 }
 
 interface NotesProps {
   readonly id: string;
   readonly hint: string | undefined;
-  readonly also: string | undefined;
   readonly caution: string;
   readonly issues: readonly string[];
+  readonly needs: readonly string[];
 }
 
-function Notes({ id, hint, also, caution, issues }: NotesProps) {
+function Notes({ id, hint, caution, issues, needs }: NotesProps) {
   return (
-    <div id={id} className={styles.notes}>
+    <div id={id} className={styles.notes} aria-live="polite">
       {issues.map((message, index) => (
         <p key={`${String(index)}:${message}`} className={styles.issue}>
           <TriangleAlert size={12} aria-hidden="true" />
           {message}
         </p>
       ))}
+      {needs.map((message, index) => (
+        <p key={`${String(index)}:${message}`} className={notes.need}>
+          <Info size={12} aria-hidden="true" />
+          {message}
+        </p>
+      ))}
       {caution !== "" && <p className={styles.caution}>{caution}</p>}
       {hint !== undefined && <p className={panel.hint}>{hint}</p>}
-      {also !== undefined && <p className={panel.hint}>{also}</p>}
     </div>
   );
 }
 
-export function Field({ label, hint, also, caution = "", issues, children }: FieldProps) {
-  const id = useId();
-  const noted = issues.length > 0 || caution !== "" || hint !== undefined || also !== undefined;
-  const aria: Aria = {
+function isNoted(hint: string | undefined, caution: string, issues: readonly string[], needs: readonly string[]) {
+  return issues.length + needs.length > 0 || caution !== "" || hint !== undefined;
+}
+
+function ariaOf(id: string, field: string | undefined, issues: readonly string[], noted: boolean): Aria {
+  return {
     id,
     "aria-invalid": issues.length > 0 ? true : undefined,
     "aria-describedby": noted ? `${id}-notes` : undefined,
+    "data-field": field,
   };
+}
+
+function FieldLabel({ id, label, group }: { readonly id: string; readonly label: string; readonly group: boolean }) {
+  return group ? <span id={`${id}-label`}>{label}</span> : <label htmlFor={id}>{label}</label>;
+}
+
+export function Field({ label, field, hint, caution = "", issues, needs = [], group = false, children }: FieldProps) {
+  const id = useId();
+  const aria = ariaOf(id, field, issues, isNoted(hint, caution, issues, needs));
   return (
-    <div className={styles.field}>
-      <label htmlFor={id}>{label}</label>
+    <div
+      className={styles.field}
+      role={group ? "group" : undefined}
+      aria-labelledby={group ? `${id}-label` : undefined}
+    >
+      <FieldLabel id={id} label={label} group={group} />
       <div className={styles.control}>
         {children(aria)}
-        {noted && <Notes id={`${id}-notes`} hint={hint} also={also} caution={caution} issues={issues} />}
+        <Notes id={`${id}-notes`} hint={hint} caution={caution} issues={issues} needs={needs} />
       </div>
     </div>
   );
@@ -103,7 +128,7 @@ export function Select({ value, choices, aria, label, onChange }: SelectProps) {
   return (
     <select
       {...aria}
-      aria-label={label}
+      aria-label={aria === undefined ? label : undefined}
       value={value}
       onChange={(event) => {
         onChange(event.target.value);
@@ -118,13 +143,52 @@ export function Select({ value, choices, aria, label, onChange }: SelectProps) {
   );
 }
 
+interface ToggleProps {
+  readonly aria?: Aria;
+  readonly checked: boolean;
+  readonly words: string;
+  readonly onChange: (checked: boolean) => void;
+}
+
+export function Toggle({ aria, checked, words, onChange }: ToggleProps) {
+  return (
+    <label className={styles.check}>
+      <input
+        {...aria}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => {
+          onChange(event.target.checked);
+        }}
+      />
+      {words}
+    </label>
+  );
+}
+
 export function ItemIssues({ messages }: { readonly messages: readonly string[] }) {
   if (messages.length === 0) return null;
   return (
-    <ul className={styles.issueList}>
+    <div role="alert">
+      <ul className={styles.issueList}>
+        {messages.map((message, index) => (
+          <li key={`${String(index)}:${message}`}>
+            <TriangleAlert size={14} aria-hidden="true" />
+            {message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function ItemNeeds({ messages }: { readonly messages: readonly string[] }) {
+  if (messages.length === 0) return null;
+  return (
+    <ul className={notes.needList}>
       {messages.map((message, index) => (
         <li key={`${String(index)}:${message}`}>
-          <TriangleAlert size={14} aria-hidden="true" />
+          <Info size={14} aria-hidden="true" />
           {message}
         </li>
       ))}
@@ -144,7 +208,7 @@ export function RemoveButton({ words, onRemove }: { readonly words: string; read
 interface NumberProps {
   readonly value: number | null;
   readonly aria?: Aria;
-  readonly name: string;
+  readonly label?: string;
   readonly placeholder?: string;
   readonly onChange: (value: number | null) => void;
   readonly onCommit?: (() => void) | undefined;
@@ -156,7 +220,7 @@ function parsed(typed: string): number | null | "broken" {
   return Number.isFinite(value) ? value : "broken";
 }
 
-export function NumberInput({ value, aria, name, placeholder, onChange, onCommit }: NumberProps) {
+export function NumberInput({ value, aria, label, placeholder, onChange, onCommit }: NumberProps) {
   const [typed, setTyped] = useState<string | null>(null);
   const shown = typed ?? (value === null ? "" : String(value));
   const broken = typed !== null && parsed(typed) === "broken";
@@ -167,7 +231,7 @@ export function NumberInput({ value, aria, name, placeholder, onChange, onCommit
         type="text"
         inputMode="decimal"
         placeholder={placeholder}
-        aria-label={name}
+        aria-label={aria === undefined ? label : undefined}
         aria-invalid={broken ? true : aria?.["aria-invalid"]}
         value={shown}
         onChange={(event) => {
@@ -180,7 +244,11 @@ export function NumberInput({ value, aria, name, placeholder, onChange, onCommit
           onCommit?.();
         }}
       />
-      {broken && <p className={styles.issue}>Enter a number.</p>}
+      {broken && (
+        <p className={styles.issue} role="alert">
+          Enter a number.
+        </p>
+      )}
     </>
   );
 }
