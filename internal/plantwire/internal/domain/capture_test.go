@@ -21,7 +21,7 @@ func birthKinds() []any {
 func stampedBirth(t *testing.T, environment string, kinds []any) map[string]any {
 	t.Helper()
 	record, err := NodeBirthOf(NodeIdentity{Environment: environment, ProtocolMax: 1, BDSeq: 3, PriorLastSeq: -1}, kinds,
-		[]model.Board{{Name: "b-1", Members: []string{"P1", "V1"}}})
+		[]model.Board{{Name: "b-1", Members: []string{"P1", "V1"}, Environment: environment}})
 	if err != nil {
 		t.Fatal(err)
 	}

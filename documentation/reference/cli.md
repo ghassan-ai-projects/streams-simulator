@@ -121,11 +121,12 @@ Only the observer stream is ever taken. A record of the director stream (`sealed
 
 The birth must be sound: it validates against the plant wire `NBIRTH` schema, `protocol_min` does not exceed `protocol_max`, the contract version and digest are the ones this binary speaks, the `kind_digest` of every kind is recomputed and equals the one announced (issue at `/kinds/<i>/kind_digest`, `keyword` `kind_digest_mismatch`) and no kind is announced twice, not even under another case (`kind_duplicate`, which the reference host refuses as `inventory_mismatch` too). Any violation fails with `kind_failed` and the issues in the shape `domain validate` uses; a source with no readable `NBIRTH` fails with the issue `no_birth`. A first birth that breaks the contract is refused, not skipped for a later one. Member names and values echoed in a message or pointer are cut at 128 characters, and a pointer escapes `~` and `/` (RFC 6901).
 
-It prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
+It prints `{environment, boards, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
 
 ```json
 {
   "environment": "hardware",
+  "boards": [{"board": "mega-01", "environment": "hardware"}],
   "bd_seq": 0,
   "births_seen": 2,
   "taken": {"line": 12, "bd_seq": 0},
@@ -144,7 +145,7 @@ It prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kin
 }
 ```
 
-- `environment` is what the board **claims**, `simulated` or `hardware`, like everything else in a birth; the binary does not verify it. A birth of either is accepted.
+- `environment` is what the node **claims**: `simulated`, `hardware` or `mixed`, like everything else in a birth; the binary does not verify it. `boards` lists every board with the environment it claims (`simulated` or `hardware`), which is the origin of the devices born on it. The two must agree (a `simulated` node has only simulated boards, a `hardware` node only hardware boards, a `mixed` node at least one of each); a birth that contradicts itself fails with `kind_failed` and an issue of keyword `environment_mismatch` at the member that breaks the rule.
 - `births_seen`, `taken`, `later_births` — provenance. The first birth found is the one captured (a rebirth later in a journal does not replace it); `taken` says where it stood (`line` counts lines of the source from 1), `later_births` lists up to 64 later births with whether their kinds equal the taken one's. The capture-level `issues` hold `rebirth_differs` (a later birth announces other kinds), `birth_line_unreadable` (a line that names a birth but cannot be read, with its line number; it is skipped, never silently), `capability_digest_mismatch` (the board's `capability_digest` does not hold; the reference host does not check it, so this is a capture-only check and the kinds are captured all the same) and `scan_truncated` (`births_seen` is a lower bound). No option takes the last birth.
 - `draft` — the `NBIRTH.kinds` entry without `kind_digest`: the content of a kind file, which must not carry that member. `kind_digest` is the digest the node announced, equal to what `kind validate` reports for the file once saved.
 - `claims` — pointers into the draft of the members that came from the board and that nothing verified: `risk_class` and `safe_stop` of each command and every bound of an `args_schema` (`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`, `minLength`, `maxLength`, `minItems`, `maxItems`, `minProperties`, `maxProperties`). A reviewer reads these before saving.
@@ -254,12 +255,19 @@ contract and that every commissioned device is in the node's birth, quarantines 
 when the world reaches their time, verifies them against later observations, and prints its report.
 
 ```text
-streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated]
+streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated|hardware|mixed]
                          [--policy <digest>] [--epoch <n>] [--delay-ms <n>]
 streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domains-dir domains] [--adapter <id>] [--adapters-dir adapters]
                          [--session-id <id>] [--seed <n>] [--slice-s 60] [--duration 3600] [--barrier-cap-ms 30000]
                          [--policy <digest>]... [--kinds-dir <dir>]...
 ```
+
+`--environment` (default `simulated`) is what the host accepts, one of `simulated`, `hardware` or `mixed`; any other value fails before the host listens.
+A host set to `simulated` or `hardware` accepts only a node of exactly that environment; a `mixed` host accepts all three. Every board of a
+birth names its environment, and a node whose environment contradicts its boards (`simulated` with a hardware board, `hardware` with a
+simulated board, `mixed` without one of each) is refused even by a `mixed` host. The refusal is `environment_mismatch`, and the report
+says which rule broke in `reason`. `plantwire node` has no environment option: a simulated world announces `simulated` for itself and every one of its boards,
+and cannot be made to announce `hardware` or `mixed`.
 
 The socket's directory must be owner-only (it is created `0700` when missing); a stale socket left by a crash is replaced,
 a live host or a regular file at the path is not. Both commands stop on interrupt or `SIGTERM`, and the node still writes its

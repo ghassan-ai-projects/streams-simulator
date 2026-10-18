@@ -72,6 +72,8 @@ func TestARecordThatBreaksTheNBIRTHSchemaIsRefusedAtTheMemberItNames(t *testing.
 		edit                   func(birth map[string]any)
 	}{
 		{"an environment of neither kind", "/environment", "enum", func(b map[string]any) { b["environment"] = "lab" }},
+		{"a board without its environment", "/boards/0/environment", "required", func(b map[string]any) { delete(firstBoard(b), "environment") }},
+		{"a board of mixed environment", "/boards/0/environment", "enum", func(b map[string]any) { firstBoard(b)["environment"] = "mixed" }},
 		{"a kind without its digest", "/kinds/0/kind_digest", "required", func(b map[string]any) { delete(firstKind(b), "kind_digest") }},
 		{"a negative boot sequence", "/bd_seq", "minimum", func(b map[string]any) { b["bd_seq"] = -1 }},
 	}

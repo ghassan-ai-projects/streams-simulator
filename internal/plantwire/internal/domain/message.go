@@ -43,8 +43,9 @@ type Message struct {
 }
 
 type Board struct {
-	Board   string   `json:"board"`
-	Members []string `json:"members"`
+	Board       string   `json:"board"`
+	Environment string   `json:"environment"`
+	Members     []string `json:"members"`
 }
 
 type Metric struct {

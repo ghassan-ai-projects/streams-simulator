@@ -22,7 +22,9 @@ The JSON schemas under [`contracts/`](../../contracts/) are the canonical contra
 The plant wire has its own self-contained contract under
 [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md): the specification, one schema per record, fixtures (valid,
 invalid, must-ignore, injection and exchanges) and a pinned `DIGEST`. `internal/plantwire` embeds a byte-identical copy of the
-schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract.
+schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract. Since contract 1.2.0 every board in
+an `NBIRTH` names its environment (`simulated` or `hardware`) and a node may be `mixed`; a host checks the node against its
+boards and against its own setting (SPEC section 2).
 
 The device emulator also validates the versioned device command, receipt,
 result, and state records under

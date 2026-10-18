@@ -14,8 +14,9 @@ import (
 var ErrRecord = errors.New("standin: not a valid plant wire record")
 
 func (n *Node) Birth() (map[string]any, error) {
-	identity := domain.NodeIdentity{Environment: cmp.Or(n.config.Environment, "hardware"), ProtocolMax: domain.Version, PriorLastSeq: -1, ClockMode: "wall"}
-	record, err := domain.NodeBirthOf(identity, n.templates(), []model.Board{{Name: n.config.Board, Members: n.members()}})
+	environment := cmp.Or(n.config.Environment, domain.EnvironmentHardware)
+	identity := domain.NodeIdentity{Environment: environment, ProtocolMax: domain.Version, PriorLastSeq: -1, ClockMode: "wall"}
+	record, err := domain.NodeBirthOf(identity, n.templates(), []model.Board{{Name: n.config.Board, Members: n.members(), Environment: environment}})
 	if err != nil {
 		return nil, fmt.Errorf("standin: %w", err)
 	}

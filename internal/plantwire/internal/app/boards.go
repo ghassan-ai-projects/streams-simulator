@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
 func (d *devices) board(id string) string {
@@ -29,11 +30,11 @@ func (d *devices) boot(id string) string { return d.board(id) + "-boot-1" }
 func (d *devices) boards() []model.Board {
 	boards := make([]model.Board, 0, len(d.spec.Spec.Boards))
 	for _, board := range d.spec.Spec.Boards {
-		boards = append(boards, model.Board{Name: board.Name, Members: d.wireMembers(board.Members)})
+		boards = append(boards, model.Board{Name: board.Name, Members: d.wireMembers(board.Members), Environment: domain.EnvironmentSimulated})
 	}
 	for _, id := range d.run.World.EntityIDs() {
 		if d.domainBoard(id) == "" {
-			boards = append(boards, model.Board{Name: d.wireOf(id), Members: []string{d.wireOf(id)}})
+			boards = append(boards, model.Board{Name: d.wireOf(id), Members: []string{d.wireOf(id)}, Environment: domain.EnvironmentSimulated})
 		}
 	}
 	return boards

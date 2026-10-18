@@ -123,6 +123,9 @@ func TestCapturingTheStandInsBirthYieldsTheKindFilesItWasBuiltFrom(t *testing.T)
 	if captured.Environment != "hardware" || captured.BDSeq != 0 || captured.BirthsSeen != 1 || len(captured.Kinds) != 3 || len(captured.Issues) != 0 {
 		t.Fatalf("capture = %+v, want the three kinds of one hardware birth and nothing to report", captured)
 	}
+	if len(captured.Boards) != 1 || captured.Boards[0].Board != "mega-01" || captured.Boards[0].Environment != "hardware" {
+		t.Fatalf("boards = %+v, want the board mega-01 echoed with the environment it claims, hardware", captured.Boards)
+	}
 	for _, kind := range captured.Kinds {
 		comparison, file := kind.Comparison, filepath.Join(dir, kind.Kind+".kind.json")
 		if comparison == nil || comparison.Status != "same" || comparison.Target != file || comparison.File != file || len(kind.Issues) != 0 {

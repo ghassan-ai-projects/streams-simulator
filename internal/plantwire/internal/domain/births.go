@@ -6,7 +6,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-const ContractVersion = "1.1.0"
+const ContractVersion = "1.2.0"
 
 type NodeIdentity struct {
 	Environment  string
@@ -77,7 +77,7 @@ func Alias(kind *model.Kind, channel string) int {
 func boardList(boards []model.Board) []any {
 	out := make([]any, 0, len(boards))
 	for _, board := range boards {
-		out = append(out, map[string]any{"board": board.Name, "members": toAny(board.Members)})
+		out = append(out, map[string]any{"board": board.Name, "environment": cmp.Or(board.Environment, EnvironmentSimulated), "members": toAny(board.Members)})
 	}
 	return out
 }

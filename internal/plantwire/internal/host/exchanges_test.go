@@ -31,9 +31,19 @@ const (
 )
 
 var exchangeChecks = map[string]*Verify{
-	"session-start":          nil,
-	"environment-refusal":    nil,
-	"kind-digest-mismatch":   nil,
+	"session-start":        nil,
+	"environment-refusal":  nil,
+	"kind-digest-mismatch": nil,
+
+	"environment-mixed-accepted":                   nil,
+	"environment-mixed-host-hardware-node":         nil,
+	"environment-mixed-node-simulated-host":        nil,
+	"environment-mixed-node-hardware-host":         nil,
+	"environment-hardware-node-simulated-board":    nil,
+	"environment-simulated-node-hardware-board":    nil,
+	"environment-mixed-node-simulated-boards-only": nil,
+	"environment-mixed-node-hardware-boards-only":  nil,
+
 	"version-negotiation":    nil,
 	"gap-rebirth":            nil,
 	"verified-result":        {Metric: "speed_setpoint", Equals: 80, Tolerance: 0.5, WithinNS: exchangeWindow},
@@ -47,8 +57,8 @@ func TestTheContractsExchangesDriveTheReferenceHost(t *testing.T) {
 	for name, verify := range exchangeChecks {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			steps := readExchange(t, name)
-			h := New(Options{Environment: "simulated", ProtocolMax: 1, Epoch: 1, Policy: contractPolicy,
+			environment, steps := readExchange(t, name)
+			h := New(Options{Environment: environment, ProtocolMax: 1, Epoch: 1, Policy: contractPolicy,
 				Inventory: map[string]string{"P1": "pump"}, Script: scriptOf(steps, verify)})
 			sent := playNode(t, h, steps)
 			expectHostRecords(t, h, steps, sent)
@@ -56,7 +66,7 @@ func TestTheContractsExchangesDriveTheReferenceHost(t *testing.T) {
 	}
 }
 
-func readExchange(t *testing.T, name string) []exchangeStep {
+func readExchange(t *testing.T, name string) (string, []exchangeStep) {
 	t.Helper()
 	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "contracts", "plant-wire", "fixtures", "exchanges", name+".jsonl"))
 	if err != nil {
@@ -72,7 +82,21 @@ func readExchange(t *testing.T, name string) []exchangeStep {
 		}
 		steps = append(steps, step)
 	}
-	return steps[1:]
+	return hostEnvironmentOf(t, raw), steps[1:]
+}
+
+func hostEnvironmentOf(t *testing.T, exchange []byte) string {
+	t.Helper()
+	var header struct {
+		HostEnvironment string `json:"host_environment"`
+	}
+	if err := json.Unmarshal(bytes.SplitN(exchange, []byte("\n"), 2)[0], &header); err != nil {
+		t.Fatal(err)
+	}
+	if header.HostEnvironment == "" {
+		return "simulated"
+	}
+	return header.HostEnvironment
 }
 
 func scriptOf(steps []exchangeStep, verify *Verify) []Scripted {

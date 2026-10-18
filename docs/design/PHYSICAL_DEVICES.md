@@ -135,7 +135,8 @@ Deviations from the plan above:
 - `kind capture` (bridge `kind.capture`) turns one `NBIRTH` into draft kind files and compares them with the workspace's
   kind files (`new`, `same`, `differs` at the first differing pointer). It is read-only: reviewing and saving is the author's
   step, as the contract's commissioning order (discovered, reviewed, accepted) has it. A birth is a claim, so every
-  `kind_digest` is recomputed and a birth that does not hold is refused; a birth of either environment is accepted and echoed.
+  `kind_digest` is recomputed and a birth that does not hold is refused; a birth of any environment is accepted and echoed,
+  unless its node environment contradicts its boards (R7a, §2).
 - The source is a bare `NBIRTH` or the first one of a JSON Lines file, including the `wire` records of a run's observer
   journal (`direction: node`); only the observer stream is taken, read strictly, and provenance is reported (`births_seen`,
   `taken`, `later_births`, `rebirth_differs`). `environment` is the board's claim and is not verified; `claims` lists the
@@ -168,6 +169,17 @@ Rules:
   option), not a convention.
 - **Origin per device.** `NBIRTH.environment` is per node today; a mixed node marks each board `simulated` or `hardware`
   (contract change). A host and the canvas never infer origin.
+
+  *As built (R7a, contract 1.2.0):* every board in `NBIRTH.boards` carries `environment` (`simulated` or `hardware`, required)
+  and the node's `environment` gains `mixed`. A device's origin is the environment of the board its `DBIRTH` names, and
+  nothing else. The reference host checks, with one predicate it shares with `kind capture`, that a `simulated` node has only
+  simulated boards, a `hardware` node only hardware boards and a `mixed` node at least one of each; a contradiction is refused
+  with `environment_mismatch` even by a `mixed` host, and the host's report says which rule (`reason`). The host's own setting
+  has the same three values: `simulated` and `hardware` accept only a node of exactly that environment, `mixed` accepts all
+  three (`plantwire host --environment`). A simulated world is always `simulated`: its boards are, and `plantwire node` and the
+  session options refuse any other environment, so a simulated node can never announce hardware or mixed. `kind capture`
+  echoes each board's claim (`boards: [{board, environment}]`) beside the node's. Not built here: the relay and the mixed
+  node itself (R7b onward); nothing in a simulated run's artifact or digest changed, only the `NBIRTH` bytes in a wire journal.
 - **The firmware is the last line of defence.** If the simulator stops, leases expire and the board makes itself safe.
 - **Independence.** The gateway and the simulator speak the same plant wire, so Agentic Stream can always connect to the gateway
   directly. Relay mode is a lab choice, not a dependency.

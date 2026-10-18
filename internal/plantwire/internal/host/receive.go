@@ -72,7 +72,7 @@ func (h *Host) nodeBirth(m domain.Message) []map[string]any {
 	}
 	h.out = domain.NewTransmitter(m.SessionID)
 	if refusal := h.refusal(m); refusal != "" {
-		h.report.Refused = refusal
+		h.report.Refused, h.report.Reason = refusal, h.reason(refusal, m)
 		return h.reply(control("STATE", h.state(false, refusal)))
 	}
 	h.accepted, h.session = true, m.SessionID
@@ -91,7 +91,7 @@ func (h *Host) refusal(m domain.Message) string {
 	switch {
 	case domain.ProtocolInvalid(m):
 		return "protocol_invalid"
-	case m.Environment != h.options.Environment:
+	case domain.EnvironmentFaultFor(h.options.Environment, m) != nil:
 		return "environment_mismatch"
 	case domain.ContractUnsupported(m):
 		return "contract_unsupported"
@@ -99,6 +99,13 @@ func (h *Host) refusal(m domain.Message) string {
 		return "version_unsupported"
 	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds) || domain.KindsDuplicated(m.Kinds):
 		return "inventory_mismatch"
+	}
+	return ""
+}
+
+func (h *Host) reason(refusal string, m domain.Message) string {
+	if fault := domain.EnvironmentFaultFor(h.options.Environment, m); refusal == "environment_mismatch" && fault != nil {
+		return fault.Reason
 	}
 	return ""
 }

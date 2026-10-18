@@ -904,6 +904,10 @@
         "refused": {
           "type": "string"
         },
+        "reason": {
+          "type": "string",
+          "description": "Which rule an environment_mismatch refusal broke; absent for any other refusal."
+        },
         "quarantined": {
           "type": "array",
           "items": {
@@ -1232,19 +1236,44 @@
       "additionalProperties": false,
       "required": [
         "environment",
+        "boards",
         "bd_seq",
         "births_seen",
         "taken",
         "kinds"
       ],
-      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held, and `environment` is the board's claim as well, never verified. The first birth found is the one taken; births_seen and later_births say what else the source held, and `issues` what the scan found beside the kinds (birth_line_unreadable, rebirth_differs, capability_digest_mismatch, scan_truncated). comparison is present only when a kinds directory was given.",
+      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held, and `environment` and each board's `environment` are the node's claims as well, never verified (a node whose claim contradicts its boards is refused). The first birth found is the one taken; births_seen and later_births say what else the source held, and `issues` what the scan found beside the kinds (birth_line_unreadable, rebirth_differs, capability_digest_mismatch, scan_truncated). comparison is present only when a kinds directory was given.",
       "properties": {
         "environment": {
           "enum": [
             "simulated",
-            "hardware"
+            "hardware",
+            "mixed"
           ],
-          "description": "What the board claims; the binary does not verify it."
+          "description": "What the node claims; the binary does not verify it. A birth whose claim contradicts its boards is refused."
+        },
+        "boards": {
+          "type": "array",
+          "description": "The boards the node announced, each with the environment it claims (the origin of every device born on it); a claim, never verified.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "board",
+              "environment"
+            ],
+            "properties": {
+              "board": {
+                "type": "string"
+              },
+              "environment": {
+                "enum": [
+                  "simulated",
+                  "hardware"
+                ]
+              }
+            }
+          }
         },
         "bd_seq": {
           "type": "integer",

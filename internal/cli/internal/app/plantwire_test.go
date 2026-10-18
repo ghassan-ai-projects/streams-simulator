@@ -1,6 +1,8 @@
 package app
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,6 +87,18 @@ func TestAPlantWireHostReportsItsSession(t *testing.T) {
 	doc := (<-hosted).mustSucceed(t).document(t, "plantwire_host")
 	if quarantined := doc["quarantined"].([]any); len(quarantined) != 1 || quarantined[0] != "P2" {
 		t.Fatalf("report %v", doc)
+	}
+}
+
+func TestAPlantWireHostSetToNoKnownEnvironmentDoesNotListen(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "h.sock")
+	got := invoke(t, "plantwire", "host", "--socket", path, "--environment", "lab")
+	if got.code == 0 || !strings.Contains(got.stdout+got.stderr, "none of simulated, hardware, mixed") {
+		t.Fatalf("exit %d with %q %q, want a failure naming the three environments", got.code, got.stdout, got.stderr)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("Stat of the socket = %v, want fs.ErrNotExist: a host set to an unknown environment must not create it", err)
 	}
 }
 

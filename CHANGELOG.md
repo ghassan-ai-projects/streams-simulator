@@ -4,6 +4,19 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire 1.2.0: every board names its environment.** `NBIRTH.boards[].environment` (`simulated` or `hardware`) is
+  required and `NBIRTH.environment` gains `mixed`; a device's origin is the environment of its board, never inferred. The
+  reference host checks that a `simulated` node has only simulated boards, a `hardware` node only hardware boards and a
+  `mixed` node at least one of each, and that the node is one it is set to accept: `plantwire host --environment` now
+  takes `simulated`, `hardware` or `mixed` (`mixed` accepts all three; any other value fails before the host listens).
+  A violation is refused as `environment_mismatch` and the host report says which rule in `reason`. `kind capture` shares
+  the node-versus-boards check, refuses a contradicting birth and prints `boards: [{board, environment}]` beside the
+  node's `environment`, both claims. A simulated node announces `simulated` for itself and all its boards and cannot be
+  made to announce `hardware` or `mixed`. The contract generators, the fixtures (eight `environment-*` exchanges, whose
+  header may carry `host_environment`, and two invalid births), the contract digest and the embedded schemas moved
+  together; the `NBIRTH` bytes of a wire journal change (`contract_version`, `boards[].environment`), and nothing else in a
+  simulated run does (the behaviour pin holds no wire run).
+
 - **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads the first
   `NBIRTH` of a file (bare, or the `wire` records of a run's observer journal; streamed line by line, a line at most
   1 MiB, a scan at most 32 MiB) and prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
