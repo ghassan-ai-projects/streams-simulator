@@ -31,19 +31,37 @@ func (l *relayLoop) serve(ctx context.Context) error {
 }
 
 func (l *relayLoop) step(ctx context.Context) error {
+	if l.gateway == nil {
+		return l.awaitGateway(ctx)
+	}
+	return l.exchange(ctx)
+}
+
+func (l *relayLoop) awaitGateway(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return nil
-	case link := <-l.gatewayLinks():
+	case link := <-l.gateways.Links():
 		return l.attach(link)
-	case in, open := <-l.gatewayIn():
+	case in, open := <-l.hostIn():
+		return l.onHost(in, open)
+	case <-l.sim.signal():
+		return l.onSim()
+	case <-l.ticks:
+		return l.onTick(ctx)
+	}
+}
+
+func (l *relayLoop) exchange(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return nil
+	case in, open := <-l.gateway.Incoming():
 		return l.onGateway(ctx, in, open)
 	case in, open := <-l.hostIn():
 		return l.onHost(in, open)
-	case <-l.sim.ready():
+	case <-l.sim.signal():
 		return l.onSim()
-	case err := <-l.sim.finished():
-		return l.onSimDone(err)
 	case <-l.ticks:
 		return l.onTick(ctx)
 	}
@@ -60,20 +78,6 @@ func (l *relayLoop) finish(cause error) error {
 		return fmt.Errorf("plantwire relay: %w", err)
 	}
 	return nil
-}
-
-func (l *relayLoop) gatewayLinks() <-chan *uds.Link {
-	if l.gateway != nil {
-		return nil
-	}
-	return l.gateways.Links()
-}
-
-func (l *relayLoop) gatewayIn() <-chan domain.Inbound {
-	if l.gateway == nil {
-		return nil
-	}
-	return l.gateway.Incoming()
 }
 
 func (l *relayLoop) hostIn() <-chan domain.Inbound {

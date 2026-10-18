@@ -132,6 +132,7 @@ func TestACommandDuringAReplayIsRefusedAndReachesNothing(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
+	host.waitFor(func(r []map[string]any) bool { return hasRecord(r, "NDEATH", "", nil) })
 	receipts := map[string]map[string]any{}
 	for _, receipt := range ofType(host.snapshot(), "DRECEIPT") {
 		receipts[receipt["command_id"].(string)] = receipt
@@ -194,7 +195,7 @@ func folderWithArtifact(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trace, err := run.OpenFieldTrace(dir)
+	trace, err := run.NewFieldTrace(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

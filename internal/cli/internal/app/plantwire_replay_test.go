@@ -62,7 +62,7 @@ func traceOfNode(t *testing.T, out string) string {
 		t.Fatal(err)
 	}
 	folder := t.TempDir()
-	trace, err := run.OpenFieldTrace(folder)
+	trace, err := run.NewFieldTrace(folder)
 	if err != nil {
 		t.Fatal(err)
 	}

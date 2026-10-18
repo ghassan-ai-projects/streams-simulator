@@ -85,7 +85,7 @@
   re-sequences everything in the relay's one host session. What a simulated record can cause is typed: `FromSim` returns a
   `SimMoves` that has no member for the gateway, and the loop applies it with a function that has no path to the gateway link.
   The world's own wire journaling is switched off (`Options.NoWireJournal`) because the relay journals the merged stream. The
-  field trace is written by the `run` module (`run.OpenFieldTrace`, canonical lines, the digest in `run.json` as
+  field trace is written by the `run` module (`run.NewFieldTrace`, canonical lines, the digest in `run.json` as
   `field_trace_digest`, checked with the other evidence files); `plantwire replay-trace` plays it back with every board
   `simulated` through a pure plan (`replay_trace.go`) and a small barrier-paced player that has no gateway path.
 

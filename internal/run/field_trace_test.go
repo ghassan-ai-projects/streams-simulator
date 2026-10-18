@@ -46,7 +46,7 @@ func runWithFieldTrace(t *testing.T, records ...map[string]any) recordedRun {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trace, err := run.OpenFieldTrace(dir)
+	trace, err := run.NewFieldTrace(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestAFieldTraceWithoutAnArtifactIsReadAsLongAsItIsCanonical(t *testing.T) {
 
 func TestAFieldTraceRefusesWhatItCannotRecordCanonically(t *testing.T) {
 	t.Parallel()
-	trace, err := run.OpenFieldTrace(t.TempDir())
+	trace, err := run.NewFieldTrace(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}

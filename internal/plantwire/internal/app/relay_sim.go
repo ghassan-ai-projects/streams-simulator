@@ -97,7 +97,7 @@ func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, 
 
 func (s *simNode) arm(ctx context.Context, session *Session) {
 	s.begin = func() {
-		s.done, s.started = uds.Spawn(func() error { return session.Run(ctx) }), true
+		s.done, s.started = uds.Spawn(func() error { return session.Run(ctx) }, s.link.Wake), true
 	}
 }
 
@@ -121,18 +121,19 @@ func (s *simNode) discard() {
 	discardRun(s.run)
 }
 
-func (s *simNode) ready() <-chan struct{} {
+func (s *simNode) signal() <-chan struct{} {
 	if s == nil {
 		return nil
 	}
 	return s.link.UpReady()
 }
 
-func (s *simNode) finished() <-chan error {
-	if s == nil {
-		return nil
+func (s *simNode) reap() {
+	select {
+	case err := <-s.done:
+		s.complete(err)
+	default:
 	}
-	return s.done
 }
 
 func (s *simNode) deliver(records []map[string]any) {
@@ -164,10 +165,14 @@ func (s *simNode) stop() error {
 
 func (s *simNode) complete(err error) {
 	s.done = nil
-	if err != nil && !errors.Is(err, context.Canceled) && s.failure == nil {
+	if err != nil && !endedByRelay(err) && s.failure == nil {
 		slog.Warn("plantwire relay: the simulated node ended", "error", err)
 		s.failure = err
 	}
+}
+
+func endedByRelay(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, uds.ErrSimClosed)
 }
 
 func (s *simNode) end(out, fieldTrace string) error {

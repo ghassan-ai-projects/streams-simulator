@@ -19,7 +19,7 @@ internal/plantwire                  99
 internal/plantwire/internal/app     93
 internal/plantwire/internal/domain  97
 internal/plantwire/internal/host    93
-internal/plantwire/internal/uds     90
+internal/plantwire/internal/uds     92
 # The component module (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/component                  100
 internal/component/internal/domain  98

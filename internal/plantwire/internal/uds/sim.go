@@ -33,6 +33,8 @@ func (l *SimLink) Deliver(in domain.Inbound) bool { return l.down.Put(in) }
 
 func (l *SimLink) TakeUp() []map[string]any { return l.up.Take() }
 
+func (l *SimLink) Wake() { l.up.Wake() }
+
 func (l *SimLink) UpReady() <-chan struct{} { return l.up.Ready() }
 
 func (l *SimLink) Close() {
@@ -83,8 +85,11 @@ func (l *SimLink) idle(ctx context.Context, expiry <-chan time.Time) (bool, erro
 	}
 }
 
-func Spawn(run func() error) <-chan error {
+func Spawn(run func() error, after func()) <-chan error {
 	done := make(chan error, 1)
-	go func() { done <- run() }()
+	go func() {
+		done <- run()
+		after()
+	}()
 	return done
 }

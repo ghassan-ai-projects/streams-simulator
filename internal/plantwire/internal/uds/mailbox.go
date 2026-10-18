@@ -22,7 +22,7 @@ func (m *Mailbox[T]) Put(items ...T) bool {
 		return false
 	}
 	m.items = append(m.items, items...)
-	m.wake()
+	m.Wake()
 	return true
 }
 
@@ -52,7 +52,7 @@ func (m *Mailbox[T]) Shut() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.shut = true
-	m.wake()
+	m.Wake()
 }
 
 func (m *Mailbox[T]) IsShut() bool {
@@ -61,7 +61,7 @@ func (m *Mailbox[T]) IsShut() bool {
 	return m.shut
 }
 
-func (m *Mailbox[T]) wake() {
+func (m *Mailbox[T]) Wake() {
 	select {
 	case m.signal <- struct{}{}:
 	default:

@@ -53,6 +53,12 @@ func (l *relayLoop) record(traced []domain.Traced) error {
 }
 
 func (l *relayLoop) onSim() error {
+	pending := l.drainSim()
+	l.sim.reap()
+	return pending
+}
+
+func (l *relayLoop) drainSim() error {
 	for _, record := range l.sim.link.TakeUp() {
 		in, err := domain.InboundOf(record)
 		if err != nil {
@@ -68,12 +74,6 @@ func (l *relayLoop) onSim() error {
 
 func (l *relayLoop) applySim(moves domain.SimMoves) error {
 	return errors.Join(l.record(moves.Trace), l.sendUp(moves.Up))
-}
-
-func (l *relayLoop) onSimDone(err error) error {
-	pending := l.onSim()
-	l.sim.complete(err)
-	return pending
 }
 
 func (l *relayLoop) sendUp(records []map[string]any) error {

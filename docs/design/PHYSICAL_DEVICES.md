@@ -280,7 +280,7 @@ host sees. The hardware-only relay of R7b is unchanged (a relay without `--domai
 *As built (R8):* the field trace is `field-trace.jsonl` in the run folder: one line per record the gateway sent, in the order the
 relay received it, `{"ordinal": n, "record": {...}}` in RFC 8785 canonical JSON and nothing else (no host record, no wall clock;
 the times in it are the records' own event times). The relay writes it as it relays, including records it dropped, so the file
-is what the gateway said and not what the relay decided. The run module owns it (`run.OpenFieldTrace`, `run.ReadFieldTrace`):
+is what the gateway said and not what the relay decided. The run module owns it (`run.NewFieldTrace`, `run.ReadFieldTrace`):
 the artifact gains the optional `field_trace_digest` (the SHA-256 of the file, which is the digest of the canonical form of
 the ordered records), `replay`, `verify` and `report` check the file against it with the other evidence files, and a run
 without a trace has neither the member nor the file. A mixed run is therefore a function of

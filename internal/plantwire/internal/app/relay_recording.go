@@ -29,7 +29,7 @@ func openRecording(dir string, sim *simNode) (recording, error) {
 	if dir == "" {
 		return recording{}, nil
 	}
-	field, err := run.OpenFieldTrace(dir)
+	field, err := run.NewFieldTrace(dir)
 	if err != nil {
 		return recording{}, fmt.Errorf("plantwire relay: %w", err)
 	}

@@ -27,7 +27,7 @@ type FieldTrace struct {
 	impl *layer.FieldTrace
 }
 
-func OpenFieldTrace(dir string) (*FieldTrace, error) {
+func NewFieldTrace(dir string) (*FieldTrace, error) {
 	inner, err := layer.OpenFieldTrace(dir)
 	if err != nil {
 		return nil, err

@@ -30,7 +30,7 @@ func folderWithFieldTrace(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trace, err := run.OpenFieldTrace(dir)
+	trace, err := run.NewFieldTrace(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

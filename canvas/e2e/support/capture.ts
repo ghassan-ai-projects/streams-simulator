@@ -72,7 +72,9 @@ export function birthOf(kinds: readonly Kind[], over: Record<string, unknown> = 
 }
 
 export function announcement(environment: Environment = "simulated"): string {
-  return JSON.stringify({ ...birthRecord(), environment });
+  const record = birthRecord();
+  const boards = (record.boards as Record<string, unknown>[]).map((board) => ({ ...board, environment }));
+  return JSON.stringify({ ...record, environment, boards });
 }
 
 export function digestRuleHolds(): boolean {

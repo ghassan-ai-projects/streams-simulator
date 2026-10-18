@@ -3,10 +3,12 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"slices"
 	"testing"
 
+	simdomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -63,7 +65,7 @@ func TestAMixedRelayRefusesWhatItCannotBuildBeforeItListens(t *testing.T) {
 		want   error
 	}{
 		"no run folder":      {func(o *RelayOptions) { o.Out = "" }, ErrBadOptions},
-		"an unknown domain":  {func(o *RelayOptions) { o.Simulated.Domain = "no-such-domain" }, nil},
+		"an unknown domain":  {func(o *RelayOptions) { o.Simulated.Domain = "no-such-domain" }, simdomain.ErrUnknownDomain},
 		"no slice":           {func(o *RelayOptions) { o.Simulated.Node.SliceNS = 0 }, ErrBadOptions},
 		"a hardware world":   {func(o *RelayOptions) { o.Simulated.Node.Environment = "hardware" }, ErrBadOptions},
 		"kind files missing": {func(o *RelayOptions) { o.Simulated.Node.KindsDirs = nil }, domain.ErrKindFileMissing},
@@ -74,11 +76,11 @@ func TestAMixedRelayRefusesWhatItCannotBuildBeforeItListens(t *testing.T) {
 			options := good(t)
 			tc.change(&options)
 			_, err := serveRelay(t.Context(), options, nil)
-			if err == nil || (tc.want != nil && !errors.Is(err, tc.want)) {
+			if !errors.Is(err, tc.want) {
 				t.Fatalf("serveRelay = %v, want a refusal %v before anything listens", err, tc.want)
 			}
-			if _, statErr := os.Stat(options.GatewaySocket); statErr == nil {
-				t.Fatal("the gateway socket was published although the relay could not be built")
+			if _, statErr := os.Stat(options.GatewaySocket); !errors.Is(statErr, fs.ErrNotExist) {
+				t.Fatalf("gateway socket stat = %v, want it absent because the relay could not be built", statErr)
 			}
 		})
 	}
