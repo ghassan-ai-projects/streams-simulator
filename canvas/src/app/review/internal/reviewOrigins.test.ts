@@ -73,5 +73,31 @@ describe("origins in a review", () => {
       binding: { matched: false, refusal: "inventory_mismatch", reason: "", issues: [] },
     });
     expect(store.snapshot().connection).toBe("running");
+    bridge.stream("c-3", [{ stream: "observer", seq: 3, type: "run.closed", at_ns: 10, incomplete: false }], null);
+    expect(store.snapshot().connection).toBe("saved");
+  });
+
+  it("takes a stopped session from a later listing when the review opened on a stale one", () => {
+    const bridge = new FakeBridge();
+    bridge.actions.set("run.report", success(reportWire));
+    const timers = fakeClock();
+    const store = new ReviewStore(bridge.review, timers, timers);
+    const listed = {
+      worldId: "c-4",
+      ended: false,
+      complete: false,
+      incompleteReason: "",
+      explore: false,
+      seed: 1,
+      plant: "p",
+      durationS: 0,
+      recordedAt: "",
+      faults: 0,
+    };
+    store.open("c-4", { ...listed, connected: "running" });
+    store.refreshCompleted("c-4", { ...listed, ended: true, complete: true, connected: "saved" });
+    expect(store.snapshot().connection).toBe("saved");
+    store.refreshCompleted("c-9", { ...listed, connected: "running" });
+    expect(store.snapshot().connection).toBe("saved");
   });
 });

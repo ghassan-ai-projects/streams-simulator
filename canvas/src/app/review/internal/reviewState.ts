@@ -56,9 +56,15 @@ export function connectionOf(known: RunEntry | undefined): ReviewState["connecti
   return known?.connected ?? "none";
 }
 
-type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" }>;
+export function withListedConnection(state: ReviewState, known: RunEntry | undefined): ReviewState {
+  const listed = known?.connected;
+  return listed === undefined || listed === state.connection ? state : { ...state, connection: listed };
+}
+
+type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" }>;
 
 export function withSessionEntry(state: ReviewState, entry: SessionEntry): ReviewState {
+  if (entry.kind === "closed") return state.connection === "running" ? { ...state, connection: "saved" } : state;
   const connection = state.connection === "none" ? "saved" : state.connection;
   if (entry.kind === "origin") return { ...state, connection, origins: withOrigin(state.origins, entry.origin) };
   return { ...state, connection, binding: { atNs: entry.atNs, binding: entry.binding } };
