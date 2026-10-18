@@ -52,9 +52,9 @@ func TestKindCaptureOfARunReadsItsObserverJournalNeverAFreePathAndSendsNoInput(t
 	if _, err := capture(h, map[string]any{"run": "w-1"}); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"kind", "capture", filepath.Join(h.dir, runJournal), "--kinds-dir", filepath.Join(h.dir, "kinds")}
-	if !slices.Equal(h.argv[0], want) || h.stdin[0] != nil {
-		t.Fatalf("argv %v stdin %q, want %v and no input", h.argv[0], h.stdin[0], want)
+	want := []string{"kind", "capture", runJournal, "--kinds-dir", filepath.Join(h.dir, "kinds")}
+	if !slices.Equal(h.argv[0], want) || h.stdin[0] != nil || filepath.IsAbs(h.argv[0][2]) {
+		t.Fatalf("argv %v stdin %q, want %v (the journal relative to the workspace the command runs in) and no input", h.argv[0], h.stdin[0], want)
 	}
 	for _, word := range h.argv[0] {
 		if strings.Contains(word, "sealed") {
@@ -63,14 +63,34 @@ func TestKindCaptureOfARunReadsItsObserverJournalNeverAFreePathAndSendsNoInput(t
 	}
 }
 
-func TestKindCaptureComparesNothingWhenTheWorkspaceHasNoKindsFolder(t *testing.T) {
+func TestKindCapturePassesTheWorkspaceKindsFolderEvenBeforeItExists(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
+	if h.bridge.edges.Workspace.Exists("kinds") {
+		t.Fatal("the harness workspace already has a kinds folder")
+	}
 	if _, err := capture(h, map[string]any{"content": birthText}); err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"kind", "capture", "--stdin"}; !slices.Equal(h.argv[0], want) {
-		t.Fatalf("argv %v, want %v without a kinds directory", h.argv[0], want)
+	if want := []string{"kind", "capture", "--stdin", "--kinds-dir", filepath.Join(h.dir, "kinds")}; !slices.Equal(h.argv[0], want) {
+		t.Fatalf("argv %v, want %v: the first capture of a workspace still gets the folder its drafts are saved to", h.argv[0], want)
+	}
+	if h.bridge.edges.Workspace.Exists("kinds") {
+		t.Fatal("a capture created the kinds folder")
+	}
+}
+
+func TestTheFirstKindFileOfAWorkspaceWithoutAKindsFolderCanBeWrittenAndTraversalCannot(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	document, err := h.bridge.WriteFile("kinds/pump_monitor.kind.json", fanKindBytes, "")
+	if err != nil || document.Path != "kinds/pump_monitor.kind.json" || !h.bridge.edges.Workspace.Exists("kinds/pump_monitor.kind.json") {
+		t.Fatalf("WriteFile = %+v, %v, want the first kind file written and its folder created", document, err)
+	}
+	for _, rel := range []string{"kinds/../escape.kind.json", "kinds/../../escape.kind.json", "kinds/a/b.kind.json", "kinds/board:part.kind.json", "/kinds/x.kind.json"} {
+		if _, err := h.bridge.WriteFile(rel, fanKindBytes, ""); !errors.Is(err, domain.ErrBadPath) {
+			t.Errorf("WriteFile(%q) = %v, want ErrBadPath", rel, err)
+		}
 	}
 }
 

@@ -4,18 +4,27 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
-- **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads one `NBIRTH`
-  (a file holding it, or the first one of a JSON Lines file: a recorded wire stream or a run's observer journal, whose
-  `wire` records wrap it) and prints `{environment, bd_seq, kinds}`: per announced kind a draft kind file (the entry
-  without `kind_digest`), the announced `kind_digest`, the issues the draft still has as a kind file, and, with
-  `--kinds-dir`, a `comparison` with the workspace kind file of the same name (`new`, `same`, or `differs` at the
-  pointer of the first differing member). A birth is a claim: it is refused (`kind_failed`, issues with `keyword` and
-  `member`) unless it validates against the plant wire schema, speaks this contract and every `kind_digest` is
-  recomputed and holds; a record of the sealed director stream is never taken; a birth of either environment is
-  accepted and echoed. It writes nothing. `cli-output-v0.1` gains `kind_capture` (and `issue`). The canvas bridge
-  gains the read-only `kind.capture` (`{content}` on standard input, or `{run}` for the observer journal of a run of the
-  workspace, exactly one of them; the sealed journal is never reachable). Test support: a scripted plant wire node
-  (`internal/plantwire/internal/standin`, imported by tests only) stands in for a board behind a gateway.
+- **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads the first
+  `NBIRTH` of a file (bare, or the `wire` records of a run's observer journal; streamed line by line, a line at most
+  1 MiB, a scan at most 32 MiB) and prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
+  per announced kind a draft kind file (the entry without `kind_digest`), the announced `kind_digest`, `claims` (the
+  members that came from the board and that nothing verified: `risk_class`, `safe_stop`, the bounds of an
+  `args_schema`), the issues the draft still has, and, with `--kinds-dir`, a `comparison` with the workspace kind file
+  of the same name (`new`, `same`, `differs` at the pointer of the first differing member, `unreadable`) and its
+  `target`, the path the draft would be saved to, derived by one rule in the binary (a name that differs only in case is
+  a `kind_name_collision` aimed at the existing file). Provenance is reported, never silent: the first birth is taken,
+  later ones are listed with whether their kinds are the same (`rebirth_differs`), a line that names a birth but cannot
+  be read is an issue (`birth_line_unreadable`), a cut scan is `scan_truncated`. A birth is a claim: it is refused
+  (`kind_failed`, issues with `keyword` and `member`) unless it validates against the plant wire schema, speaks this
+  contract and every `kind_digest` is recomputed and holds; the board's `capability_digest` is checked beside it
+  (`capability_digest_mismatch`) and `environment` is echoed as the board's claim. Only the observer stream is taken:
+  records are read strictly (exact member names, no member twice) and the stream is checked before a record is accepted.
+  The reference host now also refuses a birth announcing a kind twice (`inventory_mismatch`). It writes nothing.
+  `cli-output-v0.1` gains `kind_capture` (and `issue`); the kernel gains `OpenRegular` (a relative path is walked and
+  no component may be a symbolic link). The canvas bridge gains the read-only `kind.capture` (`{content}` on standard
+  input, or `{run}` for the observer journal of a run of the workspace, exactly one of them; the sealed journal is
+  never reachable). Test support: a scripted plant wire node (`internal/plantwire/internal/standin`, imported by tests
+  only) stands in for a board behind a gateway. A kinds directory that does not exist holds no kind files for a capture, and the bridge always passes the workspace `kinds/`, so a first capture has a `target`.
 
 - **One unfinished device no longer breaks another, and the picker tells the truth about fit.** The twin actions take the
   kind files that are in the twin: the canvas bridge's `kind.twin` and `kind.suggest` take `kinds: ["<file stem>", ...]`

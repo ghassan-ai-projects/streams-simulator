@@ -137,8 +137,11 @@ Deviations from the plan above:
   step, as the contract's commissioning order (discovered, reviewed, accepted) has it. A birth is a claim, so every
   `kind_digest` is recomputed and a birth that does not hold is refused; a birth of either environment is accepted and echoed.
 - The source is a bare `NBIRTH` or the first one of a JSON Lines file, including the `wire` records of a run's observer
-  journal (`direction: node`); the sealed director stream is never taken. Deviation from the plan: a file may be up to 32 MiB
-  (a journal is larger than a kind file); the `NBIRTH` in it, and standard input, stay at 1 MiB.
+  journal (`direction: node`); only the observer stream is taken, read strictly, and provenance is reported (`births_seen`,
+  `taken`, `later_births`, `rebirth_differs`). `environment` is the board's claim and is not verified; `claims` lists the
+  members the board asserted (`risk_class`, `safe_stop`, `args_schema` bounds) for the reviewer. Each `comparison` carries
+  `target`, the path the draft would be saved to, so a surface guesses no file name. Deviation from the plan: a file is
+  streamed (a journal is larger than a kind file), a line at most 1 MiB and a scan at most 32 MiB; standard input stays at 1 MiB.
 - The scripted stand-in gateway is test support, not a feature: `internal/plantwire/internal/standin` plays a hardware node
   from kind files and a script (readings and qualities, link loss and rebirth, command receipts and results) in script time,
   and a test (`test/architecture`) keeps every production package from importing it. A board built from the thermal kind files

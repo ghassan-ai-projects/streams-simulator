@@ -29,6 +29,8 @@ function plain(kind: KindFile, refused: DeviceFailure): DeviceFailure {
 }
 
 class Desk implements DeviceDesk {
+  private session: CaptureSession | null = null;
+
   constructor(private readonly gateway: DevicesGateway) {}
 
   async rows(entries: readonly KindEntry[], domains: readonly string[]): Promise<readonly DeviceRow[]> {
@@ -48,7 +50,8 @@ class Desk implements DeviceDesk {
   }
 
   capture(): CaptureSession {
-    return createCaptureSession(this.gateway);
+    this.session ??= createCaptureSession(this.gateway);
+    return this.session;
   }
 
   private async row(entry: KindEntry, domains: readonly string[]): Promise<DeviceRow> {

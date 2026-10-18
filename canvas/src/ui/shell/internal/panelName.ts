@@ -6,4 +6,5 @@ export const rightPanelName: Readonly<Record<Route["screen"], string>> = {
   review: "Run details",
   edit: "Build",
   device: "Device details",
+  capture: "Inspector",
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { captureContent, captureLines, differenceWords, draftIssues } from "./captureDraft";
+import { captureContent, captureLines, differenceValues, differenceWords, draftIssues } from "./captureDraft";
 
 const pump = {
   commands: [
@@ -86,11 +86,51 @@ describe("reviewing a captured draft", () => {
     ]);
   });
 
+  it("leaves out what the comparison with the saved file found, which is not a rule of the draft", () => {
+    const found = [
+      { pointer: "/kind", message: "collides", keyword: "kind_name_collision", member: "kind" },
+      { pointer: "", message: "unreadable", keyword: "kind_file_unreadable" },
+      { pointer: "/metrics/0/unit", message: "needs a unit", keyword: "required", member: "unit" },
+    ];
+    expect(draftIssues(pump, found).map((issue) => issue.message)).toEqual(["needs a unit"]);
+    expect(draftIssues({ kind: "x", metrics: "none" }, found.slice(0, 2))).toEqual([]);
+  });
+
   it("still words an issue of a draft that cannot be read", () => {
     const issue = { pointer: "", message: "broken", keyword: "kind_draft" };
     expect(draftIssues({ kind: "x", metrics: "none" }, [issue])).toEqual([
       { title: "", text: "The announced device does not meet the rules for a device file", message: "broken" },
     ]);
+  });
+});
+
+describe("what the saved file says where it first differs", () => {
+  const saved = JSON.stringify({
+    kind: "Pump",
+    metrics: [{ name: "flow", unit: "m3/s", resolution: 1, eu_range: { min: 0 } }],
+    commands: [{ safe_stop: true }],
+  });
+
+  it.each([
+    ["/metrics/0/unit", 'Saved: "m3/s". The board says: "m3/h".'],
+    ["/kind", 'Saved: "Pump". The board says: "pump".'],
+    ["/metrics/0/resolution", "Saved: 1. The board says: not stated."],
+    ["/metrics/2/unit", 'Saved: not stated. The board says: "m".'],
+    ["/commands/0/safe_stop", "Saved: true. The board says: false."],
+    ["/metrics/0/eu_range/max", "Saved: not stated. The board says: 120."],
+  ])("puts both values at %s", (pointer, words) => {
+    expect(differenceValues(pump, saved, pointer)).toBe(words);
+  });
+
+  it("gives no values for a place that holds a whole object or list, or when the saved file is not JSON", () => {
+    expect(differenceValues(pump, saved, "/metrics/0")).toBe("");
+    expect(differenceValues(pump, saved, "")).toBe("");
+    expect(differenceValues(pump, saved, "/metrics/0/unit/x")).toBe("Saved: not stated. The board says: not stated.");
+    expect(differenceValues(pump, "not json", "/kind")).toBe("");
+  });
+
+  it("reads an escaped pointer and a null", () => {
+    expect(differenceValues({ "a/b": null }, '{"a/b":1}', "/a~1b")).toBe("Saved: 1. The board says: empty.");
   });
 });
 

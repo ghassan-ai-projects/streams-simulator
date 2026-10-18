@@ -35,7 +35,7 @@ test("opening a device from the list puts the focus on its form, so the next Tab
 }) => {
   writeKind(lab, "e2e_ok", ready);
   await page.goto("/");
-  await page.getByRole("region", { name: "Devices" }).getByRole("button", { name: "Edit e2e_ok" }).click();
+  await page.getByRole("region", { name: "Devices", exact: true }).getByRole("button", { name: "Edit e2e_ok" }).click();
   await expect(page.getByRole("region", { name: "Editing e2e_ok" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Device", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -49,7 +49,7 @@ test("an unfinished device does not block another one, is named when it is added
   writeKind(lab, "e2e_ok", ready);
   writeKind(lab, "e2e_unfinished", unfinished);
   await page.goto("/");
-  await page.getByRole("region", { name: "Devices" }).getByRole("button", { name: "Edit e2e_ok" }).click();
+  await page.getByRole("region", { name: "Devices", exact: true }).getByRole("button", { name: "Edit e2e_ok" }).click();
   await step(page, /^Behaviour/).click();
   await expect(page.getByRole("region", { name: "Behaviour of e2e_ok" })).toBeVisible();
   await expect(page.getByLabel("Twin name")).toHaveValue("e2e-ok-twin");
@@ -75,7 +75,10 @@ test("an instrument that cannot read a reading is greyed out with one plain reas
 }) => {
   writeKind(lab, "e2e_rangeless", rangeless);
   await page.goto("/");
-  await page.getByRole("region", { name: "Devices" }).getByRole("button", { name: "Edit e2e_rangeless" }).click();
+  await page
+    .getByRole("region", { name: "Devices", exact: true })
+    .getByRole("button", { name: "Edit e2e_rangeless" })
+    .click();
   await step(page, /^Behaviour/).click();
   const heat = page.getByRole("group", { name: "Reading heat" });
   await heat.getByRole("button", { name: "Change the instrument of heat" }).click();
@@ -85,9 +88,9 @@ test("an instrument that cannot read a reading is greyed out with one plain reas
 
   await heat.getByRole("button", { name: "Set it in the Interface step" }).click();
   await expect(page.getByRole("region", { name: "Editing e2e_rangeless" })).toBeVisible();
-  await expect(page.getByLabel("Minimum")).toBeFocused();
-  await page.getByLabel("Minimum").fill("0");
-  await page.getByLabel("Maximum").fill("100");
+  await expect(page.getByLabel("Minimum", { exact: true })).toBeFocused();
+  await page.getByLabel("Minimum", { exact: true }).fill("0");
+  await page.getByLabel("Maximum", { exact: true }).fill("100");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
 

@@ -11,6 +11,7 @@ describe("routes", () => {
       { screen: "review", worldId: "w-1" },
       { screen: "edit", composition: "compositions/lab.composition.json" },
       { screen: "device", path: "kinds/fan.kind.json" },
+      { screen: "capture" },
     ] as const;
     for (const route of routes) {
       expect(parseRoute(formatRoute(route))).toEqual(route);

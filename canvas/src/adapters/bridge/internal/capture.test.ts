@@ -6,10 +6,11 @@ import { boardCapture } from "./captureDecoder";
 
 const digest = "sha256:abc";
 const draft = { kind: "pump", metrics: [{ name: "flow" }], commands: [] };
-const announced = { kind: "pump", kind_digest: digest, draft };
+const fresh = { status: "new", target: "kinds/pump.kind.json" };
+const announced = { kind: "pump", kind_digest: digest, draft, claims: [], comparison: fresh };
 
 function wire(kinds: readonly object[] = [announced], over: object = {}) {
-  return { environment: "hardware", bd_seq: 3, kinds, ...over };
+  return { environment: "hardware", bd_seq: 3, births_seen: 1, taken: { line: 1, bd_seq: 3 }, kinds, ...over };
 }
 
 function capture(handler: Parameters<typeof bridgeTransport>[0]) {
@@ -31,32 +32,46 @@ describe("capturing the kinds a board announced", () => {
     expect(second?.[1]).toMatchObject({ body: JSON.stringify({ args: { run: "w-1" } }) });
   });
 
-  it("reads the environment, the sequence and each kind with its draft, issues and comparison", async () => {
+  it("reads where the birth stood, what followed, each kind with its claims, issues and comparison", async () => {
     const issues = [{ pointer: "/metrics/0/unit", message: "needs a unit", keyword: "required", member: "unit" }];
     const comparison = {
       status: "differs",
+      target: "kinds/pump.kind.json",
       file: "kinds/pump.kind.json",
       file_digest: "sha256:old",
       differs_at: "/kind",
+      collides_with: "kinds/Pump.kind.json",
     };
-    const body = wire([{ ...announced, issues, comparison }]);
+    const later = [{ line: 4, bd_seq: 4, same_content: false }];
+    const body = wire([{ ...announced, claims: ["/commands/0/risk_class"], issues, comparison }], {
+      births_seen: 2,
+      later_births: later,
+      issues: [{ message: "differs", keyword: "rebirth_differs" }],
+    });
     const { gateway } = capture(() => respond(200, { result: body }));
     expect(await gateway.captureKinds({ content: "x" })).toEqual({
       ok: true,
       value: {
         environment: "hardware",
         bdSeq: 3,
+        birthsSeen: 2,
+        taken: { line: 1, bdSeq: 3 },
+        laterBirths: [{ line: 4, bdSeq: 4, sameContent: false }],
+        issues: [{ pointer: "", message: "differs", keyword: "rebirth_differs" }],
         kinds: [
           {
             kind: "pump",
             digest,
             draft,
+            claims: ["/commands/0/risk_class"],
             issues,
             comparison: {
               status: "differs",
+              target: "kinds/pump.kind.json",
               file: "kinds/pump.kind.json",
               fileDigest: "sha256:old",
               differsAt: "/kind",
+              collidesWith: "kinds/Pump.kind.json",
             },
           },
         ],
@@ -89,7 +104,7 @@ describe("capturing the kinds a board announced", () => {
       ok: false,
       failure: { kind: "unavailable" },
     });
-    const odd = capture(() => respond(200, { result: { environment: "elsewhere", bd_seq: 0, kinds: [] } }));
+    const odd = capture(() => respond(200, { result: wire([], { environment: "elsewhere" }) }));
     expect(await odd.gateway.captureKinds({ run: "w-1" })).toMatchObject({
       ok: false,
       failure: { kind: "unreadable" },
@@ -98,43 +113,67 @@ describe("capturing the kinds a board announced", () => {
 });
 
 describe("the capture document", () => {
-  it("takes a kind without a comparison as a new device, and an empty announcement as no kinds", () => {
-    expect(boardCapture(wire())).toMatchObject({ kinds: [{ comparison: { status: "new" }, issues: [] }] });
-    expect(boardCapture(wire([], { environment: "simulated", bd_seq: 0 }))).toEqual({
+  it("reads an announcement with no later birth and no issue, and one without kinds", () => {
+    expect(boardCapture(wire())).toMatchObject({ birthsSeen: 1, laterBirths: [], issues: [], kinds: [{ claims: [] }] });
+    expect(boardCapture(wire([], { environment: "simulated", bd_seq: 0 }))).toMatchObject({
       environment: "simulated",
       bdSeq: 0,
       kinds: [],
     });
   });
 
-  it("reads a kind the same as its file and one that is new beside a kinds folder", () => {
-    const same = { status: "same", file: "kinds/pump.kind.json", file_digest: digest };
+  it("reads a kind the same as its file, one that cannot be read, and one without a stated file digest", () => {
+    const same = { status: "same", target: "kinds/pump.kind.json", file: "kinds/pump.kind.json", file_digest: digest };
+    const unreadable = { status: "unreadable", target: "kinds/pump.kind.json", file: "kinds/pump.kind.json" };
     expect(boardCapture(wire([{ ...announced, comparison: same }]))).toMatchObject({
       kinds: [{ comparison: { status: "same", file: "kinds/pump.kind.json", fileDigest: digest } }],
     });
-    expect(boardCapture(wire([{ ...announced, comparison: { status: "new" } }]))).toMatchObject({
-      kinds: [{ comparison: { status: "new" } }],
+    expect(boardCapture(wire([{ ...announced, comparison: unreadable }]))).toMatchObject({
+      kinds: [{ comparison: { status: "unreadable", target: "kinds/pump.kind.json" } }],
+    });
+    const bare = { status: "differs", target: "kinds/pump.kind.json", file: "kinds/pump.kind.json" };
+    expect(boardCapture(wire([{ ...announced, comparison: bare }]))).toMatchObject({
+      kinds: [{ comparison: { fileDigest: "", differsAt: "", collidesWith: "" } }],
     });
   });
 
   it.each([
     ["not a document", null],
     ["an environment nobody announced", wire([announced], { environment: "cloud" })],
-    ["a missing environment", { bd_seq: 0, kinds: [] }],
+    ["a missing environment", { bd_seq: 0, births_seen: 1, taken: { line: 1, bd_seq: 0 }, kinds: [] }],
     ["a negative sequence", wire([announced], { bd_seq: -1 })],
     ["a fractional sequence", wire([announced], { bd_seq: 1.5 })],
     ["a sequence that is text", wire([announced], { bd_seq: "0" })],
+    ["no count of births", wire([announced], { births_seen: 0 })],
+    ["no place of the taken birth", wire([announced], { taken: null })],
+    ["a taken birth on line 0", wire([announced], { taken: { line: 0, bd_seq: 0 } })],
+    ["a taken birth without a sequence", wire([announced], { taken: { line: 1 } })],
+    ["later births that are not a list", wire([announced], { later_births: {} })],
+    ["a later birth without its line", wire([announced], { later_births: [{ bd_seq: 1, same_content: true }] })],
+    ["a later birth without its sequence", wire([announced], { later_births: [{ line: 2, same_content: true }] })],
+    [
+      "a later birth that does not say whether it is the same",
+      wire([announced], { later_births: [{ line: 2, bd_seq: 1 }] }),
+    ],
     ["kinds that are not a list", wire([announced], { kinds: {} })],
     ["a kind that is not a record", wire([[]])],
     ["a kind without a name", wire([{ ...announced, kind: "" }])],
     ["a kind without a digest", wire([{ ...announced, kind_digest: "" }])],
-    ["a kind without a draft", wire([{ kind: "pump", kind_digest: digest }])],
+    ["a kind without a draft", wire([{ ...announced, draft: undefined }])],
     ["a draft that is a list", wire([{ ...announced, draft: [] }])],
+    ["a kind without its claims", wire([{ ...announced, claims: undefined }])],
+    ["claims that are not text", wire([{ ...announced, claims: [1] }])],
+    ["a kind without a comparison", wire([{ ...announced, comparison: undefined }])],
     ["a comparison that is not a record", wire([{ ...announced, comparison: "same" }])],
     ["a comparison that is null", wire([{ ...announced, comparison: null }])],
-    ["a comparison nobody defined", wire([{ ...announced, comparison: { status: "equal" } }])],
-    ["a same comparison without its file", wire([{ ...announced, comparison: { status: "same" } }])],
-    ["a differs comparison without its file", wire([{ ...announced, comparison: { status: "differs" } }])],
+    ["a comparison without a target", wire([{ ...announced, comparison: { status: "new" } }])],
+    ["a comparison nobody defined", wire([{ ...announced, comparison: { ...fresh, status: "equal", file: "f" } }])],
+    ["a same comparison without its file", wire([{ ...announced, comparison: { status: "same", target: "t" } }])],
+    ["a differs comparison without its file", wire([{ ...announced, comparison: { status: "differs", target: "t" } }])],
+    [
+      "an unreadable comparison without its file",
+      wire([{ ...announced, comparison: { status: "unreadable", target: "t" } }]),
+    ],
   ])("refuses %s", (_name, value) => {
     expect(boardCapture(value)).toBeNull();
   });

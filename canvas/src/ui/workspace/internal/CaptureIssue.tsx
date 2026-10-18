@@ -1,16 +1,14 @@
 import { TriangleAlert } from "lucide-react";
-import type { Ref } from "react";
 
 interface IssueProps {
   readonly title: string;
   readonly text: string;
   readonly message: string;
-  readonly focus?: Ref<HTMLLIElement> | undefined;
 }
 
-export function CaptureIssue({ title, text, message, focus }: IssueProps) {
+export function CaptureIssue({ title, text, message }: IssueProps) {
   return (
-    <li ref={focus} tabIndex={focus === undefined ? undefined : -1}>
+    <li>
       <TriangleAlert size={14} aria-hidden="true" />
       <span>
         {title !== "" && <strong>{title} </strong>}

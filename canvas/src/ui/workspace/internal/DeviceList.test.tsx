@@ -1,6 +1,8 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
+import { createDeviceDesk } from "../../../app/devices";
+import { serveCapture } from "../../../test/captureFixture";
 import { deferred } from "../../../test/deferred";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
@@ -77,6 +79,33 @@ describe("the devices section", () => {
     await show(bridge);
     expect(screen.getByRole("heading", { name: /has no plants yet/ })).toBeInTheDocument();
     expect(devices().getByRole("button", { name: "Create device" })).toBeInTheDocument();
+  });
+});
+
+describe("capturing from a board", () => {
+  it("goes to the capture screen with a clean review, however much was read before", async () => {
+    const bridge = withDevices();
+    serveCapture(bridge);
+    const desk = createDeviceDesk(bridge.devices);
+    await desk.capture().read({ content: "{}" });
+    const nav = navigation();
+    await show(bridge, nav, undefined, desk);
+    fireEvent.click(devices().getByRole("button", { name: "Capture from a board" }));
+    expect(nav.location.hash).toBe("#/capture");
+    expect(desk.capture().snapshot()).toEqual({ phase: "idle" });
+  });
+
+  it("gives the focus back to the button when the capture screen was left", async () => {
+    const bridge = withDevices();
+    const desk = createDeviceDesk(bridge.devices);
+    desk.capture().leave();
+    await show(bridge, navigation(), undefined, desk);
+    expect(devices().getByRole("button", { name: "Capture from a board" })).toHaveFocus();
+  });
+
+  it("leaves the focus alone when the workspace is simply opened", async () => {
+    await show(withDevices());
+    expect(devices().getByRole("button", { name: "Capture from a board" })).not.toHaveFocus();
   });
 });
 

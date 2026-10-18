@@ -8,7 +8,7 @@ export async function openEmptyPlant(page: Page, name: string): Promise<void> {
   await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
-  await form.getByLabel("Name").fill(name);
+  await form.getByLabel("Name", { exact: true }).fill(name);
   await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
   await form.getByRole("radio", { name: /^An empty plant/ }).check();
   await form.getByRole("button", { name: "Create and open the editor" }).click();

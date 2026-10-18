@@ -1,10 +1,14 @@
 import { Cpu, FlaskConical } from "lucide-react";
+import { useRef } from "react";
 import type { CaptureSession, Reviewed } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { birthWords, claimWords, originWords } from "../../../model/devices";
 import { cx, useFocusOnMount } from "../../primitives";
 import styles from "./Capture.module.css";
 import { CaptureCard } from "./CaptureCard";
+import cardStyles from "./CaptureCard.module.css";
+import { CaptureNotices } from "./CaptureNotices";
+import { useCardFocus } from "./useCardFocus";
 
 interface ReviewProps {
   readonly board: Reviewed;
@@ -25,6 +29,9 @@ function Origin({ environment }: Pick<Reviewed, "environment">) {
 
 export function CaptureReview({ board, session, navigation }: ReviewProps) {
   const heading = useFocusOnMount<HTMLHeadingElement>();
+  const list = useRef<HTMLUListElement>(null);
+  const focus = useCardFocus(list, heading);
+  const restarts = birthWords(board.bdSeq);
   return (
     <section className={styles.panel} aria-labelledby="capture-review">
       <h2 id="capture-review" ref={heading} tabIndex={-1} className={styles.panelTitle}>
@@ -32,15 +39,23 @@ export function CaptureReview({ board, session, navigation }: ReviewProps) {
       </h2>
       <div className={styles.header}>
         <Origin environment={board.environment} />
-        <span className={styles.facts}>{birthWords(board.bdSeq)}</span>
+        {restarts !== "" && <span className={styles.facts}>{restarts}</span>}
       </div>
       <p className={styles.claim}>{claimWords}</p>
+      <CaptureNotices scan={board.scan} />
       {board.cards.length === 0 ? (
         <p className={styles.note}>The board announced no devices.</p>
       ) : (
-        <ul className={styles.cards}>
-          {board.cards.map((card) => (
-            <CaptureCard key={card.kind.kind} card={card} session={session} navigation={navigation} />
+        <ul className={cardStyles.cards} ref={list}>
+          {board.cards.map((card, index) => (
+            <CaptureCard
+              key={`${String(index)}:${card.kind.kind}`}
+              card={card}
+              index={index}
+              session={session}
+              navigation={navigation}
+              focus={focus}
+            />
           ))}
         </ul>
       )}

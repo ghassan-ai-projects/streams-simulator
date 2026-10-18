@@ -7,11 +7,13 @@ test("a device is created, defined, given a behaviour and made into a twin with 
 }) => {
   await countPointerEvents(page);
   await page.goto("/");
-  const create = page.getByRole("region", { name: "Devices" }).getByRole("button", { name: "Create device" });
+  const create = page
+    .getByRole("region", { name: "Devices", exact: true })
+    .getByRole("button", { name: "Create device" });
   await tabUntil(page, create);
   await expectVisibleRing(page);
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("form", { name: "New device" }).getByLabel("Name")).toBeFocused();
+  await expect(page.getByRole("form", { name: "New device" }).getByLabel("Name", { exact: true })).toBeFocused();
   await page.keyboard.type("e2e_kbd");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("region", { name: "Editing e2e_kbd" })).toBeVisible();
@@ -25,17 +27,17 @@ test("a device is created, defined, given a behaviour and made into a twin with 
   await page.keyboard.type("level");
   await tabUntil(page, page.getByLabel("Unit", { exact: true }));
   await page.keyboard.type("m");
-  await tabUntil(page, page.getByLabel("Minimum"));
+  await tabUntil(page, page.getByLabel("Minimum", { exact: true }));
   await page.keyboard.type("0");
   await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Maximum")).toBeFocused();
+  await expect(page.getByLabel("Maximum", { exact: true })).toBeFocused();
   await page.keyboard.type("10");
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Resolution", { exact: true })).toBeFocused();
   await page.keyboard.type("1");
   await page.keyboard.press("ControlOrMeta+s");
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
-  await expect(page.getByText("Ready for a twin")).toBeVisible();
+  await expect(page.getByText("Ready for a twin", { exact: true })).toBeVisible();
 
   await tabUntil(page, step(page, /^Behaviour/), "Shift+Tab");
   await page.keyboard.press("Enter");

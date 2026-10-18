@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func Read(path string) ([]byte, error) {
@@ -23,6 +24,7 @@ func Read(path string) ([]byte, error) {
 var (
 	ErrNotRegular = errors.New("kernel: not a regular file")
 	ErrTooLarge   = errors.New("kernel: file exceeds its size limit")
+	ErrSymlink    = errors.New("kernel: a path component is a symbolic link")
 )
 
 func ReadRegular(path string, limit int64) ([]byte, error) {
@@ -143,6 +145,68 @@ func syncDir(dir string) error {
 	synced := handle.Sync()
 	if err := cmp.Or(synced, handle.Close()); err != nil {
 		return fmt.Errorf("%w", err)
+	}
+	return nil
+}
+
+func OpenRegular(path string) (io.ReadCloser, error) {
+	if filepath.IsAbs(path) {
+		return openLast(path)
+	}
+	return OpenRegularIn(".", path)
+}
+
+func openLast(path string) (io.ReadCloser, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%w: %s", ErrNotRegular, path)
+	}
+	// #nosec G304 -- the path was found to be a regular file, not a link, just above.
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	return file, nil
+}
+
+func OpenRegularIn(base, rel string) (io.ReadCloser, error) {
+	root, err := os.OpenRoot(base)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := inspectPath(root, rel); err != nil {
+		return nil, err
+	}
+	file, err := root.Open(rel)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	return file, nil
+}
+
+func inspectPath(root *os.Root, rel string) error {
+	elements := strings.Split(filepath.ToSlash(filepath.Clean(rel)), "/")
+	var info fs.FileInfo
+	for i := range elements {
+		var err error
+		info, err = root.Lstat(strings.Join(elements[:i+1], "/"))
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		if info.Mode()&fs.ModeSymlink != 0 {
+			return fmt.Errorf("%w: %s", ErrSymlink, strings.Join(elements[:i+1], "/"))
+		}
+	}
+	return mustBeRegular(info, rel)
+}
+
+func mustBeRegular(info fs.FileInfo, rel string) error {
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%w: %s", ErrNotRegular, rel)
 	}
 	return nil
 }

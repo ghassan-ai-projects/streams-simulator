@@ -43,7 +43,7 @@ test("a device with one reading and one command is created, saved, listed after 
   await page.reload();
   await expect(outline(page).getByRole("button", { name: /^duty_permille/ })).toBeVisible();
   await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
-  const devices = page.getByRole("region", { name: "Devices" });
+  const devices = page.getByRole("region", { name: "Devices", exact: true });
   await expect(devices.getByText("1 reading · 1 command")).toBeVisible();
   await devices.getByRole("button", { name: "Edit e2e-fan" }).click();
 
@@ -69,8 +69,8 @@ async function addNumberReading(page: Page, name: string, unit: string): Promise
   await page.getByRole("button", { name: "Add a reading" }).click();
   await page.getByLabel("Name", { exact: true }).fill(name);
   await page.getByLabel("Unit", { exact: true }).fill(unit);
-  await page.getByLabel("Minimum").fill("0");
-  await page.getByLabel("Maximum").fill("100");
+  await page.getByLabel("Minimum", { exact: true }).fill("0");
+  await page.getByLabel("Maximum", { exact: true }).fill("100");
 }
 
 async function defineCooler(page: Page): Promise<void> {
@@ -130,7 +130,7 @@ test("a device gets a twin: what it still needs is found before the behaviour, t
   await expect(verdict(page, "Unsaved changes")).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
-  await expect(page.getByText("Ready for a twin")).toBeVisible();
+  await expect(page.getByText("Ready for a twin", { exact: true })).toBeVisible();
 
   await step(page, /^Behaviour/).click();
   await expect(page.getByRole("region", { name: "Behaviour of e2e_cooler" })).toBeVisible();

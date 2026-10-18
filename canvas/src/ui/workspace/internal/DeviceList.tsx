@@ -12,16 +12,10 @@ import { SectionHeading } from "./SectionHeading";
 import rowStyles from "./ListSection.module.css";
 import workspaceStyles from "./WorkspaceScreen.module.css";
 
-export interface CaptureEntry {
-  readonly onOpen: () => void;
-  readonly justLeft: boolean;
-}
-
 interface DeviceListProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
   readonly desk: DeviceDesk;
-  readonly capture: CaptureEntry;
 }
 
 interface Shown {
@@ -109,27 +103,29 @@ function NoDevices() {
   );
 }
 
-function useReturnToCapture(capture: CaptureEntry) {
+function useReturnToCapture(desk: DeviceDesk) {
   const button = useRef<HTMLButtonElement>(null);
-  const { justLeft } = capture;
   useEffect(() => {
-    if (justLeft) button.current?.focus();
-  }, [justLeft]);
+    if (desk.capture().comingBack()) button.current?.focus();
+  }, [desk]);
   return button;
 }
 
-interface HeadingActionsProps {
+interface HeadingActionsProps extends Pick<DeviceListProps, "desk" | "navigation"> {
   readonly creating: boolean;
   readonly trigger: Ref<HTMLButtonElement>;
-  readonly capture: CaptureEntry;
   readonly onToggle: () => void;
 }
 
-function HeadingActions({ creating, trigger, capture, onToggle }: HeadingActionsProps) {
-  const captureButton = useReturnToCapture(capture);
+function HeadingActions({ creating, trigger, desk, navigation, onToggle }: HeadingActionsProps) {
+  const captureButton = useReturnToCapture(desk);
+  const startCapture = () => {
+    desk.capture().clear();
+    navigation.go({ screen: "capture" });
+  };
   return (
     <span className={rowStyles.actions}>
-      <button type="button" ref={captureButton} className={shared.secondary} onClick={capture.onOpen}>
+      <button type="button" ref={captureButton} className={shared.secondary} onClick={startCapture}>
         <Cable size={14} aria-hidden="true" />
         Capture from a board
       </button>
@@ -141,7 +137,7 @@ function HeadingActions({ creating, trigger, capture, onToggle }: HeadingActions
   );
 }
 
-export function DeviceList({ workspace, navigation, desk, capture }: DeviceListProps) {
+export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
   const rows = useDeviceRows(desk, workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -156,7 +152,8 @@ export function DeviceList({ workspace, navigation, desk, capture }: DeviceListP
         <HeadingActions
           creating={creating}
           trigger={trigger}
-          capture={capture}
+          desk={desk}
+          navigation={navigation}
           onToggle={() => {
             setCreating(!creating);
           }}

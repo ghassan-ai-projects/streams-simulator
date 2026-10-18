@@ -85,7 +85,10 @@ export function captureLines(draft: Fields): DraftLines | null {
   return { readings: kind.metrics.map(readingLine), commands: kind.commands.map(commandLine) };
 }
 
-export function draftIssues(draft: Fields, issues: readonly RawIssue[]): readonly DraftIssue[] {
+const comparisonKeywords = new Set(["kind_name_collision", "kind_file_unreadable"]);
+
+export function draftIssues(draft: Fields, found: readonly RawIssue[]): readonly DraftIssue[] {
+  const issues = found.filter((issue) => !comparisonKeywords.has(issue.keyword ?? ""));
   const kind = kindOf(draft);
   if (kind === null) return issues.map((raw) => ({ title: "", text: issueText(raw), message: raw.message }));
   return resolveIssues(kind, issues).map((issue) => ({
@@ -93,6 +96,35 @@ export function draftIssues(draft: Fields, issues: readonly RawIssue[]): readonl
     text: issue.text,
     message: issue.message,
   }));
+}
+
+function pointerValue(root: unknown, pointer: string): unknown {
+  let current: unknown = root;
+  for (const part of pointer.split("/").slice(1)) {
+    const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
+    if (Array.isArray(current)) current = current[Number(key)];
+    else if (isRecord(current)) current = current[key];
+    else return undefined;
+  }
+  return current;
+}
+
+function plainValue(value: unknown): string | null {
+  if (value === undefined) return "not stated";
+  if (typeof value === "string") return `"${value}"`;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return value === null ? "empty" : null;
+}
+
+export function differenceValues(draft: Fields, saved: string, pointer: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(saved);
+  } catch {
+    return "";
+  }
+  const [mine, theirs] = [plainValue(pointerValue(parsed, pointer)), plainValue(pointerValue(draft, pointer))];
+  return mine === null || theirs === null ? "" : `Saved: ${mine}. The board says: ${theirs}.`;
 }
 
 export function differenceWords(draft: Fields, pointer: string): string {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -35,28 +36,30 @@ func birthText(t *testing.T) string {
 	return string(raw)
 }
 
-func statuses(captured domain.Capture) map[string]string {
-	found := map[string]string{}
+func comparisons(captured domain.Capture) map[string]domain.KindComparison {
+	found := map[string]domain.KindComparison{}
 	for _, kind := range captured.Kinds {
-		found[kind.Kind] = kind.Comparison.Status
+		found[kind.Kind] = *kind.Comparison
 	}
 	return found
 }
 
-func TestCaptureStreamComparesEachKindWithTheWorkspaceFileOfItsName(t *testing.T) {
+func TestCaptureStreamComparesEachKindWithTheWorkspaceFileOfItsNameAndAimsItAtAFile(t *testing.T) {
 	t.Parallel()
 	dir := kindsDirectoryWith(t, map[string]string{"pump.kind.json": capturedPump, "valve.kind.json": `{"kind":"valve","metrics":[{"name":"position","data_type":"number"}],"commands":[]}`})
 	captured, err := CaptureStream(strings.NewReader(birthText(t)), []string{dir})
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := statuses(captured)
-	if got["pump"] != domain.CompareSame || got["valve"] != domain.CompareDiffers || captured.Kinds[1].Comparison.File != filepath.Join(dir, "valve.kind.json") {
-		t.Fatalf("comparison = %v, want pump the same and valve different, naming the workspace file", got)
+	got := comparisons(captured)
+	pump, valve := filepath.Join(dir, "pump.kind.json"), filepath.Join(dir, "valve.kind.json")
+	if got["pump"].Status != domain.CompareSame || got["pump"].Target != pump || got["valve"].Status != domain.CompareDiffers || got["valve"].File != valve || got["valve"].Target != valve {
+		t.Fatalf("comparison = %+v, want pump the same and valve different, each aimed at its workspace file", got)
 	}
-	empty, err := CaptureStream(strings.NewReader(birthText(t)), []string{t.TempDir()})
-	if got := statuses(empty); err != nil || got["pump"] != domain.CompareNew || got["valve"] != domain.CompareNew {
-		t.Fatalf("comparison with an empty directory = %v, %v, want every kind new", got, err)
+	emptyDir := t.TempDir()
+	empty, err := CaptureStream(strings.NewReader(birthText(t)), []string{emptyDir})
+	if got := comparisons(empty); err != nil || got["pump"].Status != domain.CompareNew || got["valve"].Target != filepath.Join(emptyDir, "valve.kind.json") {
+		t.Fatalf("comparison with an empty directory = %+v, %v, want every kind new and aimed at the file it would become", got, err)
 	}
 }
 
@@ -68,20 +71,36 @@ func TestCaptureWithoutAKindsDirectoryComparesNothing(t *testing.T) {
 	}
 }
 
-func TestCaptureReadsAnythingTheWorkspaceHoldsAboutAKindOnlyForTheKindsItCaptured(t *testing.T) {
+func TestCaptureParsesOnlyTheKindFilesOfTheKindsItCapturedAndALameOneSpoilsOnlyItsOwnKind(t *testing.T) {
 	t.Parallel()
 	dir := kindsDirectoryWith(t, map[string]string{"pump.kind.json": capturedPump, "other.kind.json": "{"})
 	if _, err := CaptureStream(strings.NewReader(birthText(t)), []string{dir}); err != nil {
 		t.Fatalf("CaptureStream = %v, want a broken file of another kind left unread", err)
 	}
 	broken := kindsDirectoryWith(t, map[string]string{"pump.kind.json": "{"})
-	_, err := CaptureStream(strings.NewReader(birthText(t)), []string{broken})
-	invalid, ok := model.AsValidationError(err)
-	if !ok || invalid.Contract != model.ContractKindFile || invalid.Source != filepath.Join(broken, "pump.kind.json") {
-		t.Fatalf("CaptureStream = %v, want the kind file violation of the broken pump file", err)
+	captured, err := CaptureStream(strings.NewReader(birthText(t)), []string{broken})
+	if err != nil {
+		t.Fatalf("CaptureStream = %v, want a broken file of a captured kind to degrade to an issue", err)
 	}
-	if _, err := CaptureStream(strings.NewReader(birthText(t)), []string{filepath.Join(broken, "absent")}); !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("CaptureStream of a missing kinds directory = %v, want fs.ErrNotExist", err)
+	pump, valve := captured.Kinds[0], captured.Kinds[1]
+	if pump.Comparison.Status != domain.CompareUnreadable || len(pump.Issues) != 1 || pump.Issues[0].Keyword != "kind_file_unreadable" || valve.Comparison.Status != domain.CompareNew {
+		t.Fatalf("pump = %+v %+v, valve = %+v, want pump unreadable with its issue and valve untouched", pump.Comparison, pump.Issues, valve.Comparison)
+	}
+}
+
+func TestCaptureTakesAMissingKindsDirectoryForNoSavedKindsAndAimsEveryKindAtIt(t *testing.T) {
+	t.Parallel()
+	missing := filepath.Join(t.TempDir(), "kinds")
+	captured, err := CaptureStream(strings.NewReader(birthText(t)), []string{missing})
+	if err != nil {
+		t.Fatalf("CaptureStream = %v, want a missing kinds directory to hold no kind file", err)
+	}
+	got := comparisons(captured)
+	if got["pump"].Status != domain.CompareNew || got["pump"].Target != filepath.Join(missing, "pump.kind.json") || got["valve"].Target != filepath.Join(missing, "valve.kind.json") {
+		t.Fatalf("comparison = %+v, want every kind new and aimed at a file of the missing directory", got)
+	}
+	if _, statErr := os.Stat(missing); !errors.Is(statErr, fs.ErrNotExist) {
+		t.Fatalf("stat = %v, want the capture to create nothing", statErr)
 	}
 }
 
@@ -92,23 +111,56 @@ func TestCaptureNamesItsSourceInTheViolationsItReports(t *testing.T) {
 	if !ok || !errors.Is(err, domain.ErrNoBirth) || invalid.Source != files.StreamName || !strings.HasPrefix(err.Error(), files.StreamName+": ") {
 		t.Fatalf("CaptureStream = %v, want ErrNoBirth from %s", err, files.StreamName)
 	}
-	path := filepath.Join(t.TempDir(), "journal.jsonl")
-	testsupport.WriteFileIn(t, filepath.Dir(path), "journal.jsonl", []byte(`{"type":"DDATA"}`))
+	dir := t.TempDir()
+	testsupport.WriteFileIn(t, dir, "journal.jsonl", []byte(`{"type":"DDATA"}`))
+	path := filepath.Join(dir, "journal.jsonl")
 	_, err = CaptureFile(path, nil)
 	if invalid, ok = model.AsValidationError(err); !ok || !errors.Is(err, domain.ErrNoBirth) || invalid.Source != path {
 		t.Fatalf("CaptureFile = %v, want ErrNoBirth from %s", err, path)
 	}
 }
 
-func TestCaptureFileReadsAJournalBeyondTheSizeOfAKindFileButNotBeyondItsOwnLimit(t *testing.T) {
+func writeLargeJournal(t *testing.T, birth string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "journal.jsonl")
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := append(bytes.Repeat([]byte("x"), 1023), '\n')
+	chunk := bytes.Repeat(line, 1024)
+	_, wrote := file.WriteString(`{"stream":"observer","seq":2,"type":"wire","at_ns":1,"direction":"node","record":` + birth + "}\n")
+	for written := 0; wrote == nil && written <= domain.MaxScanBytes+len(chunk); written += len(chunk) {
+		_, wrote = file.Write(chunk)
+	}
+	if err := errors.Join(wrote, file.Close()); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestCaptureFileStreamsAJournalLargerThanTheScanLimitAndFindsItsEarlyBirth(t *testing.T) {
+	t.Parallel()
+	path := writeLargeJournal(t, birthText(t))
+	if info, err := os.Stat(path); err != nil || info.Size() <= domain.MaxScanBytes {
+		t.Fatalf("the synthetic journal is %v bytes, %v, want more than the scan limit", info, err)
+	}
+	captured, err := CaptureFile(path, nil)
+	if err != nil || len(captured.Kinds) != 2 || captured.Taken.Line != 1 || len(captured.Issues) != 1 || captured.Issues[0].Keyword != "scan_truncated" {
+		t.Fatalf("CaptureFile = %+v, %v, want the early birth of a journal over %d bytes and a scan_truncated issue", captured, err, domain.MaxScanBytes)
+	}
+}
+
+func TestCaptureFileRefusesWhatIsNotARegularFileBeforeReadingIt(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	wrapped := `{"stream":"observer","seq":2,"type":"wire","at_ns":1,"direction":"node","record":` + birthText(t) + "}\n"
-	padding := strings.Repeat(`{"stream":"observer","type":"observation","at_ns":1,"line":"x"}`+"\n", (files.MaxKindFileBytes/60)+1)
-	testsupport.WriteFileIn(t, dir, "journal.jsonl", []byte(padding+wrapped))
-	captured, err := CaptureFile(filepath.Join(dir, "journal.jsonl"), nil)
-	if err != nil || len(captured.Kinds) != 2 {
-		t.Fatalf("CaptureFile of a journal over %d bytes = %+v, %v, want its two kinds", files.MaxKindFileBytes, captured, err)
+	testsupport.WriteFileIn(t, dir, "birth.json", []byte(birthText(t)))
+	link := filepath.Join(dir, "link.json")
+	if err := os.Symlink(filepath.Join(dir, "birth.json"), link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CaptureFile(link, nil); !errors.Is(err, kernel.ErrNotRegular) {
+		t.Fatalf("CaptureFile of a symbolic link = %v, want kernel.ErrNotRegular", err)
 	}
 	if _, err := CaptureFile(filepath.Join(dir, "absent.jsonl"), nil); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("CaptureFile of a missing file = %v, want fs.ErrNotExist", err)
@@ -126,7 +178,7 @@ func TestCaptureStreamHoldsInputToTheLimitOfAKindFile(t *testing.T) {
 	}
 }
 
-func TestCaptureFileLeavesTheFileAsItFoundIt(t *testing.T) {
+func TestCaptureFileLeavesTheDirectoryAsItFoundIt(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	testsupport.WriteFileIn(t, dir, "birth.json", []byte(birthText(t)))

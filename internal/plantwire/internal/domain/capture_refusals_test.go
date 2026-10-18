@@ -33,7 +33,7 @@ func TestABirthIsAClaimAndOneThatDoesNotHoldIsRefusedWithEveryIssue(t *testing.T
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseCapture(birthLine(t, tc.edit))
+			_, err := parse(birthLine(t, tc.edit))
 			invalid := violation(t, err, ErrBirthRefused)
 			if len(invalid.Issues) != 1 {
 				t.Fatalf("issues = %+v, want exactly one", invalid.Issues)
@@ -57,14 +57,10 @@ func TestEveryIssueOfARefusedBirthIsReportedTogether(t *testing.T) {
 		firstKind(b)["kind"] = "renamed"
 		b["kinds"].([]any)[1].(map[string]any)["kind"] = "renamed"
 	})
-	_, err := ParseCapture(raw)
+	_, err := parse(raw)
 	invalid := violation(t, err, ErrBirthRefused)
-	var keywords []string
-	for _, issue := range invalid.Issues {
-		keywords = append(keywords, issue.Keyword)
-	}
 	want := "protocol_invalid contract_unsupported kind_digest_mismatch kind_digest_mismatch kind_duplicate"
-	if got := strings.Join(keywords, " "); got != want {
+	if got := strings.Join(keywords(invalid.Issues), " "); got != want {
 		t.Fatalf("keywords = %q, want %q", got, want)
 	}
 }
@@ -82,7 +78,7 @@ func TestARecordThatBreaksTheNBIRTHSchemaIsRefusedAtTheMemberItNames(t *testing.
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseCapture(birthLine(t, tc.edit))
+			_, err := parse(birthLine(t, tc.edit))
 			invalid := birthViolationOf(t, err)
 			var failure jsonschema.Error
 			if !errors.As(err, &failure) || failure.Keyword != tc.keyword {
@@ -90,29 +86,6 @@ func TestARecordThatBreaksTheNBIRTHSchemaIsRefusedAtTheMemberItNames(t *testing.
 			}
 			if invalid.Issues[0].Pointer != tc.pointer || invalid.Issues[0].Keyword != tc.keyword || !strings.Contains(invalid.Summary, "NBIRTH fails its schema") {
 				t.Fatalf("issues = %+v (%s), want the first at %s for %s", invalid.Issues, invalid.Summary, tc.pointer, tc.keyword)
-			}
-		})
-	}
-}
-
-func TestARecordThatIsNotOneObjectOfDistinctMembersOrWithinItsLimitIsRefused(t *testing.T) {
-	t.Parallel()
-	valid := string(birthLine(t, nil))
-	twice := strings.Replace(valid, `"environment":"hardware"`, `"environment":"hardware","environment":"simulated"`, 1)
-	cases := []struct {
-		name, input, keyword string
-		cause                error
-	}{
-		{"a member named twice", twice, "json", ErrDuplicateMember},
-		{"a record over one MiB", `{"type":"NBIRTH","pad":"` + strings.Repeat(" ", MaxBirthBytes) + `"}`, "birth_too_large", ErrTooLarge},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := ParseCapture([]byte(tc.input))
-			invalid := violation(t, err, tc.cause)
-			if len(invalid.Issues) != 1 || invalid.Issues[0].Keyword != tc.keyword || invalid.Issues[0].Located {
-				t.Fatalf("issues = %+v, want one unlocated %s issue", invalid.Issues, tc.keyword)
 			}
 		})
 	}

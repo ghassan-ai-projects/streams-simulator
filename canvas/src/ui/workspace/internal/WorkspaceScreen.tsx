@@ -1,5 +1,4 @@
 import { Boxes, FileJson } from "lucide-react";
-import { useState } from "react";
 import type { DeviceDesk } from "../../../app/devices";
 import type { PlantMaker } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
@@ -12,9 +11,7 @@ import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
 import styles from "./WorkspaceScreen.module.css";
-import { CaptureScreen } from "./CaptureScreen";
 import { DeviceList } from "./DeviceList";
-import type { CaptureEntry } from "./DeviceList";
 import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
@@ -26,11 +23,10 @@ interface ContentsProps {
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly desk: DeviceDesk;
-  readonly capture: CaptureEntry;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function EmptyWorkspace({ workspace, maker, desk, navigation, capture }: Omit<ContentsProps, "badgeFor">) {
+function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsProps, "badgeFor">) {
   const examples = useExamples(maker);
   const { name } = workspace;
   return (
@@ -51,7 +47,7 @@ function EmptyWorkspace({ workspace, maker, desk, navigation, capture }: Omit<Co
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>
       <div className={styles.deviceStrip}>
-        <DeviceList workspace={workspace} navigation={navigation} desk={desk} capture={capture} />
+        <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
       </div>
     </div>
   );
@@ -74,7 +70,7 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-function Contents({ workspace, navigation, maker, desk, capture, badgeFor }: ContentsProps) {
+function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProps) {
   const examples = useExamples(maker);
   return (
     <div className={styles.page}>
@@ -86,7 +82,7 @@ function Contents({ workspace, navigation, maker, desk, capture, badgeFor }: Con
       <div className={styles.grid}>
         <div className={styles.column}>
           <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
-          <DeviceList workspace={workspace} navigation={navigation} desk={desk} capture={capture} />
+          <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
         </div>
         <div className={styles.column}>
           <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
@@ -124,23 +120,6 @@ function WorkspaceBody({ state, ...rest }: { readonly state: WorkspaceState } & 
   return <ReadyBody workspace={state.workspace} {...rest} />;
 }
 
-function useCaptureEntry() {
-  const [capturing, setCapturing] = useState<"closed" | "open" | "left">("closed");
-  const entry: CaptureEntry = {
-    onOpen: () => {
-      setCapturing("open");
-    },
-    justLeft: capturing === "left",
-  };
-  return {
-    entry,
-    open: capturing === "open",
-    leave: () => {
-      setCapturing("left");
-    },
-  };
-}
-
 export function WorkspaceScreen({
   workspace,
   navigation,
@@ -155,21 +134,10 @@ export function WorkspaceScreen({
   readonly badgeFor: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
-  const { entry, open, leave } = useCaptureEntry();
-  if (open && state.phase === "ready") {
-    return <CaptureScreen workspace={state.workspace} desk={desk} navigation={navigation} onClose={leave} />;
-  }
   return (
     <>
       <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
-      <WorkspaceBody
-        state={state}
-        navigation={navigation}
-        maker={maker}
-        desk={desk}
-        capture={entry}
-        badgeFor={badgeFor}
-      />
+      <WorkspaceBody state={state} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />
     </>
   );
 }

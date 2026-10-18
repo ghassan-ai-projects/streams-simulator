@@ -1,5 +1,5 @@
 import type { ChangeEvent, SyntheticEvent } from "react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { captureSizeProblem, captureTextProblem } from "../../../model/devices";
 import { shared } from "../../primitives";
 import styles from "./Capture.module.css";
@@ -7,6 +7,7 @@ import styles from "./Capture.module.css";
 interface TextProps {
   readonly busy: boolean;
   readonly onRead: (content: string) => void;
+  readonly onClear: () => void;
 }
 
 interface FieldsProps {
@@ -19,25 +20,35 @@ interface FieldsProps {
 
 const unreadable = "That file could not be read.";
 
-function useAnnouncementText() {
+const needsText = "Paste an announcement first.";
+
+function useAnnouncementText(onClear: () => void) {
   const [text, setText] = useState("");
   const [fileProblem, setFileProblem] = useState("");
+  const latest = useRef(0);
+  const type = (next: string) => {
+    latest.current += 1;
+    setFileProblem("");
+    setText(next);
+    if (next === "") onClear();
+  };
   const load = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
     if (file === null) return;
+    latest.current += 1;
+    const mine = latest.current;
     const tooLarge = captureSizeProblem(file.size);
     setFileProblem(tooLarge);
     if (tooLarge !== "") return;
     file
       .text()
-      .then(setText)
+      .then((content) => {
+        if (latest.current === mine) setText(content);
+      })
       .catch(() => {
-        setFileProblem(unreadable);
+        if (latest.current === mine) setFileProblem(unreadable);
       });
-  };
-  const type = (next: string) => {
-    setFileProblem("");
-    setText(next);
   };
   return { text, type, load, problem: captureTextProblem(text) || fileProblem };
 }
@@ -67,10 +78,11 @@ function Fields({ id, text, problem, onType, onLoad }: FieldsProps) {
   );
 }
 
-export function CaptureText({ busy, onRead }: TextProps) {
-  const { text, type, load, problem } = useAnnouncementText();
+export function CaptureText({ busy, onRead, onClear }: TextProps) {
+  const { text, type, load, problem } = useAnnouncementText(onClear);
   const id = useId();
-  const blocked = busy || text.trim() === "" || problem !== "";
+  const empty = text.trim() === "";
+  const blocked = busy || empty || problem !== "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!blocked) onRead(text);
@@ -84,9 +96,19 @@ export function CaptureText({ busy, onRead }: TextProps) {
         </p>
       )}
       <span className={styles.actions}>
-        <button type="submit" className={shared.primary} aria-disabled={blocked}>
+        <button
+          type="submit"
+          className={shared.primary}
+          aria-disabled={blocked}
+          aria-describedby={empty ? `${id}-reason` : undefined}
+        >
           Read the announcement
         </button>
+        {empty && (
+          <span id={`${id}-reason`} className={styles.facts}>
+            {needsText}
+          </span>
+        )}
       </span>
     </form>
   );

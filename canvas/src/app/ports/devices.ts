@@ -71,9 +71,17 @@ export interface LintReport {
 }
 
 type CaptureComparison =
-  | { readonly status: "new" }
-  | { readonly status: "same"; readonly file: string; readonly fileDigest: string }
-  | { readonly status: "differs"; readonly file: string; readonly fileDigest: string; readonly differsAt: string };
+  | { readonly status: "new"; readonly target: string }
+  | { readonly status: "same"; readonly target: string; readonly file: string; readonly fileDigest: string }
+  | {
+      readonly status: "differs";
+      readonly target: string;
+      readonly file: string;
+      readonly fileDigest: string;
+      readonly differsAt: string;
+      readonly collidesWith: string;
+    }
+  | { readonly status: "unreadable"; readonly target: string; readonly file: string };
 
 type KindDraft = Readonly<Record<string, unknown>>;
 
@@ -81,13 +89,24 @@ export interface CapturedKind {
   readonly kind: string;
   readonly digest: string;
   readonly draft: KindDraft;
+  readonly claims: readonly string[];
   readonly issues: readonly KindIssue[];
   readonly comparison: CaptureComparison;
+}
+
+interface LaterBirth {
+  readonly line: number;
+  readonly bdSeq: number;
+  readonly sameContent: boolean;
 }
 
 export interface BoardCapture {
   readonly environment: "hardware" | "simulated";
   readonly bdSeq: number;
+  readonly birthsSeen: number;
+  readonly taken: { readonly line: number; readonly bdSeq: number };
+  readonly laterBirths: readonly LaterBirth[];
+  readonly issues: readonly KindIssue[];
   readonly kinds: readonly CapturedKind[];
 }
 

@@ -13,7 +13,7 @@ import type { WorkspaceStore } from "../../../app/workspace";
 import type { Route } from "../../../model/shell";
 import { DeviceScreen } from "../../devices";
 import { EditorScreen } from "../../editor";
-import { WorkspaceScreen } from "../../workspace";
+import { CaptureScreen, WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
 import { PlantScreen } from "../../plant";
 import { ReviewScreen } from "../../review";
@@ -64,6 +64,21 @@ function Authoring({
   return <DeviceScreen devices={stores.devices} navigation={stores.navigation} path={route.path} />;
 }
 
+function Home({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
+  if (route.screen === "capture") {
+    return <CaptureScreen workspace={stores.workspace} desk={stores.desk} navigation={stores.navigation} />;
+  }
+  return (
+    <WorkspaceScreen
+      workspace={stores.workspace}
+      navigation={stores.navigation}
+      maker={stores.maker}
+      desk={stores.desk}
+      badgeFor={(worldId) => stores.review.badgeFor(worldId)}
+    />
+  );
+}
+
 function Screen({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
   if (route.screen === "plant") {
     return (
@@ -92,15 +107,11 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
       />
     );
   }
-  return (
-    <WorkspaceScreen
-      workspace={stores.workspace}
-      navigation={stores.navigation}
-      maker={stores.maker}
-      desk={stores.desk}
-      badgeFor={(worldId) => stores.review.badgeFor(worldId)}
-    />
-  );
+  return <Home stores={stores} route={route} />;
+}
+
+function withoutPanels(route: Route): boolean {
+  return route.screen === "workspace" || route.screen === "capture";
 }
 
 function ShellToggles({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
@@ -131,7 +142,7 @@ export function App({ stores }: { readonly stores: Stores }) {
       crumbs={setSlot}
       help={<KeyHelp screen={route.screen} />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
-      toggles={route.screen === "workspace" ? null : <ShellToggles stores={stores} route={route} />}
+      toggles={withoutPanels(route) ? null : <ShellToggles stores={stores} route={route} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();

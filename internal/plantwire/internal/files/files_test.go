@@ -3,6 +3,7 @@ package files
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -139,7 +140,7 @@ func TestDirectoriesAndPathsFailOnTheFirstFileTheyCannotRead(t *testing.T) {
 	}
 }
 
-func TestCapturableReadsAJournalBeyondAKindFileAndRefusesWhatIsNoRegularFileOrTooLarge(t *testing.T) {
+func TestOpenCapturableOpensARegularFileOfAnySizeAndRefusesWhatIsNone(t *testing.T) {
 	t.Parallel()
 	dir := directoryWith(t, map[string]string{"journal.jsonl": `{"type":"wire"}`})
 	big := filepath.Join(dir, "big.jsonl")
@@ -149,32 +150,32 @@ func TestCapturableReadsAJournalBeyondAKindFileAndRefusesWhatIsNoRegularFileOrTo
 	if err := os.Symlink(big, filepath.Join(dir, "link.jsonl")); err != nil {
 		t.Fatal(err)
 	}
-	if source, err := Capturable(big); err != nil || len(source.Raw) != MaxKindFileBytes+1 || source.Path != big {
-		t.Fatalf("Capturable of a file over the kind file limit = %d bytes, %v, want it read whole", len(source.Raw), err)
+	file, err := OpenCapturable(big)
+	if err != nil {
+		t.Fatalf("OpenCapturable of a file over the kind file limit = %v, want it opened", err)
 	}
-	if source, err := Capturable(filepath.Join(dir, "journal.jsonl")); err != nil || string(source.Raw) != `{"type":"wire"}` {
-		t.Fatalf("Capturable = %+v, %v, want the file read", source, err)
+	if raw, read := io.ReadAll(file); read != nil || len(raw) != MaxKindFileBytes+1 || file.Close() != nil {
+		t.Fatalf("read %d bytes, %v, want the whole file", len(raw), read)
 	}
-	if _, err := Capturable(filepath.Join(dir, "link.jsonl")); !errors.Is(err, kernel.ErrNotRegular) {
-		t.Fatalf("Capturable of a symbolic link = %v, want kernel.ErrNotRegular", err)
-	}
-	if _, err := Capturable(filepath.Join(dir, "absent.jsonl")); !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("Capturable of a missing file = %v, want fs.ErrNotExist", err)
+	for name, want := range map[string]error{"link.jsonl": kernel.ErrNotRegular, "absent.jsonl": fs.ErrNotExist} {
+		if _, err := OpenCapturable(filepath.Join(dir, name)); !errors.Is(err, want) || !strings.Contains(err.Error(), name) {
+			t.Errorf("OpenCapturable(%s) = %v, want %v naming the file", name, err, want)
+		}
 	}
 }
 
-func TestCapturableRefusesAFileBeyondItsLimit(t *testing.T) {
+func TestScanPresentSkipsADirectoryThatDoesNotExistAndStillFailsOnOneItCannotList(t *testing.T) {
 	t.Parallel()
-	path := filepath.Join(t.TempDir(), "huge.jsonl")
-	file, err := os.Create(path)
-	if err != nil {
-		t.Fatal(err)
+	dir := directoryWith(t, map[string]string{"a.kind.json": `{"kind": "alpha"}`})
+	sources, err := ScanPresent([]string{filepath.Join(dir, "absent"), dir})
+	if err != nil || len(sources) != 1 || filepath.Base(sources[0].Path) != "a.kind.json" {
+		t.Fatalf("ScanPresent = %+v, %v, want the file of the directory that exists", sources, err)
 	}
-	if err := errors.Join(file.Truncate(MaxCaptureFileBytes+1), file.Close()); err != nil {
-		t.Fatal(err)
+	if sources, err := ScanPresent([]string{filepath.Join(dir, "absent")}); err != nil || len(sources) != 0 {
+		t.Fatalf("ScanPresent of only a missing directory = %+v, %v, want nothing", sources, err)
 	}
-	if _, err := Capturable(path); !errors.Is(err, kernel.ErrTooLarge) {
-		t.Fatalf("Capturable of a file over %d bytes = %v, want kernel.ErrTooLarge", MaxCaptureFileBytes, err)
+	if _, err := ScanPresent([]string{filepath.Join(dir, "a.kind.json")}); err == nil || errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("ScanPresent of a file = %v, want the listing failure, not a missing directory", err)
 	}
 }
 

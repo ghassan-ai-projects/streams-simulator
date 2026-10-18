@@ -2,8 +2,10 @@
 package files
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -13,9 +15,8 @@ import (
 )
 
 const (
-	MaxKindFileBytes    = 1 << 20
-	MaxCaptureFileBytes = 32 << 20
-	StreamName          = "<stdin>"
+	MaxKindFileBytes = 1 << 20
+	StreamName       = "<stdin>"
 )
 
 func Directories(dirs []string) ([]domain.KindSource, error) {
@@ -38,6 +39,21 @@ func Scan(dirs []string) ([]domain.KindSource, error) {
 			return nil, err
 		}
 		sources = append(sources, readEach(paths)...)
+	}
+	return sources, nil
+}
+
+func ScanPresent(dirs []string) ([]domain.KindSource, error) {
+	var sources []domain.KindSource
+	for _, dir := range dirs {
+		found, err := Scan([]string{dir})
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, found...)
 	}
 	return sources, nil
 }
@@ -88,12 +104,12 @@ func Stream(reader io.Reader) (domain.KindSource, error) {
 	return domain.KindSource{Path: StreamName, Raw: raw}, nil
 }
 
-func Capturable(path string) (domain.KindSource, error) {
-	raw, err := kernel.ReadRegular(path, MaxCaptureFileBytes)
+func OpenCapturable(path string) (io.ReadCloser, error) {
+	file, err := kernel.OpenRegular(path)
 	if err != nil {
-		return domain.KindSource{}, fmt.Errorf("plantwire: read %s: %w", path, err)
+		return nil, fmt.Errorf("plantwire: read %s: %w", path, err)
 	}
-	return domain.KindSource{Path: path, Raw: raw}, nil
+	return file, nil
 }
 
 func Paths(paths []string) ([]domain.KindSource, error) {

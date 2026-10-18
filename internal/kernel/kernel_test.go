@@ -94,3 +94,25 @@ func TestAnInterruptContextEndsWithItsParent(t *testing.T) {
 		t.Fatalf("ctx = %v", ctx.Err())
 	}
 }
+
+func TestTheKernelOpensARegularFileAndNamesTheLinkItRefuses(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	regular, link := filepath.Join(dir, "a.json"), filepath.Join(dir, "link.json")
+	if err := errors.Join(os.WriteFile(regular, []byte("1"), 0o600), os.Symlink(regular, link)); err != nil {
+		t.Fatal(err)
+	}
+	file, err := OpenRegular(regular)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := OpenRegular(link); !errors.Is(err, ErrNotRegular) {
+		t.Fatalf("OpenRegular of a symbolic link = %v, want ErrNotRegular", err)
+	}
+	if ErrSymlink == nil {
+		t.Fatal("the kernel names no symbolic link error")
+	}
+}

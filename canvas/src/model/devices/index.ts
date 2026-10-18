@@ -29,17 +29,21 @@ export {
   removeItem,
   renameKind,
 } from "./internal/kindEdits";
-export { captureContent, captureLines, differenceWords, draftIssues } from "./internal/captureDraft";
+export { captureContent, captureLines, differenceValues, differenceWords, draftIssues } from "./internal/captureDraft";
 export {
   birthWords,
-  capturePath,
   captureSizeProblem,
   captureTextProblem,
+  claimedWords,
   claimWords,
+  collisionWords,
   comparisonWords,
-  fileSafeName,
   originWords,
   refusalLines,
+  refusalOutline,
+  scanNotices,
+  sourceWords,
+  unreadableWords,
 } from "./internal/captureWords";
 export { blankKind, parseKind, serialiseKind } from "./internal/kindFile";
 export {

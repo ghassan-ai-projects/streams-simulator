@@ -81,4 +81,10 @@ describe("device desk", () => {
     });
     expect(await desk.create("pump")).toMatchObject({ ok: false, failure: { kind: "unavailable" } });
   });
+
+  it("keeps one capture session, so a review survives the screen that showed it", () => {
+    const desk = createDeviceDesk(bridge().devices);
+    expect(desk.capture()).toBe(desk.capture());
+    expect(createDeviceDesk(bridge().devices).capture()).not.toBe(desk.capture());
+  });
 });

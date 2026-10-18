@@ -26,12 +26,14 @@ type CLIArg struct {
 	Class    FileClass
 	RunFile  string
 	Required bool
+	Relative bool
 }
 
 type ArgvPart struct {
 	Literal  string
 	Path     string
 	Existing bool
+	Relative bool
 }
 
 var kindsArg = CLIArg{Key: "kinds", Shape: ShapeStems, Class: ClassKind, Required: true}
@@ -54,8 +56,8 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
 	cliKindCheck = Action{Name: "kind.check", Kind: KindCLI, Command: []string{"kind", "validate", "--stdin"}, Input: inputKey,
 		CLIArgs: []CLIArg{{Key: "twin", Flag: "--twin", Shape: ShapeFlag}}}
-	cliKindCapture = Action{Name: "kind.capture", Kind: KindCLI, Command: []string{"kind", "capture"}, Kinds: true, Input: inputKey, StdinFlag: "--stdin",
-		OneOf: []string{inputKey, runKey}, CLIArgs: []CLIArg{{Key: runKey, Shape: ShapeRun, RunFile: "journal.jsonl"}}}
+	cliKindCapture = Action{Name: "kind.capture", Kind: KindCLI, Command: []string{"kind", "capture"}, Kinds: true, KindsHome: true, Input: inputKey, StdinFlag: "--stdin",
+		OneOf: []string{inputKey, runKey}, CLIArgs: []CLIArg{{Key: runKey, Shape: ShapeRun, RunFile: "journal.jsonl", Relative: true}}}
 	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true,
 		CLIArgs: []CLIArg{kindsArg}}
 	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Mutating: true, Etag: true,

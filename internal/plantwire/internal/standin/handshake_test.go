@@ -96,11 +96,13 @@ func TestAShutdownIsANodeDeathInSequence(t *testing.T) {
 	}
 }
 
-func TestTwoNodesOfOneScriptSpeakTheSameBytes(t *testing.T) {
+func TestTwoNodesOfOneScriptSpeakTheSameBytesAndAnotherScriptSpeaksOthers(t *testing.T) {
 	t.Parallel()
-	script := Script{Steps: []Step{{AtNS: 5, Device: "zone-01", Samples: []Sample{{Metric: "temperature", Value: 22.0}}}, {AtNS: 9, Device: "zone-01", Link: LinkDown}}}
-	speak := func() string {
-		b := newBench(t, boardNode(t, script), hostOptions("hardware"))
+	script := func(at int64, value float64) Script {
+		return Script{Steps: []Step{{AtNS: at, Device: "zone-01", Samples: []Sample{{Metric: "temperature", Value: value}}}, {AtNS: 9, Device: "zone-01", Link: LinkDown}}}
+	}
+	speak := func(s Script) string {
+		b := newBench(t, boardNode(t, s), hostOptions("hardware"))
 		records := append(b.handshake(), b.node.Play(10)...)
 		raw, err := json.Marshal(records)
 		if err != nil {
@@ -108,7 +110,13 @@ func TestTwoNodesOfOneScriptSpeakTheSameBytes(t *testing.T) {
 		}
 		return string(raw)
 	}
-	if first, second := speak(), speak(); first != second || !strings.Contains(first, "DDEATH") {
-		t.Fatalf("two runs differ:\n%s\n%s", first, second)
+	first := speak(script(5, 22.0))
+	if second := speak(script(5, 22.0)); first != second || !strings.Contains(first, "DDEATH") {
+		t.Fatalf("two runs of one script differ:\n%s\n%s", first, second)
+	}
+	for name, other := range map[string]Script{"another value": script(5, 23.0), "another time": script(6, 22.0)} {
+		if got := speak(other); got == first {
+			t.Errorf("%s: a different script spoke the same bytes: the stand-in ignores its script", name)
+		}
 	}
 }

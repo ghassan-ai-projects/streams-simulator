@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
@@ -14,30 +15,46 @@ var ErrBirthRefused = errors.New("plantwire: the birth is refused")
 type Capture struct {
 	Environment string         `json:"environment"`
 	BDSeq       uint64         `json:"bd_seq"`
+	BirthsSeen  int            `json:"births_seen"`
+	Taken       Provenance     `json:"taken"`
+	LaterBirths []LaterBirth   `json:"later_births,omitempty"`
+	Issues      []model.Issue  `json:"issues,omitempty"`
 	Kinds       []CapturedKind `json:"kinds"`
+}
+
+type Provenance struct {
+	Line  int    `json:"line"`
+	BDSeq uint64 `json:"bd_seq"`
+}
+
+type LaterBirth struct {
+	Line        int    `json:"line"`
+	BDSeq       uint64 `json:"bd_seq"`
+	SameContent bool   `json:"same_content"`
 }
 
 type CapturedKind struct {
 	Kind       string          `json:"kind"`
 	KindDigest string          `json:"kind_digest"`
 	Draft      map[string]any  `json:"draft"`
+	Claims     []string        `json:"claims"`
 	Issues     []model.Issue   `json:"issues,omitempty"`
 	Comparison *KindComparison `json:"comparison,omitempty"`
 }
 
-func ParseCapture(raw []byte) (Capture, error) {
-	birth, err := FindBirth(raw)
+func ParseCapture(reader io.Reader) (Capture, error) {
+	scan, err := ScanBirths(reader)
 	if err != nil {
 		return Capture{}, err
 	}
-	message, err := decodeBirth(birth)
+	message, err := decodeBirth(scan.Taken.Birth)
 	if err != nil {
 		return Capture{}, err
 	}
 	if err := claimRefusal(message); err != nil {
 		return Capture{}, err
 	}
-	return capturedFrom(message), nil
+	return withProvenance(capturedFrom(message), scan, message), nil
 }
 
 func decodeBirth(birth []byte) (Message, error) {
@@ -71,7 +88,7 @@ func birthRecord(birth []byte) (map[string]any, error) {
 }
 
 func birthSchemaViolation(errs []jsonschema.Error) error {
-	return &model.ValidationError{Contract: model.ContractPlantWireBirth, Summary: "plantwire: NBIRTH fails its schema: " + errs[0].Error(),
+	return &model.ValidationError{Contract: model.ContractPlantWireBirth, Summary: "plantwire: NBIRTH fails its schema: " + clip(errs[0].Error()),
 		Issues: sortedByPointer(model.SchemaIssues(errs)), Cause: errs[0]}
 }
 
@@ -93,7 +110,7 @@ func claimIssues(m Message) []model.Issue {
 	if ContractUnsupported(m) {
 		issues = append(issues, contractIssue(m))
 	}
-	return append(issues, kindClaimIssues(m.Kinds)...)
+	return append(append(issues, digestIssues(m.Kinds)...), duplicateIssues(m.Kinds)...)
 }
 
 func contractIssue(m Message) model.Issue {
@@ -105,37 +122,35 @@ func contractIssue(m Message) model.Issue {
 	return model.RuleIssue("/"+member, "contract_unsupported", member, message)
 }
 
-func kindClaimIssues(kinds []any) []model.Issue {
+func digestIssues(kinds []any) []model.Issue {
 	var issues []model.Issue
-	seen := map[string]bool{}
 	for i, kind := range kinds {
-		entry, _ := kind.(map[string]any)
-		issues = append(issues, digestIssues(i, entry)...)
-		issues = append(issues, duplicateIssues(i, entry, seen)...)
+		if KindMisdigested(kind) {
+			entry, _ := kind.(map[string]any)
+			issues = append(issues, digestIssue(i, entry))
+		}
 	}
 	return issues
 }
 
-func digestIssues(index int, entry map[string]any) []model.Issue {
-	if !KindMisdigested(entry) {
-		return nil
-	}
+func digestIssue(index int, entry map[string]any) model.Issue {
 	declared, _ := entry[kindDigestMember].(string)
 	computed, err := KindDigest(entry)
 	if err != nil {
 		computed = "nothing (" + err.Error() + ")"
 	}
-	message := fmt.Sprintf("kind %q announces kind_digest %q, its content digests to %s: a birth is a claim and this one does not hold", kindNameOf(entry), declared, computed)
-	return []model.Issue{model.RuleIssue(fmt.Sprintf("/kinds/%d/%s", index, kindDigestMember), "kind_digest_mismatch", kindDigestMember, message)}
+	message := fmt.Sprintf("kind %q announces kind_digest %q, its content digests to %s: a birth is a claim and this one does not hold", clip(kindNameOf(entry)), clip(declared), computed)
+	return model.RuleIssue(fmt.Sprintf("/kinds/%d/%s", index, kindDigestMember), "kind_digest_mismatch", kindDigestMember, message)
 }
 
-func duplicateIssues(index int, entry map[string]any, seen map[string]bool) []model.Issue {
-	name := kindNameOf(entry)
-	if !seen[name] {
-		seen[name] = true
-		return nil
+func duplicateIssues(kinds []any) []model.Issue {
+	var issues []model.Issue
+	for _, index := range DuplicateKinds(kinds) {
+		entry, _ := kinds[index].(map[string]any)
+		message := fmt.Sprintf("kind %q is announced twice (names that differ only in case collide)", clip(kindNameOf(entry)))
+		issues = append(issues, model.RuleIssue(fmt.Sprintf("/kinds/%d/kind", index), "kind_duplicate", "kind", message))
 	}
-	return []model.Issue{model.RuleIssue(fmt.Sprintf("/kinds/%d/kind", index), "kind_duplicate", "kind", fmt.Sprintf("kind %q is announced twice", name))}
+	return issues
 }
 
 func capturedFrom(m Message) Capture {
@@ -151,7 +166,7 @@ func capturedKind(entry map[string]any) CapturedKind {
 	draft := maps.Clone(entry)
 	delete(draft, kindDigestMember)
 	digest, _ := KindDigest(entry)
-	return CapturedKind{Kind: kindNameOf(entry), KindDigest: digest, Draft: draft, Issues: draftIssues(draft)}
+	return CapturedKind{Kind: kindNameOf(entry), KindDigest: digest, Draft: draft, Claims: claimsOf(entry), Issues: draftIssues(draft)}
 }
 
 func draftIssues(draft map[string]any) []model.Issue {

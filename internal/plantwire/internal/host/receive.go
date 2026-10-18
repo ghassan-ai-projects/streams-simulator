@@ -97,7 +97,7 @@ func (h *Host) refusal(m domain.Message) string {
 		return "contract_unsupported"
 	case m.ProtocolMin > int64(h.options.ProtocolMax) || m.ProtocolMax < domain.Version:
 		return "version_unsupported"
-	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds):
+	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds) || domain.KindsDuplicated(m.Kinds):
 		return "inventory_mismatch"
 	}
 	return ""

@@ -12,90 +12,103 @@ import (
 var (
 	ErrNoBirth      = errors.New("plantwire: no NBIRTH record found")
 	ErrSealedStream = errors.New("plantwire: the NBIRTH is a record of the sealed director stream")
+	ErrNotObserver  = errors.New("plantwire: the NBIRTH is not a record of the observer stream")
 )
 
 const (
 	recordBirth    = "NBIRTH"
 	recordWire     = "wire"
 	streamDirector = "director"
+	streamObserver = "observer"
 	nodeDirection  = "node"
 )
 
 var birthMarker = []byte(recordBirth)
 
-type envelope struct {
-	Type      string          `json:"type"`
-	Stream    string          `json:"stream"`
-	Direction string          `json:"direction"`
-	Record    json.RawMessage `json:"record"`
-}
-
-func FindBirth(raw []byte) ([]byte, error) {
-	birth, found, err := birthOf(raw)
-	if found || errors.Is(err, ErrSealedStream) {
-		return birth, err
+func classify(line []byte, tooLong bool) ([]byte, bool, error) {
+	if tooLong {
+		return nil, false, fmt.Errorf("%w: a line of more than %d bytes", ErrTooLarge, MaxLineBytes)
 	}
-	return birthInLines(raw)
+	if !bytes.Contains(line, birthMarker) {
+		return nil, false, nil
+	}
+	fields, err := strictFields(line)
+	if err != nil {
+		return nil, false, err
+	}
+	return birthIn(fields, line)
 }
 
-func birthInLines(raw []byte) ([]byte, error) {
-	var skipped error
-	for rest := raw; len(rest) > 0; {
-		var line []byte
-		line, rest, _ = bytes.Cut(rest, []byte{'\n'})
-		birth, found, err := birthOf(line)
-		if found || errors.Is(err, ErrSealedStream) {
-			return birth, err
+func strictFields(document []byte) (map[string]json.RawMessage, error) {
+	if err := refuseDuplicateMembers(document); err != nil {
+		return nil, fmt.Errorf("plantwire: not a distinct-member JSON record: %w", err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(document, &fields); err != nil {
+		return nil, fmt.Errorf("plantwire: not a JSON record: %w", err)
+	}
+	return fields, nil
+}
+
+func birthIn(fields map[string]json.RawMessage, line []byte) ([]byte, bool, error) {
+	switch exactString(fields["type"]) {
+	case recordBirth:
+		return acceptedBirth(fields, line, false)
+	case recordWire:
+		if exactString(fields["direction"]) == nodeDirection && recordType(fields["record"]) == recordBirth {
+			return acceptedBirth(fields, fields["record"], true)
 		}
-		skipped = firstError(skipped, err)
 	}
-	return nil, noBirth(skipped)
+	return nil, false, nil
 }
 
-func firstError(first, next error) error {
-	if first != nil {
-		return first
+func acceptedBirth(fields map[string]json.RawMessage, birth []byte, wrapped bool) ([]byte, bool, error) {
+	if err := requireObserver(fields, wrapped); err != nil {
+		return nil, false, err
 	}
-	return next
+	return birth, true, nil
 }
 
-func birthOf(document []byte) ([]byte, bool, error) {
-	if !bytes.Contains(document, birthMarker) {
-		return nil, false, nil
-	}
-	var wrapper envelope
-	if err := json.Unmarshal(document, &wrapper); err != nil {
-		return nil, false, fmt.Errorf("plantwire: not a JSON record: %w", err)
-	}
-	return wrapper.birth(document)
-}
-
-func (e envelope) birth(document []byte) ([]byte, bool, error) {
+func requireObserver(fields map[string]json.RawMessage, wrapped bool) error {
+	raw, present := fields["stream"]
+	stream := exactString(raw)
 	switch {
-	case e.Type == recordBirth:
-		return document, true, nil
-	case e.Type != recordWire || e.Direction != nodeDirection || typeOf(e.Record) != recordBirth:
-		return nil, false, nil
-	case e.Stream == streamDirector:
-		return nil, false, birthViolation("the NBIRTH is a record of the sealed director stream, which is never taken", "sealed_stream", ErrSealedStream)
+	case !present && !wrapped, stream == streamObserver:
+		return nil
+	case stream == streamDirector:
+		return birthViolation("the NBIRTH is a record of the sealed director stream, which is never taken", "sealed_stream", ErrSealedStream)
 	}
-	return e.Record, true, nil
+	return birthViolation(fmt.Sprintf("the NBIRTH is of stream %q: only the observer stream is taken", clip(stream)), "stream_not_observer", ErrNotObserver)
 }
 
-func typeOf(record json.RawMessage) string {
-	var head struct {
-		Type string `json:"type"`
-	}
-	_ = json.Unmarshal(record, &head)
-	return head.Type
+func isStreamRefusal(err error) bool {
+	return errors.Is(err, ErrSealedStream) || errors.Is(err, ErrNotObserver)
 }
 
-func noBirth(skipped error) error {
+func exactString(raw json.RawMessage) string {
+	var text string
+	_ = json.Unmarshal(raw, &text)
+	return text
+}
+
+func recordType(raw json.RawMessage) string {
+	var fields map[string]json.RawMessage
+	_ = json.Unmarshal(raw, &fields)
+	return exactString(fields["type"])
+}
+
+func noBirth(scan Scan) error {
 	message := "no NBIRTH record found"
-	if skipped != nil {
-		message += ": the lines that name one are not JSON records (" + skipped.Error() + ")"
+	if scan.Truncated {
+		message += fmt.Sprintf(" in the first %d bytes", MaxScanBytes)
 	}
-	return birthViolation(message, "no_birth", ErrNoBirth)
+	cause := ErrNoBirth
+	if len(scan.Unreadable) > 0 {
+		first := scan.Unreadable[0]
+		message += fmt.Sprintf(": line %d names one but cannot be read (%v)", first.Line, first.Cause)
+		cause = errors.Join(ErrNoBirth, first.Cause)
+	}
+	return birthViolation(message, "no_birth", cause)
 }
 
 func birthViolation(message, keyword string, cause error) *model.ValidationError {

@@ -10,4 +10,5 @@ var (
 	ErrInUse      = sockets.ErrInUse
 	ErrNotRegular = files.ErrNotRegular
 	ErrTooLarge   = files.ErrTooLarge
+	ErrSymlink    = files.ErrSymlink
 )

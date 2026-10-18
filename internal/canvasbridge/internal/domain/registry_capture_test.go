@@ -10,7 +10,7 @@ import (
 func TestKindCaptureIsReadOnlyAndComparesWithTheWorkspaceKinds(t *testing.T) {
 	t.Parallel()
 	capture, err := Lookup("kind.capture")
-	if err != nil || capture.Mutating || capture.Etag || !capture.Kinds || capture.Library || capture.Catalog || capture.Input != "content" {
+	if err != nil || capture.Mutating || capture.Etag || !capture.Kinds || !capture.KindsHome || capture.Library || capture.Catalog || capture.Input != "content" {
 		t.Fatalf("kind.capture = %+v, %v, want a read-only action that takes the kinds folder for the comparison", capture, err)
 	}
 }
@@ -26,7 +26,7 @@ func TestKindCaptureTakesItsContentOnStandardInputOrTheObserverJournalOfARun(t *
 	}{
 		{"content", map[string]any{"content": "{}"}, []ArgvPart{{Literal: "kind"}, {Literal: "capture"}, {Literal: "--stdin"}}, []byte("{}")},
 		{"empty content", map[string]any{"content": ""}, []ArgvPart{{Literal: "kind"}, {Literal: "capture"}, {Literal: "--stdin"}}, []byte{}},
-		{"a run", map[string]any{"run": "w-1"}, []ArgvPart{{Literal: "kind"}, {Literal: "capture"}, {Path: "runs/w-1/journal.jsonl"}}, nil},
+		{"a run", map[string]any{"run": "w-1"}, []ArgvPart{{Literal: "kind"}, {Literal: "capture"}, {Path: "runs/w-1/journal.jsonl", Relative: true}}, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -87,5 +87,21 @@ func TestNoRunIdNamesTheSealedJournalOfAKindCapture(t *testing.T) {
 		if err != nil || len(argv) != 3 || argv[2].Path != "runs/"+run+"/journal.jsonl" || strings.Contains(argv[2].Path, "sealed") {
 			t.Errorf("Argv of run %q = %+v, %v, want only the observer journal of that run", run, argv, err)
 		}
+	}
+}
+
+func TestEveryTargetOfAKindCaptureIsAKindFilePathTheBridgeAccepts(t *testing.T) {
+	t.Parallel()
+	for _, stem := range []string{"pump", "thermal_sensor", "board_part_7", "Fan-2.v1", strings.Repeat("a", 118)} {
+		target := "kinds/" + stem + ".kind.json"
+		if path, err := ParsePath(target); err != nil || path.Class != ClassKind || path.Rel != target {
+			t.Errorf("ParsePath(%q) = %+v, %v, want a kind file of the workspace", target, path, err)
+		}
+		if path, err := StemPath(ClassKind, stem); err != nil || path.Rel != target {
+			t.Errorf("StemPath(%q) = %+v, %v, want %s", stem, path, err, target)
+		}
+	}
+	if _, err := ParsePath("kinds/board:part.kind.json"); !errors.Is(err, ErrBadPath) {
+		t.Fatalf("a path with the colon of a kind name = %v, want ErrBadPath: the binary's stem replaces it", err)
 	}
 }

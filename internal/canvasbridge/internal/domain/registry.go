@@ -22,6 +22,7 @@ type Action struct {
 	Input     string     `json:"input,omitempty"`
 	Keys      []string   `json:"-"`
 	StdinFlag string     `json:"-"`
+	KindsHome bool       `json:"-"`
 	OneOf     []string   `json:"-"`
 	CLIArgs   []CLIArg   `json:"-"`
 	Withheld  []string   `json:"-"`

@@ -4,7 +4,23 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
 )
+
+const maxEchoed = 128
+
+var pointerEscaper = strings.NewReplacer("~", "~0", "/", "~1")
+
+func pointerToken(name string) string {
+	return clip(pointerEscaper.Replace(name))
+}
+
+func clip(text string) string {
+	if len(text) <= maxEchoed {
+		return text
+	}
+	return strings.ToValidUTF8(text[:maxEchoed], "")
+}
 
 func firstDifference(want, got any, path string) (string, bool) {
 	switch expected := want.(type) {
@@ -22,7 +38,7 @@ func differingMember(want map[string]any, got any, path string) (string, bool) {
 		return path, true
 	}
 	for _, name := range memberNames(want, actual) {
-		if at, differs := memberDifference(want, actual, name, path+"/"+name); differs {
+		if at, differs := memberDifference(want, actual, name, path+"/"+pointerToken(name)); differs {
 			return at, true
 		}
 	}

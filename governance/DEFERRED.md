@@ -234,3 +234,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > of the twin as arguments and never the directory, so no surface depends on it. Trigger to fix: a surface hands the twin
 > commands a directory that holds unfinished kinds; then the choices' kind names select the files, as a domain's
 > `implements` names do (`SelectKindSources`).
+> D-67 (where a capture differs): `kind capture` gives the first differing place (`differs_at`, a JSON pointer) but not the
+> two values; the canvas resolves the pointer in the saved file it already fetched and shows "Saved ... The board says ...".
+> That is pointer resolution the binary should own. Trigger to fix: a second surface needs the values, or the canvas
+> shows a wrong value; then `comparison` carries `saved` and `announced` at `differs_at`.
+> D-68 (runs that hold an announcement): the workspace listing does not say which recorded runs hold an NBIRTH, so the
+> capture screen's run picker lists every run and the binary answers "No announcement found" for the others. Trigger to
+> fix: more than a handful of runs per workspace; then the listing carries `announces` read from the observer journal's
+> first records.

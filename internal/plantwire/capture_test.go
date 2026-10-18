@@ -1,12 +1,15 @@
 package plantwire
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
@@ -80,21 +83,56 @@ func TestTheStandInBoardBuiltFromTheThermalKindFilesIsAcceptedByTheReferenceHost
 	}
 }
 
-func TestCapturingTheStandInsBirthYieldsTheKindFilesItWasBuiltFrom(t *testing.T) {
-	t.Parallel()
-	captured, err := CaptureStream(strings.NewReader(announcedBirth(t)), []string{testsupport.ThermalBoardKindsDir()})
+var thermalGoldens = map[string]string{
+	"fan":            "sha256:fe29bb90a5abc8180f1287608211e678814fb51b86ffeffd4a89f605e2fa379f",
+	"indicator":      "sha256:1c44d298974f5121a23acc3a9cb2befa3e5f51cb2fcacb3ff111407f1116eb67",
+	"thermal_sensor": "sha256:7d0921b1526ddbb40760f3244b7b5f0a6443a125da593a9f0fa2878a871d9d48",
+}
+
+func canonicalOf(t *testing.T, value any) string {
+	t.Helper()
+	raw, err := canonical.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if captured.Environment != "hardware" || captured.BDSeq != 0 || len(captured.Kinds) != 3 {
-		t.Fatalf("capture = %+v, want the three kinds of a hardware birth", captured)
+	return string(raw)
+}
+
+func canonicalFile(t *testing.T, path string) string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
 	}
-	digests := kindDigests(t)
+	var tree any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&tree); err != nil {
+		t.Fatal(err)
+	}
+	return canonicalOf(t, tree)
+}
+
+func TestCapturingTheStandInsBirthYieldsTheKindFilesItWasBuiltFrom(t *testing.T) {
+	t.Parallel()
+	dir := testsupport.ThermalBoardKindsDir()
+	captured, err := CaptureStream(strings.NewReader(announcedBirth(t)), []string{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if captured.Environment != "hardware" || captured.BDSeq != 0 || captured.BirthsSeen != 1 || len(captured.Kinds) != 3 || len(captured.Issues) != 0 {
+		t.Fatalf("capture = %+v, want the three kinds of one hardware birth and nothing to report", captured)
+	}
 	for _, kind := range captured.Kinds {
-		comparison := kind.Comparison
-		if comparison == nil || comparison.Status != "same" || kind.KindDigest != digests[kind.Kind] || comparison.FileDigest != digests[kind.Kind] ||
-			filepath.Base(comparison.File) != kind.Kind+".kind.json" || len(kind.Issues) != 0 {
-			t.Errorf("kind %s = %+v (%+v), want the same as its file, digest %s", kind.Kind, kind, comparison, digests[kind.Kind])
+		comparison, file := kind.Comparison, filepath.Join(dir, kind.Kind+".kind.json")
+		if comparison == nil || comparison.Status != "same" || comparison.Target != file || comparison.File != file || len(kind.Issues) != 0 {
+			t.Fatalf("kind %s = %+v (%+v), want the same as %s", kind.Kind, kind, comparison, file)
+		}
+		if kind.KindDigest != thermalGoldens[kind.Kind] || comparison.FileDigest != thermalGoldens[kind.Kind] {
+			t.Errorf("kind %s digests to %s (file %s), want the hard-coded %s", kind.Kind, kind.KindDigest, comparison.FileDigest, thermalGoldens[kind.Kind])
+		}
+		if got, want := canonicalOf(t, kind.Draft), canonicalFile(t, file); got != want {
+			t.Errorf("kind %s: the captured draft is not the kind file:\n%s\n%s", kind.Kind, got, want)
 		}
 	}
 }

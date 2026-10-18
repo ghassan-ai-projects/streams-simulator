@@ -97,6 +97,10 @@ func (b *Bridge) execute(ctx context.Context, action domain.Action, parts []doma
 func (b *Bridge) absolute(parts []domain.ArgvPart) []string {
 	argv := make([]string, 0, len(parts))
 	for _, part := range parts {
+		if part.Path != "" && part.Relative {
+			argv = append(argv, filepath.FromSlash(part.Path))
+			continue
+		}
 		if part.Path != "" {
 			argv = append(argv, filepath.Join(b.settings.WorkspaceDir, filepath.FromSlash(part.Path)))
 			continue
@@ -115,7 +119,7 @@ func (b *Bridge) flags(action domain.Action) []string {
 		flags = append(flags, b.libraryFlags()...)
 	}
 	if action.Kinds {
-		flags = append(flags, b.workspaceDirFlag("--kinds-dir", "kinds")...)
+		flags = append(flags, b.kindsFlag(action)...)
 	}
 	return flags
 }
@@ -126,6 +130,13 @@ func (b *Bridge) libraryFlags() []string {
 		flags = append(flags, "--components-dir", dir)
 	}
 	return append(flags, b.workspaceDirFlag("--components-dir", "components")...)
+}
+
+func (b *Bridge) kindsFlag(action domain.Action) []string {
+	if action.KindsHome {
+		return []string{"--kinds-dir", filepath.Join(b.settings.WorkspaceDir, "kinds")}
+	}
+	return b.workspaceDirFlag("--kinds-dir", "kinds")
 }
 
 func (b *Bridge) workspaceDirFlag(flag, folder string) []string {

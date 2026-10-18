@@ -18,11 +18,11 @@ export function step(page: Page, name: RegExp) {
 
 export async function createDevice(page: Page, name: string): Promise<void> {
   await page.goto("/");
-  const devices = page.getByRole("region", { name: "Devices" });
+  const devices = page.getByRole("region", { name: "Devices", exact: true });
   await expect(devices.getByText(/No devices yet/)).toBeVisible();
   await devices.getByRole("button", { name: "Create device" }).click();
   const form = page.getByRole("form", { name: "New device" });
-  await form.getByLabel("Name").fill(name);
+  await form.getByLabel("Name", { exact: true }).fill(name);
   await form.getByRole("button", { name: "Create and open the device" }).click();
   await expect(page.getByRole("region", { name: `Editing ${name}` })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveAccessibleName(name);

@@ -35,6 +35,7 @@ var (
 	ErrNoBirth          = domain.ErrNoBirth
 	ErrBirthRefused     = domain.ErrBirthRefused
 	ErrSealedStream     = domain.ErrSealedStream
+	ErrNotObserver      = domain.ErrNotObserver
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap
 	ErrSocketNotPrivate = uds.ErrSocketNotPrivate

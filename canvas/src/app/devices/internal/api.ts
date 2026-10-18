@@ -15,12 +15,15 @@ export interface DeviceRow {
 }
 
 export interface CaptureSession extends Store<CaptureState> {
-  read(source: CaptureSource, kinds: readonly KindEntry[]): Promise<void>;
+  read(source: CaptureSource): Promise<void>;
   retry(): Promise<void>;
-  save(name: string): Promise<void>;
-  replace(name: string): Promise<void>;
-  skip(name: string): void;
-  close(): void;
+  save(index: number): Promise<void>;
+  replace(index: number): Promise<void>;
+  skip(index: number): void;
+  unskip(index: number): void;
+  clear(): void;
+  leave(): void;
+  comingBack(): boolean;
 }
 
 export interface DeviceDesk {

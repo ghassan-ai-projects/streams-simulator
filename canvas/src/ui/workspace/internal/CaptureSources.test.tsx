@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { announced, captureResult, refuseCapture } from "../../../test/captureFixture";
 import { captureCalls, heading, openCapture, paste } from "../../../test/captureHarness";
+import { deferred } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { success } from "../../../test/outcome";
@@ -11,6 +12,12 @@ const mebibyte = 1024 * 1024;
 
 function chooseFile(file: File) {
   fireEvent.change(screen.getByLabelText("Or load it from a file"), { target: { files: [file] } });
+}
+
+function bigFile() {
+  const big = new File(["{}"], "journal.jsonl");
+  Object.defineProperty(big, "size", { value: mebibyte + 1 });
+  return big;
 }
 
 describe("where the announcement comes from", () => {
@@ -26,17 +33,53 @@ describe("where the announcement comes from", () => {
     expect(captureCalls(bridge)[0]).toEqual({ name: "kind.capture", args: { content: '{"type":"NBIRTH"}' } });
   });
 
+  it("lets the same file be chosen again, because the choice is cleared once it is taken", async () => {
+    await openCapture();
+    const input = screen.getByLabelText<HTMLInputElement>("Or load it from a file");
+    chooseFile(new File(["first"], "birth.json"));
+    expect(input.value).toBe("");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Announcement text")).toHaveValue("first");
+    });
+  });
+
   it("does nothing when no file was chosen", async () => {
     await openCapture();
     fireEvent.change(screen.getByLabelText("Or load it from a file"), { target: { files: [] } });
     expect(screen.getByLabelText("Announcement text")).toHaveValue("");
   });
 
+  it("keeps the last choice when two files are chosen in a row and the first is read last", async () => {
+    await openCapture();
+    const slow = deferred<string>();
+    const first = new File(["a"], "a.json");
+    Object.defineProperty(first, "text", { value: () => slow.promise });
+    chooseFile(first);
+    chooseFile(new File(["second"], "b.json"));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Announcement text")).toHaveValue("second");
+    });
+    slow.resolve("first");
+    await Promise.resolve();
+    expect(screen.getByLabelText("Announcement text")).toHaveValue("second");
+  });
+
+  it("does not let a file that is read late overwrite what was typed meanwhile", async () => {
+    await openCapture();
+    const slow = deferred<string>();
+    const file = new File(["a"], "a.json");
+    Object.defineProperty(file, "text", { value: () => slow.promise });
+    chooseFile(file);
+    fireEvent.change(screen.getByLabelText("Announcement text"), { target: { value: "typed" } });
+    slow.resolve("late");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(screen.getByLabelText("Announcement text")).toHaveValue("typed");
+  });
+
   it("refuses a file over 1 MiB in plain words, without reading it, and keeps Read off", async () => {
     await openCapture();
-    const big = new File(["{}"], "journal.jsonl");
-    Object.defineProperty(big, "size", { value: mebibyte + 1 });
-    chooseFile(big);
+    chooseFile(bigFile());
     expect(await screen.findByRole("alert")).toHaveTextContent("That is larger than 1 MiB.");
     expect(screen.getByLabelText("Announcement text")).toHaveValue("");
     expect(screen.getByRole("button", { name: "Read the announcement" })).toHaveAttribute("aria-disabled", "true");
@@ -65,9 +108,7 @@ describe("where the announcement comes from", () => {
 
   it("clears the file's refusal when text is typed instead", async () => {
     await openCapture();
-    const big = new File(["{}"], "journal.jsonl");
-    Object.defineProperty(big, "size", { value: mebibyte + 1 });
-    chooseFile(big);
+    chooseFile(bigFile());
     await screen.findByRole("alert");
     fireEvent.change(screen.getByLabelText("Announcement text"), { target: { value: "{}" } });
     expect(screen.queryByRole("alert")).toBeNull();
@@ -83,6 +124,7 @@ describe("reading a recorded run", () => {
     fireEvent.click(screen.getByRole("button", { name: "Read this run" }));
     expect(await screen.findByRole("heading", { level: 2, name: heading })).toHaveFocus();
     expect(captureCalls(bridge)).toEqual([{ name: "kind.capture", args: { run: "w-1" } }]);
+    expect(screen.getByText("Read from the run w-1.")).toBeInTheDocument();
   });
 
   it("reads the newest run when none was picked", async () => {
@@ -92,12 +134,12 @@ describe("reading a recorded run", () => {
     expect(captureCalls(bridge)[0]).toEqual({ name: "kind.capture", args: { run: "w-2" } });
   });
 
-  it("shows the binary's sentence when the run holds no announcement", async () => {
+  it("shows the binary's words behind a plain sentence when the run holds no announcement", async () => {
     const { bridge } = await openCapture();
     refuseCapture(bridge, "no_birth", "plantwire: no NBIRTH record found");
     fireEvent.click(screen.getByRole("button", { name: "Read this run" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("plantwire: no NBIRTH record found");
-    expect(screen.getByText("No announcement from a board was found")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No announcement found" })).toBeInTheDocument();
+    expect(screen.getByText(/plantwire: no NBIRTH record found/)).toBeInTheDocument();
   });
 
   it("says there is no run to read when the workspace has none", async () => {
@@ -108,7 +150,7 @@ describe("reading a recorded run", () => {
     expect(screen.queryByRole("button", { name: "Read this run" })).toBeNull();
   });
 
-  it("cannot read while a read is under way", async () => {
+  it("cannot read twice while a read is under way", async () => {
     const bridge = new FakeBridge();
     bridge.handlers.set("kind.capture", () => new Promise<Canned<unknown>>(() => undefined));
     await openCapture(captureResult([announced()]), bridge);
@@ -121,29 +163,29 @@ describe("reading a recorded run", () => {
 });
 
 describe("leaving the screen", () => {
-  it("returns to the Devices list on Escape, with the focus on the button that opened it", async () => {
-    await openCapture();
+  it("goes back to the workspace on Escape, remembering to give the focus back to the button", async () => {
+    const { nav, desk } = await openCapture();
     fireEvent.keyDown(screen.getByLabelText("Announcement text"), { key: "Escape" });
-    const devices = within(screen.getByRole("region", { name: "Devices" }));
-    expect(devices.getByRole("button", { name: "Capture from a board" })).toHaveFocus();
-    expect(screen.queryByRole("heading", { level: 1, name: "Capture from a board" })).toBeNull();
+    expect(nav.location.hash).toBe("#/");
+    expect(desk.capture().comingBack()).toBe(true);
   });
 
-  it("returns on the Workspace crumb, and opens again with a clean screen", async () => {
-    await openCapture();
+  it("goes back on the Workspace crumb too, and the review is kept for the way back", async () => {
+    const { nav, desk } = await openCapture();
     paste();
     await screen.findByRole("heading", { level: 2, name: heading });
     fireEvent.click(screen.getByRole("button", { name: "Workspace" }));
-    const devices = within(screen.getByRole("region", { name: "Devices" }));
-    fireEvent.click(devices.getByRole("button", { name: "Capture from a board" }));
-    expect(screen.getByLabelText("Announcement text")).toHaveValue("");
-    expect(screen.queryByRole("heading", { level: 2, name: heading })).toBeNull();
+    expect(nav.location.hash).toBe("#/");
+    expect(desk.capture().snapshot().phase).toBe("reviewing");
   });
 
-  it("is also on the page of an empty workspace", async () => {
+  it("ignores Escape while a read is under way", async () => {
     const bridge = new FakeBridge();
-    bridge.workspaceOutcome = success({ ...sampleWorkspace, domains: [], compositions: [], runs: [] });
-    await openCapture(undefined, bridge);
-    expect(screen.getByRole("heading", { level: 1, name: "Capture from a board" })).toBeInTheDocument();
+    bridge.handlers.set("kind.capture", () => new Promise<Canned<unknown>>(() => undefined));
+    const { desk } = await openCapture(captureResult([announced()]), bridge);
+    paste();
+    await screen.findByText("Reading the announcement…");
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(desk.capture().comingBack()).toBe(false);
   });
 });

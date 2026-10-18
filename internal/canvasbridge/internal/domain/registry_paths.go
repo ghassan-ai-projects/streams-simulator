@@ -20,8 +20,18 @@ func (spec CLIArg) renderPath(value any) (ArgvPart, error) {
 		return ArgvPart{}, fmt.Errorf("want a workspace path, got %v", value)
 	}
 	if spec.Shape == ShapeRun {
-		return runPart(text, spec.RunFile)
+		return spec.renderRun(text)
 	}
+	return spec.renderWorkspaceFile(text)
+}
+
+func (spec CLIArg) renderRun(runID string) (ArgvPart, error) {
+	part, err := runPart(runID, spec.RunFile)
+	part.Relative = spec.Relative
+	return part, err
+}
+
+func (spec CLIArg) renderWorkspaceFile(text string) (ArgvPart, error) {
 	path, err := ParsePath(text)
 	if err != nil || path.Class != spec.Class {
 		return ArgvPart{}, fmt.Errorf("want a %s file of the workspace, got %q", spec.Class, text)

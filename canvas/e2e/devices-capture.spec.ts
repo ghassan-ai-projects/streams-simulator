@@ -2,10 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { existsSync, readFileSync } from "node:fs";
 import {
-  announcedKind,
   announcement,
   cardOf,
   openCapture,
+  pumpKind,
   readAnnouncement,
   refusedHeading,
   reviewHeading,
@@ -33,9 +33,11 @@ test("an announced device is reviewed and saved, found again as the same, and re
   lab,
 }) => {
   const file = kindPath(lab, "pump");
+  expect(savedKinds(lab)).toEqual([]);
   await openCapture(page);
   await readAnnouncement(page, announcement());
   await expect(reviewHeading(page)).toBeFocused();
+  await expect(page.getByLabel("Announcement text")).toHaveCount(0);
   await expect(page.getByText("Simulated", { exact: true })).toBeVisible();
   await expect(page.getByText(claim)).toBeVisible();
   const card = cardOf(page, "pump");
@@ -44,19 +46,26 @@ test("an announced device is reviewed and saved, found again as the same, and re
   await expect(
     card.getByText("sha256:b5e93cadac03ad9537622cacf3e529d44de2271811d35455712b7eefb3f24fb1"),
   ).toBeAttached();
+  await expect(card.getByText(/Taken from the board's announcement, not verified/)).toBeVisible();
   expect(await violations(page)).toEqual([]);
   expect(existsSync(file)).toBe(false);
 
   await card.getByRole("button", { name: /^Save as device/ }).click();
   await expect(card.getByText(/Saved as kinds\/pump\.kind\.json/)).toBeVisible();
-  expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(announcedKind());
+  await expect(card.getByText("Saved", { exact: true })).toBeVisible();
+  expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(pumpKind());
   await card.getByRole("button", { name: /^Open pump in the device editor/ }).click();
   await expect(page.getByRole("region", { name: "Editing pump" })).toBeVisible();
+
+  await page.goBack();
+  await expect(reviewHeading(page)).toBeVisible();
+  await expect(card.getByText(/Saved as kinds\/pump\.kind\.json/)).toBeVisible();
 
   await openCapture(page);
   await readAnnouncement(page, announcement());
   await expect(cardOf(page, "pump").getByText(/Same as .*pump\.kind\.json/)).toBeVisible();
   await expect(cardOf(page, "pump").getByRole("button", { name: /^Save as device/ })).toHaveCount(0);
+  await expect(cardOf(page, "pump").getByRole("button", { name: /^Skip/ })).toHaveCount(0);
   await cardOf(page, "pump")
     .getByRole("button", { name: /^Open the saved device/ })
     .click();
@@ -78,23 +87,27 @@ test("an announced device is reviewed and saved, found again as the same, and re
   await card.getByRole("button", { name: /^Replace the saved device/ }).click();
   await question.getByRole("button", { name: "Yes, replace it" }).click();
   await expect(card.getByText(/Saved as kinds\/pump\.kind\.json/)).toBeVisible();
-  expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(announcedKind());
+  expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(pumpKind());
 });
 
-test("an announcement that does not hold is refused in plain words and nothing is written", async ({ page, lab }) => {
+test("an announcement that does not hold is refused in plain words, with the binary's words behind them, and nothing is written", async ({
+  page,
+  lab,
+}) => {
   await openCapture(page);
   await readAnnouncement(page, tamperedAnnouncement());
   await expect(refusedHeading(page)).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText("refused");
-  const issues = page.getByRole("list", { name: "What was wrong" }).getByRole("listitem");
-  await expect(issues.first()).toContainText("does not match its own fingerprint, so it cannot be trusted");
-  await expect(issues.first()).toBeFocused();
+  const sentence = page.getByRole("alert");
+  await expect(sentence).toContainText("Copy the announcement again from the board.");
+  await expect(sentence).toBeFocused();
   await expect(page.getByText("Nothing was saved.")).toBeVisible();
   await expect(reviewHeading(page)).toHaveCount(0);
+  await page.getByText("Details", { exact: true }).click();
+  await expect(page.getByText(/kind_failed/)).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
   await page.getByRole("button", { name: "Retry" }).click();
-  await expect(issues.first()).toBeFocused();
+  await expect(sentence).toBeFocused();
   expect(savedKinds(lab)).toEqual([]);
 
   await readAnnouncement(page, announcement());
@@ -103,16 +116,17 @@ test("an announcement that does not hold is refused in plain words and nothing i
   expect(savedKinds(lab)).toEqual([]);
 });
 
-test("a recorded run that holds no announcement is refused by the binary and nothing is written", async ({
+test("text with no announcement in it is refused as such, and a recorded run without one too", async ({
   page,
   lab,
 }) => {
   await openCapture(page);
+  await readAnnouncement(page, "this is not an announcement");
+  await expect(page.getByRole("heading", { level: 2, name: "No announcement found" })).toBeVisible();
   await page.getByLabel("Recorded run", { exact: true }).selectOption("w-evaluate");
   await page.getByRole("button", { name: "Read this run" }).click();
-  await expect(refusedHeading(page)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "No announcement found" })).toBeVisible();
   await expect(page.getByText("Nothing was saved.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
   expect(savedKinds(lab)).toEqual([]);
 });
 

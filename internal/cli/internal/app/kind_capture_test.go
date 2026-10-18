@@ -2,8 +2,11 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -61,12 +64,19 @@ func TestKindCaptureDraftsTheKindsOfARecordedNodeAndComparesThemWithTheKindFiles
 	plain := invoke(t, "kind", "capture", journal).mustSucceed(t).document(t, "kind_capture")
 	pump := capturedKind(t, plain, "pump")
 	draft, _ := pump["draft"].(map[string]any)
-	if _, digested := draft["kind_digest"]; plain["environment"] != "simulated" || plain["bd_seq"] != float64(0) || digested || pump["comparison"] != nil {
-		t.Fatalf("kind capture = %v, want the draft of pump without kind_digest or comparison from a simulated birth", plain)
+	taken, _ := plain["taken"].(map[string]any)
+	if _, digested := draft["kind_digest"]; plain["environment"] != "simulated" || plain["bd_seq"] != float64(0) || digested || pump["comparison"] != nil ||
+		plain["births_seen"] != float64(1) || taken["bd_seq"] != float64(0) || taken["line"].(float64) < 1 || plain["later_births"] != nil {
+		t.Fatalf("kind capture = %v, want the draft of pump without kind_digest or comparison from the one simulated birth, with its provenance", plain)
 	}
-	same := invoke(t, "kind", "capture", journal, "--kinds-dir", pumpKindsDirectory(t, asWritten)).mustSucceed(t).document(t, "kind_capture")
-	if comparison, _ := capturedKind(t, same, "pump")["comparison"].(map[string]any); comparison["status"] != "same" || comparison["file_digest"] != pump["kind_digest"] {
-		t.Fatalf("comparison = %v, want pump the same as its kind file", comparison)
+	if claims, _ := pump["claims"].([]any); len(claims) == 0 {
+		t.Fatalf("pump = %v, want the members the board claimed listed", pump)
+	}
+	kinds := pumpKindsDirectory(t, asWritten)
+	same := invoke(t, "kind", "capture", journal, "--kinds-dir", kinds).mustSucceed(t).document(t, "kind_capture")
+	if comparison, _ := capturedKind(t, same, "pump")["comparison"].(map[string]any); comparison["status"] != "same" || comparison["file_digest"] != pump["kind_digest"] ||
+		comparison["target"] != filepath.Join(kinds, "pump.kind.json") || comparison["file"] != comparison["target"] {
+		t.Fatalf("comparison = %v, want pump the same as its kind file, aimed at it", comparison)
 	}
 	drifted := pumpKindsDirectory(t, func(raw string) string { return strings.Replace(raw, `"m3/h"`, `"l/s"`, 1) })
 	differs := invoke(t, "kind", "capture", "--kinds-dir", drifted, journal).mustSucceed(t).document(t, "kind_capture")
@@ -82,10 +92,29 @@ func TestKindCaptureReadsTheBirthOrTheWholeJournalFromStandardInput(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	fromFile := invoke(t, "kind", "capture", journal).mustSucceed(t).stdout
-	for name, input := range map[string]string{"the birth": birthInJournal(t, journal), "the journal": string(raw)} {
-		if got := invokeWithInput(t, input, "kind", "capture", "--stdin").mustSucceed(t).stdout; got != fromFile {
-			t.Errorf("capture of %s from standard input differs from the capture of the file:\n%s\n%s", name, got, fromFile)
+	fromFile := invoke(t, "kind", "capture", journal).mustSucceed(t).document(t, "kind_capture")
+	fileLine := fromFile["taken"].(map[string]any)["line"].(float64)
+	if fileLine < 2 {
+		t.Fatalf("the birth stands at line %v of the journal, want a line after the first", fileLine)
+	}
+	cases := []struct {
+		name, input string
+		line        float64
+	}{{"the birth", birthInJournal(t, journal), 1}, {"the journal", string(raw), fileLine}}
+	for _, tc := range cases {
+		got := invokeWithInput(t, tc.input, "kind", "capture", "--stdin").mustSucceed(t).document(t, "kind_capture")
+		taken, _ := got["taken"].(map[string]any)
+		if taken["line"] != tc.line {
+			t.Errorf("capture of %s from standard input took the birth at line %v, want %v", tc.name, taken["line"], tc.line)
+		}
+		delete(got, "taken")
+		wantDoc := map[string]any{}
+		for key, value := range fromFile {
+			wantDoc[key] = value
+		}
+		delete(wantDoc, "taken")
+		if !reflect.DeepEqual(got, wantDoc) {
+			t.Errorf("capture of %s from standard input differs from the capture of the file beyond where the birth stood:\n%v\n%v", tc.name, got, wantDoc)
 		}
 	}
 }
@@ -134,8 +163,31 @@ func TestKindCaptureRefusesWhatIsNoBirthOrNoHonestBirthAndWritesNothing(t *testi
 			}
 		})
 	}
+	dir := t.TempDir()
+	testsupport.WriteFileIn(t, dir, "birth.json", []byte(birth))
+	link := filepath.Join(dir, "link.json")
+	if err := os.Symlink(filepath.Join(dir, "birth.json"), link); err != nil {
+		t.Fatal(err)
+	}
+	linked := invoke(t, "kind", "capture", link)
+	if body := linked.failure(t); linked.code != 1 || body["code"] != "kind_failed" || !strings.Contains(body["message"].(string), "not a regular file") {
+		t.Fatalf("exit %d with %v, want a symbolic link refused as no regular file", linked.code, body)
+	}
 	missing := invoke(t, "kind", "capture", filepath.Join(t.TempDir(), "absent.jsonl"))
 	if body := missing.failure(t); missing.code != 1 || body["code"] != "file_not_found" {
 		t.Fatalf("exit %d with %v, want file_not_found", missing.code, body)
+	}
+}
+
+func TestKindCaptureTakesAMissingKindsDirectoryForNoSavedKindsAndCreatesNothing(t *testing.T) {
+	t.Parallel()
+	missing := filepath.Join(t.TempDir(), "kinds")
+	doc := invoke(t, "kind", "capture", pumpNodeJournal(t), "--kinds-dir", missing).mustSucceed(t).document(t, "kind_capture")
+	comparison, _ := capturedKind(t, doc, "pump")["comparison"].(map[string]any)
+	if comparison["status"] != "new" || comparison["target"] != filepath.Join(missing, "pump.kind.json") || comparison["file"] != nil {
+		t.Fatalf("comparison = %v, want pump new and aimed at a file of the missing directory", comparison)
+	}
+	if _, err := os.Stat(missing); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("stat = %v, want nothing created", err)
 	}
 }

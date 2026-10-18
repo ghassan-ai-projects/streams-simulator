@@ -1233,19 +1233,81 @@
       "required": [
         "environment",
         "bd_seq",
+        "births_seen",
+        "taken",
         "kinds"
       ],
-      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held. comparison is present only when a kinds directory was given.",
+      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held, and `environment` is the board's claim as well, never verified. The first birth found is the one taken; births_seen and later_births say what else the source held, and `issues` what the scan found beside the kinds (birth_line_unreadable, rebirth_differs, capability_digest_mismatch, scan_truncated). comparison is present only when a kinds directory was given.",
       "properties": {
         "environment": {
           "enum": [
             "simulated",
             "hardware"
-          ]
+          ],
+          "description": "What the board claims; the binary does not verify it."
         },
         "bd_seq": {
           "type": "integer",
           "minimum": 0
+        },
+        "births_seen": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "NBIRTH records found in the source (a lower bound when issues holds scan_truncated)."
+        },
+        "taken": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "line",
+            "bd_seq"
+          ],
+          "description": "Where the captured birth stands in the source: the first, never the last.",
+          "properties": {
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "bd_seq": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "later_births": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The births after the taken one (at most 64): whether their kinds equal the taken one's.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "bd_seq",
+              "same_content"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "bd_seq": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "same_content": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "minItems": 1,
+          "description": "What the source and the birth show beside the kinds, in the shape of an error document's issues.",
+          "items": {
+            "$ref": "#/$defs/issue"
+          }
         },
         "kinds": {
           "type": "array",
@@ -1255,7 +1317,8 @@
             "required": [
               "kind",
               "kind_digest",
-              "draft"
+              "draft",
+              "claims"
             ],
             "properties": {
               "kind": {
@@ -1269,10 +1332,18 @@
                 "type": "object",
                 "description": "The NBIRTH.kinds entry without kind_digest: the content of a kind file, to be reviewed before it is saved."
               },
+              "claims": {
+                "type": "array",
+                "description": "Pointers into the draft of the members that came from the board and that nothing has verified: risk_class and safe_stop of each command and every bound of an args_schema.",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(/([^~/]|~[01])*)*$"
+                }
+              },
               "issues": {
                 "type": "array",
                 "minItems": 1,
-                "description": "What the draft still breaks as a kind file (kind-file schema and rule codes), in the shape of an error document's issues.",
+                "description": "What the draft still breaks as a kind file, and what its comparison found (kind_name_collision, kind_file_unreadable).",
                 "items": {
                   "$ref": "#/$defs/issue"
                 }
@@ -1281,16 +1352,22 @@
                 "type": "object",
                 "additionalProperties": false,
                 "required": [
-                  "status"
+                  "status",
+                  "target"
                 ],
-                "description": "The draft against the kind file of the same name in the kinds directory: new (no such file), same (equal kind_digest) or differs (differs_at is the pointer of the first differing member, as the implements check names it).",
+                "description": "The draft against the kind file of the same name in the kinds directory: new (no such file), same (equal kind_digest), differs (differs_at is the pointer of the first differing member, as the implements check names it) or unreadable (the file of that name cannot be read). target is the path the draft would be saved to: the existing file's path, the colliding file's when the name differs only in case (collides_with), else kinds-dir/<kind name, ':' as '_'>.kind.json.",
                 "properties": {
                   "status": {
                     "enum": [
                       "new",
                       "same",
-                      "differs"
+                      "differs",
+                      "unreadable"
                     ]
+                  },
+                  "target": {
+                    "type": "string",
+                    "minLength": 1
                   },
                   "file": {
                     "type": "string",
@@ -1302,6 +1379,10 @@
                   "differs_at": {
                     "type": "string",
                     "pattern": "^(/([^~/]|~[01])*)*$"
+                  },
+                  "collides_with": {
+                    "type": "string",
+                    "minLength": 1
                   }
                 }
               }

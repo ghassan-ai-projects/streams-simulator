@@ -1,13 +1,12 @@
 import { captureContent } from "../../../model/devices";
-import type { KindEntry } from "../../../model/workspace";
-import type { CaptureSource, DeviceFailure, DevicesGateway, Outcome } from "../../ports";
+import type { CapturedKind, CaptureSource, DeviceFailure, DevicesGateway, Outcome } from "../../ports";
 import { failure, success } from "../../ports";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { CaptureSession } from "./api";
-import { canWrite, reviewedOf } from "./captureSelectors";
+import { canSkip, canWrite, reviewedOf, savedEtag } from "./captureSelectors";
 import type { Way } from "./captureSelectors";
 import { reviewed, withDecision } from "./captureState";
-import type { CaptureState, Card, Decision } from "./captureState";
+import type { CaptureState, Card, Decision, SavedFile } from "./captureState";
 import { conflictWords } from "./deviceFailures";
 
 function decisionOf(outcome: Outcome<string, DeviceFailure>): Decision {
@@ -16,71 +15,92 @@ function decisionOf(outcome: Outcome<string, DeviceFailure>): Decision {
 
 class CaptureStore extends Observable<CaptureState> implements CaptureSession {
   private readonly operations = createOperationIdentity();
-  private kinds: readonly KindEntry[] = [];
   private last: CaptureSource | null = null;
+  private returning = false;
 
   constructor(private readonly gateway: DevicesGateway) {
     super({ phase: "idle" });
   }
 
-  async read(source: CaptureSource, kinds: readonly KindEntry[]): Promise<void> {
-    this.kinds = kinds;
+  async read(source: CaptureSource): Promise<void> {
+    if (this.snapshot().phase === "saving") return;
     this.last = source;
     const operation = this.operations.begin();
     this.set({ phase: "reading", source });
     const result = await this.gateway.captureKinds(source);
     if (!operation.live()) return;
-    this.set(result.ok ? reviewed(source, result.value, kinds) : { phase: "refused", source, failure: result.failure });
+    if (!result.ok) {
+      this.set({ phase: "refused", source, failure: result.failure });
+      return;
+    }
+    const saved = await Promise.all(result.value.kinds.map((kind) => this.savedOf(kind)));
+    if (operation.live()) this.set(reviewed(source, result.value, saved));
   }
 
   async retry(): Promise<void> {
-    if (this.last !== null) await this.read(this.last, this.kinds);
+    if (this.last !== null) await this.read(this.last);
   }
 
-  close(): void {
+  clear(): void {
     this.operations.invalidate();
     this.last = null;
     this.set({ phase: "idle" });
   }
 
-  save(name: string): Promise<void> {
-    return this.write(name, "create");
+  leave(): void {
+    this.returning = true;
   }
 
-  replace(name: string): Promise<void> {
-    return this.write(name, "replace");
+  comingBack(): boolean {
+    const was = this.returning;
+    this.returning = false;
+    return was;
   }
 
-  skip(name: string): void {
-    const kind = reviewedOf(this.snapshot())?.cards.find((card) => card.kind.kind === name)?.decision.kind;
-    if (kind === "open" || kind === "failed") this.decide(name, { kind: "skipped" });
+  save(index: number): Promise<void> {
+    return this.write(index, "create");
   }
 
-  private async write(name: string, way: Way): Promise<void> {
-    const card = reviewedOf(this.snapshot())?.cards.find((entry) => entry.kind.kind === name);
+  replace(index: number): Promise<void> {
+    return this.write(index, "replace");
+  }
+
+  skip(index: number): void {
+    const card = this.cardAt(index);
+    if (card !== undefined && canSkip(card)) this.decide(index, { kind: "skipped" });
+  }
+
+  unskip(index: number): void {
+    if (this.cardAt(index)?.decision.kind === "skipped") this.decide(index, { kind: "open" });
+  }
+
+  private savedOf({ comparison }: CapturedKind): Promise<SavedFile> {
+    return comparison.status === "differs" ? this.gateway.readFile(comparison.target) : Promise.resolve(null);
+  }
+
+  private cardAt(index: number): Card | undefined {
+    return reviewedOf(this.snapshot())?.cards[index];
+  }
+
+  private async write(index: number, way: Way): Promise<void> {
+    const card = this.cardAt(index);
     const operation = this.operations.current();
     if (card === undefined || operation === null || !canWrite(card, way)) return;
-    this.decide(name, { kind: "saving" });
+    this.decide(index, { kind: "saving" });
     const outcome = await this.put(card, way);
-    if (operation.live()) this.decide(name, decisionOf(outcome));
+    if (operation.live()) this.decide(index, decisionOf(outcome));
   }
 
-  private async put({ kind, path }: Card, way: Way): Promise<Outcome<string, DeviceFailure>> {
-    const etag = way === "create" ? success("") : await this.etagOf(path);
-    if (!etag.ok) return failure(etag.failure);
-    const written = await this.gateway.writeFile(path, captureContent(kind.draft), etag.value);
+  private async put(card: Card, way: Way): Promise<Outcome<string, DeviceFailure>> {
+    const { kind } = card;
+    const etag = way === "create" ? "" : (savedEtag(card) ?? "");
+    const written = await this.gateway.writeFile(kind.comparison.target, captureContent(kind.draft), etag);
     return written.ok ? success(written.value.path) : failure(conflictWords(written.failure, way, kind.kind));
   }
 
-  private async etagOf(path: string): Promise<Outcome<string, DeviceFailure>> {
-    const file = await this.gateway.readFile(path);
-    if (file.ok) return success(file.value.etag);
-    return file.failure.kind === "missing" ? success("") : failure(file.failure);
-  }
-
-  private decide(name: string, decision: Decision): void {
+  private decide(index: number, decision: Decision): void {
     const board = reviewedOf(this.snapshot());
-    if (board !== null) this.set(withDecision(board, name, decision));
+    if (board !== null) this.set(withDecision(board, index, decision));
   }
 }
 

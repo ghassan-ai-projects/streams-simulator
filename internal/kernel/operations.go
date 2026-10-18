@@ -14,6 +14,10 @@ func OpenIfPresent(path string) (io.ReadCloser, bool, error) {
 	return files.OpenIfPresent(path)
 }
 
+func OpenRegular(path string) (io.ReadCloser, error) {
+	return files.OpenRegular(path)
+}
+
 func Read(path string) ([]byte, error) {
 	return files.Read(path)
 }
