@@ -77,8 +77,8 @@ func (s RunSummary) State(running bool) RunState {
 func RecordedSession(head []byte) (json.RawMessage, bool) {
 	for line := range bytes.SplitSeq(head, []byte("\n")) {
 		var note struct {
-			Type string `json:"type"`
-			Mode string `json:"mode"`
+			Type string          `json:"type"`
+			Mode string          `json:"mode"`
 			Plan json.RawMessage `json:"plan"`
 		}
 		if json.Unmarshal(line, &note) == nil && note.Type == "session" && note.Mode == "connected" && len(note.Plan) > 0 {

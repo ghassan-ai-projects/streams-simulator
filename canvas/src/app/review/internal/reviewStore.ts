@@ -134,7 +134,6 @@ export class ReviewStore extends Observable<ReviewState> {
         ? this.index.settled()
         : Math.min(state.liveHistory.startNs, this.index.settled() ?? state.liveHistory.startNs);
     if (bounds === null || settled === null) return;
-    if (settled === undefined) return;
     const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
     this.set({ ...atPosition(state, fresh ? settled : state.positionNs), playing: true, following: false });
     this.frames.start((elapsedMs) => {

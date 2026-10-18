@@ -1,12 +1,5 @@
 import type { InstanceOrigin, PlaybackIndex, SessionLive } from "../../../model/review";
-import type { ReviewState } from "./reviewState";
-
-export interface LiveHistory {
-  readonly previous: LiveHistory | null;
-  readonly entries: readonly SessionLive[];
-  readonly startNs: number;
-  readonly endNs: number;
-}
+import type { LiveHistory, ReviewState } from "./reviewState";
 
 function snapshotAt(history: LiveHistory | null, positionNs: number): SessionLive | null {
   for (let batch = history; batch !== null; batch = batch.previous) {
@@ -18,9 +11,9 @@ function snapshotAt(history: LiveHistory | null, positionNs: number): SessionLiv
 
 function cursorOrigins(state: ReviewState, live: SessionLive | null): ReviewState["origins"] {
   if (state.liveHistory === null) return state.origins;
-  const origins = new Map<string, InstanceOrigin>();
+  const origins = new Map<string, InstanceOrigin>(state.recordedOrigins);
   for (const device of live?.devices ?? []) {
-    if (device.instance === "") continue;
+    if (device.instance === "" || device.environment === "unknown") continue;
     const kind = device.environment === "hardware" ? "real" : device.environment;
     origins.set(device.instance, {
       instance: device.instance,

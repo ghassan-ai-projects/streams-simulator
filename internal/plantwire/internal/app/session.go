@@ -60,28 +60,29 @@ var (
 )
 
 type Session struct {
-	run       *run.Run
-	link      Link
-	options   Options
-	out       *domain.Transmitter
-	in        domain.Receiver
-	devices   *devices
-	epoch     int64
-	bdSeq     uint64
-	missed    int
-	events    []model.SimEvent
-	finished  bool
-	ledger    domain.Ledger
-	queued    []domain.Command
-	version   int
-	safeStops int
-	live *domain.Live
+	run         *run.Run
+	link        Link
+	options     Options
+	out         *domain.Transmitter
+	in          domain.Receiver
+	devices     *devices
+	epoch       int64
+	bdSeq       uint64
+	missed      int
+	events      []model.SimEvent
+	finished    bool
+	ledger      domain.Ledger
+	queued      []domain.Command
+	version     int
+	safeStops   int
+	live        *domain.Live
+	liveChanged bool
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
 	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
 	if options.JournalOrigins && !options.NoWireJournal {
-		s.live = domain.NewLive(false,s.devices.instances(),options.Bound)
+		s.live = domain.NewLive(false, s.devices.instances(), options.Bound)
 	}
 	r.SetDeliveryObserver(func(event model.SimEvent) { s.events = append(s.events, event) })
 	return s
@@ -159,7 +160,7 @@ func (s *Session) journalWire(direction string, record map[string]any) {
 	if !s.options.NoWireJournal {
 		s.run.JournalWire(direction, record)
 	}
-	s.journalLive(direction,record)
+	s.journalLive(direction, record)
 	if s.options.JournalOrigins && direction == "node" && record["type"] == "DBIRTH" {
 		device, _ := record["device"].(string)
 		s.run.JournalOrigin(domain.OriginNote(record, domain.EnvironmentSimulated, s.devices.ids[device]).Fields)

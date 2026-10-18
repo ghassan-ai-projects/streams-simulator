@@ -47,7 +47,7 @@ func (l *Live) deviceBirth(r map[string]any, at int64) {
 
 func (l *Live) adoptDevice(d *LiveDevice, r map[string]any) {
 	d.Board, d.BootID, d.kind = text(r, "board"), text(r, "boot_id"), text(r, "kind")
-	d.Environment, d.Health = l.boards[d.Board], "online"
+	d.Environment, d.Health = l.boardEnvironment(d.Board), "online"
 	d.Instance = l.instances[d.Device]
 	if d.Environment == EnvironmentHardware {
 		l.gateway = "online"
@@ -56,6 +56,13 @@ func (l *Live) adoptDevice(d *LiveDevice, r map[string]any) {
 	d.Readings, d.aliases = []LiveReading{}, map[uint64]string{}
 	d.updated = map[string]int64{}
 	l.readDevice(d, objects(r["metrics"]))
+}
+
+func (l *Live) boardEnvironment(board string) string {
+	if environment, announced := l.boards[board]; announced && environment != "" {
+		return environment
+	}
+	return "unknown"
 }
 
 func (l *Live) bindDevice(d *LiveDevice) {
@@ -120,7 +127,7 @@ func readingState(r LiveReading, template map[string]any) string {
 }
 
 func plausibleReading(value any, template map[string]any) bool {
-	if template == nil || !plausibleType(value,template) {
+	if template == nil || !plausibleType(value, template) {
 		return false
 	}
 	if bounds, ok := template["eu_range"].(map[string]any); ok {

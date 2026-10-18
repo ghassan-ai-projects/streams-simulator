@@ -7,6 +7,8 @@ import (
 
 const maxLiveCommands = 128
 
+var linkWords = map[string]string{"host": "Host link", "gateway": "Gateway link"}
+
 type LiveReading struct {
 	Name    string `json:"name"`
 	Unit    string `json:"unit"`
@@ -75,13 +77,17 @@ func NewLive(gateway bool, instances map[string]string, bound []Bound) *Live {
 }
 
 func (l *Live) Fields() map[string]any {
+	marks := append([]LiveMark{}, l.marks...)
+	l.marks = nil
+	return map[string]any{"host": l.host, "gateway": l.gateway, "devices": l.sortedDevices(), "commands": l.commands, "marks": marks, "commands_truncated": l.truncated}
+}
+
+func (l *Live) sortedDevices() []*LiveDevice {
 	devices := make([]*LiveDevice, 0, len(l.devices))
 	for _, id := range slices.Sorted(maps.Keys(l.devices)) {
 		devices = append(devices, l.devices[id])
 	}
-	marks := append([]LiveMark{}, l.marks...)
-	l.marks = nil
-	return map[string]any{"host": l.host, "gateway": l.gateway, "devices": devices, "commands": l.commands, "marks": marks, "commands_truncated": l.truncated}
+	return devices
 }
 
 func (l *Live) Observe(direction string, record map[string]any, at int64) bool {
@@ -99,19 +105,22 @@ func (l *Live) mark(at int64, kind, label, entity string) {
 }
 
 func (l *Live) Connection(side, state string, at int64) {
+	link := &l.gateway
 	if side == "host" {
-		l.host = state
-	} else {
-		l.gateway = state
+		link = &l.host
 	}
-	l.mark(at, "connection", side+" "+state, side)
+	if *link == state {
+		return
+	}
+	*link = state
+	l.mark(at, "connection", linkWords[side]+" "+state, side)
 	if state == "offline" {
 		l.disconnect(side)
 	}
 }
 
 func (l *Live) disconnect(side string) {
-	for _, d := range l.devices {
+	for _, d := range l.sortedDevices() {
 		if side == "host" || d.Environment == EnvironmentHardware {
 			d.Health = "offline"
 			l.disconnectReadings(d)

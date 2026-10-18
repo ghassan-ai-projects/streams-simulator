@@ -55,6 +55,10 @@ it and the `at_ns` of the one before, and is outside the stream digest (§3).
 | `consumer.reported` (session) | `quiesced_through_ns`, `verdict_submitted` | Per consumer report |
 | `wire` (session) | One plant wire record: `direction` (`node` sent it, `host` sent it to the node) and the `record` exactly as on the wire (phase P7d). Outside the stream digest; the wire is reproduced by replaying the host's records | - |
 | `pacing` (session) | One plant wire barrier: `through_seq`, `waited_ms` (wall time), `missed` (phase P7d); live control adds its own pacing in P10 | - |
+| `origin` (session) | Where a device born to the host comes from: `instance`, `device`, `board`, `environment`, `boot_id` (R8) | Per device birth of a connected or mixed session |
+| `binding` (session) | The outcome of a gateway handshake against the session plan: matched or refused, with the issues (R8) | Per gateway handshake of a plan that binds an instance |
+| `session` (session) | `mode: connected` and `plan`, the checked session plan (`plantwire connect --check`), so the run keeps its classification and simulated instances without the bridge (R10) | Once, after `run.opened`, in a connected session |
+| `live` (session) | The plant wire live projection (R10): `host`, `gateway` link states, `devices` (health, board, boot, reboots, readings with a state), the latest 128 `commands` with separate stages (receipt, board report, effect), `commands_truncated`, and the `marks` since the previous snapshot. Computed by `plantwire` from admitted records | At most once per barrier or 250 ms relay tick when changed, at each link change and at the end |
 | `run.closed` | `incomplete` | At `End` |
 
 An effector call the world declines is not acknowledged: the operator received a refusal, not an
@@ -83,7 +87,7 @@ A stream's **digest** is the SHA-256 (`sha256:` and hex) of its replayable lines
 included. The run artifact records `journal_digest` (observer) and `sealed_journal_digest`
 (director). Computing a digest needs no file: a run with no journal directory keeps the digests
 only. It also records `journal_file_digest` and `sealed_journal_file_digest`, the SHA-256 of every line as written, session
-records (`consumer.reported`, `wire`, `pacing`) included (R7e-08): replay cannot reproduce session records, so `verify`
+records (`consumer.reported`, `wire`, `pacing`, `origin`, `binding`, `session`, `live`) included (R7e-08): replay cannot reproduce session records, so `verify`
 does not compare these, but the run report checks the files against them, so an edited session record is evident.
 
 `replay` also compares the artifact's `unblinded` flag with the stamp the replay derives (an explore

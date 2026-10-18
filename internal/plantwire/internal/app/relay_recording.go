@@ -39,13 +39,14 @@ type fieldSink interface {
 }
 
 type recording struct {
-	wire       wireSink
-	field      fieldSink
-	notes      noteSink
-	closeWire  func() error
-	incomplete bool
-	live       *domain.Live
-	clock      func() int64
+	wire        wireSink
+	field       fieldSink
+	notes       noteSink
+	closeWire   func() error
+	incomplete  bool
+	live        *domain.Live
+	liveChanged bool
+	clock       func() int64
 }
 
 func openRecording(dir string, sim *simNode) (recording, error) {
@@ -108,7 +109,7 @@ func (c *recording) noted(notes []domain.Note) {
 
 func (c *recording) recordNote(note domain.Note) {
 	switch note.Type {
-	case "connection":
+	case domain.NoteConnection:
 		c.liveConnection(note.Fields)
 	case domain.NoteOrigin:
 		c.notes.JournalOrigin(note.Fields)
@@ -129,6 +130,7 @@ func (c *recording) flush() error {
 }
 
 func (c *recording) close() error {
+	c.flushLive()
 	var wired, fielded error
 	if c.closeWire != nil {
 		wired = c.closeWire()

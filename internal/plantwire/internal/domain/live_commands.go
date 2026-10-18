@@ -97,12 +97,12 @@ func (l *Live) evidenceMatches(c *LiveCommand, e map[string]any) bool {
 func validEffectEvidence(e map[string]any) bool {
 	expected, expectedOK := jsonvalue.Number(e["expected"])
 	tolerance, toleranceOK := jsonvalue.Number(e["tolerance"])
-	if !expectedOK || !toleranceOK || tolerance < 0 || math.IsInf(expected,0) || math.IsNaN(expected) {
+	if !expectedOK || !toleranceOK || tolerance < 0 || math.IsInf(expected, 0) || math.IsNaN(expected) {
 		return false
 	}
-	if text(e,"outcome") == "not_observed" {
+	if text(e, "outcome") == "not_observed" {
 		return true
 	}
 	value, valueOK := jsonvalue.Number(e["observed_value"])
-	return text(e,"outcome") == "observed" && valueOK && math.Abs(value-expected) <= tolerance
+	return text(e, "outcome") == "observed" && valueOK && math.Abs(value-expected) <= tolerance
 }

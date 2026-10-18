@@ -22,6 +22,14 @@ function setup() {
   return { store, bridge, stream, timers };
 }
 
+function originBoot(store: ReviewStore) {
+  return store.snapshot().origins.get("zone-01")?.bootId;
+}
+
+function firstReading(store: ReviewStore) {
+  return store.snapshot().live?.devices[0]?.readings[0]?.value;
+}
+
 describe("live review cursor", () => {
   it("plays hardware-only recordings across command, health and boot snapshots and rewinds the origin", () => {
     const { store, bridge, timers } = setup();
@@ -49,7 +57,7 @@ describe("live review cursor", () => {
     ]);
     expect(store.index.bounds()).toBeNull();
     store.seek(10e9);
-    expect(store.snapshot().origins.get("zone-01")?.bootId).toBe("61");
+    expect(originBoot(store)).toBe("61");
     store.setSpeed(1);
     store.play();
     timers.advance(1000);
@@ -58,8 +66,8 @@ describe("live review cursor", () => {
       playing: true,
       live: { commands: [{ receipt: "refused", reason: "local_control" }] },
     });
-    expect(store.snapshot().origins.get("zone-01")?.bootId).toBe("62");
-    expect(store.snapshot().live?.devices[0]?.readings[0]?.value).toBe(32);
+    expect(originBoot(store)).toBe("62");
+    expect(firstReading(store)).toBe(32);
     timers.advance(1000);
     expect(store.snapshot()).toMatchObject({
       positionNs: 12e9,
@@ -67,11 +75,11 @@ describe("live review cursor", () => {
       live: { host: "offline", devices: [{ health: "offline" }] },
     });
     store.seek(10e9);
-    expect(store.snapshot().origins.get("zone-01")?.bootId).toBe("61");
-    expect(store.snapshot().live?.devices[0]?.readings[0]?.value).toBe(28);
+    expect(originBoot(store)).toBe("61");
+    expect(firstReading(store)).toBe(28);
     store.play();
     timers.advance(1000);
-    expect(store.snapshot().live?.commands[0]?.receipt).toBe("refused");
+    expect(store.snapshot()).toMatchObject({ live: { commands: [{ receipt: "refused" }] } });
     store.close();
   });
 
@@ -117,6 +125,27 @@ describe("live review cursor", () => {
     store.seek(2e9);
     store.backToLive();
     expect(store.snapshot().positionNs).toBe(2e9);
+    store.close();
+  });
+
+  it("keeps a journalled origin where the live snapshot at the cursor does not hold the device yet", () => {
+    const { store, bridge, timers } = setup();
+    const early = { ...liveWire(5e9), devices: [] };
+    const origin = {
+      type: "origin",
+      stream: "observer",
+      seq: 4,
+      at_ns: 6e9,
+      instance: "zone-01",
+      device: "sensor",
+      board: "uno-07",
+      boot_id: "61",
+      environment: "hardware",
+    };
+    bridge.stream("w-2", [early, origin, liveWire(10e9)], null);
+    timers.advance(250);
+    store.seek(5e9);
+    expect(store.snapshot().origins.get("zone-01")).toMatchObject({ kind: "real", board: "uno-07", bootId: "61" });
     store.close();
   });
 });

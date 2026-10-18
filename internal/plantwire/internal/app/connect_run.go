@@ -35,8 +35,18 @@ func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) 
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}
-	r.JournalSession(map[string]any{"mode": "connected", "plan": p.result()})
+	r.JournalSession(sessionNote(p.result()))
 	return r, nil
+}
+
+func sessionNote(check ConnectCheck) map[string]any {
+	if check.Instances == nil {
+		check.Instances = []domain.PlannedInstance{}
+	}
+	if check.ImplementsChecked == nil {
+		check.ImplementsChecked = []model.ImplementsChecked{}
+	}
+	return map[string]any{"mode": "connected", "plan": check}
 }
 
 func connectNode(ctx context.Context, o ConnectOptions, p *connectPlan) (ConnectResult, error) {

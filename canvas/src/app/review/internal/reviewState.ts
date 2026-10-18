@@ -11,7 +11,6 @@ import type {
 import { withOrigin } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
 import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
-import type { LiveHistory } from "./liveState";
 
 export type Load<T> =
   | { readonly phase: "loading" }
@@ -20,6 +19,13 @@ export type Load<T> =
 
 export function toLoad<T>(outcome: Outcome<T, ReviewFailure>): Load<T> {
   return outcome.ok ? { phase: "ready", value: outcome.value } : { phase: "failed", failure: outcome.failure };
+}
+
+export interface LiveHistory {
+  readonly previous: LiveHistory | null;
+  readonly entries: readonly SessionLive[];
+  readonly startNs: number;
+  readonly endNs: number;
 }
 
 export interface ReviewState {
@@ -44,6 +50,7 @@ export interface ReviewState {
   readonly playing: boolean;
   readonly speed: number;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
+  readonly recordedOrigins: ReadonlyMap<string, InstanceOrigin>;
   readonly connection: "none" | "running" | "saved";
   readonly simulated: readonly string[];
   readonly binding: TimedBinding | null;
@@ -68,6 +75,7 @@ export const idle: ReviewState = {
   playing: false,
   speed: 60,
   origins: new Map(),
+  recordedOrigins: new Map(),
   connection: "none",
   simulated: [],
   binding: null,
@@ -90,7 +98,13 @@ export function withSessionEntry(state: ReviewState, entry: SessionEntry): Revie
     return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
   const connection = state.connection === "none" ? "saved" : state.connection;
   if (entry.kind === "session") return { ...state, connection, simulated: entry.simulated };
-  if (entry.kind === "origin") return { ...state, connection, origins: withOrigin(state.origins, entry.origin) };
+  if (entry.kind === "origin")
+    return {
+      ...state,
+      connection,
+      origins: withOrigin(state.origins, entry.origin),
+      recordedOrigins: withOrigin(state.recordedOrigins, entry.origin),
+    };
   return { ...state, connection, binding: { atNs: entry.atNs, binding: entry.binding } };
 }
 

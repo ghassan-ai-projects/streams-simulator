@@ -5,7 +5,7 @@ import "time"
 func (l *Live) Tick(milliseconds int64) bool {
 	l.elapsedMS += milliseconds
 	changed := false
-	for _, d := range l.devices {
+	for _, d := range l.sortedDevices() {
 		changed = l.ageDevice(d) || changed
 	}
 	return changed

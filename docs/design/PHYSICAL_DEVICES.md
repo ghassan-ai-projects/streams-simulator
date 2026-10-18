@@ -611,3 +611,59 @@ The existing plantwire domain layer owns these rules; its app and socket edge su
 The existing run/journal modules persist observer records without interpreting plant-wire policies. No new package or
 dependency is required. Gateway silence uses a bounded watchdog even before a host heartbeat has been seen. Reading
 quality distinguishes implausible, stale and disconnected values from current readings using admitted capability data.
+
+## R10 as-built (live mode, command lifecycle, connection health)
+
+Built as the decision above, with these details and deviations:
+
+- **Projection.** `plantwire/internal/domain` `Live` folds what the host saw (the records the node or relay sent up, and the
+  host records the relay admitted) into link states (`host`, `gateway`: `unknown`, `online`, `offline`, or
+  `not_applicable` without a gateway), devices (board, environment from the `NBIRTH` boards, `unknown` for a board the birth
+  did not announce, boot id, reboot count by `boot_id` change, health) and readings with a state: `good`, `stale` (three scan
+  intervals of relay ticks without a sample, the gateway idle limit when the kind declares no scan class), `disconnected`
+  (device death, gateway link lost for hardware devices, host link lost for all), `invalid` (wrong declared type, enum or
+  outside `eu_range`) and `untrusted` (any other quality). Commands keep four separate stages: sent, receipt (`pending`,
+  `accepted`, `refused` with the reason; a `queued` receipt stays pending), the board's report, and the effect, which is
+  `observed` only for host evidence that names the same command, device and boot, follows an accepted command whose board
+  reported success on the device's current boot, and whose observed value lies within the stated tolerance of the stated
+  expectation. A receipt or result from another boot, a regressing answer, duplicate or premature evidence changes nothing.
+  The latest 128 commands are kept and truncation is explicit. Link changes are idempotent (one mark per change).
+- **Journal cadence (deviation from the WIP).** The WIP journalled a full snapshot after every admitted record, which for a
+  plant of n devices writes O(n) snapshots of O(n) devices per slice. The session now marks the projection changed and writes
+  one snapshot per barrier (simulated session, after the barrier) or per 250 ms relay tick (mixed session), one at every link
+  change, and a final one when the session ends; `marks` carries every change since the previous snapshot, so no mark is lost.
+  `live` and `session` records are observer session records outside the stream digest; replay does not regenerate them
+  (D-76, D-77).
+- **Session record.** `plantwire connect` writes one `session` record (`mode: connected` and the `--check` document, empty
+  lists as arrays) right after `run.opened`, for the simulated session and the mixed relay. The bridge lists a run as a
+  connected session from it when its memory has no entry (bridge restart), and the canvas reads the plan's simulated
+  instances from it. Plain `plantwire relay --domain` and `plantwire node` write neither `session` nor `live`.
+- **Contract 1.3.0.** Optional `HSYNC.command_evidence` (at most 128 entries, `observed` needs `observed_value`, tolerance
+  non-negative); schemas, the valid fixture and two invalid fixtures generated from `scripts/plant-wire`, the `DIGEST`
+  regenerated and the embedded copy equal. The reference host sends each decision once, only for a good, non-historical
+  sample of the boot the command was issued to, newer than the device's successful result; a timeout is `not_observed`.
+  The relay forwards `HSYNC` content unchanged (only `through_seq` is mapped, as before).
+- **Gateway watchdog (D-73 fixed).** The relay counts ticks since the last admitted gateway record; stray, forged, malformed
+  and repeated records do not reset it. After 30 s it reports the devices `DDEATH link_down`, closes the gateway link and
+  records the gateway offline. It arms at admission, without a host heartbeat.
+- **Canvas.** The adapter decodes `live` and `session` records strictly (an unknown stage, state or link value drops the
+  snapshot rather than guessing); the review store keeps the snapshots of a visit as an immutable chain, follows the newest
+  while the session runs, pauses following on any seek, and `Back to live` resumes; after `run.closed` the session is an
+  ordinary review and verification loads. The Run panel shows connection health and a commands table (Acceptance, Board
+  report, Effect evidence) while live and above the report once saved; the timeline adds the binary's command and connection
+  marks. Real-board readings come from the projection: a reading that is not `good` shows its state, never a value. The plant
+  screen of the session's plant shows origin marks and live readings while the session runs; the top bar shows
+  "Connected session · running · Open live view" after a reload. While a session holds the plant, the Run panel hides the
+  run-mode chooser (the blank row above the live status).
+- **Fix to the WIP: the plant screen stays mounted.** The WIP rendered `PlantScreen` directly when no session was live and
+  inside `ConnectedPlant` once one was, so starting a session remounted the plant screen and closed the Run panel (the
+  `connect-session` e2e lost "Connected session · run c-…"). `PlantRoute` now always renders `ConnectedPlant`, which opens
+  the review only for a live session of this plant and passes no session otherwise; `Stores` moved to `shell/internal/stores.ts`
+  to break the `App` ↔ `PlantRoute` import cycle, and `LiveHistory` to `reviewState.ts` to break the `liveState` ↔
+  `reviewState` cycle.
+- **Not done in R10.** The commands table distinguishes stages in words, not by colour; timeline marks from the session all
+  use the neutral tone (the binary's marks carry `kind` but no severity). After a reload the Run panel's live status has no
+  plan check (the connect state resumes from the bridge without it); the review and the workspace listing read it from the
+  `session` record. The e2e covers live following, Back to live, connection health and the reopened recording; a host that
+  issues commands (refused, unconfirmed and confirmed rows on the live screen) is covered by unit and component tests, not
+  by an e2e, because the reference host in the bench issues no commands.

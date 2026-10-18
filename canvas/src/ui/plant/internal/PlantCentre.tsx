@@ -16,7 +16,7 @@ import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
 import type { Connected } from "./connected";
 
-export interface RunControls {
+interface RunControls {
   readonly launching: boolean;
   readonly button: ComponentProps<typeof RunButton>["button"];
   readonly toggle: () => void;

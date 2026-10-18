@@ -2,7 +2,7 @@ import type { Route } from "../../../model/shell";
 import { PlantScreen } from "../../plant";
 import { ConnectedPlant } from "../../review";
 import { useStore } from "../../primitives";
-import type { Stores } from "./App";
+import type { Stores } from "./stores";
 
 export function PlantRoute({
   stores,
@@ -13,6 +13,8 @@ export function PlantRoute({
 }) {
   const plant = useStore(stores.plants);
   const connected = useStore(stores.launch.connect);
+  const ready = plant.phase === "ready" && plant.path === route.domain ? plant : null;
+  const run = connected.phase === "live" && connected.domain === ready?.plant.id ? connected.run : null;
   const props = {
     plants: stores.plants,
     workspace: stores.workspace,
@@ -23,16 +25,9 @@ export function PlantRoute({
     startLaunching: route.launch === true,
     onShowDetails: stores.showDetails,
   };
-  if (connected.phase !== "live") return <PlantScreen {...props} />;
-  const own = plant.phase === "ready" && plant.path === route.domain && connected.domain === plant.plant.id;
   return (
-    <ConnectedPlant
-      review={stores.review}
-      workspace={stores.workspace}
-      plant={plant.phase === "ready" ? plant : null}
-      run={connected.run}
-    >
-      {(session) => <PlantScreen {...props} {...(own ? { connected: session } : {})} />}
+    <ConnectedPlant review={stores.review} workspace={stores.workspace} plant={ready} run={run}>
+      {(session) => <PlantScreen {...props} {...(session === null ? {} : { connected: session })} />}
     </ConnectedPlant>
   );
 }

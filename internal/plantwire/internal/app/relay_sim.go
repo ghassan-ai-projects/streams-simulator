@@ -70,7 +70,7 @@ func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, e
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}
 	if o.Session.Domain != "" {
-		r.JournalSession(map[string]any{"mode": "connected", "plan": o.Session})
+		r.JournalSession(sessionNote(o.Session))
 	}
 	return r, nil
 }

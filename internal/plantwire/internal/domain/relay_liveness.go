@@ -1,9 +1,11 @@
 package domain
 
+const NoteConnection = "connection"
+
 const gatewayIdleMS int64 = 30_000
 
 func connectionNote(side, state string) Note {
-	return Note{Type:"connection", Fields:map[string]any{"side":side,"state":state}}
+	return Note{Type: NoteConnection, Fields: map[string]any{"side": side, "state": state}}
 }
 
 func (r *Relay) gatewayTick() Moves {

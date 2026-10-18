@@ -169,15 +169,24 @@ function TimeRow(props: RowProps) {
   );
 }
 
-function seekByMinute(
+function keyTarget(key: string, shift: boolean, positionNs: number, bounds: readonly [number, number]): number | null {
+  if (key === "Home") return bounds[0];
+  if (key === "End") return bounds[1];
+  if (!shift || (key !== "ArrowLeft" && key !== "ArrowRight")) return null;
+  return positionNs + (key === "ArrowLeft" ? -60e9 : 60e9);
+}
+
+function keyboardSeek(
   event: KeyboardEvent<HTMLInputElement>,
   positionNs: number,
+  bounds: readonly [number, number],
   clamp: (ns: number) => number,
   onSeek: (ns: number) => void,
 ): void {
-  if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+  const target = keyTarget(event.key, event.shiftKey, positionNs, bounds);
+  if (target === null) return;
   event.preventDefault();
-  onSeek(clamp(positionNs + (event.key === "ArrowLeft" ? -60e9 : 60e9)));
+  onSeek(clamp(target));
 }
 
 export function Scrubber(props: ScrubberProps) {
@@ -191,7 +200,7 @@ export function Scrubber(props: ScrubberProps) {
   );
   const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    seekByMinute(event, positionNs, clamp, onSeek);
+    keyboardSeek(event, positionNs, [startNs, endNs], clamp, onSeek);
   };
   return (
     <div className={styles.scrubber}>

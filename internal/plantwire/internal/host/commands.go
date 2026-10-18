@@ -48,7 +48,7 @@ func (h *Host) answer(m domain.Message) {
 		status.Receipts = append(status.Receipts, receipt(m))
 		return
 	}
-	if status.Result == "" && slices.Contains(status.Receipts,"accepted") {
+	if status.Result == "" && slices.Contains(status.Receipts, "accepted") {
 		status.Result = m.ReportedOutcome
 		h.resultAt[m.CommandID] = h.samples
 	}

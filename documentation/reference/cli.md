@@ -275,7 +275,8 @@ run folder. The script is a JSON array of
 `{id?, at_ns, device, command, args, verify?: {metric, equals, tolerance, within_ns}}`, issued in `at_ns` order; `id` (a
 unique wire-safe name, default `ref-<n>` by position) becomes the command's `command_id`; a command to a
 device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
-arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
+arrives after its result. The host sends each verification decision once in its next `HSYNC` as `command_evidence`
+(`observed` with the value, or `not_observed` when the window passed), only for a good, live sample of the same boot. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
 must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists. The commands that skip freshness, epoch and policy checks are the
 safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
 (`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
@@ -324,7 +325,8 @@ The gateway is checked as the reference host checks a node that is set to `hardw
 `mixed`, speaks another contract, announces a `kind_digest` that does not hold or a kind twice is refused with the refusal in a
 `STATE`. The host's `STATE` (heartbeat, `authority_epoch`) reaches the gateway unchanged, a host that is lost is reported to the
 gateway as offline with its session kept, a gateway that is lost has each of its devices reported `DDEATH link_down` to the host,
-and a host that refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
+a gateway that stays connected but sends no admitted record for 30 s is treated as lost the same way, and a host that
+refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
 has no fault, perturbation or script option; `run`, `replay`, `verify`, `scenario` and `plantwire node` have no gateway option.
 The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}` (and, for a mixed relay,
 `to_simulated?`, `from_simulated?`, `unknown_device?`, `simulated_lost?`), plus `forged?` and `trace_incomplete?` for any relay,
@@ -368,6 +370,17 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
 - Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
   environment, boot id) and each gateway handshake of a plan that binds an instance with its outcome (`binding` records:
   matched or refused, with the issues).
+- The run records that it is a connected session: one observer `session` record right after `run.opened` holds the mode
+  `connected` and the checked plan (the `--check` document), so a reopened or relisted run keeps its classification and its
+  simulated instances. While the session runs, the binary journals `live` records, the plant wire projection of what the host
+  saw: host and gateway link state, each device's health, board, boot id and reboot count, each reading with its value and a
+  state (`good`, `stale` after three scan intervals without a sample, `disconnected` when its link or device is lost,
+  `invalid` outside its declared type or `eu_range`, `untrusted` for any other quality), and the latest 128 commands with
+  separate stages: sent, the board's receipt (`pending`, `accepted`, `refused` with its reason), the board's own report
+  (`pending`, `succeeded`, `failed`, `unknown`) and the effect (`unknown` unless the host's `command_evidence` in `HSYNC`
+  observed the expected value for the same command, device and boot after a successful report). At most one snapshot is
+  written per barrier (no gateway) or per 250 ms relay tick, and one at every link change; `marks` lists what changed since
+  the previous snapshot.
 - An interrupt (`SIGINT`, `SIGTERM`) is the operator's Stop: the run ends and `--out` holds an ordinary run folder that
   `replay` and `verify` accept. The document is `{out, stopped, relay?}`. The canvas runs this command for its Connected
   session and stops it the same way.

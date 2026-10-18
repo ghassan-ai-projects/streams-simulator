@@ -10,8 +10,8 @@ func TestRecordedSessionAcceptsOnlyExplicitConnectedMetadata(t *testing.T) {
 		`{"type":"wire","mode":"connected","plan":{}}`,
 		`{"type":"session","mode":"connected","plan":`,
 	} {
-		if plan,ok := RecordedSession([]byte(raw)); ok {
-			t.Fatalf("unproven session classified connected: %s => %s",raw,plan)
+		if plan, ok := RecordedSession([]byte(raw)); ok {
+			t.Fatalf("unproven session classified connected: %s => %s", raw, plan)
 		}
 	}
 }

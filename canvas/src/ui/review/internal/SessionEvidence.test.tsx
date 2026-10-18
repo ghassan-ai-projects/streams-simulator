@@ -83,5 +83,6 @@ describe("connected session evidence", () => {
     const readings = screen.getByRole("table", { name: "Board readings" });
     expect(within(readings).getByText("stale · stale")).toBeInTheDocument();
     expect(within(readings).queryByText("28 degC")).not.toBeInTheDocument();
+    expect(screen.getByText(/^This instance is a real board\. These are its own readings/)).toBeInTheDocument();
   });
 });
