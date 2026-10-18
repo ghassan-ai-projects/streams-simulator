@@ -9,7 +9,7 @@ Read first, in this order: [GOAL.md](GOAL.md) (outcome, rounds R1–R13, quality
 | Branch | Holds | State |
 |---|---|---|
 | `simulator-new-vision` | M1, M2 (R1–R6b), review and CI fixes | [PR 44](https://github.com/ghassan-ai-projects/streams-simulator/pull/44), open, **not merged**; last full `make phase-gate` green |
-| `physical-devices-m3` | R7a, R7b, R8 (work in progress) | pushed; R7a and R7b are committed with green Go gates; **R8 is committed as work in progress and its gates fail** (below) |
+| `physical-devices-m3` | R7a, R7b, R8 | pushed; R8 finished with green `make phase-gate` |
 
 Nothing is merged to `main`. The owner merges everything when the whole goal is done and the owner has tested
 (hardware and product feel are the owner's to test at the end; do not pause for owner tests mid-goal). Cut the next
