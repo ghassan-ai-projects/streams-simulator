@@ -1,4 +1,4 @@
-# Handoff — physical-devices goal, state at the end of M3 (2026-10-18)
+# Handoff — physical-devices goal, state at the end of M4 (2026-10-18)
 
 Read first, in this order: [GOAL.md](GOAL.md) (outcome, rounds R1–R13, quality bar, round log),
 [../design/PHYSICAL_DEVICES.md](../design/PHYSICAL_DEVICES.md) (the design and as-built notes),
@@ -11,9 +11,28 @@ Read first, in this order: [GOAL.md](GOAL.md) (outcome, rounds R1–R13, quality
 | `simulator-new-vision` | M1, M2 (R1–R6b), review and CI fixes | [PR 44](https://github.com/ghassan-ai-projects/streams-simulator/pull/44), open, **not merged** |
 | `physical-devices-m3` | R7a, R7b, R8 | pushed; `make phase-gate` green |
 | `physical-devices-r9` | M3 complete: R9 and the M3 review fixes, on top of `physical-devices-m3` | [PR 46](https://github.com/ghassan-ai-projects/streams-simulator/pull/46) to `main`, open; `make phase-gate` green |
+| `physical-devices-m4` | M4 complete: R10 (Codex WIP db17bd5e finished in c82fcb5e) and the M4 review fixes (cb327f45, e323b0c0) | pushed; `make phase-gate` green |
 
-Nothing is merged to `main`; the owner merges at the end. **Start M4 by cutting `physical-devices-m4` from the tip of
-`physical-devices-r9`** and push it.
+Nothing is merged to `main`; the owner merges at the end. **Start M5 by cutting `physical-devices-m5` from the tip of
+`physical-devices-m4`** and push it.
+
+## M4 — done (2026-10-18)
+
+R10 and its reviews (A correctness/architecture, B adversarial, canvas code quality, real-Chrome design review with two
+re-checks); every High fixed. See the GOAL.md round log (R10, M4 review fixes, M4 re-review) and the R10 sections of
+PHYSICAL_DEVICES.md. Open from M4, to pick up in M5 or R13:
+
+1. **Verify in a real browser first**: the first "Open live view" right after Run plant must show the plant at once
+   (the last fix, e323b0c0, is covered by an app test and the e2e but was not re-checked in Chrome).
+2. Timeline pill de-collision (overlapping pills) and canvas fit-zoom on scrub (deferred design pass).
+3. The bench host issues no commands, so the commands table and the refused / unconfirmed / confirmed stages were
+   checked only by unit, component and domain tests — the M4 exit item "told apart at a glance" still needs a browser
+   look with a host that issues commands (`plantwire host --script`).
+4. True 1280 px was never emulated in Chrome (the window would not shrink; 1440, 1471 and 1728 were tested, 1280 only
+   by CSS zoom). Try a smaller Chrome window or the built-in browser pane.
+5. The stand-in gateway exits by itself after about 4 min 48 s on the bench (test support; long bench sessions need a
+   restart).
+6. D-77 (live record growth), D-78, D-79 and D-71/D-72/D-74–D-76 in DEFERRED.md.
 
 ## M3 — done (2026-10-18)
 
