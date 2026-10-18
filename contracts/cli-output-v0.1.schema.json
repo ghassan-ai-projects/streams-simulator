@@ -96,6 +96,9 @@
     },
     {
       "$ref": "#/$defs/plantwire_host"
+    },
+    {
+      "$ref": "#/$defs/plantwire_relay"
     }
   ],
   "$defs": {
@@ -944,6 +947,55 @@
               }
             }
           }
+        }
+      }
+    },
+    "plantwire_relay": {
+      "type": "object",
+      "description": "plantwire relay: what the relay carried between a gateway and the real host until it was interrupted.",
+      "required": [
+        "gateway_sessions",
+        "host_sessions",
+        "up",
+        "down",
+        "dropped"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "gateway_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "host_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "up": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the host, the relay's own deaths included."
+        },
+        "down": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the gateway, the relay's own rebirth requests and offline states included."
+        },
+        "dropped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records received and not relayed: invalid, duplicate, from the wrong session, of a type that does not travel that way, or with no host to take them."
+        },
+        "refused": {
+          "type": "string",
+          "description": "The refusal the relay gave a gateway at its handshake."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Which rule an environment_mismatch refusal broke; absent for any other refusal."
+        },
+        "host_refused": {
+          "type": "string",
+          "description": "The refusal the host gave the relayed session."
         }
       }
     },

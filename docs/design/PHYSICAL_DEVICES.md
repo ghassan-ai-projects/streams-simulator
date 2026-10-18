@@ -184,6 +184,65 @@ Rules:
 - **Independence.** The gateway and the simulator speak the same plant wire, so Agentic Stream can always connect to the gateway
   directly. Relay mode is a lab choice, not a dependency.
 
+### As built (R7b): the relay
+
+`streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]` is the lab shape for **hardware only**:
+gateway, relay and host, the relay being the host's one node. Simulated boards beside the gateway, the field trace as a run
+input, clock pacing and hold/approve/e-stop are not built (R8, R11).
+
+- **Two roles, one session each.** Toward the gateway the relay is a host: it creates the gateway socket (owner-only, the
+  reference host's helper: a live socket, a regular file or a group/world-accessible directory is refused), reads the gateway's
+  `NBIRTH` and applies the reference host's handshake checks, one predicate (`domain.Admission`) shared with `plantwire host`
+  and fixed to a `hardware` host: protocol range, contract version and digest, node and board environments (a `simulated` or
+  `mixed` gateway is refused `environment_mismatch`, the report says which rule), `kind_digest` recomputation and a kind named
+  twice (`inventory_mismatch`). A refusal is a `STATE` with the refusal and a close; the relay keeps listening. Toward the real
+  host the relay is a node: it dials the host's owner-only socket only once a gateway has been admitted (a socket others can
+  reach ends the relay with `ErrSocketNotPrivate`) and presents itself as one node.
+- **What passes through, with content unchanged.** The gateway's `NBIRTH` becomes the relay's own `NBIRTH`: kinds with their
+  `kind_digest`, `capability_digest`, boards (each with its own `environment`), node metrics, contract and environment are the
+  gateway's; so the host commissions the digests the gateway announced. `DBIRTH`, `DDATA`, `DDEATH`, `DSTATE`, `DRECEIPT`,
+  `DRESULT` and `NSYNC` go up, and `STATE`, `NCMD`, `DCMD`, `DQUERY` and `HSYNC` go down, with every member except the envelope
+  as received: values, qualities, event times, boot ids, command ids, reasons and all the safety members of a `DCMD`
+  (`expected_boot_id`, `deadline_ns`, `not_before_ns`, `authority_epoch`, `policy_digest`, `idempotency_key`,
+  `fallback_on_lease_loss`). The gateway therefore sees the real host's authority epoch and heartbeat.
+- **What the relay owns.** Only envelope members and its own sessions: the `session_id` of each link (`relay-h<n>` toward the
+  host; the gateway's own toward the gateway), `seq` assigned at transmission in the order records arrive, `bd_seq` and
+  `prior_last_seq` of its `NBIRTH`, and the `protocol_max` it can speak (1). It originates exactly: `NCMD rebirth` to the
+  gateway (when a host session starts after the gateway was born, and once per gap in the gateway's `seq`, the reference
+  host's rule; the record after the gap is still carried), a `STATE {online: false}` to the gateway when the host is lost or
+  was never there (the host's last `STATE` with `online` false, or its own with `host_id: relay`, epoch 0 and no refusal),
+  a `DDEATH link_down` per born device when the gateway is lost, and `NDEATH shutdown` when the relay ends. It never originates,
+  answers, refuses or delays a `DCMD` or `DQUERY`, sends no data of its own, rewrites no quality and keeps no record back.
+- **Sequences and the barrier.** Per carried record the relay keeps the pair (gateway `seq`, relay `seq`), the last 4096 of
+  the host session. A gateway `NSYNC` goes up as the relay's own with `through_seq` translated to the relay's `seq` of the last
+  carried record at or below it; the host's `HSYNC` comes back with `through_seq` translated to the gateway `seq` of the last
+  carried record whose relay `seq` is at or below it, so an answer to an earlier barrier never covers a later one. A barrier
+  no carried record covers is dropped, never invented. A hardware gateway runs in wall time and sends none (SPEC §8); the
+  mapping is for a gateway that does.
+- **Failures.** Host lost (end of stream, a gap in its `seq`, an unnegotiable `STATE`, or three missed heartbeats, counted in
+  250 ms ticks once the host has sent a heartbeat above zero): the gateway is told the host is offline and its session is
+  kept, so the firmware's lease logic applies; its records meanwhile are dropped (store-and-forward is the gateway's job) and
+  the relay redials on every tick. When the host is back the relay sends the gateway's cached `NBIRTH`, forwards the host's
+  `STATE` and asks the gateway for a rebirth, which goes up in the same host session with the next `bd_seq`. A host that
+  refuses the relayed session has its `STATE` forwarded to the gateway and ends the relay (`ErrRefused`, an operator's action).
+  Gateway lost (end of stream, a handshake silent for 10 s, a line over 1 MiB, or its own `NDEATH`): a `DDEATH link_down` for
+  each device it had born, in device order, and the host session is kept, because later boards share it. A returning gateway
+  is answered with the host's last `STATE` and reborn upward as a rebirth.
+- **Dropped, counted, never forwarded.** A record that fails its schema or its size limit, repeats a `seq`, has none, belongs
+  to another session or version, or is of a type that does not travel that way (a gateway's `DCMD`, `STATE`, `NCMD`, `DQUERY`,
+  `HSYNC`; a host's data) is dropped and counted in `dropped`; a bad `DCMD` is not answered with a receipt, the relay never
+  answers a command.
+- **Observation.** With `--out` the relay writes every record on both links as observer `wire` session records of the run
+  journal (`journal.jsonl`; the director stream holds only its closing record, since hardware has no truth): direction
+  `gateway` (received from the gateway) and `node` (sent to the host), `host` (received from the host) and `relay` (sent to the
+  gateway). A carried record is two consecutive lines, as received and as sent, so its own `seq` and the relayed one are both
+  there; a dropped record has only the first. `kind capture <out>/journal.jsonl` reads the relay's `NBIRTH`.
+- **Structure.** The rules are in the `plantwire` domain layer (`relay*.go`, pure: a state machine of events and moves), the
+  loop in the app layer, the sockets and ticks in the `uds` edge (`gateways.go`, `ticks.go`), the journal through
+  `run.WireTrace`. `RelayOptions` has no fault, perturbation or script option, and `TestTheRelayImportsNoPerturbationOrFaultCode`
+  keeps the relay's files from naming perturbation or wire fault code; `replay`, `run`, `scenario` and `plantwire node` have no
+  gateway option (a CLI test), so replay can never reach hardware.
+
 ## 3. Real data as a recorded run input
 
 A run is a pure function of `(sim_version, domain_digest, adapter_digest, seed, command_log, sink)`. Relay mode adds one input:

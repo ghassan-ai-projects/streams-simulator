@@ -242,3 +242,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > capture screen's run picker lists every run and the binary answers "No announcement found" for the others. Trigger to
 > fix: more than a handful of runs per workspace; then the listing carries `announces` read from the observer journal's
 > first records.
+> D-69 (relay liveness against a host that sends no heartbeat): the relay counts three missed heartbeats only after the host has
+> sent a `STATE` with `heartbeat` above zero, because the reference host sends one `STATE` at the handshake and never a
+> heartbeat; a host that dies without closing its socket and never beat is not noticed until the stream ends. Trigger to fix:
+> a host that is silent but connected in a lab run; then the reference host gains heartbeats and the relay's watchdog arms at
+> the handshake.
+> D-70 (relay: one gateway, no store-and-forward): the relay serves one gateway at a time (a second connection waits until
+> the first is gone), and a gateway record that arrives while no host session exists is dropped and counted, not held, because
+> store-and-forward with `historical: true` is the gateway's job (SPEC section 7). Trigger to fix: R8 puts simulated boards
+> beside the gateway, or a gateway that does not buffer; then the relay's slot and queue are redesigned with the mixed node.

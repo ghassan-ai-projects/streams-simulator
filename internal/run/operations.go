@@ -188,3 +188,15 @@ func RunScenario(ctx context.Context, scenario *model.Scenario, options Scenario
 func CheckDomain(check model.DomainCheck, spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
 	return layer.CheckDomain(check, spec)
 }
+
+func (t *WireTrace) Wire(direction string, record map[string]any) {
+	t.impl.Wire(direction, record)
+}
+
+func (t *WireTrace) Flush() error {
+	return t.impl.Flush()
+}
+
+func (t *WireTrace) Close() error {
+	return t.impl.Close()
+}

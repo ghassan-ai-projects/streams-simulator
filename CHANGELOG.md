@@ -4,6 +4,24 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A relay between a gateway and the real host.** `plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]`
+  is the lab shape for hardware: the simulator is the host of one gateway and the one node the real host sees. The gateway is
+  checked as the reference host checks a `hardware` node (one shared predicate, `domain.Admission`), then its birth reaches the
+  host as the relay's own: kinds with their `kind_digest`, `capability_digest`, boards and their environments, node metrics
+  unchanged. Device records go up, and the host's `STATE`, `NCMD`, `DCMD`, `DQUERY` and `HSYNC` go down, with every member
+  except the envelope as received (values, qualities, event times, boot ids, command ids and every safety member of a command);
+  `seq` is assigned by the relay at transmission, and a barrier is mapped between the two sequences through the pairs of
+  records it carried. The relay never originates, answers, refuses or delays a command, rewrites no quality and has no fault,
+  perturbation or script option (a gate keeps its files from naming that code; `replay`, `run`, `scenario` and `plantwire node`
+  take no gateway option). A lost host is reported to the gateway as offline with its session kept, and a rebirth follows when
+  the host is back (three missed heartbeats count as loss); a lost gateway has each born device reported `DDEATH link_down`
+  while the host session is kept. With `--out` every record on both links is journaled as observer `wire` records (directions
+  `gateway`, `node`, `host`, `relay`; a carried record is two consecutive lines); `kind capture` reads that journal. New CLI
+  document `plantwire_relay`; the run module gains `WireTrace` (a journal without a world); the reference host's handshake
+  checks moved to `domain.Admission` with no change in behaviour. Gate edits: two plant wire edge files registered as I/O edges
+  (`uds/gateways.go`, `uds/ticks.go`), `plantwire_relay.go` registered as a CLI wiring file (cap 45), and a new gate that
+  keeps the relay's files from naming perturbation or wire fault code.
+
 - **Plant wire 1.2.0: every board names its environment.** `NBIRTH.boards[].environment` (`simulated` or `hardware`) is
   required and `NBIRTH.environment` gains `mixed`; a device's origin is the environment of its board, never inferred. The
   reference host checks that a `simulated` node has only simulated boards, a `hardware` node only hardware boards and a

@@ -34,6 +34,7 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Replay file | Reproduce the run artifact at a path against the domain and adapter it recorded | `ReplayFile`, `Directories` | `replay`, `verify` |
 | Domain check | The check of a domain against the kind files its kinds implement, given to a scenario run by its surface (`model.DomainCheck`); with none given, a domain that implements a kind file is refused, so a missing check is never a skipped one. It returns what it checked (`implements_checked`). A recorded run (`ReplayFile`, `ExportScenarioFile`) and `suite` run no domain check: they reproduce or describe a run and connect to no host | `CheckDomain`, `ScenarioRunOptions.CheckDomain`, `rules.RefuseImplements`, `RunSummary.ImplementsChecked` | `implements_checked` |
 | Start bound | The latest a run's world may start, the world's own bound | `MaxStartNS` | `--start-time` |
+| Wire trace | The run journal's observer stream written without a world: only `wire` session records and a closing record, opened by the plant wire relay on its folder (`OpenWireTrace`, `WireTrace`); a hardware relay has no truth, so its director stream holds only the closing record | `WireTrace` | `journal.jsonl` |
 
 ## Retired words
 

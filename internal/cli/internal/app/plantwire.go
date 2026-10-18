@@ -14,15 +14,17 @@ import (
 
 func cmdPlantWire(s *session, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, usagef("plantwire requires a subcommand: node or host")
+		return nil, usagef("plantwire requires a subcommand: node, host or relay")
 	}
 	switch args[0] {
 	case "node":
 		return cmdPlantWireNode(s, args[1:])
 	case "host":
 		return cmdPlantWireHost(s, args[1:])
+	case "relay":
+		return cmdPlantWireRelay(s, args[1:])
 	}
-	return nil, usagef("plantwire: unknown subcommand %q (want: node, host)", args[0])
+	return nil, usagef("plantwire: unknown subcommand %q (want: node, host, relay)", args[0])
 }
 
 func cmdPlantWireNode(s *session, args []string) (any, error) {

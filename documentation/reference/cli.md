@@ -281,6 +281,35 @@ safe stops the domain flags (`safe_stop: true` on an effector); a domain that im
 (`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
 
+### `plantwire relay`
+
+The simulator between an edge gateway and the real host, for hardware only: the relay is the host of one gateway and the one
+node the real host sees. It creates the gateway's owner-only socket, accepts one gateway at a time, and once a gateway has been
+admitted dials the host's owner-only socket and presents the gateway's birth as its own. Records go up and commands go down
+with their content unchanged; the relay owns only the envelope. It stops on interrupt or `SIGTERM` and prints what it carried.
+
+```text
+streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]
+```
+
+- `--gateway-socket` — the socket the relay creates and the gateway dials (required). Its directory must be owner-only (it is
+  created `0700` when missing); a stale socket is replaced, a live one or a regular file at the path is refused.
+- `--host-socket` — the real host's owner-only socket (required). A socket that group or others can reach is refused and ends
+  the relay; a host that is not there yet is retried every 250 ms.
+- `--out` — a folder for the journal of every record on both links (`journal.jsonl`, observer `wire` session records with the
+  directions `gateway`, `node`, `host` and `relay`; a carried record is two lines, as received and as sent). Hardware has no
+  truth, so the director stream holds only its closing record. Without it nothing is written.
+
+The gateway is checked as the reference host checks a node that is set to `hardware`: a gateway that announces `simulated` or
+`mixed`, speaks another contract, announces a `kind_digest` that does not hold or a kind twice is refused with the refusal in a
+`STATE`. The host's `STATE` (heartbeat, `authority_epoch`) reaches the gateway unchanged, a host that is lost is reported to the
+gateway as offline with its session kept, a gateway that is lost has each of its devices reported `DDEATH link_down` to the host,
+and a host that refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
+has no fault, perturbation or script option; `run`, `replay`, `verify`, `scenario` and `plantwire node` have no gateway option.
+The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}`, where `dropped` counts
+the records received and not carried (invalid, oversize, repeated, of another session, of a type that does not travel that way,
+or with no host to take them).
+
 ### `run`
 
 Runs one world and writes an artifact when `--out` is supplied. The run is defined either by a

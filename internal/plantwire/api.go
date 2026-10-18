@@ -13,6 +13,10 @@ type HostOptions = host.Options
 
 type HostReport = host.Report
 
+type RelayOptions = app.RelayOptions
+
+type RelayStats = domain.RelayStats
+
 type Scripted = host.Scripted
 
 type Verify = host.Verify

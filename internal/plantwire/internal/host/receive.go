@@ -88,26 +88,15 @@ func (h *Host) nodeDeath(m domain.Message) {
 }
 
 func (h *Host) refusal(m domain.Message) string {
-	switch {
-	case domain.ProtocolInvalid(m):
-		return "protocol_invalid"
-	case domain.EnvironmentFaultFor(h.options.Environment, m) != nil:
-		return "environment_mismatch"
-	case domain.ContractUnsupported(m):
-		return "contract_unsupported"
-	case m.ProtocolMin > int64(h.options.ProtocolMax) || m.ProtocolMax < domain.Version:
-		return "version_unsupported"
-	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds) || domain.KindsDuplicated(m.Kinds):
-		return "inventory_mismatch"
-	}
-	return ""
+	return h.admission().Refusal(m, h.missingFromBirth(m))
 }
 
 func (h *Host) reason(refusal string, m domain.Message) string {
-	if fault := domain.EnvironmentFaultFor(h.options.Environment, m); refusal == "environment_mismatch" && fault != nil {
-		return fault.Reason
-	}
-	return ""
+	return h.admission().Reason(refusal, m)
+}
+
+func (h *Host) admission() domain.Admission {
+	return domain.Admission{Environment: h.options.Environment, ProtocolMax: h.options.ProtocolMax}
 }
 
 func (h *Host) missingFromBirth(m domain.Message) bool {

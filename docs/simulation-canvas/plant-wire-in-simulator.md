@@ -64,6 +64,20 @@
 - **Wire faults (P7c)**: an outbound fault plan acts on sequenced records: `drop`, `duplicate`, `swap` (with the next record)
   and `garble` (a schema-invalid record keeping its `seq`).
 
+- **Relay (R7b)**: `plantwire relay` is the simulator between an edge gateway and the real host (hardware only; the design is
+  [PHYSICAL_DEVICES §2](../design/PHYSICAL_DEVICES.md)). It is the host of one gateway link and the node of one host link, and
+  it is a different use case from the simulated node: no run, no world, no domain. The rules are the `plantwire` domain
+  layer's (`relay*.go`, a pure state machine fed one record or event at a time that returns the records to send, the lines to
+  journal and the links to close); the app layer runs the loop over a gateway link, a host link and a tick channel; the `uds`
+  edge adds the gateway's listener (`gateways.go`, one owner-only socket, one link per connection) and the tick (`ticks.go`).
+  The handshake checks are the reference host's, one predicate (`domain.Admission`) used by both. Records are carried with the
+  content they arrived with; the relay owns only the envelope (`session_id`, `seq` assigned at transmission, the `NBIRTH`'s
+  `bd_seq` and `prior_last_seq`). The barrier is mapped through a table of (gateway `seq`, relay `seq`) pairs: `NSYNC.through_seq`
+  up, `HSYNC.through_seq` down, each to the last carried record at or below it. The journal is written through
+  `run.WireTrace` (the run module owns the run folder), with the directions `gateway`, `node`, `host` and `relay`, so a field
+  trace (R8) is the `gateway` lines. Nothing here acts on a hardware record: the relay's files may not name perturbation or
+  wire fault code (`test/architecture`), and it has no option for either.
+
 ## 2. Disposition of the review findings (REVIEW-2026-10-12 §2–§4)
 
 | Item | Where it lands |
