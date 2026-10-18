@@ -46,3 +46,11 @@ func ValidateKindFilesWith(paths []string, rules TwinRules) ([]KindSummary, erro
 func ValidateKindStream(reader io.Reader, rules TwinRules) (KindSummary, error) {
 	return app.ValidateKindStream(reader, rules)
 }
+
+func CaptureFile(path string, kindsDirs []string) (Capture, error) {
+	return app.CaptureFile(path, kindsDirs)
+}
+
+func CaptureStream(reader io.Reader, kindsDirs []string) (Capture, error) {
+	return app.CaptureStream(reader, kindsDirs)
+}

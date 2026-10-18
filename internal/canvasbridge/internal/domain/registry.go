@@ -15,19 +15,21 @@ const (
 )
 
 type Action struct {
-	Name     string     `json:"name"`
-	Kind     ActionKind `json:"kind"`
-	Tool     string     `json:"tool,omitempty"`
-	Command  []string   `json:"command,omitempty"`
-	Input    string     `json:"input,omitempty"`
-	Keys     []string   `json:"-"`
-	CLIArgs  []CLIArg   `json:"-"`
-	Withheld []string   `json:"-"`
-	Catalog  bool       `json:"-"`
-	Library  bool       `json:"-"`
-	Kinds    bool       `json:"-"`
-	Etag     bool       `json:"-"`
-	Mutating bool       `json:"mutating"`
+	Name      string     `json:"name"`
+	Kind      ActionKind `json:"kind"`
+	Tool      string     `json:"tool,omitempty"`
+	Command   []string   `json:"command,omitempty"`
+	Input     string     `json:"input,omitempty"`
+	Keys      []string   `json:"-"`
+	StdinFlag string     `json:"-"`
+	OneOf     []string   `json:"-"`
+	CLIArgs   []CLIArg   `json:"-"`
+	Withheld  []string   `json:"-"`
+	Catalog   bool       `json:"-"`
+	Library   bool       `json:"-"`
+	Kinds     bool       `json:"-"`
+	Etag      bool       `json:"-"`
+	Mutating  bool       `json:"mutating"`
 }
 
 func mcp(name, tool string, mutating bool, keys ...string) Action {
@@ -56,7 +58,7 @@ var registry = []Action{
 	mcp("truth.reveal", "sim.truth.reveal", false, "run_id"),
 	mcp("truth.status", "sim.truth.seal_status", false, "run_id"),
 	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint,
-	cliKindValidate, cliKindCheck, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliScenario,
+	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliScenario,
 }
 
 func withholding(action Action, keys ...string) Action {

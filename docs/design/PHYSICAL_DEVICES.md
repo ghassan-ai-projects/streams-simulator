@@ -108,7 +108,7 @@ change first.
   the named member, so the canvas shows the member and parses no text; the twin requirements of a kind file are all reported at
   once (`kind validate --twin`, bridge `kind.check`), the binary's defaults for a twin come from `kind twin --suggest` (bridge
   `kind.suggest`) and the instruments of a unit from `component list --unit` (G3);
-- capturing a kind from an `NBIRTH` as a draft kind file (M2, not built).
+- capturing a kind from an `NBIRTH` as a draft kind file: `kind capture`, bridge `kind.capture` (see §1.6, R6a).
 
 **Capture from a connected board.** When a real board announces itself, its kinds can be saved as draft kind files. The
 author reviews them, then adds behaviour. This follows the contract's commissioning order (discovered → reviewed → accepted):
@@ -128,8 +128,21 @@ Deviations from the plan above:
   `--kinds-dir` and runs the check before connecting.
 - The director fails closed: a domain that implements a kind file is refused by `sim.world.create` unless the director was
   given the kind files (`--kinds-dir`); the bridge passes the workspace `kinds/` folder when it exists.
-- Not yet built: capture from a connected board and the gateway (M2), and the loaders listed in `governance/DEFERRED.md`
-  that skip the check on purpose.
+- Not yet built: the gateway (M2), and the loaders listed in `governance/DEFERRED.md` that skip the check on purpose.
+
+### As built (R6a): capture from a birth
+
+- `kind capture` (bridge `kind.capture`) turns one `NBIRTH` into draft kind files and compares them with the workspace's
+  kind files (`new`, `same`, `differs` at the first differing pointer). It is read-only: reviewing and saving is the author's
+  step, as the contract's commissioning order (discovered, reviewed, accepted) has it. A birth is a claim, so every
+  `kind_digest` is recomputed and a birth that does not hold is refused; a birth of either environment is accepted and echoed.
+- The source is a bare `NBIRTH` or the first one of a JSON Lines file, including the `wire` records of a run's observer
+  journal (`direction: node`); the sealed director stream is never taken. Deviation from the plan: a file may be up to 32 MiB
+  (a journal is larger than a kind file); the `NBIRTH` in it, and standard input, stay at 1 MiB.
+- The scripted stand-in gateway is test support, not a feature: `internal/plantwire/internal/standin` plays a hardware node
+  from kind files and a script (readings and qualities, link loss and rebirth, command receipts and results) in script time,
+  and a test (`test/architecture`) keeps every production package from importing it. A board built from the thermal kind files
+  is accepted by the reference host, and capturing its birth yields kind files equal to the originals (equal digests).
 
 ## 2. Relay mode
 

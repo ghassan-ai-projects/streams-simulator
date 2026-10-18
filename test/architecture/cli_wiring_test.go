@@ -57,6 +57,7 @@ var cliAppFiles = map[string]cliFile{
 	"kind_twin.go":          {"command: kind twin", []string{cliF, "internal/component", "internal/model", "internal/plantwire"}, 95},
 	"kind_twin_options.go":  {"option parsing", nil, 60},
 	"kind_suggest.go":       {"command: kind twin --suggest", []string{"internal/component", "internal/plantwire"}, 30},
+	"kind_capture.go":       {"command: kind capture", []string{"internal/plantwire"}, 65},
 	"component.go":          {"command: component library", []string{"internal/component"}, 70},
 	"component_options.go":  {"option parsing", nil, 30},
 	"component_reading.go":  {"option parsing", nil, 45},

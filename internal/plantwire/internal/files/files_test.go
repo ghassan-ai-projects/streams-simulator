@@ -139,6 +139,45 @@ func TestDirectoriesAndPathsFailOnTheFirstFileTheyCannotRead(t *testing.T) {
 	}
 }
 
+func TestCapturableReadsAJournalBeyondAKindFileAndRefusesWhatIsNoRegularFileOrTooLarge(t *testing.T) {
+	t.Parallel()
+	dir := directoryWith(t, map[string]string{"journal.jsonl": `{"type":"wire"}`})
+	big := filepath.Join(dir, "big.jsonl")
+	if err := os.WriteFile(big, bytes.Repeat([]byte(" "), MaxKindFileBytes+1), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(big, filepath.Join(dir, "link.jsonl")); err != nil {
+		t.Fatal(err)
+	}
+	if source, err := Capturable(big); err != nil || len(source.Raw) != MaxKindFileBytes+1 || source.Path != big {
+		t.Fatalf("Capturable of a file over the kind file limit = %d bytes, %v, want it read whole", len(source.Raw), err)
+	}
+	if source, err := Capturable(filepath.Join(dir, "journal.jsonl")); err != nil || string(source.Raw) != `{"type":"wire"}` {
+		t.Fatalf("Capturable = %+v, %v, want the file read", source, err)
+	}
+	if _, err := Capturable(filepath.Join(dir, "link.jsonl")); !errors.Is(err, kernel.ErrNotRegular) {
+		t.Fatalf("Capturable of a symbolic link = %v, want kernel.ErrNotRegular", err)
+	}
+	if _, err := Capturable(filepath.Join(dir, "absent.jsonl")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("Capturable of a missing file = %v, want fs.ErrNotExist", err)
+	}
+}
+
+func TestCapturableRefusesAFileBeyondItsLimit(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "huge.jsonl")
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := errors.Join(file.Truncate(MaxCaptureFileBytes+1), file.Close()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Capturable(path); !errors.Is(err, kernel.ErrTooLarge) {
+		t.Fatalf("Capturable of a file over %d bytes = %v, want kernel.ErrTooLarge", MaxCaptureFileBytes, err)
+	}
+}
+
 func TestStreamReadsOneDocumentAndRefusesOneBeyondTheLimit(t *testing.T) {
 	t.Parallel()
 	source, err := Stream(strings.NewReader(`{"kind": "alpha"}`))

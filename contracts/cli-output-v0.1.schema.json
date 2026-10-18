@@ -47,6 +47,9 @@
       "$ref": "#/$defs/kind_suggest"
     },
     {
+      "$ref": "#/$defs/kind_capture"
+    },
+    {
       "$ref": "#/$defs/component_examples"
     },
     {
@@ -1221,6 +1224,114 @@
       "properties": {
         "choices": {
           "type": "object"
+        }
+      }
+    },
+    "kind_capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "bd_seq",
+        "kinds"
+      ],
+      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held. comparison is present only when a kinds directory was given.",
+      "properties": {
+        "environment": {
+          "enum": [
+            "simulated",
+            "hardware"
+          ]
+        },
+        "bd_seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "kind_digest",
+              "draft"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind_digest": {
+                "$ref": "#/$defs/digest"
+              },
+              "draft": {
+                "type": "object",
+                "description": "The NBIRTH.kinds entry without kind_digest: the content of a kind file, to be reviewed before it is saved."
+              },
+              "issues": {
+                "type": "array",
+                "minItems": 1,
+                "description": "What the draft still breaks as a kind file (kind-file schema and rule codes), in the shape of an error document's issues.",
+                "items": {
+                  "$ref": "#/$defs/issue"
+                }
+              },
+              "comparison": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status"
+                ],
+                "description": "The draft against the kind file of the same name in the kinds directory: new (no such file), same (equal kind_digest) or differs (differs_at is the pointer of the first differing member, as the implements check names it).",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "new",
+                      "same",
+                      "differs"
+                    ]
+                  },
+                  "file": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "file_digest": {
+                    "$ref": "#/$defs/digest"
+                  },
+                  "differs_at": {
+                    "type": "string",
+                    "pattern": "^(/([^~/]|~[01])*)*$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "pointer": {
+          "type": "string",
+          "pattern": "^(/([^~/]|~[01])*)*$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "keyword": {
+          "type": "string",
+          "minLength": 1
+        },
+        "member": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

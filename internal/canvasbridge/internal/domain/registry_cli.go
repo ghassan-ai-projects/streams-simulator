@@ -54,6 +54,8 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
 	cliKindCheck = Action{Name: "kind.check", Kind: KindCLI, Command: []string{"kind", "validate", "--stdin"}, Input: inputKey,
 		CLIArgs: []CLIArg{{Key: "twin", Flag: "--twin", Shape: ShapeFlag}}}
+	cliKindCapture = Action{Name: "kind.capture", Kind: KindCLI, Command: []string{"kind", "capture"}, Kinds: true, Input: inputKey, StdinFlag: "--stdin",
+		OneOf: []string{inputKey, runKey}, CLIArgs: []CLIArg{{Key: runKey, Shape: ShapeRun, RunFile: "journal.jsonl"}}}
 	cliKindSuggest = Action{Name: "kind.suggest", Kind: KindCLI, Command: []string{"kind", "twin", "--suggest"}, Library: true,
 		CLIArgs: []CLIArg{kindsArg}}
 	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Mutating: true, Etag: true,
@@ -76,10 +78,10 @@ var (
 )
 
 func (a Action) Argv(args map[string]any) ([]ArgvPart, error) {
-	if err := a.closedArguments(args); err != nil {
+	if err := a.admit(args); err != nil {
 		return nil, err
 	}
-	parts := literals(a.Command)
+	parts := append(literals(a.Command), a.stdinFlag(args)...)
 	for _, spec := range a.CLIArgs {
 		rendered, err := a.argument(spec, args)
 		if err != nil {

@@ -4,6 +4,19 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads one `NBIRTH`
+  (a file holding it, or the first one of a JSON Lines file: a recorded wire stream or a run's observer journal, whose
+  `wire` records wrap it) and prints `{environment, bd_seq, kinds}`: per announced kind a draft kind file (the entry
+  without `kind_digest`), the announced `kind_digest`, the issues the draft still has as a kind file, and, with
+  `--kinds-dir`, a `comparison` with the workspace kind file of the same name (`new`, `same`, or `differs` at the
+  pointer of the first differing member). A birth is a claim: it is refused (`kind_failed`, issues with `keyword` and
+  `member`) unless it validates against the plant wire schema, speaks this contract and every `kind_digest` is
+  recomputed and holds; a record of the sealed director stream is never taken; a birth of either environment is
+  accepted and echoed. It writes nothing. `cli-output-v0.1` gains `kind_capture` (and `issue`). The canvas bridge
+  gains the read-only `kind.capture` (`{content}` on standard input, or `{run}` for the observer journal of a run of the
+  workspace, exactly one of them; the sealed journal is never reachable). Test support: a scripted plant wire node
+  (`internal/plantwire/internal/standin`, imported by tests only) stands in for a board behind a gateway.
+
 - **One unfinished device no longer breaks another, and the picker tells the truth about fit.** The twin actions take the
   kind files that are in the twin: the canvas bridge's `kind.twin` and `kind.suggest` take `kinds: ["<file stem>", ...]`
   (the stems of `kinds/<stem>.kind.json`, one to 64, repeats counted once, an absent stem is `not_found`) and pass exactly

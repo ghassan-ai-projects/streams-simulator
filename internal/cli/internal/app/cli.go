@@ -143,6 +143,8 @@ Commands:
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
                                         instruments and command responses (--kinds-dir, --out)
   kind twin <file>... --suggest         Print default choices for kind files; writes nothing
+  kind capture <file>|--stdin           Draft kind files from the NBIRTH of a board: a file holding it
+                                        or a journal (--kinds-dir compares with kind files); writes nothing
   component list [--unit u [--min n --max n]]|show <ref>|validate
                                         The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library

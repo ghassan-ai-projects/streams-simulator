@@ -8,7 +8,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire"
 )
 
-const kindUsage = "usage: streamsim kind validate [--twin] (<file.kind.json>... | --stdin) | kind twin [<file.kind.json>...] (--choices <file> | --suggest)"
+const kindUsage = "usage: streamsim kind validate [--twin] (<file.kind.json>... | --stdin) | kind twin [<file.kind.json>...] (--choices <file> | --suggest) | kind capture (<file> | --stdin) [--kinds-dir <dir>]"
 
 func cmdKind(s *session, args []string) (any, error) {
 	switch {
@@ -16,6 +16,8 @@ func cmdKind(s *session, args []string) (any, error) {
 		return cmdKindValidate(s, args[1:])
 	case len(args) > 0 && args[0] == "twin":
 		return cmdKindTwin(s, args[1:])
+	case len(args) > 0 && args[0] == "capture":
+		return cmdKindCapture(s, args[1:])
 	}
 	return nil, usagef(kindUsage)
 }

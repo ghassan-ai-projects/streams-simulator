@@ -85,10 +85,12 @@ func WithKindDigests(templates []any) ([]any, error) {
 }
 
 func KindsMisdigested(kinds []any) bool {
-	return slices.ContainsFunc(kinds, func(kind any) bool {
-		entry, _ := kind.(map[string]any)
-		declared, _ := entry["kind_digest"].(string)
-		digest, err := KindDigest(entry)
-		return err != nil || declared != digest
-	})
+	return slices.ContainsFunc(kinds, KindMisdigested)
+}
+
+func KindMisdigested(kind any) bool {
+	entry, _ := kind.(map[string]any)
+	declared, _ := entry["kind_digest"].(string)
+	digest, err := KindDigest(entry)
+	return err != nil || declared != digest
 }

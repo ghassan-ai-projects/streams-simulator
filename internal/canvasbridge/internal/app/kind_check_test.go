@@ -2,9 +2,7 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"path/filepath"
 	"slices"
@@ -131,16 +129,7 @@ func TestKindCheckNeverReadsContentThatLooksLikeAPath(t *testing.T) {
 func TestKindCheckKeepsConcurrentContentsApart(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
-	var mu sync.Mutex
-	h.bridge.edges.RunCommand = func(_ context.Context, _ []string, stdin []byte) (process.CommandResult, error) {
-		mu.Lock()
-		defer mu.Unlock()
-		echoed, err := json.Marshal(map[string]string{"echo": string(stdin)})
-		if err != nil {
-			return process.CommandResult{}, fmt.Errorf("marshal echo: %w", err)
-		}
-		return process.CommandResult{Stdout: echoed}, nil
-	}
+	h.echoStdin()
 	var group sync.WaitGroup
 	for i := range 32 {
 		group.Add(1)

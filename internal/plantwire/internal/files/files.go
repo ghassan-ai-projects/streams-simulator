@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	MaxKindFileBytes = 1 << 20
-	StreamName       = "<stdin>"
+	MaxKindFileBytes    = 1 << 20
+	MaxCaptureFileBytes = 32 << 20
+	StreamName          = "<stdin>"
 )
 
 func Directories(dirs []string) ([]domain.KindSource, error) {
@@ -85,6 +86,14 @@ func Stream(reader io.Reader) (domain.KindSource, error) {
 		return domain.KindSource{}, fmt.Errorf("plantwire: %s holds more than %d bytes: %w", StreamName, MaxKindFileBytes, kernel.ErrTooLarge)
 	}
 	return domain.KindSource{Path: StreamName, Raw: raw}, nil
+}
+
+func Capturable(path string) (domain.KindSource, error) {
+	raw, err := kernel.ReadRegular(path, MaxCaptureFileBytes)
+	if err != nil {
+		return domain.KindSource{}, fmt.Errorf("plantwire: read %s: %w", path, err)
+	}
+	return domain.KindSource{Path: path, Raw: raw}, nil
 }
 
 func Paths(paths []string) ([]domain.KindSource, error) {

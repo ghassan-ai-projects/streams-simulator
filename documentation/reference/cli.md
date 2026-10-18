@@ -106,6 +106,41 @@ A safe-stop command lowers every metric the kind's commands set to the low end o
 
 It prints `{id, digest, channels, faults, effectors, implements}` and `composed` (the file written) or `domain`. The twin is checked against the same kind files before it is printed, so it always passes `domain validate --kinds-dir`. Choices that break their schema, name something the kind files do not hold, leave a metric or command undecided, or ask a response that does not fit fail with `kind_failed`, each issue at its pointer in the choices (`/kinds/2/commands/set_pwm_lease/drives/0/gain`) with a `keyword` (`twin_kind_missing`, `twin_name_collision`, `twin_unknown_choice`, `twin_choice_missing`, `twin_instrument_mismatch`, `twin_response_mismatch`, `twin_initial_range`) whose `member` names the part of the metric at fault: `unit` for an instrument of another quantity, `eu_range` for a metric without a range or one the instrument's range does not cover (compared after conversion into the instrument's unit), `data_type` for a boolean metric; a kind file the twin cannot reproduce (a string metric, a member beyond the interface, a missing `resolution`) fails the same way at `/kinds/<i>/kind`, one issue per violation, each with the twin `keyword` and `member`.
 
+### `kind capture`
+
+Drafts kind files from the `NBIRTH` a node announced, for a person to review: a birth is a claim, so a captured kind becomes the model only after review, and the command writes nothing. The source is one `NBIRTH` record (a file holding it, as one line or indented), or a JSON Lines file in which the first `NBIRTH` is used: a recorded wire stream, or a run's observer journal (`journal.jsonl`), whose `wire` records wrap the record as `{"type": "wire", "direction": "node", "record": {...}}`. A record of the sealed director stream is refused (`sealed_stream`).
+
+```bash
+streamsim kind capture (<file> | --stdin) [--kinds-dir <dir>]...
+```
+
+- `<file>` — a regular file of at most 32 MiB (a journal is larger than a kind file; a symbolic link or a named pipe is refused). The `NBIRTH` in it is at most 1 MiB, as the contract allows. `--stdin` reads at most 1 MiB instead, as `kind validate --stdin` does, with `source` `<stdin>`. A file or `--stdin`, exactly one.
+- `--kinds-dir <dir>` — repeatable; each captured kind is compared with the kind file of the same name (a file is found by the kind it declares), and `comparison` is added to it. Without the option there is no comparison. Only the files of the captured kinds are read.
+
+The birth must be sound: it validates against the plant wire `NBIRTH` schema, no member is named twice, `protocol_min` does not exceed `protocol_max`, the contract version and digest are the ones this binary speaks, and the `kind_digest` of every kind is recomputed and equals the one announced (a birth whose digest does not hold is refused, with an issue at `/kinds/<i>/kind_digest`, `keyword` `kind_digest_mismatch`) and no kind is announced twice (`kind_duplicate`). Any violation fails with `kind_failed` and the issues in the shape `domain validate` uses; a source with no `NBIRTH` fails with the issue `no_birth`. A birth of either environment, `simulated` or `hardware`, is accepted, and the document says which.
+
+It prints `{environment, bd_seq, kinds}`, with one entry per announced kind, in the order of the birth:
+
+```json
+{
+  "environment": "hardware",
+  "bd_seq": 0,
+  "kinds": [
+    {
+      "kind": "fan",
+      "kind_digest": "sha256:...",
+      "draft": {"kind": "fan", "metrics": [], "commands": []},
+      "issues": [{"pointer": "/metrics/0/eu_range", "message": "min 5 is not below max 5", "keyword": "kind_range_empty", "member": "eu_range"}],
+      "comparison": {"status": "differs", "file": "kinds/fan.kind.json", "file_digest": "sha256:...", "differs_at": "/metrics/0/unit"}
+    }
+  ]
+}
+```
+
+- `draft` — the `NBIRTH.kinds` entry without `kind_digest`: the content of a kind file, which must not carry that member. `kind_digest` is the digest the node announced, equal to what `kind validate` reports for the file once saved.
+- `issues` — present only when the draft still breaks the kind file rules (for example a range with `min` not below `max`), with the `keyword` and `member` `kind validate` would report. The birth is a claim, so the draft is kept and the issues say what to fix before saving.
+- `comparison` — `status` is `new` (no kind file of that name), `same` (equal `kind_digest`) or `differs`; `file` and `file_digest` name the kind file of a `same` or `differs` comparison, and `differs_at` is the pointer of the first member where the file and the draft differ, found by the comparison `implements` uses.
+
 ### `domain lint`
 
 Simulates a nominal day of one domain (noiseless, default population, no faults, no effector calls) and judges it with five rules: a non-finite state or reading, a channel reading outside its declared range, an integrated state pinned at its bound, an integrated state that has not settled by the end of the run, and a conservation balance that does not close. It prints `{domain, digest, seed, hours, samples, findings, errors, warnings}`; each finding carries `severity`, `code`, `entity`, `channel`, `state` or `fault`, `at_s` and a `detail`. Any `error` finding exits 1 with a `domain_lint` error document whose `result` is the same report; warnings alone exit 0. The output is deterministic for a domain, seed and hours.

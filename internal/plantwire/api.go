@@ -23,6 +23,8 @@ type KindSummary = domain.KindSummary
 
 type TwinRules = domain.TwinRules
 
+type Capture = domain.Capture
+
 var (
 	ErrKindFileMissing  = domain.ErrKindFileMissing
 	ErrKindDrift        = domain.ErrKindDrift
@@ -30,6 +32,9 @@ var (
 	ErrTwinRequirements = domain.ErrTwinRequirements
 	ErrDuplicateMember  = domain.ErrDuplicateMember
 	ErrRefused          = domain.ErrRefused
+	ErrNoBirth          = domain.ErrNoBirth
+	ErrBirthRefused     = domain.ErrBirthRefused
+	ErrSealedStream     = domain.ErrSealedStream
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap
 	ErrSocketNotPrivate = uds.ErrSocketNotPrivate

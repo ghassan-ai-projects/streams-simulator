@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-func TestOnlyKindCheckCarriesItsContentOnStandardInput(t *testing.T) {
+func TestOnlyKindCheckAndKindCaptureCarryTheirContentOnStandardInput(t *testing.T) {
 	t.Parallel()
 	for _, action := range Actions() {
-		if (action.Input != "") != (action.Name == "kind.check") {
-			t.Errorf("action %s has input %q: only kind.check reads standard input", action.Name, action.Input)
+		if (action.Input != "") != (action.Name == "kind.check" || action.Name == "kind.capture") {
+			t.Errorf("action %s has input %q: only kind.check and kind.capture read standard input", action.Name, action.Input)
 		}
 	}
 	check, err := Lookup("kind.check")
