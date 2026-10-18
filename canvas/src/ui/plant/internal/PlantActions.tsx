@@ -18,14 +18,15 @@ interface RunButtonProps {
   readonly running: string | null;
   readonly button: RefObject<HTMLButtonElement | null>;
   readonly onToggle: () => void;
+  readonly secondary?: boolean;
 }
 
-export function RunButton({ launching, running, button, onToggle }: RunButtonProps) {
+export function RunButton({ launching, running, button, onToggle, secondary = false }: RunButtonProps) {
   return (
     <button
       type="button"
       ref={button}
-      className={cx(shared.primary, styles.run)}
+      className={cx(secondary ? shared.secondary : shared.primary, styles.run)}
       aria-pressed={launching}
       onClick={onToggle}
     >

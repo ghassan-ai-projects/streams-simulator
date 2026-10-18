@@ -5,7 +5,7 @@ import { channelOf } from "../../plant";
 import type { PlaybackIndex } from "./playback";
 import { readoutBody } from "./reviewRows";
 import type { SessionLive } from "./sessionLive";
-import { deviceReadings } from "./sessionLive";
+import { deviceOf, deviceReadings } from "./sessionLive";
 
 export interface LiveNode {
   readonly shown: readonly Shown[];
@@ -43,8 +43,8 @@ export function isRealBoard(origins: ReadonlyMap<string, InstanceOrigin>, id: st
 function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
   const { index, plant, positionNs } = facts;
   if (isRealBoard(facts.origins, id)) {
-    const device = facts.sessionLive?.devices.find((entry) => entry.instance === id);
-    return device === undefined ? [] : deviceReadings(device).map((reading) => showReading(reading, null));
+    const device = deviceOf(facts.sessionLive ?? null, id);
+    return device === null ? [] : deviceReadings(device).map((reading) => showReading(reading, null));
   }
   return index
     .readings(id, positionNs)

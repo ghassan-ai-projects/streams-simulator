@@ -6,7 +6,7 @@ import { shortChannel } from "../../../model/shared/words";
 import { hallOf } from "../../../model/graph";
 import type { Shown } from "../../../model/graph";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../../model/graph";
-import { effectorAt, faultedAt, isRealBoard, runClock } from "../../../model/review";
+import { deviceOf, effectorAt, faultedAt, isRealBoard, readingWords, runClock } from "../../../model/review";
 import type { SessionReading } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
@@ -110,23 +110,23 @@ function BoardReadings({ readings }: { readonly readings: readonly SessionReadin
         </tr>
       </thead>
       <tbody>
-        {readings.map((reading) => (
-          <tr key={reading.name}>
-            <th scope="row">{reading.name}</th>
-            <td>{reading.state === "good" ? `${String(reading.value)} ${reading.unit}` : "—"}</td>
-            <td>
-              {reading.state}
-              {reading.quality !== "" && ` · ${reading.quality}`}
-            </td>
-          </tr>
-        ))}
+        {readings.map((reading) => {
+          const words = readingWords(reading);
+          return (
+            <tr key={reading.name}>
+              <th scope="row">{reading.name}</th>
+              <td>{words.valueText}</td>
+              <td>{words.stateWords}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
 }
 
 function RealBoardNote({ state, entity }: { readonly state: ReviewState; readonly entity: string }) {
-  const readings = state.live?.devices.find((entry) => entry.instance === entity)?.readings ?? [];
+  const readings = deviceOf(state.live, entity)?.readings ?? [];
   return (
     <>
       <p className={parts.muted}>

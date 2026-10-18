@@ -130,7 +130,7 @@ func (c *recording) flush() error {
 }
 
 func (c *recording) close() error {
-	c.flushLive()
+	c.endLive()
 	var wired, fielded error
 	if c.closeWire != nil {
 		wired = c.closeWire()

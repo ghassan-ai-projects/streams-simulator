@@ -31,8 +31,11 @@ describe("a running connected session in the run panel", () => {
       );
     });
     expect(screen.getByText(/announced every real board/)).toBeInTheDocument();
-    expect(screen.queryByRole("radio", { name: /^To completion/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("radio", { name: /^Connected session/ })).not.toBeInTheDocument();
+    const panel = screen.getByRole("complementary");
+    expect(within(panel).getByText("Connected session · run c-1", { exact: true })).toBeInTheDocument();
+    expect(within(panel).getByRole("region", { name: "Instances in this session" })).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Stop and save" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("group", { name: "How this run goes" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Stop and save" }));
     expect(await screen.findByText("The session was stopped and saved as run c-1.")).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Open the review" }));

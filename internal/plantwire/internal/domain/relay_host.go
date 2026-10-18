@@ -84,6 +84,13 @@ func (r *Relay) hostRecord(m *Moves, in Inbound) {
 		r.stats.Dropped++
 	default:
 		r.deliverDown(m, in)
+		r.settleEvidence(m, in)
+	}
+}
+
+func (r *Relay) settleEvidence(m *Moves, in Inbound) {
+	if in.Type == "HSYNC" {
+		m.Trace[0].Admitted = m.syncRouted
 	}
 }
 
@@ -162,6 +169,7 @@ func (r *Relay) forwardDown(m *Moves, in Inbound) {
 		return
 	}
 	r.transmitDown(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
+	m.syncRouted = m.syncRouted || in.Type == "HSYNC"
 }
 
 func (r *Relay) forwardRebirth(m *Moves, in Inbound) {
@@ -175,17 +183,18 @@ func (r *Relay) downward(in Inbound) (map[string]any, bool) {
 		return fields, true
 	}
 	through, mapped := r.host.table.gatewayFor(in.ThroughSeq)
+	delete(fields, "command_evidence")
 	fields["through_seq"] = through
 	return fields, mapped
 }
 
-func (r *Relay) Tick() Moves {
-	moves := r.gatewayTick()
+func (r *Relay) TickBy(elapsedMS int64) Moves {
+	moves := r.gatewayTick(elapsedMS)
 	if !r.host.shaken || !r.host.beating {
 		return moves
 	}
-	r.host.silent++
-	if r.host.silent*r.tickMS >= heartbeatsMissed*r.host.interval {
+	r.host.silent += elapsedMS
+	if r.host.silent >= heartbeatsMissed*r.host.interval {
 		r.loseHost(&moves)
 	}
 	return moves

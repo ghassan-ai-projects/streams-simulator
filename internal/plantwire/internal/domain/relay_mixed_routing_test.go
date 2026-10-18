@@ -94,7 +94,7 @@ func TestNothingTheSimulatedWorldDoesCanReachTheGateway(t *testing.T) {
 			t.Fatalf("%s from the world was traced as sent to the gateway", record.Type)
 		}
 	}
-	g.relay.Tick()
+	tickOnce(g.relay)
 	after := g.relay.Stats()
 	if after.Down != before.Down || after.Up == before.Up {
 		t.Fatalf("down %d -> %d up %d -> %d, want the world's records to count up and nothing down", before.Down, after.Down, before.Up, after.Up)

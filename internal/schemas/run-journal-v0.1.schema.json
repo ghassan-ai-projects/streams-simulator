@@ -51,7 +51,7 @@
         "commands_truncated": {"type": "boolean"},
         "devices": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/live_device"}},
         "commands": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/live_command"}},
-        "marks": {"type": "array", "items": {"type": "object", "required": ["at_ns", "kind", "label", "entity"], "properties": {"at_ns": {"type": "integer"}, "kind": {"enum": ["command", "connection"]}, "label": {"type": "string"}, "entity": {"type": "string"}}}}
+        "marks": {"type": "array", "maxItems": 256, "items": {"type": "object", "required": ["at_ns", "kind", "subject", "label", "entity"], "properties": {"at_ns": {"type": "integer"}, "kind": {"enum": ["command", "connection"]}, "subject": {"enum": ["host", "gateway", "device", "command"]}, "label": {"type": "string"}, "entity": {"type": "string"}}}}
       }
     },
     "live_device": {
@@ -59,15 +59,15 @@
       "properties": {
         "device": {"type": "string"}, "board": {"type": "string"}, "instance": {"type": "string"},
         "environment": {"enum": ["simulated", "hardware", "unknown"]}, "boot_id": {"type": "string"},
-        "health": {"enum": ["online", "offline"]}, "reboots": {"type": "integer", "minimum": 0},
+        "health": {"enum": ["online", "offline", "simulated"]}, "reboots": {"type": "integer", "minimum": 0},
         "readings": {"type": "array", "maxItems": 512, "items": {"type": "object", "required": ["name", "unit", "value", "quality", "state"],
-          "properties": {"name": {"type": "string"}, "unit": {"type": "string"}, "value": {"type": ["number", "boolean", "string", "null"]}, "quality": {"type": "string"}, "state": {"enum": ["good", "stale", "disconnected", "invalid", "untrusted"]}}}}
+          "properties": {"name": {"type": "string"}, "unit": {"type": "string"}, "value": {"type": ["number", "boolean", "string", "null"]}, "quality": {"type": "string"}, "state": {"enum": ["good", "stale", "disconnected", "invalid", "untrusted", "simulated"]}}}}
       }
     },
     "live_command": {
-      "type": "object", "required": ["command_id", "device", "command", "boot_id", "sent", "receipt", "reason", "report", "effect", "effect_evidence", "sent_at_ns", "updated_at_ns"],
+      "type": "object", "required": ["command_id", "device", "environment", "command", "boot_id", "sent", "receipt", "reason", "report", "effect", "effect_evidence", "sent_at_ns", "updated_at_ns"],
       "properties": {
-        "command_id": {"type": "string"}, "device": {"type": "string"}, "command": {"type": "string"}, "boot_id": {"type": "string"}, "sent": {"const": true},
+        "command_id": {"type": "string"}, "device": {"type": "string"}, "environment": {"enum": ["simulated", "hardware", "unknown"]}, "command": {"type": "string"}, "boot_id": {"type": "string"}, "sent": {"const": true},
         "receipt": {"enum": ["pending", "accepted", "refused"]}, "reason": {"type": "string"}, "report": {"enum": ["pending", "succeeded", "failed", "unknown"]},
         "effect": {"enum": ["unknown", "observed"]}, "effect_evidence": {"type": "string"}, "sent_at_ns": {"type": "integer"}, "updated_at_ns": {"type": "integer"}
       }

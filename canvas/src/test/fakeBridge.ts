@@ -35,6 +35,8 @@ interface Hold {
   readonly gates: Deferred<Canned<never>>[];
 }
 
+type StreamEnd = "closed" | "failed" | "caught_up" | null;
+
 export class FakeBridge {
   sessionOutcome: Canned<boolean> = success(false);
   pairOutcomes: Canned<boolean>[] = [];
@@ -86,11 +88,11 @@ export class FakeBridge {
     return this.hold("workspace", count);
   }
 
-  stream(runId: string, entries: readonly object[], end: "closed" | "failed" | null = "closed"): void {
+  stream(runId: string, entries: readonly object[], end: StreamEnd = "closed"): void {
     this.send(this.followers.get(runId), entries, end);
   }
 
-  streamFollow(index: number, entries: readonly object[], end: "closed" | "failed" | null = "closed"): void {
+  streamFollow(index: number, entries: readonly object[], end: StreamEnd = "closed"): void {
     this.send(this.follows[index], entries, end);
   }
 
@@ -113,7 +115,7 @@ export class FakeBridge {
     return gate.promise;
   }
 
-  private send(source: FakeSource | undefined, entries: readonly object[], end: "closed" | "failed" | null): void {
+  private send(source: FakeSource | undefined, entries: readonly object[], end: StreamEnd): void {
     entries.forEach((entry) => source?.record(entry));
     if (end !== null) source?.end(end);
   }

@@ -287,7 +287,7 @@ safe stops the domain flags (`safe_stop: true` on an effector); a domain that im
 The simulator between an edge gateway and the real host: the relay is the host of one gateway and the one
 node the real host sees, alone (hardware only) or with a simulated world beside the gateway's boards (a mixed session). It creates the gateway's owner-only socket, accepts one gateway at a time, and once a gateway has been
 admitted dials the host's owner-only socket and presents the gateway's birth as its own. Records go up and commands go down
-with their content unchanged; the relay owns only the envelope. It stops on interrupt or `SIGTERM` and prints what it carried.
+with their content unchanged (an `HSYNC` loses `command_evidence`, which the relay consumes); the relay owns only the envelope. It stops on interrupt or `SIGTERM` and prints what it carried.
 
 ```text
 streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]

@@ -30,7 +30,8 @@ export function journalEntry(value: string): JournalEntry | null {
   if (!isRecord(parsed) || !validEnvelope(parsed) || !validEvent(parsed)) return null;
   if (parsed.type === "live") {
     const live = liveSnapshot(parsed);
-    return live === null ? null : { kind: "live", atNs: live.atNs, live };
+    if (live === null) return { kind: "live-unreadable", atNs: number(parsed.at_ns) };
+    return { kind: "live", atNs: live.atNs, live };
   }
   return projectEntry(parsed);
 }

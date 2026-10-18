@@ -5,7 +5,7 @@ import "time"
 func (l *Live) Tick(milliseconds int64) bool {
 	l.elapsedMS += milliseconds
 	changed := false
-	for _, d := range l.sortedDevices() {
+	for _, d := range l.orderedDevices() {
 		changed = l.ageDevice(d) || changed
 	}
 	return changed
@@ -13,6 +13,9 @@ func (l *Live) Tick(milliseconds int64) bool {
 
 func (l *Live) ageDevice(d *LiveDevice) bool {
 	changed := false
+	if d.Environment == EnvironmentSimulated {
+		return false
+	}
 	for i := range d.Readings {
 		r := &d.Readings[i]
 		if r.State == "good" && l.elapsedMS-d.updated[r.Name] >= l.staleAfter(d, r.Name) {

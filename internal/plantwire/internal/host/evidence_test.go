@@ -78,3 +78,27 @@ func TestHostDoesNotConfirmHistoricalStaleOrRebootedFeedback(t *testing.T) {
 		})
 	}
 }
+
+func TestHostTakesARelayRefusalBeforeAnyBootButNotAnAcceptanceWithoutOne(t *testing.T) {
+	t.Parallel()
+	h := evidenceHost(t)
+	h.Receive(record(t, "DRECEIPT", 6, map[string]any{"command_id": "check-1", "boot_id": "none", "status": "accepted"}))
+	h.Receive(record(t, "DRECEIPT", 7, map[string]any{"command_id": "check-1", "boot_id": "none", "status": "refused", "reason": "not_ready"}))
+	if receipts := h.report.Commands["check-1"].Receipts; len(receipts) != 2 || receipts[1] != "refused:not_ready" {
+		t.Fatalf("receipts = %v, want the setup acceptance and the relay refusal only", receipts)
+	}
+}
+
+func TestHostObservesAnEffectOnlyAfterASucceededResult(t *testing.T) {
+	t.Parallel()
+	h := evidenceHost(t)
+	h.Receive(sample(t, 6, 50, false))
+	step := h.issued["check-1"]
+	if !h.observedAfterResult("check-1", step) {
+		t.Fatal("a good sample after a succeeded result was not observed")
+	}
+	h.report.Commands["check-1"].Result = "failed"
+	if h.observedAfterResult("check-1", step) {
+		t.Fatal("an effect was observed after a failed result")
+	}
+}

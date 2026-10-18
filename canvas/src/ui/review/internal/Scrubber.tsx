@@ -14,6 +14,7 @@ import { PlayControls, StepButton } from "./PlayControls";
 
 interface ScrubberProps extends PlayProps {
   readonly liveMarks?: readonly EventMark[];
+  readonly onLatest?: () => void;
   readonly startNs: number;
   readonly endNs: number;
   readonly positionNs: number;
@@ -133,6 +134,8 @@ function Foot({ report, startNs, marks }: { readonly marks: readonly EventMark[]
 
 const unknownClock = "--:--:--";
 
+const minuteNs = 60e9;
+
 const noOrigins: ReadonlyMap<string, InstanceOrigin> = new Map();
 
 interface RowProps extends ScrubberProps {
@@ -173,20 +176,27 @@ function keyTarget(key: string, shift: boolean, positionNs: number, bounds: read
   if (key === "Home") return bounds[0];
   if (key === "End") return bounds[1];
   if (!shift || (key !== "ArrowLeft" && key !== "ArrowRight")) return null;
-  return positionNs + (key === "ArrowLeft" ? -60e9 : 60e9);
+  return positionNs + (key === "ArrowLeft" ? -minuteNs : minuteNs);
 }
 
-function keyboardSeek(
-  event: KeyboardEvent<HTMLInputElement>,
-  positionNs: number,
-  bounds: readonly [number, number],
-  clamp: (ns: number) => number,
-  onSeek: (ns: number) => void,
-): void {
-  const target = keyTarget(event.key, event.shiftKey, positionNs, bounds);
+interface SeekKeys {
+  readonly positionNs: number;
+  readonly bounds: readonly [number, number];
+  readonly clamp: (ns: number) => number;
+  readonly onSeek: (ns: number) => void;
+  readonly onLatest: (() => void) | undefined;
+}
+
+function keyboardSeek(event: KeyboardEvent<HTMLInputElement>, keys: SeekKeys): void {
+  if (event.key === "End" && keys.onLatest !== undefined) {
+    event.preventDefault();
+    keys.onLatest();
+    return;
+  }
+  const target = keyTarget(event.key, event.shiftKey, keys.positionNs, keys.bounds);
   if (target === null) return;
   event.preventDefault();
-  onSeek(clamp(target));
+  keys.onSeek(keys.clamp(target));
 }
 
 export function Scrubber(props: ScrubberProps) {
@@ -200,7 +210,7 @@ export function Scrubber(props: ScrubberProps) {
   );
   const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    keyboardSeek(event, positionNs, [startNs, endNs], clamp, onSeek);
+    keyboardSeek(event, { positionNs, bounds: [startNs, endNs], clamp, onSeek, onLatest: props.onLatest });
   };
   return (
     <div className={styles.scrubber}>

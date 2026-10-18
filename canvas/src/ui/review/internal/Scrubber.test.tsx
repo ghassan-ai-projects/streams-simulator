@@ -32,6 +32,15 @@ describe("scrubber clock", () => {
 const idle = { playing: false, speed: 60, onPlay: vi.fn(), onPause: vi.fn(), onSpeed: vi.fn() };
 
 describe("scrubber controls and events", () => {
+  it("returns to live on End when the session follows the newest record", () => {
+    const seek = vi.fn();
+    const latest = vi.fn();
+    render(<Scrubber {...common} endNs={10e9} report={runReport} onSeek={seek} onLatest={latest} />);
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Playback time" }), { key: "End" });
+    expect(latest).toHaveBeenCalledOnce();
+    expect(seek).not.toHaveBeenCalled();
+  });
+
   it("seeks on Home and End even when the cursor already sits there, so a live view stops following", () => {
     const seek = vi.fn();
     render(<Scrubber {...common} endNs={10e9} positionNs={0} report={runReport} onSeek={seek} />);

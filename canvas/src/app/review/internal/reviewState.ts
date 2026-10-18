@@ -22,10 +22,10 @@ export function toLoad<T>(outcome: Outcome<T, ReviewFailure>): Load<T> {
 }
 
 export interface LiveHistory {
-  readonly previous: LiveHistory | null;
   readonly entries: readonly SessionLive[];
   readonly startNs: number;
   readonly endNs: number;
+  readonly trimmedBeforeNs: number | null;
 }
 
 export interface ReviewState {
@@ -34,6 +34,9 @@ export interface ReviewState {
   readonly live: SessionLive | null;
   readonly liveHistory: LiveHistory | null;
   readonly liveMarks: readonly EventMark[];
+  readonly liveUnreadableNs: number | null;
+  readonly lastLiveAtMs: number | null;
+  readonly caughtUp: boolean;
   readonly worldId: string | null;
   readonly report: Load<Report>;
   readonly verified: Load<Replay>;
@@ -62,6 +65,9 @@ export const idle: ReviewState = {
   live: null,
   liveHistory: null,
   liveMarks: [],
+  liveUnreadableNs: null,
+  lastLiveAtMs: null,
+  caughtUp: false,
   worldId: null,
   report: { phase: "loading" },
   verified: { phase: "loading" },

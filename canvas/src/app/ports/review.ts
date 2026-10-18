@@ -8,6 +8,7 @@ export type ReviewFailure =
 
 export interface RunFollower {
   entry(entry: JournalEntry): void;
+  caughtUp?(): void;
   closed(): void;
   failed(): void;
 }

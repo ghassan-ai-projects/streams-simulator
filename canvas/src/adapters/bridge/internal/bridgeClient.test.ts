@@ -88,13 +88,15 @@ describe("bridge adapter wiring", () => {
 
   it("follows a run's journal until it closes", () => {
     const t = bridgeTransport(() => respond(200, {}));
-    const follower = { entry: vi.fn(), closed: vi.fn(), failed: vi.fn() };
+    const follower = { entry: vi.fn(), caughtUp: vi.fn(), closed: vi.fn(), failed: vi.fn() };
     const stop = bridgeAdapter(t).review.follow("w 1", follower);
     expect(t.events).toHaveBeenCalledWith("/api/runs/w%201/events");
     const source = t.sources[0];
     const record = { stream: "observer", type: "clock.advanced", seq: 1, at_ns: 30e9 };
     source?.record(record);
     expect(follower.entry.mock.calls).toEqual([[{ kind: "other", atNs: 30e9 }]]);
+    source?.end("caught_up");
+    expect(follower.caughtUp).toHaveBeenCalledOnce();
     source?.dispatchEvent(new MessageEvent("record", { data: "not json" }));
     expect(follower.failed).toHaveBeenCalledOnce();
     expect(source?.readyState).toBe(2);

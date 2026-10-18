@@ -7,7 +7,7 @@ func TestConnectedSessionClassificationAndPlanSurviveBridgeMemoryLoss(t *testing
 	h := newHarness(t)
 	h.write(t, "runs/recorded/journal.jsonl",
 		"{\"type\":\"run.opened\",\"mode\":\"evaluate\",\"domain\":{\"id\":\"arduino-thermal\"}}\n"+
-			"{\"type\":\"session\",\"mode\":\"connected\",\"plan\":"+sessionCheck+"}\n"+
+			"{\"type\":\"session\",\"stream\":\"observer\",\"mode\":\"connected\",\"plan\":"+sessionCheck+"}\n"+
 			"{\"type\":\"run.closed\",\"at_ns\":20}\n")
 	listing, err := h.bridge.Workspace()
 	if err != nil || len(listing.Runs) != 1 {

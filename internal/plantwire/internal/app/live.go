@@ -22,7 +22,7 @@ func (s *Session) flushLive() {
 
 func (s *Session) endLive() {
 	if s.live != nil {
-		s.live.Connection("host", "offline", s.run.Status().ClockNS)
+		s.live.End(s.run.Status().ClockNS)
 		s.liveChanged = true
 		s.flushLive()
 	}
@@ -43,9 +43,16 @@ func (c *recording) liveConnection(fields map[string]any) {
 	}
 	side, _ := fields["side"].(string)
 	state, _ := fields["state"].(string)
-	c.live.Connection(side, state, c.clock())
-	c.liveChanged = false
-	c.notes.JournalLive(c.live.Fields())
+	if c.live.Connection(side, state, c.clock()) {
+		c.liveChanged = true
+	}
+}
+
+func (c *recording) endLive() {
+	if c.live != nil && c.live.End(c.clock()) {
+		c.liveChanged = true
+	}
+	c.flushLive()
 }
 
 func (c *recording) tickLive(milliseconds int64) {

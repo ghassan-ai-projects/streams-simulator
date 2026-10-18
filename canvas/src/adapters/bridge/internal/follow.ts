@@ -16,6 +16,9 @@ export function followRun(transport: Transport, runId: string, follower: RunFoll
     }
     follower.entry(entry);
   });
+  source.addEventListener("caught_up", () => {
+    follower.caughtUp?.();
+  });
   source.addEventListener("closed", () => {
     source.close();
     follower.closed();

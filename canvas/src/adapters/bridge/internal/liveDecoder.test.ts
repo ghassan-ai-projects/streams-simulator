@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { liveWire } from "../../../test/liveFixture";
 import { journalEntry } from "./journalDecoder";
 
+const unreadable = { kind: "live-unreadable", atNs: 10e9 };
+
 describe("binary session evidence", () => {
   it("preserves independent stages without turning a board report into an observed effect", () => {
     expect(journalEntry(JSON.stringify(liveWire()))).toMatchObject({
@@ -18,7 +20,7 @@ describe("binary session evidence", () => {
   it.each(["receipt", "report", "effect"])("rejects an unknown %s stage", (field) => {
     const wire = liveWire();
     const command = wire.commands[0];
-    expect(journalEntry(JSON.stringify({ ...wire, commands: [{ ...command, [field]: "done" }] }))).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...wire, commands: [{ ...command, [field]: "done" }] }))).toEqual(unreadable);
   });
 
   it("rejects a non-scalar good reading and accepts it only with explicit invalid quality", () => {
@@ -26,7 +28,7 @@ describe("binary session evidence", () => {
     const device = wire.devices[0];
     const reading = { name: "temperature_c", unit: "degC", value: {}, quality: "bad", state: "good" };
     const invalid = { ...wire, devices: [{ ...device, readings: [reading] }] };
-    expect(journalEntry(JSON.stringify(invalid))).toBeNull();
+    expect(journalEntry(JSON.stringify(invalid))).toEqual(unreadable);
     expect(
       journalEntry(JSON.stringify({ ...wire, devices: [{ ...device, readings: [{ ...reading, state: "invalid" }] }] })),
     ).toMatchObject({ kind: "live", live: { devices: [{ readings: [{ value: null, state: "invalid" }] }] } });
@@ -36,10 +38,11 @@ describe("binary session evidence", () => {
     ["host", { host: "lost" }],
     ["gateway", { gateway: "lost" }],
     ["device list", { devices: {} }],
-    ["mark kind", { marks: [{ at_ns: 1, kind: "note", label: "x", entity: "" }] }],
+    ["mark kind", { marks: [{ at_ns: 1, kind: "note", subject: "host", label: "x", entity: "" }] }],
+    ["mark subject", { marks: [{ at_ns: 1, kind: "connection", subject: "board", label: "x", entity: "" }] }],
     ["mark row", { marks: ["x"] }],
   ])("rejects an unknown %s", (_, change) => {
-    expect(journalEntry(JSON.stringify({ ...liveWire(), ...change }))).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...liveWire(), ...change }))).toEqual(unreadable);
   });
 
   it.each([
@@ -49,12 +52,38 @@ describe("binary session evidence", () => {
     ["reading state", { readings: [{ name: "t", unit: "", value: 1, quality: "good", state: "fine" }] }],
   ])("rejects a device with an unknown %s", (_, change) => {
     const wire = liveWire();
-    expect(journalEntry(JSON.stringify({ ...wire, devices: [{ ...wire.devices[0], ...change }] }))).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...wire, devices: [{ ...wire.devices[0], ...change }] }))).toEqual(unreadable);
   });
 
-  it("rejects a command that was never sent", () => {
+  it.each([
+    ["never sent", { sent: false }],
+    ["without a side", { environment: "elsewhere" }],
+    ["observed while refused", { effect: "observed", receipt: "refused", effect_evidence: "Host checked flow" }],
+    ["observed without a board report", { effect: "observed", report: "pending", effect_evidence: "Host checked" }],
+    ["observed without evidence", { effect: "observed" }],
+  ])("marks a command %s as unreadable instead of showing it", (_, change) => {
     const wire = liveWire();
-    expect(journalEntry(JSON.stringify({ ...wire, commands: [{ ...wire.commands[0], sent: false }] }))).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...wire, commands: [{ ...wire.commands[0], ...change }] }))).toEqual(
+      unreadable,
+    );
+  });
+
+  it("reads a host observation that follows acceptance and a successful board report", () => {
+    const wire = liveWire();
+    const observed = { ...wire.commands[0], effect: "observed", effect_evidence: "Host checked flow: observed" };
+    expect(journalEntry(JSON.stringify({ ...wire, commands: [observed] }))).toMatchObject({
+      live: { commands: [{ effect: "observed", environment: "simulated" }] },
+    });
+  });
+
+  it("gives identical states one key, whatever their time and marks", () => {
+    const first = journalEntry(JSON.stringify(liveWire(10e9)));
+    const later = journalEntry(JSON.stringify({ ...liveWire(11e9), marks: [] }));
+    const changed = journalEntry(JSON.stringify({ ...liveWire(12e9), host: "offline" }));
+    const key = (entry: typeof first) => (entry?.kind === "live" ? entry.live.key : "");
+    expect(key(first)).not.toBe("");
+    expect(key(later)).toBe(key(first));
+    expect(key(changed)).not.toBe(key(first));
   });
 
   it("keeps text and boolean readings and reads explicit truncation", () => {

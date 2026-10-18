@@ -22,6 +22,12 @@ function setup() {
   return { store, bridge, stream, timers };
 }
 
+function reading(atNs: number, value: number) {
+  const wire = liveWire(atNs);
+  const devices = wire.devices.map((device) => ({ ...device, readings: [{ ...device.readings[0], value }] }));
+  return { ...wire, devices };
+}
+
 function originBoot(store: ReviewStore) {
   return store.snapshot().origins.get("zone-01")?.bootId;
 }
@@ -91,17 +97,17 @@ describe("live review cursor", () => {
     });
     bridge.stream(
       "w-2",
-      Array.from({ length: 100 }, (_, index) => liveWire(index * 1e9)),
+      Array.from({ length: 100 }, (_, index) => reading(index * 1e9, index)),
       null,
     );
     expect(publications).toBe(0);
     timers.advance(250);
     expect(publications).toBe(1);
     const history = store.snapshot().liveHistory;
-    bridge.stream("w-2", [liveWire(100e9)], null);
+    bridge.stream("w-2", [reading(100e9, 100)], null);
     timers.advance(250);
-    expect(store.snapshot().liveHistory?.previous).toBe(history);
     expect(history?.entries).toHaveLength(100);
+    expect(store.snapshot().liveHistory?.entries).toHaveLength(101);
     stop();
     store.close();
   });
@@ -113,7 +119,7 @@ describe("live review cursor", () => {
     stream(20e9);
     expect(store.snapshot()).toMatchObject({ following: false, positionNs: 5e9, newestNs: 20e9, live: null });
     store.backToLive();
-    expect(store.snapshot()).toMatchObject({ following: true, positionNs: 20e9, live: { atNs: 20e9 } });
+    expect(store.snapshot()).toMatchObject({ following: true, positionNs: 20e9, live: { atNs: 10e9 } });
     store.close();
   });
 
@@ -147,5 +153,57 @@ describe("live review cursor", () => {
     store.seek(5e9);
     expect(store.snapshot().origins.get("zone-01")).toMatchObject({ kind: "real", board: "uno-07", bootId: "61" });
     store.close();
+  });
+
+  it("keeps one snapshot per state, trims the oldest beyond its cap and says from when", () => {
+    const { store, bridge, timers } = setup();
+    bridge.stream("w-2", [liveWire(1e9), liveWire(2e9), liveWire(3e9)], null);
+    timers.advance(250);
+    expect(store.snapshot().liveHistory).toMatchObject({ endNs: 3e9, trimmedBeforeNs: null });
+    expect(store.snapshot().liveHistory?.entries).toHaveLength(1);
+    expect(store.snapshot().liveMarks).toHaveLength(3);
+    bridge.stream(
+      "w-2",
+      Array.from({ length: 2001 }, (_, index) => reading((index + 4) * 1e9, index)),
+      null,
+    );
+    timers.advance(250);
+    expect(store.snapshot().liveHistory?.entries).toHaveLength(2000);
+    expect(store.snapshot().liveHistory?.trimmedBeforeNs).toBe(5e9);
+    expect(store.snapshot().liveMarks).toHaveLength(2000);
+    store.close();
+  });
+
+  it("marks the live view unreadable after a broken snapshot until the next good one", () => {
+    const { store, bridge, timers } = setup();
+    const broken = { ...liveWire(11e9), host: "lost" };
+    bridge.stream("w-2", [liveWire(10e9), broken], null);
+    timers.advance(250);
+    expect(store.snapshot()).toMatchObject({ liveUnreadableNs: 11e9, live: { atNs: 10e9 } });
+    bridge.stream("w-2", [reading(12e9, 30)], null);
+    timers.advance(250);
+    expect(store.snapshot()).toMatchObject({ liveUnreadableNs: null, live: { atNs: 12e9 } });
+    store.close();
+  });
+
+  it("is caught up only when the bridge says so, and keeps following when the stream ends", () => {
+    const { store, bridge, timers } = setup();
+    bridge.stream("w-2", [liveWire(10e9)], null);
+    timers.advance(250);
+    expect(store.snapshot()).toMatchObject({ caughtUp: false, following: true, positionNs: 10e9 });
+    bridge.stream("w-2", [reading(12e9, 31)], "caught_up");
+    expect(store.snapshot()).toMatchObject({ caughtUp: true, following: true, positionNs: 12e9 });
+    bridge.stream("w-2", [], "closed");
+    expect(store.snapshot()).toMatchObject({ following: true, positionNs: 12e9 });
+    store.close();
+  });
+
+  it("stays open while another holder still holds the same run", () => {
+    const { store, bridge } = setup();
+    store.open("w-2");
+    store.close();
+    expect([...bridge.followers.keys()]).toEqual(["w-2"]);
+    store.close();
+    expect([...bridge.followers.keys()]).toEqual([]);
   });
 });

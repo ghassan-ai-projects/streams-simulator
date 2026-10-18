@@ -6,9 +6,9 @@ import { EditorScreen } from "../../editor";
 import { CaptureScreen, WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
 import { PlantRoute } from "./PlantRoute";
-import { ReviewScreen } from "../../review";
 import { CrumbSlot } from "../../primitives";
 import { KeyHelp } from "./KeyHelp";
+import { KeepLiveSession, ReviewRoute } from "./LiveRoutes";
 import { PanelToggles } from "./PanelToggles";
 import { rightPanelName } from "./panelName";
 import { RunIndicator } from "./RunIndicator";
@@ -58,18 +58,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
     return <PlantRoute stores={stores} route={route} />;
   }
   if (route.screen === "edit" || route.screen === "device") return <Authoring stores={stores} route={route} />;
-  if (route.screen === "review") {
-    return (
-      <ReviewScreen
-        review={stores.review}
-        plants={stores.plants}
-        workspace={stores.workspace}
-        navigation={stores.navigation}
-        launch={stores.launch}
-        worldId={route.worldId}
-      />
-    );
-  }
+  if (route.screen === "review") return <ReviewRoute stores={stores} worldId={route.worldId} />;
   return <Home stores={stores} route={route} />;
 }
 
@@ -120,6 +109,7 @@ export function App({ stores }: { readonly stores: Stores }) {
       <Shell topBar={topBar} left={panels.left} right={panels.right}>
         {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
         {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
+        {state.phase === "paired" && <KeepLiveSession stores={stores} />}
         {state.phase === "paired" && <Screen stores={stores} route={route} />}
       </Shell>
     </CrumbSlot>

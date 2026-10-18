@@ -1,7 +1,6 @@
 package host
 
 import (
-	"math"
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -41,7 +40,7 @@ func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
 
 func (h *Host) answer(m domain.Message) {
 	status := h.report.Commands[m.CommandID]
-	if status == nil || m.BootID != h.issuedBoot[m.CommandID] {
+	if status == nil || (m.BootID != h.issuedBoot[m.CommandID] && !refusedBeforeBoot(m)) {
 		return
 	}
 	if m.Type == "DRECEIPT" {
@@ -52,6 +51,10 @@ func (h *Host) answer(m domain.Message) {
 		status.Result = m.ReportedOutcome
 		h.resultAt[m.CommandID] = h.samples
 	}
+}
+
+func refusedBeforeBoot(m domain.Message) bool {
+	return m.Type == "DRECEIPT" && m.Status == "refused" && m.BootID == "none"
 }
 
 func receipt(m domain.Message) string {
@@ -76,7 +79,7 @@ func (h *Host) verify(now int64) {
 }
 
 func (h *Host) observedAfterResult(id string, step Scripted) bool {
-	d := h.devices[step.Device]
-	return d != nil && d.boot == h.issuedBoot[id] && d.valid[step.Verify.Metric] && d.updated[step.Verify.Metric] > h.resultAt[id] &&
-		math.Abs(d.values[step.Verify.Metric]-step.Verify.Equals) <= step.Verify.Tolerance
+	d, metric := h.devices[step.Device], step.Verify.Metric
+	return d != nil && h.report.Commands[id].Result == "succeeded" && d.boot == h.issuedBoot[id] && d.valid[metric] &&
+		d.updated[metric] > h.resultAt[id] && domain.WithinTolerance(d.values[metric], step.Verify.Equals, step.Verify.Tolerance)
 }

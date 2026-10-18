@@ -42,6 +42,8 @@ function dismiss(launch: LaunchStore) {
 export function RunIndicator(props: IndicatorProps) {
   const state = useStore(props.launch);
   const connected = useStore(props.launch.connect);
+  const route = useStore(props.navigation);
+  const watching = connected.phase === "live" && route.screen === "review" && route.worldId === connected.run;
   useEffect(() => {
     void props.launch.connect.resume();
   }, [props.launch]);
@@ -51,7 +53,7 @@ export function RunIndicator(props: IndicatorProps) {
         {announcement(state)}
       </p>
       {state.phase !== "idle" && <Pill {...props} state={state} />}
-      {connected.phase === "live" && (
+      {connected.phase === "live" && !watching && (
         <div className={styles["run-running"]}>
           <button
             type="button"

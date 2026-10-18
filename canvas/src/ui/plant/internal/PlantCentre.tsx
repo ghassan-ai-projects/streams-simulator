@@ -1,6 +1,6 @@
-import { screen } from "../../primitives";
+import { screen, shared } from "../../primitives";
 import type { ComponentProps } from "react";
-import { Network } from "lucide-react";
+import { Network, Radio } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantSession, ReadyPlant } from "../../../app/plant";
@@ -71,6 +71,27 @@ interface PlantCentreProps {
   readonly connected?: Connected;
 }
 
+function LiveViewButton({
+  connected,
+  navigation,
+}: {
+  readonly connected: Connected;
+  readonly navigation: NavigationStore;
+}) {
+  return (
+    <button
+      type="button"
+      className={shared.primary}
+      onClick={() => {
+        navigation.go({ screen: "review", worldId: connected.run });
+      }}
+    >
+      <Radio size={14} aria-hidden="true" />
+      Open live view
+    </button>
+  );
+}
+
 export function PlantCentre({ state, hall, plants, navigation, launch, run, connected }: PlantCentreProps) {
   const running = useRunningHere(launch, state.plant.id);
   return (
@@ -80,18 +101,15 @@ export function PlantCentre({ state, hall, plants, navigation, launch, run, conn
         <Crumbs state={state} hall={hall} navigation={navigation} />
         <span className={styles.summary}>{summary(state, hall)}</span>
         <EditButton composition={state.composition} running={running} navigation={navigation} />
-        <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
+        {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
+        <RunButton
+          launching={run.launching}
+          running={running}
+          button={run.button}
+          onToggle={run.toggle}
+          secondary={connected !== undefined}
+        />
         <ZoomBar />
-        {connected !== undefined && (
-          <button
-            type="button"
-            onClick={() => {
-              navigation.go({ screen: "review", worldId: connected.run });
-            }}
-          >
-            Live view
-          </button>
-        )}
       </div>
       <PlantCanvas
         state={state}

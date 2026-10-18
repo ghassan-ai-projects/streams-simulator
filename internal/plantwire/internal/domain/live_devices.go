@@ -39,15 +39,16 @@ func (l *Live) deviceBirth(r map[string]any, at int64) {
 	}
 	if d.BootID != "" && d.BootID != boot {
 		d.Reboots++
-		l.mark(at, "connection", "Board rebooted", id)
+		l.mark(at, "connection", "device", id+" rebooted (boot "+boot+")", id)
 	}
 	l.adoptDevice(d, r)
-	l.mark(at, "connection", "Device online", id)
+	l.mark(at, "connection", "device", id+" online", id)
 }
 
 func (l *Live) adoptDevice(d *LiveDevice, r map[string]any) {
 	d.Board, d.BootID, d.kind = text(r, "board"), text(r, "boot_id"), text(r, "kind")
-	d.Environment, d.Health = l.boardEnvironment(d.Board), "online"
+	d.Environment = l.boardEnvironment(d.Board)
+	d.Health = healthOf(d.Environment)
 	d.Instance = l.instances[d.Device]
 	if d.Environment == EnvironmentHardware {
 		l.gateway = "online"
@@ -75,7 +76,7 @@ func (l *Live) bindDevice(d *LiveDevice) {
 
 func (l *Live) readings(r map[string]any) bool {
 	d := l.devices[text(r, "device")]
-	if d == nil || d.Health != "online" || d.BootID != text(r, "boot_id") || r["historical"] == true {
+	if d == nil || !d.up() || d.BootID != text(r, "boot_id") || r["historical"] == true {
 		return false
 	}
 	key := "metrics"
@@ -92,24 +93,45 @@ func (l *Live) readDevice(d *LiveDevice, metrics []map[string]any) {
 		if name == "" {
 			name = d.aliases[alias]
 		}
-		if name != "" {
-			d.aliases[alias] = name
-			l.putReading(d, name, metric)
+		if name == "" {
+			continue
 		}
+		if l.kinds[d.kind][name] != nil {
+			d.aliases[alias] = name
+		}
+		l.putReading(d, name, metric)
 	}
 }
 
 func (l *Live) putReading(d *LiveDevice, name string, metric map[string]any) {
-	d.updated[name] = l.elapsedMS
 	template := l.kinds[d.kind][name]
-	r := LiveReading{Name: name, Unit: text(template, "unit"), Value: metric["value"], Quality: text(metric, "quality")}
-	r.State = readingState(r, template)
 	index := slices.IndexFunc(d.Readings, func(entry LiveReading) bool { return entry.Name == name })
-	if index >= 0 {
-		d.Readings[index] = r
+	if template == nil || (index < 0 && len(d.Readings) >= maxLiveReadings) {
+		l.rejectReading(d, name)
 		return
 	}
-	d.Readings = append(d.Readings, r)
+	d.updated[name] = l.elapsedMS
+	r := LiveReading{Name: name, Unit: text(template, "unit"), Value: metric["value"], Quality: text(metric, "quality")}
+	r.State = readingState(r, template)
+	if r.State == "good" && d.Environment == EnvironmentSimulated {
+		r.State = "simulated"
+	}
+	storeReading(d, index, r)
+}
+
+func storeReading(d *LiveDevice, index int, r LiveReading) {
+	if index < 0 {
+		d.Readings = append(d.Readings, r)
+		return
+	}
+	d.Readings[index] = r
+}
+
+func (l *Live) rejectReading(d *LiveDevice, name string) {
+	if !d.unannounced {
+		d.unannounced = true
+		l.mark(l.nowNS, "connection", "device", d.Device+" reading "+name+" not announced: ignored", d.Device)
+	}
 }
 
 func readingState(r LiveReading, template map[string]any) string {
@@ -144,8 +166,16 @@ func (l *Live) death(r map[string]any, at int64) bool {
 	if d == nil || d.BootID != text(r, "boot_id") {
 		return false
 	}
-	d.Health = "offline"
-	l.disconnectReadings(d)
-	l.mark(at, "connection", "Device offline", d.Device)
+	l.disconnectDevice(d)
+	l.mark(at, "connection", "device", d.Device+" offline", d.Device)
 	return true
 }
+
+func healthOf(environment string) string {
+	if environment == EnvironmentSimulated {
+		return "simulated"
+	}
+	return "online"
+}
+
+func (d *LiveDevice) up() bool { return d.Health == "online" || d.Health == "simulated" }

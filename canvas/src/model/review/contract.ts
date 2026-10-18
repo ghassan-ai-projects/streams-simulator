@@ -5,4 +5,4 @@ export type { ChipPlace } from "./internal/timeLayout";
 export type { EventMark, MarkKind, TimedBinding } from "./internal/timeline";
 export type { Rerun } from "./internal/reportViews";
 export type { InstanceOrigin } from "../graph";
-export type { SessionLive, SessionDevice, SessionReading, SessionCommand } from "./internal/sessionLive";
+export type { LiveMark, SessionCommand, SessionDevice, SessionLive, SessionReading } from "./internal/sessionLive";

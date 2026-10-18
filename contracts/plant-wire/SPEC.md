@@ -168,7 +168,8 @@ An optional HSYNC `command_evidence` array records a host's independent feedback
 (`observed` or `not_observed`); `observed` requires `observed_value`. At most 128 entries are sent per barrier.
 The reference host checks only a good, nonhistorical sample from the same boot, newer than the device's successful
 result, against its explicit verification policy. A timeout is `not_observed`, not proof of failure. No evidence
-means unknown. A receipt, device result or self-reported state is never independent confirmation.
+means unknown. A receipt, device result or self-reported state is never independent confirmation. A relay forwards
+`HSYNC` unchanged except `command_evidence`, which the relay consumes and does not pass to the gateway.
 
 **Lifecycle.** Each `DCMD` receives at most one `DRECEIPT {status: queued}` and then exactly one terminal `DRECEIPT`
 (`accepted` or `refused`); a terminal receipt supersedes a queued one. An accepted command receives exactly one `DRESULT`.

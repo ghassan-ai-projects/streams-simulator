@@ -38,20 +38,22 @@ function Tally({ title, rows }: { readonly title: string; readonly rows: readonl
 
 function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: (worldId: string) => void }) {
   const words = [row.run.worldId, runModeWords(row.run), ...runFacts(row.run), whenOf(row.run.recordedAt)];
+  const live = row.run.connected === "running";
   return (
     <li>
       <span className={styles.figures}>
+        {live && <span className={styles.live}>Live</span>}
         <MetaParts parts={words} />
       </span>
       <button
         type="button"
         className={styles.linkButton}
-        aria-label={`Review ${row.run.worldId}`}
+        aria-label={live ? `Open the live view of ${row.run.worldId}` : `Review ${row.run.worldId}`}
         onClick={() => {
           onReview(row.run.worldId);
         }}
       >
-        Review
+        {live ? "Open live view" : "Review"}
       </button>
     </li>
   );

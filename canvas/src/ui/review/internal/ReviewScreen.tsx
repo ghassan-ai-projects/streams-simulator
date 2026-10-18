@@ -56,6 +56,7 @@ export function ReviewScreen({ review, plants, workspace, navigation, launch, wo
           onHall={setHall}
           worldId={worldId}
           navigation={navigation}
+          now={() => launch.nowMs()}
         />
         <RunPanel review={review} state={state} plant={plant} unit={unit} />
       </div>

@@ -274,7 +274,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > D-74 (relay: no rebirth rate limit): a gateway that sends a sequence gap on every record makes the relay ask it to rebirth
 > once per gap, and a host that sends a rebirth `NCMD` in a loop makes the mixed node rebirth the gateway and the world each
 > time. Each request is one record and the birth is bounded, but nothing limits the rate. Trigger to fix: a flapping link in a
-> lab run; then a minimum interval between rebirth requests per side.
+> lab run; then a minimum interval between rebirth requests per side. (Review B-M3: the rate limit was considered for R10 and
+> left; the live marks are bounded instead, 256 per snapshot.)
 > D-75 (hardware-only relay field trace has no digest cover): a relay without `--domain` writes `field-trace.jsonl` and the wire
 > journal but no `run.json`, so nothing records a digest of the field trace and a later edit of the file is not detected;
 > `replay-trace` cannot refuse it. A mixed relay and a connected session are covered (`field_trace_digest`). Trigger to fix: a
@@ -289,5 +290,18 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > (simulated session) or relay tick (250 ms) when something changed; like `origin` and `binding` it sits outside the stream digest
 > and a replay does not regenerate it (D-76). The canvas keeps every snapshot of a visit in memory so the cursor can rewind.
 > Each record is bounded, but a session of many hours with many devices grows the journal and the canvas's history linearly.
+> A link change no longer writes a snapshot of its own: it marks the projection changed and the next tick writes it (a
+> connect/NBIRTH/close loop of N cycles writes one snapshot per tick, not N), and a snapshot carries at most 256 marks (the
+> newest). The canvas side of the growth (the snapshot walk, its mark list) is fixed in the canvas, not here.
 > Trigger to fix: a multi-hour lab session whose review lags or whose journal is too large; then the journal writes changes
 > (per device and per command) with a periodic full snapshot, and the canvas keeps a bounded index of snapshots.
+> D-78 (live projection: a command id re-sent after 4096 other commands; self-declared plausibility): the live projection
+> lists the latest 128 commands and remembers the last 4096 command ids to ignore a re-sent one; an id older than that window
+> is listed as a new command. The plausibility bounds of a reading (`eu_range`, type, enum) and the metrics a device may
+> report come from the gateway's own `NBIRTH`, so a hostile gateway sets its own bounds: the projection shows what the
+> gateway declared, not what is true. Trigger to fix: a lab host that reuses command ids across hours, or an untrusted gateway.
+> D-79 (live and session records are not integrity-protected): `live` and `session` are observer session records outside the
+> stream digest (D-76); `journal_file_digest` covers the file as written, but nothing stops an edit before the digest is
+> taken. The binary writes the `session` record once, as the first observer record after `run.opened`, and a reader
+> must not trust a `session` record found anywhere else. Trigger to fix: a recording used as evidence of what a board did;
+> then the projection is derived again from the `wire` records on read.

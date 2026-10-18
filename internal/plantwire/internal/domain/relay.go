@@ -29,6 +29,7 @@ type Moves struct {
 	Err          error
 	CloseHost    bool
 	CloseGateway bool
+	syncRouted   bool
 }
 
 func (m *Moves) saw(direction string, record map[string]any) {

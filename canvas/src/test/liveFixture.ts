@@ -6,7 +6,7 @@ export function liveWire(atNs = 10e9) {
     at_ns: atNs,
     host: "online",
     gateway: "online",
-    marks: [{ at_ns: atNs, kind: "command", label: "set_fan accepted", entity: "zone-01" }],
+    marks: [{ at_ns: atNs, kind: "command", subject: "command", label: "fan command set_fan accepted", entity: "fan" }],
     devices: [
       {
         device: "sensor",
@@ -23,6 +23,7 @@ export function liveWire(atNs = 10e9) {
       {
         command_id: "cmd-1",
         device: "fan",
+        environment: "simulated",
         command: "set_fan",
         boot_id: "61",
         sent: true,

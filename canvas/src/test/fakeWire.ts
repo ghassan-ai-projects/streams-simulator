@@ -22,9 +22,9 @@ export class FakeSource extends EventTarget {
     this.dispatchEvent(new Event("error"));
   }
 
-  end(how: "closed" | "failed"): void {
+  end(how: "closed" | "failed" | "caught_up"): void {
     if (how === "failed") this.readyState = 2;
-    this.dispatchEvent(new Event(how === "closed" ? "closed" : "error"));
+    this.dispatchEvent(new Event(how === "failed" ? "error" : how));
   }
 }
 

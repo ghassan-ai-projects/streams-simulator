@@ -74,18 +74,30 @@ func (s RunSummary) State(running bool) RunState {
 	return RunState{Ended: s.Closed && !running, Explore: s.Explore}
 }
 
+var sessionRecordTypes = map[string]bool{"consumer.reported": true, "wire": true, "pacing": true, "origin": true,
+	"binding": true, "live": true, "session": true}
+
+type sessionNote struct {
+	Type   string          `json:"type"`
+	Stream string          `json:"stream"`
+	Mode   string          `json:"mode"`
+	Plan   json.RawMessage `json:"plan"`
+}
+
+// RecordedSession reads the session record, which the binary writes as the first observer session record of a run.
 func RecordedSession(head []byte) (json.RawMessage, bool) {
 	for line := range bytes.SplitSeq(head, []byte("\n")) {
-		var note struct {
-			Type string          `json:"type"`
-			Mode string          `json:"mode"`
-			Plan json.RawMessage `json:"plan"`
+		var note sessionNote
+		if json.Unmarshal(line, &note) != nil || !sessionRecordTypes[note.Type] {
+			continue
 		}
-		if json.Unmarshal(line, &note) == nil && note.Type == "session" && note.Mode == "connected" && len(note.Plan) > 0 {
-			return note.Plan, true
-		}
+		return note.Plan, note.connected()
 	}
 	return nil, false
+}
+
+func (n sessionNote) connected() bool {
+	return n.Type == "session" && n.Stream == "observer" && n.Mode == "connected" && bytes.HasPrefix(n.Plan, []byte("{"))
 }
 
 // Complete is true for a run that ended without being abandoned or aborted.

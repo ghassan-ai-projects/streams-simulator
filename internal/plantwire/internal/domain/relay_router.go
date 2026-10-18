@@ -86,6 +86,8 @@ func (r *Relay) syncToSim(m *Moves, in Inbound) {
 		return
 	}
 	fields := content(in.Record)
+	delete(fields, "command_evidence")
 	fields["through_seq"] = through
 	r.sendSim(m, Record{Type: "HSYNC", Lane: text(in.Record, "lane"), Fields: fields})
+	m.syncRouted = true
 }

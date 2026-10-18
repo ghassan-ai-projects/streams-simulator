@@ -133,3 +133,18 @@ func TestDecodeLineAndReplayableAreReachableThroughTheFacade(t *testing.T) {
 		t.Fatal("Replayable must keep observations and skip session records")
 	}
 }
+
+func TestSessionAndLiveRecordsReachTheObserverStreamThroughTheFacade(t *testing.T) {
+	t.Parallel()
+	j := NewMemory(true)
+	j.Session(0, map[string]any{"mode": "connected", "plan": map[string]any{"domain": "d"}})
+	j.Live(5, map[string]any{"host": "unknown", "gateway": "unknown"})
+	raw, err := j.Bytes(StreamObserver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := Read(raw)
+	if err != nil || len(records) != 2 || records[0].Type != "session" || records[1].Type != "live" || records[1].Fields["gateway"] != "unknown" {
+		t.Fatalf("Read = %+v (%v), want the session record and the live snapshot", records, err)
+	}
+}

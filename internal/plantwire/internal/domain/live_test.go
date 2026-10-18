@@ -131,7 +131,8 @@ func TestLiveReadingsFlagBoundsStalenessAndDisconnectAndResetOnReboot(t *testing
 	if d.Reboots != 1 || d.BootID != "boot-2" || d.Readings[0].State != "good" {
 		t.Fatalf("reboot = %+v", d)
 	}
-	if l.Observe(TraceHost, map[string]any{"type": "HSYNC", "command_evidence": []any{hostEvidence()}}, 8) {
+	l.Observe(TraceHost, map[string]any{"type": "HSYNC", "command_evidence": []any{hostEvidence()}}, 8)
+	if l.command("c-1").Effect != "unknown" {
 		t.Fatal("old boot's evidence confirmed after reboot")
 	}
 }
