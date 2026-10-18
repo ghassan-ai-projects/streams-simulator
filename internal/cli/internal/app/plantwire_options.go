@@ -28,7 +28,7 @@ func parsePlantWireNodeOptions(args []string, stderr io.Writer) (plantWireNodeOp
 
 func registerPlantWireNodeFlags(fs *flag.FlagSet, o *plantWireNodeOptions) {
 	fs.StringVar(&o.hostSocket, "host-socket", "", "the host's owner-only unix socket (required)")
-	fs.StringVar(&o.domain, "domain", "", "domain id (required)")
+	fs.StringVar(&o.domain, "domain", "", "domain id (required by node; on a relay it adds the simulated world beside the gateway's boards)")
 	registerDomainsDir(fs, &o.domainsDir, "domains")
 	fs.StringVar(&o.adapter, "adapter", "native-jsonl", "adapter id")
 	registerAdaptersDir(fs, &o.adaptersDir, "adapters")

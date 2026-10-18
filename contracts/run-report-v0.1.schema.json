@@ -57,7 +57,7 @@
             "additionalProperties": false,
             "required": ["name", "status"],
             "properties": {
-              "name": {"enum": ["trace", "journal", "sealed_journal", "journal_file", "sealed_journal_file", "ledger", "history"]},
+              "name": {"enum": ["trace", "journal", "sealed_journal", "journal_file", "sealed_journal_file", "ledger", "history", "field_trace"]},
               "status": {"enum": ["match", "mismatch", "missing_file", "digest_missing"], "description": "digest_missing: run.json records no usable digest for the file (absent, empty or malformed) although the run ended complete; the run cannot be verified from its files."},
               "recorded": {"$ref": "#/$defs/digest", "description": "Absent for digest_missing."},
               "computed": {"$ref": "#/$defs/digest"}

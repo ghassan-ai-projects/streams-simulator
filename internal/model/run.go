@@ -39,6 +39,8 @@ type RunArtifact struct {
 	SealedFileDigest    string `json:"sealed_journal_file_digest,omitempty"`
 	LedgerDigest        string `json:"ledger_digest,omitempty"`
 	HistoryDigest       string `json:"history_digest,omitempty"`
+
+	FieldTraceDigest string `json:"field_trace_digest,omitempty"`
 }
 
 type ArtifactRef struct {

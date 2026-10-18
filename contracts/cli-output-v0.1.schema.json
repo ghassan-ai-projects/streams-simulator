@@ -99,6 +99,9 @@
     },
     {
       "$ref": "#/$defs/plantwire_relay"
+    },
+    {
+      "$ref": "#/$defs/plantwire_replay"
     }
   ],
   "$defs": {
@@ -996,6 +999,63 @@
         "host_refused": {
           "type": "string",
           "description": "The refusal the host gave the relayed session."
+        },
+        "to_simulated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: records handed to the simulated world, the relay's own states and rebirth requests included."
+        },
+        "from_simulated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: records the simulated world sent up to the host."
+        },
+        "unknown_device": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: commands the relay refused with unknown_device because no board of the node holds the device."
+        }
+      }
+    },
+    "plantwire_replay": {
+      "type": "object",
+      "description": "plantwire replay-trace: what a replayed field trace played to a host. The node announced itself and every board as simulated.",
+      "required": [
+        "records",
+        "skipped",
+        "barriers",
+        "commands_refused",
+        "field_trace_digest",
+        "session_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the host, the births and the replay's own death included."
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Recorded records the replay did not play: invalid, duplicate, before the first NBIRTH, or of a type that is not replayed (barriers, receipts, results, deaths)."
+        },
+        "barriers": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Barriers the host answered."
+        },
+        "commands_refused": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commands the host sent that the replay refused; a replay controls no device."
+        },
+        "field_trace_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "session_id": {
+          "type": "string"
         }
       }
     },

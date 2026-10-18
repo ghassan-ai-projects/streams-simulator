@@ -33,6 +33,36 @@ func TestEvidenceDigestsNameEveryDigestFieldTheArtifactRecords(t *testing.T) {
 	}
 }
 
+func TestTheFieldTraceDigestIsAnEvidenceSlotOnlyForARunThatHasOne(t *testing.T) {
+	t.Parallel()
+	good := "sha256:" + strings.Repeat("c", 64)
+	without := (&RunArtifact{ExpectedTraceDigest: good}).EvidenceDigests()
+	for _, digest := range without {
+		if digest.Name == "field_trace" {
+			t.Fatalf("a run without a field trace lists %+v, want no field trace slot", digest)
+		}
+	}
+	with := &RunArtifact{ExpectedTraceDigest: good, FieldTraceDigest: good}
+	found := false
+	for _, digest := range with.EvidenceDigests() {
+		if digest.Name == "field_trace" {
+			found = digest.File == FileFieldTrace && digest.Field == "field_trace_digest" && digest.Digest == good && !digest.Replayable
+		}
+	}
+	if !found || len(with.EvidenceDigests()) != len(without)+1 {
+		t.Fatalf("evidence of a run with a field trace = %+v, want one more slot, field_trace_digest on %s", with.EvidenceDigests(), FileFieldTrace)
+	}
+}
+
+func TestAMalformedFieldTraceDigestIsKeptSoThatTheFileCheckFailsOnIt(t *testing.T) {
+	t.Parallel()
+	art := &RunArtifact{FieldTraceDigest: "sha256:00"}
+	art.DropMalformedEvidenceDigests()
+	if art.FieldTraceDigest != "sha256:00" {
+		t.Fatalf("field_trace_digest = %q, want the malformed value kept: dropping it would let a trace that the artifact no longer covers pass", art.FieldTraceDigest)
+	}
+}
+
 func TestDropMalformedEvidenceDigestsKeepsOnlyWellFormedOnes(t *testing.T) {
 	t.Parallel()
 	good := "sha256:" + strings.Repeat("a", 64)

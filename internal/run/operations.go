@@ -13,6 +13,30 @@ func FolderUsed(dir string) bool {
 	return layer.FolderUsed(dir)
 }
 
+func (t *FieldTrace) Add(record map[string]any) error {
+	return t.impl.Add(record)
+}
+
+func (t *FieldTrace) Flush() error {
+	return t.impl.Flush()
+}
+
+func (t *FieldTrace) Close() error {
+	return t.impl.Close()
+}
+
+func (t *FieldTrace) Digest() string {
+	return t.impl.Digest()
+}
+
+func ReadFieldTrace(dir string) ([]map[string]any, string, error) {
+	return layer.ReadFieldTrace(dir)
+}
+
+func (r *Run) SetFieldTrace(digest string) {
+	r.run.SetFieldTrace(digest)
+}
+
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }

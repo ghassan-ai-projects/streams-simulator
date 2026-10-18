@@ -8,13 +8,13 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 type relayLoop struct {
 	relay    *domain.Relay
 	options  RelayOptions
-	trace    *run.WireTrace
+	rec      recording
+	sim      *simNode
 	gateways *uds.Gateways
 	gateway  *uds.Link
 	host     *uds.Link
@@ -40,6 +40,10 @@ func (l *relayLoop) step(ctx context.Context) error {
 		return l.onGateway(ctx, in, open)
 	case in, open := <-l.hostIn():
 		return l.onHost(in, open)
+	case <-l.sim.ready():
+		return l.onSim()
+	case err := <-l.sim.finished():
+		return l.onSimDone(err)
 	case <-l.ticks:
 		return l.onTick(ctx)
 	}
@@ -49,7 +53,10 @@ func (l *relayLoop) finish(cause error) error {
 	shutdown := l.apply(l.relay.Shutdown())
 	l.closeHost()
 	l.closeGateway()
-	if err := errors.Join(cause, shutdown, l.gateways.Close(), closeTrace(l.trace)); err != nil {
+	stopped := l.sim.stop()
+	closed := l.rec.close()
+	ended := l.sim.end(l.options.Out, l.rec.digest())
+	if err := errors.Join(cause, shutdown, l.gateways.Close(), closed, stopped, ended); err != nil {
 		return fmt.Errorf("plantwire relay: %w", err)
 	}
 	return nil

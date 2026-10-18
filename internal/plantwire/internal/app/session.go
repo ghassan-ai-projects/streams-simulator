@@ -32,6 +32,8 @@ type Options struct {
 	Policies     []string
 	KindsDirs    []string
 	WireFaults   []domain.WireFault
+
+	NoWireJournal bool
 }
 
 var ErrBadOptions = errors.New("plantwire: invalid node options")
@@ -124,7 +126,7 @@ func (s *Session) adopt(state domain.Message) error {
 func (s *Session) awaitState(ctx context.Context) (domain.Message, error) {
 	inbound, met, err := s.link.AwaitHandshake(ctx, isType("STATE"))
 	for _, arrival := range inbound {
-		s.run.JournalWire("host", arrival.Record)
+		s.journalWire("host", arrival.Record)
 	}
 	if err != nil || !met || len(inbound) != 1 || inbound[0].Invalid != nil {
 		return domain.Message{}, fmt.Errorf("plantwire: no valid STATE first after NBIRTH: %w", errors.Join(err, ErrHostLost))
@@ -138,12 +140,18 @@ func (s *Session) send(records ...domain.Record) error {
 	}
 	wireRecords := domain.ApplyWireFaults(s.out.Drain(), s.options.WireFaults)
 	for _, record := range wireRecords {
-		s.run.JournalWire("node", record)
+		s.journalWire("node", record)
 	}
 	if err := s.link.Send(wireRecords); err != nil {
 		return fmt.Errorf("plantwire: send: %w", err)
 	}
 	return nil
+}
+
+func (s *Session) journalWire(direction string, record map[string]any) {
+	if !s.options.NoWireJournal {
+		s.run.JournalWire(direction, record)
+	}
 }
 
 func (s *Session) close() error {

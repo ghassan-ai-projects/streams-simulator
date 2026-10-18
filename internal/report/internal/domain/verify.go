@@ -26,6 +26,8 @@ func (f Folder) document(file string) Document {
 		return f.Director
 	case model.FileLedger:
 		return f.Ledger
+	case model.FileFieldTrace:
+		return f.FieldTrace
 	}
 	return f.History
 }

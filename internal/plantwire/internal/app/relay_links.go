@@ -28,6 +28,7 @@ func (l *relayLoop) ensureHost(ctx context.Context) error {
 func (l *relayLoop) apply(moves domain.Moves) error {
 	traced := l.record(moves.Trace)
 	upErr, downErr := l.sendUp(moves.Up), l.sendDown(moves.Down)
+	l.sim.deliver(moves.ToSim)
 	if moves.CloseHost {
 		l.closeHost()
 	}
@@ -38,16 +39,41 @@ func (l *relayLoop) apply(moves domain.Moves) error {
 }
 
 func (l *relayLoop) record(traced []domain.Traced) error {
-	if l.trace == nil || len(traced) == 0 {
+	if l.rec.empty() || len(traced) == 0 {
 		return nil
 	}
+	var failed error
 	for _, line := range traced {
-		l.trace.Wire(line.Direction, line.Record)
+		failed = errors.Join(failed, l.rec.note(line))
 	}
-	if err := l.trace.Flush(); err != nil {
+	if err := l.rec.flush(); err != nil {
 		return fmt.Errorf("plantwire relay: flush trace: %w", err)
 	}
+	return failed
+}
+
+func (l *relayLoop) onSim() error {
+	for _, record := range l.sim.link.TakeUp() {
+		in, err := domain.InboundOf(record)
+		if err != nil {
+			slog.Warn("plantwire relay: the simulated node sent no record", "error", err)
+			continue
+		}
+		if err := l.applySim(l.relay.FromSim(in)); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (l *relayLoop) applySim(moves domain.SimMoves) error {
+	return errors.Join(l.record(moves.Trace), l.sendUp(moves.Up))
+}
+
+func (l *relayLoop) onSimDone(err error) error {
+	pending := l.onSim()
+	l.sim.complete(err)
+	return pending
 }
 
 func (l *relayLoop) sendUp(records []map[string]any) error {

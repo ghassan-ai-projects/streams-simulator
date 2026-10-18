@@ -23,6 +23,18 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	return &Run{ID: inner.ID, Config: inner.Config, World: inner.World, run: inner}, nil
 }
 
+type FieldTrace struct {
+	impl *layer.FieldTrace
+}
+
+func OpenFieldTrace(dir string) (*FieldTrace, error) {
+	inner, err := layer.OpenFieldTrace(dir)
+	if err != nil {
+		return nil, err
+	}
+	return &FieldTrace{impl: inner}, nil
+}
+
 type WireTrace struct {
 	impl *layer.WireTrace
 }

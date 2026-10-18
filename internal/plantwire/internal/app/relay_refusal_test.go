@@ -23,8 +23,19 @@ func TestTheRelayOffersNoOptionToAddAFaultAPerturbationOrAScript(t *testing.T) {
 	for _, field := range reflect.VisibleFields(reflect.TypeFor[RelayOptions]()) {
 		fields = append(fields, field.Name)
 	}
-	if want := []string{"GatewaySocket", "HostSocket", "Out", "Ready"}; !reflect.DeepEqual(fields, want) {
+	if want := []string{"GatewaySocket", "HostSocket", "Out", "Simulated", "Ready"}; !reflect.DeepEqual(fields, want) {
 		t.Fatalf("RelayOptions fields = %v, want %v: a hardware device's records are passed on untouched, so no option may act on them", fields, want)
+	}
+}
+
+func TestTheOnlyRelayOptionThatShapesRecordsActsOnTheSimulatedWorldAlone(t *testing.T) {
+	t.Parallel()
+	var fields []string
+	for _, field := range reflect.VisibleFields(reflect.TypeFor[SimulatedOptions]()) {
+		fields = append(fields, field.Name)
+	}
+	if want := []string{"DomainsDir", "AdaptersDir", "Domain", "Adapter", "Seed", "BarrierCap", "Node"}; !reflect.DeepEqual(fields, want) {
+		t.Fatalf("SimulatedOptions fields = %v, want %v: the node options inside it (wire faults, policies) reach the simulated session only", fields, want)
 	}
 }
 

@@ -160,4 +160,6 @@ type Folder struct {
 	Director Document
 	Ledger   Document
 	History  Document
+
+	FieldTrace Document
 }

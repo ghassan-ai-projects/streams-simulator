@@ -48,7 +48,7 @@ func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 
 func (s *Session) hostLost(inbound []domain.Inbound, cause error) error {
 	for i := range inbound {
-		s.run.JournalWire("host", inbound[i].Record)
+		s.journalWire("host", inbound[i].Record)
 		if inbound[i].Within(s.options.SessionID, s.version); inbound[i].Invalid == nil && inbound[i].Type == "STATE" {
 			s.hostState(inbound[i].Message)
 		}

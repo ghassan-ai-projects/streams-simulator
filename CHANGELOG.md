@@ -4,6 +4,25 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The field trace as a run input, and mixed sessions.** `plantwire relay --out <dir>` now writes `field-trace.jsonl` beside
+  its journal: every record the gateway sent, in the order the relay received it, one canonical `{ordinal, record}` line
+  each and nothing else. `plantwire relay --domain <id> ...` adds the simulated world to the node: the gateway's boards
+  (`hardware`) and the world's (`simulated`) are announced in one `NBIRTH` whose `environment` is `mixed`, kinds shared by
+  name only with equal `kind_digest`s; a command goes to the board that announced its device (hardware untouched to the
+  gateway, simulated to the world, an unknown device refused `unknown_device`) and nothing the world does has a path to the
+  gateway link; a gateway that collides with the world (a device, a board, a kind with another digest) is refused
+  `inventory_mismatch` with the rule in `reason`; the gateway's records are never perturbed. The run artifact gains the
+  optional `field_trace_digest` (and `run.json` is otherwise unchanged: a run without a trace has neither member nor file,
+  and no golden or pin changed); `replay`, `verify` and `report` check the file like the other evidence (`file_differs`,
+  `file_missing`; a `field_trace` check in the report). `plantwire replay-trace --run <dir> --host-socket <path>` plays a
+  field trace to a host as a node that announces itself and every board `simulated`, with no gateway option, refusing every
+  command, barrier-paced and byte-identical between two replays. A mixed session advances the world in virtual time as
+  `plantwire node` does and is not paced to the wall clock (D-71). New CLI document `plantwire_replay`; `plantwire_relay`
+  gains `to_simulated`, `from_simulated` and `unknown_device`; the run journal contract names the directions `gateway` and
+  `relay`; the report contract names the `field_trace` check. Gate edits: the I/O edge file `uds/sim.go` is registered
+  (a goroutine and a wall-time barrier cap), two CLI wiring files registered (`plantwire_relay_options.go`,
+  `plantwire_replay.go`) and the cap of `plantwire_relay.go` lowered from 45 to 22.
+
 - **A relay between a gateway and the real host.** `plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]`
   is the lab shape for hardware: the simulator is the host of one gateway and the one node the real host sees. The gateway is
   checked as the reference host checks a `hardware` node (one shared predicate, `domain.Admission`), then its birth reaches the

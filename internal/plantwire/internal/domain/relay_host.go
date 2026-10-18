@@ -116,6 +116,7 @@ func (r *Relay) hostAccepted(m *Moves, in Inbound) {
 func (r *Relay) stateDown(m *Moves, in Inbound) {
 	first := r.host.state == nil
 	r.noteBeat(in)
+	r.stateToSim(m, first)
 	if !r.gateway.admitted {
 		return
 	}
@@ -134,15 +135,23 @@ func (r *Relay) noteBeat(in Inbound) {
 }
 
 func (r *Relay) deliverDown(m *Moves, in Inbound) {
-	fields, mapped := r.downward(in)
 	switch {
 	case in.Type == "STATE":
 		r.stateDown(m, in)
-	case !r.gateway.admitted || !mapped:
-		r.stats.Dropped++
+	case r.sim != nil && routedDown[in.Type]:
+		r.routeDown(m, in)
 	default:
-		r.transmitDown(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
+		r.forwardDown(m, in)
 	}
+}
+
+func (r *Relay) forwardDown(m *Moves, in Inbound) {
+	fields, mapped := r.downward(in)
+	if !r.gateway.admitted || !mapped {
+		r.stats.Dropped++
+		return
+	}
+	r.transmitDown(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
 }
 
 func (r *Relay) downward(in Inbound) (map[string]any, bool) {

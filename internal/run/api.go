@@ -29,4 +29,12 @@ type RunSummary = layer.RunSummary
 
 type ScenarioCheckError = layer.ScenarioCheckError
 
+var (
+	ErrFieldTrace          = layer.ErrFieldTrace
+	ErrFieldTraceMissing   = layer.ErrFieldTraceMissing
+	ErrFieldTraceDigest    = layer.ErrFieldTraceDigest
+	ErrFieldTraceUncovered = layer.ErrFieldTraceUncovered
+	ErrFieldTraceFull      = layer.ErrFieldTraceFull
+)
+
 const MaxStartNS = world.MaxStartNS

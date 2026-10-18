@@ -327,6 +327,11 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest of world_state_history.jsonl. `verify` compares it with the file and with the replay; `report` checks the file against it. Required for a closed run."
     },
+    "field_trace_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Optional. Present only for a run that took a field trace as an input (a plant wire relay session): the SHA-256 of field-trace.jsonl as written, whose lines are RFC 8785 canonical JSON of {ordinal, record}, one gateway record per line in the order the relay received them. `verify` and `report` compare the file on disk with this digest; a replay with a different trace therefore fails with file_differs. A run without a field trace leaves the member and the file out."
+    },
     "applied_perturbations": {
       "type": "array",
       "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",

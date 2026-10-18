@@ -249,5 +249,18 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > the handshake.
 > D-70 (relay: one gateway, no store-and-forward): the relay serves one gateway at a time (a second connection waits until
 > the first is gone), and a gateway record that arrives while no host session exists is dropped and counted, not held, because
-> store-and-forward with `historical: true` is the gateway's job (SPEC section 7). Trigger to fix: R8 puts simulated boards
-> beside the gateway, or a gateway that does not buffer; then the relay's slot and queue are redesigned with the mixed node.
+> store-and-forward with `historical: true` is the gateway's job (SPEC section 7). R8 kept this for the mixed node: it still
+> serves one gateway, and the simulated world's records are held back until the host session has the merged birth. Trigger to
+> fix: a gateway that does not buffer, or two gateways behind one mixed node; then the relay's slot and queue are redesigned.
+> D-71 (mixed session: no clock pacing, the world ends with its host): a mixed session advances the simulated world exactly as
+> `plantwire node` does, one slice and one barrier at a time in virtual time, as fast as the host answers `HSYNC`; it is not
+> paced to the wall clock, so a simulated board beside a real one runs ahead of the hardware's wall time. If the host is away
+> for three barrier caps the world's session ends (its devices are reported `DDEATH offline`) and the relay keeps passing the
+> gateway's records. Trigger to fix: a lab run where the world and the board must be compared in real time; then a paced
+> session design (a wall-clock slice schedule owned by `run`, with the barrier as a cap and not as the pace) replaces the
+> free-running slices, and the world is reborn when the host returns.
+> D-72 (replay of a mixed recording): `plantwire replay-trace` plays the field trace, the gateway's side of a recording, to a
+> host as a simulated node; the simulated part of a mixed recording is reproduced and verified by `replay`/`verify` (domain,
+> seed, command log and trace digest), not streamed to a host beside the trace, and a replay answers no command (every
+> `DCMD` is refused `not_ready`). Trigger to fix: a consumer that must be shown a recorded mixed session end to end; then the
+> recorded node plays the world's part from the command log in the same barrier model.

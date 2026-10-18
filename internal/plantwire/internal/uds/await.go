@@ -56,9 +56,15 @@ func (l *Link) AwaitHandshake(ctx context.Context, until func(domain.Message) bo
 func (l *Link) collect(ctx context.Context, until func(domain.Message) bool, wait time.Duration) ([]domain.Inbound, bool, error) {
 	timer := time.NewTimer(wait)
 	defer timer.Stop()
+	return collectUntil(ctx, l.next, until, timer.C)
+}
+
+type nextFunc func(ctx context.Context, expiry <-chan time.Time) (domain.Inbound, bool, error)
+
+func collectUntil(ctx context.Context, next nextFunc, until func(domain.Message) bool, expiry <-chan time.Time) ([]domain.Inbound, bool, error) {
 	var inbound []domain.Inbound
 	for len(inbound) < MaxRecordsPerWait {
-		got, expired, err := l.next(ctx, timer.C)
+		got, expired, err := next(ctx, expiry)
 		if expired || err != nil {
 			return inbound, false, err
 		}

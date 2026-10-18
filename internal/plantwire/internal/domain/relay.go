@@ -21,6 +21,7 @@ type Traced struct {
 type Moves struct {
 	Up           []map[string]any
 	Down         []map[string]any
+	ToSim        []map[string]any
 	Trace        []Traced
 	Err          error
 	CloseHost    bool
@@ -40,6 +41,9 @@ type RelayStats struct {
 	Refused         string `json:"refused,omitempty"`
 	Reason          string `json:"reason,omitempty"`
 	HostRefused     string `json:"host_refused,omitempty"`
+	ToSimulated     int    `json:"to_simulated,omitempty"`
+	FromSimulated   int    `json:"from_simulated,omitempty"`
+	UnknownDevice   int    `json:"unknown_device,omitempty"`
 }
 
 type gatewaySide struct {
@@ -63,18 +67,26 @@ type hostSide struct {
 	interval  int64
 	silent    int64
 	table     seqTable
+	birthed   bool
+	birthSeq  uint64
+	simTable  seqTable
+
+	gatewaySyncs syncLedger
+	simSyncs     syncLedger
 }
 
 type Relay struct {
-	admission Admission
-	tickMS    int64
-	stats     RelayStats
-	gateway   gatewaySide
-	host      hostSide
-	birth     Inbound
-	bdSeq     uint64
-	birthBD   uint64
-	lastUp    int64
+	admission      Admission
+	tickMS         int64
+	stats          RelayStats
+	gateway        gatewaySide
+	host           hostSide
+	birth          Inbound
+	bdSeq          uint64
+	birthBD        uint64
+	lastUp         int64
+	gatewayDevices map[string]bool
+	sim            *simSide
 }
 
 func NewRelay(tickMS int64) *Relay {

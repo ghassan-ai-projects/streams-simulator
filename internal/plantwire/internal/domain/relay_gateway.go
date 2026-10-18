@@ -45,20 +45,20 @@ func (r *Relay) gatewayRecord(m *Moves, in Inbound) {
 }
 
 func (r *Relay) admit(m *Moves, in Inbound) {
-	refusal := r.admission.Refusal(in.Message, false)
+	refusal, reason := r.gatewayRefusal(in)
 	switch {
 	case in.Invalid != nil || in.Type != "NBIRTH":
 		r.stats.Dropped++
 	case refusal != "":
-		r.refuseGateway(m, in, refusal)
+		r.refuseGateway(m, in, refusal, reason)
 	default:
 		r.takeBirth(in)
 		r.afterBirth(m)
 	}
 }
 
-func (r *Relay) refuseGateway(m *Moves, in Inbound, refusal string) {
-	r.stats.Refused, r.stats.Reason = refusal, r.admission.Reason(refusal, in.Message)
+func (r *Relay) refuseGateway(m *Moves, in Inbound, refusal, reason string) {
+	r.stats.Refused, r.stats.Reason = refusal, reason
 	out := NewTransmitter(in.SessionID)
 	out.Queue(Record{Type: "STATE", Lane: LaneControl, Fields: relayState(false, refusal)})
 	sent := out.Drain()[0]
@@ -68,7 +68,7 @@ func (r *Relay) refuseGateway(m *Moves, in Inbound, refusal string) {
 }
 
 func (r *Relay) takeBirth(in Inbound) {
-	r.birth = in
+	r.birth, r.gatewayDevices = in, devicesOf(in.Boards)
 	r.host.table = seqTable{}
 	r.gateway.admitted, r.gateway.answered, r.gateway.asked = true, false, false
 	r.gateway.session, r.gateway.out = in.SessionID, NewTransmitter(in.SessionID)
@@ -103,6 +103,8 @@ func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
 	switch {
 	case in.Type == "NDEATH":
 		r.gatewayEnded(m)
+	case r.strayDevice(in):
+		r.stats.Dropped++
 	case r.host.shaken:
 		r.forwardUp(m, in)
 	default:
@@ -111,25 +113,26 @@ func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
 }
 
 func (r *Relay) rebirth(m *Moves, in Inbound) {
-	if r.admission.Refusal(in.Message, false) != "" {
+	if refusal, _ := r.gatewayRefusal(in); refusal != "" {
 		r.stats.Dropped++
 		return
 	}
-	r.birth, r.gateway.asked = in, false
+	r.birth, r.gateway.asked, r.gatewayDevices = in, false, devicesOf(in.Boards)
 	if r.host.shaken {
 		r.birthUp(m)
 	}
 }
 
 func (r *Relay) birthUp(m *Moves) {
-	fields := content(r.birth.Record)
+	fields := r.birthContent()
 	fields["bd_seq"], fields["prior_last_seq"] = r.bdSeq, r.lastUp
 	fields["protocol_max"] = min(r.birth.ProtocolMax, relayProtocol)
 	r.birthBD = r.bdSeq
 	r.bdSeq++
 	seq := r.transmitUp(m, Record{Type: "NBIRTH", Lane: LaneControl, Fields: fields})
 	r.host.table.add(r.birth.Seq, seq)
-	clear(r.gateway.born)
+	r.markBirthed(seq)
+	r.askSimRebirth(m)
 }
 
 func (r *Relay) forwardUp(m *Moves, in Inbound) {
@@ -140,7 +143,7 @@ func (r *Relay) forwardUp(m *Moves, in Inbound) {
 	}
 	seq := r.transmitUp(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
 	r.host.table.add(in.Seq, seq)
-	r.track(in)
+	r.track(in, seq)
 }
 
 func (r *Relay) upward(in Inbound) (map[string]any, bool) {
@@ -153,12 +156,14 @@ func (r *Relay) upward(in Inbound) (map[string]any, bool) {
 	return fields, mapped
 }
 
-func (r *Relay) track(in Inbound) {
+func (r *Relay) track(in Inbound, seq uint64) {
 	switch in.Type {
 	case "DBIRTH":
 		r.gateway.born[in.Device] = in.BootID
 	case "DDEATH":
 		delete(r.gateway.born, in.Device)
+	case "NSYNC":
+		r.host.gatewaySyncs.add(seq)
 	}
 }
 

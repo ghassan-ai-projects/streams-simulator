@@ -15,9 +15,14 @@ import (
 
 func TestPlantWireRelayUsageIsChecked(t *testing.T) {
 	t.Parallel()
-	for _, args := range [][]string{{"plantwire", "relay"}, {"plantwire", "relay", "--gateway-socket", "/tmp/g.sock"},
+	requireUsageRefusals(t, [][]string{{"plantwire", "relay"}, {"plantwire", "relay", "--gateway-socket", "/tmp/g.sock"},
 		{"plantwire", "relay", "--host-socket", "/tmp/h.sock"}, {"plantwire", "relay", "--gateway-socket", "/tmp/g.sock", "--host-socket", "/tmp/h.sock", "extra"},
-		{"plantwire", "relay", "--gateway-socket", "/tmp/g.sock", "--host-socket", "/tmp/h.sock", "--domain", "pump-board"}} {
+		{"plantwire", "relay", "--gateway-socket", "/tmp/g.sock", "--host-socket", "/tmp/h.sock", "--domain", "pump-board"}})
+}
+
+func requireUsageRefusals(t *testing.T, cases [][]string) {
+	t.Helper()
+	for _, args := range cases {
 		got := invoke(t, args...)
 		if body := got.failure(t); got.code != 2 || body["code"] != "usage_invalid" {
 			t.Errorf("%v exited %d with %v, want a usage refusal", args, got.code, body)
