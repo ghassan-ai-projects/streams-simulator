@@ -1,7 +1,9 @@
-import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure, RunFollower } from "../../../app/ports";
+import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 import type { Replay } from "../../../model/review";
+import { connectGateway } from "./connect";
 import { devicesGateway } from "./devices";
+import { followRun } from "./follow";
 import type { FailureMapper, Transport, WireProblem } from "./http";
 import { action, getFile, post, putFile, request } from "./http";
 import {
@@ -14,7 +16,6 @@ import {
   examples,
   faultInjected,
   fileContent,
-  journalEntry,
   library,
   paired,
   presets,
@@ -33,8 +34,6 @@ import {
   sessionFailure,
   workspaceFailure,
 } from "./failures";
-
-const streamClosed = 2;
 
 export function bridgeAdapter(transport: Transport): BridgeAdapters {
   return {
@@ -121,6 +120,7 @@ function launchGateway(transport: Transport): BridgeAdapters["launch"] {
     endRun: (worldId) =>
       action(transport, "run.end", { world_id: worldId }, runEnded, launchFailure("end")).then(toVoid),
     destroyWorld: (worldId) => destroy(transport, worldId),
+    ...connectGateway(transport),
   };
 }
 
@@ -156,30 +156,6 @@ function verify(transport: Transport, runId: string): Promise<Outcome<Replay, Re
   return action(transport, "run.verify", { run: runId }, replay, reviewFailure, (problem: WireProblem) =>
     replay(problem.result),
   );
-}
-
-function followRun(transport: Transport, runId: string, follower: RunFollower): () => void {
-  const source = transport.events(`/api/runs/${encodeURIComponent(runId)}/events`);
-  source.addEventListener("record", (event: Event) => {
-    const data = event instanceof MessageEvent && typeof event.data === "string" ? event.data : "";
-    const entry = journalEntry(data);
-    if (entry === null) {
-      source.close();
-      follower.failed();
-      return;
-    }
-    follower.entry(entry);
-  });
-  source.addEventListener("closed", () => {
-    source.close();
-    follower.closed();
-  });
-  source.addEventListener("error", () => {
-    if (source.readyState === streamClosed) follower.failed();
-  });
-  return () => {
-    source.close();
-  };
 }
 
 function watchWorkspace(transport: Transport, onChange: () => void): () => void {

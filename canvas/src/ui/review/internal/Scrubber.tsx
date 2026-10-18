@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-r
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { Report } from "../../../model/review";
-import type { EventMark } from "../../../model/review";
+import type { EventMark, InstanceOrigin } from "../../../model/review";
 import { eventMarks, firstEventLine, nextEvent, previousEvent, runClock, timeTicks } from "../../../model/review";
 import runStyles from "./PlayControls.module.css";
 import styles from "./Scrubber.module.css";
@@ -19,6 +19,7 @@ interface ScrubberProps extends PlayProps {
   readonly report: Report | null;
   readonly onSeek: (ns: number) => void;
   readonly onEvent: (mark: EventMark) => void;
+  readonly origins?: ReadonlyMap<string, InstanceOrigin>;
 }
 
 interface TicksProps {
@@ -121,6 +122,8 @@ function FirstEvent({ report, startNs }: { readonly report: Report | null; reado
 
 const unknownClock = "--:--:--";
 
+const noOrigins: ReadonlyMap<string, InstanceOrigin> = new Map();
+
 interface RowProps extends ScrubberProps {
   readonly marks: readonly EventMark[];
   readonly clamp: (ns: number) => number;
@@ -189,6 +192,7 @@ export function Scrubber(props: ScrubberProps) {
         positionNs={positionNs}
         said={said}
         pick={pick}
+        origins={props.origins ?? noOrigins}
       />
       <FirstEvent report={report} startNs={startNs} />
     </div>

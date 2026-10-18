@@ -15,4 +15,7 @@ func TestCodesAndSessionsAreFreshAndWellFormed(t *testing.T) {
 	if session == SessionID() || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(session) {
 		t.Fatalf("session %q", session)
 	}
+	if run := RunID(); run == RunID() || !regexp.MustCompile(`^c-[0-9a-f]{8}$`).MatchString(run) {
+		t.Fatalf("run %q", run)
+	}
 }

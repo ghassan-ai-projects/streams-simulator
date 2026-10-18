@@ -10,9 +10,11 @@ import (
 
 func TestOnlyKindCheckAndKindCaptureCarryTheirContentOnStandardInput(t *testing.T) {
 	t.Parallel()
+	// session.check and session.start take the session plan on standard input: it is never written to the workspace.
+	readers := map[string]bool{"kind.check": true, "kind.capture": true, "session.check": true, "session.start": true}
 	for _, action := range Actions() {
-		if (action.Input != "") != (action.Name == "kind.check" || action.Name == "kind.capture") {
-			t.Errorf("action %s has input %q: only kind.check and kind.capture read standard input", action.Name, action.Input)
+		if (action.Input != "") != readers[action.Name] {
+			t.Errorf("action %s has input %q: only kind.check, kind.capture and the session plan read standard input", action.Name, action.Input)
 		}
 	}
 	check, err := Lookup("kind.check")

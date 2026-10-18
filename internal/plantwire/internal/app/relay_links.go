@@ -26,6 +26,7 @@ func (l *relayLoop) ensureHost(ctx context.Context) error {
 }
 
 func (l *relayLoop) apply(moves domain.Moves) error {
+	l.rec.noted(moves.Notes)
 	traced := l.record(moves.Trace)
 	upErr, downErr := l.sendUp(moves.Up), l.sendDown(moves.Down)
 	l.sim.deliver(moves.ToSim)
@@ -73,6 +74,7 @@ func (l *relayLoop) drainSim() error {
 }
 
 func (l *relayLoop) applySim(moves domain.SimMoves) error {
+	l.rec.noted(moves.Notes)
 	return errors.Join(l.record(moves.Trace), l.sendUp(moves.Up))
 }
 

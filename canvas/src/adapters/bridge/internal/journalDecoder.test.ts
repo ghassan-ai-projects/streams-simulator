@@ -31,6 +31,55 @@ describe("journal lines", () => {
     });
   });
 
+  it("reads where a device comes from and how a gateway matched the session plan", () => {
+    const envelope = { stream: "observer", seq: 3, at_ns: 5e9 };
+    const origin = {
+      ...envelope,
+      type: "origin",
+      instance: "zone-01",
+      device: "zone-01",
+      board: "uno-07",
+      boot_id: "61",
+    };
+    expect(journalEntry(JSON.stringify({ ...origin, environment: "hardware" }))).toEqual({
+      kind: "origin",
+      atNs: 5e9,
+      origin: { instance: "zone-01", kind: "real", board: "uno-07", device: "zone-01", bootId: "61" },
+    });
+    expect(journalEntry(JSON.stringify({ ...origin, environment: "simulated", instance: undefined }))).toMatchObject({
+      origin: { instance: "", kind: "simulated" },
+    });
+    const issue = { pointer: "/real/0/device", message: "no device", keyword: "device_missing", member: "device" };
+    const refused = {
+      ...envelope,
+      type: "binding",
+      outcome: "refused",
+      refusal: "inventory_mismatch",
+      reason: "no device",
+      issues: [issue],
+    };
+    expect(journalEntry(JSON.stringify(refused))).toEqual({
+      kind: "binding",
+      atNs: 5e9,
+      binding: { matched: false, refusal: "inventory_mismatch", reason: "no device", issues: [issue] },
+    });
+    expect(
+      journalEntry(JSON.stringify({ ...envelope, type: "binding", outcome: "matched", issues: [] })),
+    ).toMatchObject({
+      binding: { matched: true, refusal: "", issues: [] },
+    });
+  });
+
+  it("refuses an origin or a binding that is not one", () => {
+    const envelope = { stream: "observer", seq: 3, at_ns: 5e9 };
+    expect(journalEntry(JSON.stringify({ ...envelope, type: "origin", device: "d", environment: "mixed" }))).toBeNull();
+    expect(
+      journalEntry(JSON.stringify({ ...envelope, type: "origin", device: "", environment: "hardware" })),
+    ).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...envelope, type: "binding", outcome: "maybe", issues: [] }))).toBeNull();
+    expect(journalEntry(JSON.stringify({ ...envelope, type: "binding", outcome: "matched" }))).toBeNull();
+  });
+
   it("refuses a line that is not JSON, or not a journal record", () => {
     expect(journalEntry("not json")).toBeNull();
     expect(journalEntry(JSON.stringify({ type: "run.opened", at_ns: 0, seq: 0 }))).toBeNull();

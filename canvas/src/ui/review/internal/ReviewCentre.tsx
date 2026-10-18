@@ -17,6 +17,7 @@ function Timeline({ review, state }: { readonly review: ReviewSession; readonly 
       endNs={span.endNs}
       positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
       report={report}
+      origins={state.origins}
       playing={state.playing}
       speed={state.speed}
       onPlay={() => {

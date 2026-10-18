@@ -69,6 +69,9 @@ func (r *Relay) gatewayRefusal(in Inbound) (refusal, reason string) {
 	if reason = Collision(in.Message, r.sim.message); reason != "" {
 		return "inventory_mismatch", reason
 	}
+	if reason = r.bindingRefusal(in.Message); reason != "" {
+		return "inventory_mismatch", reason
+	}
 	return "", ""
 }
 

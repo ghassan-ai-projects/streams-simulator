@@ -1,16 +1,24 @@
 import type { NodeStatus } from "../../../model/graph";
+import { originLabels } from "../../../model/graph";
 import type { InstanceNodeType } from "./flow";
 import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { IdText } from "./IdText";
+import { OriginMark } from "./OriginMark";
 import { shownOf } from "./shown";
 import styles from "./nodes.module.css";
 
+function originRoom(data: InstanceNodeType["data"]): number {
+  const origin = data.live?.origin ?? null;
+  return origin === null ? 0 : originLabels[origin.kind].length + 2;
+}
+
 function markWords(data: InstanceNodeType["data"], status: NodeStatus): number | null {
   const { effector } = shownOf(data);
-  if (status === null && effector === "" && !data.flagged) return null;
-  const issue = data.flagged ? 6 : 0;
-  if (status === null || data.live !== null) return issue;
-  return issue + tagWords(status, 0, data.plan?.fault ?? "").length;
+  const origin = originRoom(data);
+  if (status === null && effector === "" && !data.flagged && origin === 0) return null;
+  const marks = (data.flagged ? 6 : 0) + origin;
+  if (status === null || data.live !== null) return marks;
+  return marks + tagWords(status, 0, data.plan?.fault ?? "").length;
 }
 
 export function InstanceHeader({
@@ -32,6 +40,7 @@ export function InstanceHeader({
       </span>
       {words !== null && (
         <span>
+          <OriginMark origin={data.live?.origin ?? null} />
           <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
           {data.live !== null && data.live.fault !== "" && (
             <span className="sr-only">{`Fault: ${data.live.fault}`}</span>

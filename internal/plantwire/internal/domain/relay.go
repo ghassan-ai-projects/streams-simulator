@@ -23,6 +23,7 @@ type Moves struct {
 	Down         []map[string]any
 	ToSim        []map[string]any
 	Trace        []Traced
+	Notes        []Note
 	Err          error
 	CloseHost    bool
 	CloseGateway bool
@@ -87,6 +88,7 @@ type Relay struct {
 	lastUp         int64
 	gatewayDevices map[string]bool
 	sim            *simSide
+	plan           relayPlan
 }
 
 func NewRelay(tickMS int64) *Relay {

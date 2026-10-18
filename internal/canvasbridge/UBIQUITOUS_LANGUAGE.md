@@ -14,6 +14,7 @@
 | One of | The arguments of which an action takes exactly one: `kind.capture` takes the text of a birth (`content`, on standard input) or a run (`run`, resolved to the observer journal `runs/<run>/journal.jsonl`, never to the sealed one), not both and not neither (`Action.OneOf`, `Action.StdinFlag`) |
 | Issue | `{pointer?, message, keyword?, member?}`: where, in words, why for a program, and which named member; relayed unchanged from the command, never parsed by the bridge |
 | Effector call | The canvas's `effector.list` and `effector.invoke` actions: the director lists a world's effectors and invokes one on an entity; the result is the operator acknowledgement, the capability token stays in the director |
+| Connected session | A `plantwire connect` child the bridge owns: started by `session.start` with the session plan on standard input and its own run folder `runs/c-<8 hex>`, one at a time, reported by `session.status` (`none`, `running`, `ended`, `failed` with the command's error) and ended by `session.stop` (an interrupt, a bounded wait, then a kill); its run counts as running while the child lives, and the bridge stops it when it closes |
 | Truth gate | The rule that keeps a run's sealed files from the canvas until the run ends (or from the start of an Explore run) |
 | Follow | Streaming a run's observer journal to the page as Server-Sent Events, by line index |
 | Version (etag) | A digest of a file's content that a write must name to replace it |

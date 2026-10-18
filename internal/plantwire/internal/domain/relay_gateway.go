@@ -51,8 +51,10 @@ func (r *Relay) admit(m *Moves, in Inbound) {
 		r.stats.Dropped++
 	case refusal != "":
 		r.refuseGateway(m, in, refusal, reason)
+		r.noteBinding(m, in, refusal, reason)
 	default:
 		r.takeBirth(in)
+		r.noteBinding(m, in, "", "")
 		r.afterBirth(m)
 	}
 }
@@ -113,8 +115,9 @@ func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
 }
 
 func (r *Relay) rebirth(m *Moves, in Inbound) {
-	if refusal, _ := r.gatewayRefusal(in); refusal != "" {
+	if refusal, reason := r.gatewayRefusal(in); refusal != "" {
 		r.stats.Dropped++
+		r.noteBinding(m, in, refusal, reason)
 		return
 	}
 	r.birth, r.gateway.asked, r.gatewayDevices = in, false, devicesOf(in.Boards)
@@ -144,6 +147,8 @@ func (r *Relay) forwardUp(m *Moves, in Inbound) {
 	seq := r.transmitUp(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
 	r.host.table.add(in.Seq, seq)
 	r.track(in, seq)
+	r.noteMisbound(m, in)
+	r.noteOrigin(m, in, EnvironmentHardware)
 }
 
 func (r *Relay) upward(in Inbound) (map[string]any, bool) {

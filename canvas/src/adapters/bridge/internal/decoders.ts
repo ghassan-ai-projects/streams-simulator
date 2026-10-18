@@ -5,7 +5,6 @@ import type { ComponentSpec, PortSpec } from "../../../model/plant";
 import type { Replay, Report } from "../../../model/review";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, record, text } from "../../../model/shared/json";
-export { journalEntry } from "./journalDecoder";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;

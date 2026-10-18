@@ -73,3 +73,8 @@ func ComponentVocabulary() []byte { return componentVocabulary }
 var twinChoices []byte
 
 func TwinChoices() []byte { return twinChoices }
+
+//go:embed session-plan-v0.1.schema.json
+var sessionPlan []byte
+
+func SessionPlan() []byte { return sessionPlan }

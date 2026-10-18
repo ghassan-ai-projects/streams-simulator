@@ -38,6 +38,8 @@ func helper(args []string) int {
 	case "stderr-exit":
 		_, _ = os.Stderr.WriteString("domain factory.domain.json: invalid\n")
 		return 3
+	case "linger", "stubborn":
+		return lingerUntilInterrupted(args)
 	}
 	return 2
 }

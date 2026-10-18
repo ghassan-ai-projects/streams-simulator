@@ -85,7 +85,7 @@ func (b *Bridge) runLive() bool {
 func (b *Bridge) runIsRunning(runID string) bool {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	return b.running[runID]
+	return b.running[runID] || b.sessionRuns(runID)
 }
 
 func (b *Bridge) track(action string, args map[string]any, structured json.RawMessage) {

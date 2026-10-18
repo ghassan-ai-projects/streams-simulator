@@ -1,4 +1,5 @@
 import type {
+  ConnectFailure,
   DeviceFailure,
   Diagnostic,
   EditorFailure,
@@ -77,6 +78,14 @@ function deviceProblem(problem: WireProblem, step: DeviceStep): DeviceFailure {
 export function launchFailure(step: "create" | "advance" | "inject" | "invoke" | "end"): FailureMapper<LaunchFailure> {
   return (error) =>
     error.kind === "http" ? { kind: "rejected", step, diagnostic: diagnostic(error.problem) } : unreached(error);
+}
+
+export function connectFailure(error: RequestFailure): ConnectFailure {
+  if (error.kind !== "http") return unreached(error);
+  const display = diagnostic(error.problem);
+  if (error.problem.code === "session_running") return { kind: "busy", diagnostic: display };
+  if (error.problem.status === 422) return { kind: "refused", diagnostic: display, issues: error.problem.issues };
+  return serverFault(error.problem, display);
 }
 
 export function reviewFailure(error: RequestFailure): ReviewFailure {

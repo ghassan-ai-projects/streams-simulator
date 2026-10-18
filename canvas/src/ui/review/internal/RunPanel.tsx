@@ -2,7 +2,10 @@ import { failureLine, shared } from "../../primitives";
 import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
 import { startNsOf } from "../../../app/review";
+import { originWords } from "../../../model/graph";
 import { runClock } from "../../../model/review";
+import type { InstanceOrigin } from "../../../model/review";
+import { OriginMark } from "../../graph";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { Observed } from "./Observed";
@@ -23,6 +26,18 @@ function startOf({ state, review }: RunPanelProps): number {
   return startNsOf(state, review);
 }
 
+function OriginLine({ origin }: { readonly origin: InstanceOrigin | undefined }) {
+  if (origin === undefined) return null;
+  return (
+    <p className={parts.origin}>
+      <span aria-hidden="true">
+        <OriginMark origin={origin} variant="glyph" />
+      </span>
+      {originWords(origin)}
+    </p>
+  );
+}
+
 function Inspect(props: RunPanelProps) {
   const entity = props.state.selected;
   if (entity === null)
@@ -35,6 +50,7 @@ function Inspect(props: RunPanelProps) {
           <span className={parts.asIs}>{entity}</span>
           <span className={parts.note}>{`at ${runClock(props.state.positionNs, startOf(props))}`}</span>
         </h2>
+        <OriginLine origin={props.state.origins.get(entity)} />
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
       {props.state.report.phase === "ready" && (

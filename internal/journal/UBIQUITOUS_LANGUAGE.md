@@ -13,7 +13,9 @@ truth (docs/design/RUN_JOURNAL.md).
 | Record | One line: the envelope (`stream`, `seq`, `type`, `at_ns`) and the fields of its type | `Record` | one line of `run-journal-v0.1` |
 | Truth-bearing record | A record that would tell a consumer something the world has not shown it; only the director stream holds them | – | – |
 | Replayable record | A record replay can rebuild from the command log; it takes the next `seq` and enters the stream digest | `IsSession` is false | – |
-| Session record | An out-of-band report or live control that is not in the command log (`consumer.reported`, `pacing`); it is in the file but outside the stream digest | `IsSession` | `consumer.reported` |
+| Session record | An out-of-band report or live control that is not in the command log (`consumer.reported`, `pacing`, `wire`, `origin`, `binding`); it is in the file but outside the stream digest | `IsSession` | `consumer.reported` |
+| Origin record | Where a device born to a plant wire host comes from: its board, that board's environment, its boot id and the plant instance it is | `TypeOrigin` | `origin` |
+| Binding record | The kind match of a session plan against what a gateway announced: matched, or refused with one issue per binding | `TypeBinding` | `binding` |
 | Stream digest | SHA-256 of the replayable lines of a stream | `Stream.Digest`, `Digest` | `journal_digest`, `sealed_journal_digest` in `run.json` |
 | Torn line | An unterminated last line left by a crash; readers ignore it | `Read` | – |
 | Explore mode | A run unblinded from creation; it is never scored | `ModeExplore` | `run.opened.mode`, `mode` in `run.json` |

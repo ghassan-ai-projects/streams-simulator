@@ -13,11 +13,15 @@ export function useLive(
   view: PlantView | null,
 ): (id: string) => NodeLive {
   const report = readyReport(state);
-  const { positionNs } = state;
+  const { positionNs, origins } = state;
   const faulted = useMemo(() => faultedAt(report, positionNs), [report, positionNs]);
   const effectors = useMemo(() => effectorAt(report, positionNs), [report, positionNs]);
   return useCallback(
-    (id) => hallLiveOf({ index: review.index, plant: plant?.plant ?? null, view, faulted, effectors, positionNs }, id),
-    [review, positionNs, plant, view, faulted, effectors],
+    (id) =>
+      hallLiveOf(
+        { index: review.index, plant: plant?.plant ?? null, view, faulted, effectors, origins, positionNs },
+        id,
+      ),
+    [review, positionNs, plant, view, faulted, effectors, origins],
   );
 }

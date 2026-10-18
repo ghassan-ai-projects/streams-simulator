@@ -15,6 +15,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     playing: false,
     speed: 60,
     openedAt: 0,
+    origins: new Map(),
     ...overrides,
   };
 }

@@ -1,2 +1,2 @@
 export { createLaunchStore } from "./internal/launchStore";
-export type { LaunchState, LaunchStore, Proposal, RunWatch } from "./contract";
+export type { ConnectSession, ConnectState, LaunchState, LaunchStore, Proposal, RunWatch } from "./contract";

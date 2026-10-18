@@ -1,5 +1,6 @@
 import type { JournalEntry } from "../../../model/review";
 import { isRecord, number, record, text } from "../../../model/shared/json";
+import { issueList } from "./http";
 
 const journalTypes = [
   "observation",
@@ -10,6 +11,8 @@ const journalTypes = [
   "consumer.reported",
   "wire",
   "pacing",
+  "origin",
+  "binding",
   "command",
   "delivery",
   "state",
@@ -39,6 +42,10 @@ function validEnvelope(entry: Record<string, unknown>): boolean {
 function validEvent(entry: Record<string, unknown>): boolean {
   if (entry.type === "observation") return typeof entry.line === "string";
   if (entry.type === "run.opened") return openedRecord(entry);
+  if (entry.type === "origin")
+    return ["hardware", "simulated"].includes(text(entry.environment)) && text(entry.device) !== "";
+  if (entry.type === "binding")
+    return (entry.outcome === "matched" || entry.outcome === "refused") && Array.isArray(entry.issues);
   return entry.type !== "run.closed" || typeof entry.incomplete === "boolean";
 }
 
@@ -53,7 +60,30 @@ function projectEntry(entry: Record<string, unknown>): JournalEntry {
     return { kind: "opened", atNs, mode: text(entry.mode), adapter: text(record(entry.adapter).id) };
   }
   if (entry.type === "run.closed") return { kind: "closed", atNs, incomplete: entry.incomplete === true };
+  if (entry.type === "origin") return originEntry(entry, atNs);
+  if (entry.type === "binding") return bindingEntry(entry, atNs);
   return { kind: "other", atNs };
+}
+
+function originEntry(entry: Record<string, unknown>, atNs: number): JournalEntry {
+  const origin = {
+    instance: text(entry.instance),
+    kind: entry.environment === "hardware" ? ("real" as const) : ("simulated" as const),
+    board: text(entry.board),
+    device: text(entry.device),
+    bootId: text(entry.boot_id),
+  };
+  return { kind: "origin", atNs, origin };
+}
+
+function bindingEntry(entry: Record<string, unknown>, atNs: number): JournalEntry {
+  const binding = {
+    matched: entry.outcome === "matched",
+    refusal: text(entry.refusal),
+    reason: text(entry.reason),
+    issues: issueList(entry.issues),
+  };
+  return { kind: "binding", atNs, binding };
 }
 
 function observation(entry: Record<string, unknown>, atNs: number): JournalEntry {

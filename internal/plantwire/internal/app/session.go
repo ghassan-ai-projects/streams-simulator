@@ -32,8 +32,10 @@ type Options struct {
 	Policies     []string
 	KindsDirs    []string
 	WireFaults   []domain.WireFault
+	Bound        []domain.Bound
 
-	NoWireJournal bool
+	NoWireJournal  bool
+	JournalOrigins bool
 }
 
 var ErrBadOptions = errors.New("plantwire: invalid node options")
@@ -76,7 +78,7 @@ type Session struct {
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
-	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
+	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
 	r.SetDeliveryObserver(func(event model.SimEvent) { s.events = append(s.events, event) })
 	return s
 }
@@ -151,6 +153,10 @@ func (s *Session) send(records ...domain.Record) error {
 func (s *Session) journalWire(direction string, record map[string]any) {
 	if !s.options.NoWireJournal {
 		s.run.JournalWire(direction, record)
+	}
+	if s.options.JournalOrigins && direction == "node" && record["type"] == "DBIRTH" {
+		device, _ := record["device"].(string)
+		s.run.JournalOrigin(domain.OriginNote(record, domain.EnvironmentSimulated, s.devices.ids[device]).Fields)
 	}
 }
 

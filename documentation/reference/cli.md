@@ -326,6 +326,40 @@ The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, 
 oversize, repeated, of another session, of a type that does not travel that way, naming a device of the other origin, or with
 no host to take them).
 
+### `plantwire connect`
+
+A connected session: the plant of a session plan (`session-plan-v0.1`) linked to a plant wire host and, optionally, a
+gateway, until it is interrupted. The plant does not change; the plan names the instances that are real boards behind the
+gateway, and every other instance is simulated.
+
+```text
+streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir <dir>] [--adapters-dir <dir>]
+                            [--kinds-dir <dir>]... [--policy <digest>]... [--slice-s 1] [--barrier-cap-ms 30000]
+```
+
+```json
+{"schema_version": "0.1", "domain": "arduino-thermal", "seed": 1, "host_socket": "/abs/host.sock",
+ "gateway_socket": "/abs/gateway.sock", "real": [{"instance": "zone-01", "board": "uno-07", "device": "zone-01"}]}
+```
+
+- `--check` — reads the plan against its domain and kind files and starts nothing. The document is
+  `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked}`: each
+  instance is `real` (with the board and device the gateway must announce and the digest of the kind file it must announce
+  them with) or `simulated`. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
+  into the plan: `unknown_instance`, `no_kind_file` (only an instance whose kind implements a kind file can be a real board),
+  `instance_bound_twice`, `device_bound_twice`, `gateway_required`, `same_socket`.
+- Without `--check`, `--out` is required. With no `gateway_socket` the world is a plant wire node to the host; with one it is
+  the mixed relay (`plantwire relay --domain`) and the gateway is checked against the plan at its handshake: the bound board
+  must be announced (`board_missing`), hold the device (`device_missing`), and announce the instance's kind
+  (`kind_missing`) with the kind file's `kind_digest` (`kind_mismatch`), or the gateway is refused `inventory_mismatch`. A
+  real instance is not announced by the world (it still simulates it, as the twin); its device is the board's.
+- Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
+  environment, boot id) and each gateway handshake of a plan that binds an instance with its outcome (`binding` records:
+  matched or refused, with the issues).
+- An interrupt (`SIGINT`, `SIGTERM`) is the operator's Stop: the run ends and `--out` holds an ordinary run folder that
+  `replay` and `verify` accept. The document is `{out, stopped, relay?}`. The canvas runs this command for its Connected
+  session and stops it the same way.
+
 ### `plantwire replay-trace`
 
 Plays the field trace of a run folder to a host, the way a gateway would, from the file.

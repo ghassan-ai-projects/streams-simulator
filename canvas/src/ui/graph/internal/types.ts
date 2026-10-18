@@ -1,4 +1,4 @@
-import type { PlantView, PlanMark, Shown, ReadoutBody, NodeStatus } from "../../../model/graph";
+import type { InstanceOrigin, PlantView, PlanMark, Shown, ReadoutBody, NodeStatus } from "../../../model/graph";
 import type { Plant } from "../../../model/plant";
 
 export interface PlantGraphProps {
@@ -27,6 +27,7 @@ export interface OutlineProps {
   readonly onSelect: (id: string) => void;
   readonly onOpenHall?: (hall: string) => void;
   readonly showEmptyAreas?: boolean;
+  readonly origins?: ReadonlyMap<string, InstanceOrigin>;
 }
 
 export interface NodeLive {
@@ -37,4 +38,5 @@ export interface NodeLive {
   readonly count: number;
   readonly fault: string;
   readonly effector: string;
+  readonly origin: InstanceOrigin | null;
 }

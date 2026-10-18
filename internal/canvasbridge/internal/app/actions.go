@@ -19,10 +19,12 @@ func (b *Bridge) RunAction(ctx context.Context, name string, args map[string]any
 
 func (b *Bridge) dispatch(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
 	action, err := domain.Lookup(name)
-	if err != nil {
+	switch {
+	case err != nil:
 		return nil, err
-	}
-	if action.Kind == domain.KindCLI {
+	case action.Lasting != "":
+		return b.lasting(ctx, action, args)
+	case action.Kind == domain.KindCLI:
 		return b.runCommand(ctx, action, args)
 	}
 	return b.callTool(ctx, action, args)

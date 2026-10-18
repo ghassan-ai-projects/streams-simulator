@@ -33,6 +33,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"composition-v0.1.schema.json", Composition()},
 		{"component-vocabulary-v0.1.schema.json", ComponentVocabulary()},
 		{"twin-choices-v0.1.schema.json", TwinChoices()},
+		{"session-plan-v0.1.schema.json", SessionPlan()},
 	}
 	for _, tc := range cases {
 		want, err := os.ReadFile(filepath.Join("..", "..", "contracts", tc.name))

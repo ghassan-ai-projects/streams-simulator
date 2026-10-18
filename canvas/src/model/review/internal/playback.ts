@@ -1,3 +1,5 @@
+import type { InstanceOrigin } from "../../graph";
+import type { BindingNote } from "../../launch";
 import { shortChannel } from "../../shared/words";
 
 interface Observation {
@@ -12,6 +14,8 @@ export type JournalEntry =
   | { readonly kind: "observation"; readonly observation: Observation }
   | { readonly kind: "opened"; readonly atNs: number; readonly mode: string; readonly adapter: string }
   | { readonly kind: "closed"; readonly atNs: number; readonly incomplete: boolean }
+  | { readonly kind: "origin"; readonly atNs: number; readonly origin: InstanceOrigin }
+  | { readonly kind: "binding"; readonly atNs: number; readonly binding: BindingNote }
   | { readonly kind: "other"; readonly atNs: number };
 
 interface Series {

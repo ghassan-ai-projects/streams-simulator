@@ -1,7 +1,8 @@
 // Package app holds the use cases of the canvas bridge: pair a browser, list
 // the workspace, read and write its files, run a registered action through the
-// director or a streamsim command, follow a run's observer journal and watch
-// the workspace for changes. It decides nothing itself: the rules are in the
+// director or a streamsim command, own the child of a connected session until
+// it is stopped, follow a run's observer journal and watch the workspace for
+// changes. It decides nothing itself: the rules are in the
 // domain layer and every effect goes through an edge.
 package app
 
@@ -26,7 +27,9 @@ type Edges struct {
 	Tick          func(every time.Duration) (<-chan time.Time, func())
 	StartDirector func(ctx context.Context) (Director, error)
 	RunCommand    func(ctx context.Context, argv []string, stdin []byte) (process.CommandResult, error)
+	StartLasting  func(argv []string, stdin []byte) (Lasting, error)
 	NewSession    func() string
+	NewRunID      func() string
 }
 
 type Settings struct {
@@ -46,6 +49,8 @@ type Bridge struct {
 	director   Director
 	catalog    string
 	writeMu    sync.Mutex
+	sessionMu  sync.Mutex
+	session    *liveSession
 }
 
 func New(edges Edges, settings Settings) *Bridge {
@@ -74,6 +79,7 @@ func (b *Bridge) Actions() []domain.Action {
 }
 
 func (b *Bridge) Close() error {
+	b.stopLiving()
 	b.directorMu.Lock()
 	defer b.directorMu.Unlock()
 	if b.director == nil {

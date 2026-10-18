@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
-import type { ChipPlace, EventMark, MarkKind } from "../../../model/review";
+import type { ChipPlace, EventMark, InstanceOrigin, MarkKind } from "../../../model/review";
 import { activeAt, kindsOf, markWords, placeChips, runClock } from "../../../model/review";
+import { OriginMark } from "../../graph";
 import { cx, useResizeObserver } from "../../primitives";
 import styles from "./ScrubberLane.module.css";
 
@@ -12,6 +13,7 @@ export interface LaneProps {
   readonly positionNs: number;
   readonly said: string;
   readonly pick: (mark: EventMark) => void;
+  readonly origins: ReadonlyMap<string, InstanceOrigin>;
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${mark.label}`;
@@ -62,9 +64,10 @@ interface ChipProps {
   readonly startNs: number;
   readonly active: boolean;
   readonly pick: (mark: EventMark) => void;
+  readonly origin: InstanceOrigin | null;
 }
 
-function Chip({ mark, chip, text, startNs, active, pick }: ChipProps) {
+function Chip({ mark, chip, text, startNs, active, pick, origin }: ChipProps) {
   return (
     <li className={styles.laneItem} style={{ left: `${String(chip.left)}px`, top: `${String(chip.row * 28)}px` }}>
       <button
@@ -77,6 +80,7 @@ function Chip({ mark, chip, text, startNs, active, pick }: ChipProps) {
         }}
       >
         <Swatch kind={mark.kind} />
+        <OriginMark origin={origin} variant="glyph" />
         {text}
       </button>
     </li>
@@ -136,7 +140,7 @@ function EmptyLane({ reading }: { readonly reading: boolean }) {
   return <p className={styles.laneEmpty}>Events appear once the run is read.</p>;
 }
 
-export function Lane({ marks, fraction, startNs, reading, positionNs, said, pick }: LaneProps) {
+export function Lane({ marks, fraction, startNs, reading, positionNs, said, pick, origins }: LaneProps) {
   const { ref, width } = useWidth();
   const texts = marks.map((mark) => chipShort(mark, startNs));
   const chips = placeChips(
@@ -159,6 +163,7 @@ export function Lane({ marks, fraction, startNs, reading, positionNs, said, pick
               startNs={startNs}
               active={activeAt(mark, positionNs)}
               pick={pick}
+              origin={origins.get(mark.entity) ?? null}
             />
           );
         })}

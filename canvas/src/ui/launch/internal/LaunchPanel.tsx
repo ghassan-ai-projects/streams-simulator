@@ -7,8 +7,11 @@ import { plantTitle } from "../../../model/plant";
 import { useStore } from "../../primitives";
 import { Body } from "./LaunchBody";
 import { ProposalNote } from "./ProposalNote";
+import { RunMode } from "./RunMode";
 import { RunningMark } from "./RunningMark";
+import { Session } from "./Session";
 import { useLaunchDraft } from "./useLaunchDraft";
+import { useRunMode } from "./useRunMode";
 import styles from "./LaunchPanel.module.css";
 
 interface LaunchPanelProps {
@@ -27,19 +30,13 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
   return { state, watch };
 }
 
-export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+type CompleteProps = Omit<LaunchPanelProps, "onClose" | "selected"> & { readonly selected: string | null };
+
+function ToCompletion({ launch, plant, path, selected, onFinished }: CompleteProps) {
   const { state, watch } = useLaunch(launch, plant.id, onFinished);
   const { proposed, draft, setDraft } = useLaunchDraft(launch, plant, selected);
   return (
-    <aside className={panel.panel} aria-labelledby="launch-title">
-      <header className={panel.head}>
-        <Play size={16} aria-hidden="true" />
-        <h2 id="launch-title" className={styles.title}>{`Run ${plantTitle(plant)}`}</h2>
-        {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} launch={launch} />}
-        <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
-          <X size={16} aria-hidden="true" />
-        </button>
-      </header>
+    <>
       {state.phase !== "running" && <ProposalNote proposed={proposed} />}
       <Body
         state={state}
@@ -52,6 +49,29 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
         onFinished={onFinished}
         watch={watch}
       />
+    </>
+  );
+}
+
+export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+  const state = useStore(launch);
+  const mode = useRunMode(launch.connect, plant.id);
+  return (
+    <aside className={panel.panel} aria-labelledby="launch-title">
+      <header className={panel.head}>
+        <Play size={16} aria-hidden="true" />
+        <h2 id="launch-title" className={styles.title}>{`Run ${plantTitle(plant)}`}</h2>
+        {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} launch={launch} />}
+        <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
+          <X size={16} aria-hidden="true" />
+        </button>
+      </header>
+      {state.phase !== "running" && !mode.held && <RunMode kind={mode.kind} onKind={mode.choose} />}
+      {mode.kind === "session" ? (
+        <Session launch={launch} plant={plant} onFinished={onFinished} />
+      ) : (
+        <ToCompletion launch={launch} plant={plant} path={path} selected={selected} onFinished={onFinished} />
+      )}
     </aside>
   );
 }

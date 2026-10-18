@@ -65,7 +65,11 @@ func newRelay(sim *simNode) (*domain.Relay, error) {
 	if sim == nil {
 		return domain.NewRelay(relayTick.Milliseconds()), nil
 	}
-	return domain.NewMixedRelay(relayTick.Milliseconds(), sim.birth)
+	relay, err := domain.NewMixedRelay(relayTick.Milliseconds(), sim.birth)
+	if err == nil {
+		relay.Plan(sim.instances, sim.bound)
+	}
+	return relay, err
 }
 
 func (l *relayLoop) open(ctx context.Context) error {

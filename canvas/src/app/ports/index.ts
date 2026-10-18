@@ -12,7 +12,16 @@ export type {
   TwinMade,
 } from "./devices";
 export type { EditorFailure, EditorGateway } from "./editor";
-export type { Acknowledgement, LaunchFailure, LaunchGateway } from "./launch";
+export type {
+  Acknowledgement,
+  ConnectFailure,
+  ConnectGateway,
+  ConnectStatus,
+  LaunchFailure,
+  LaunchGateway,
+  PlannedInstance,
+  SessionCheck,
+} from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";
 export type { ReviewFailure, ReviewGateway, RunFollower } from "./review";
 export type { SessionFailure, SessionGateway } from "./session";

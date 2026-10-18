@@ -50,6 +50,8 @@
   --status-truth-bg: rgb(106 63 200 / 12%);
   --origin-real: #0b6a8a;
   --origin-real-bg: rgb(11 106 138 / 12%);
+  --origin-simulated: #475569;
+  --origin-simulated-bg: rgb(71 85 105 / 12%);
   --grid-minor: rgb(15 23 42 / 4%);
   --grid-major: rgb(15 23 42 / 8%);
   --port-air: #2c5378;
@@ -110,6 +112,8 @@
   --status-truth-bg: rgb(180 140 255 / 12%);
   --origin-real: #5cc4e6;
   --origin-real-bg: rgb(92 196 230 / 14%);
+  --origin-simulated: #a3b1c6;
+  --origin-simulated-bg: rgb(163 177 198 / 14%);
   --grid-minor: rgb(255 255 255 / 3%);
   --grid-major: rgb(255 255 255 / 6%);
   --port-air: #8ec5ff;

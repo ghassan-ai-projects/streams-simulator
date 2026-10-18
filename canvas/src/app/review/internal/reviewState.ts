@@ -1,5 +1,5 @@
 import type { RunEntry } from "../../../model/workspace";
-import type { Report, Replay } from "../../../model/review";
+import type { InstanceOrigin, Report, Replay } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
 import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
 
@@ -28,6 +28,7 @@ export interface ReviewState {
   readonly openedAt: number;
   readonly playing: boolean;
   readonly speed: number;
+  readonly origins: ReadonlyMap<string, InstanceOrigin>;
 }
 
 export const idle: ReviewState = {
@@ -43,6 +44,7 @@ export const idle: ReviewState = {
   openedAt: 0,
   playing: false,
   speed: 60,
+  origins: new Map(),
 };
 
 const incomplete: ReviewFailure = {

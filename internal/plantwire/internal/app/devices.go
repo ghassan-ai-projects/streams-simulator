@@ -8,17 +8,48 @@ import (
 )
 
 type devices struct {
-	run     *run.Run
-	spec    *domain.Compiled
-	born    map[string]bool
-	current map[string]map[string]any
-	wireIDs map[string]string
-	ids     map[string]string
+	run      *run.Run
+	spec     *domain.Compiled
+	born     map[string]bool
+	current  map[string]map[string]any
+	wireIDs  map[string]string
+	ids      map[string]string
+	withheld map[string]bool
 }
 
-func newDevices(r *run.Run) *devices {
-	return &devices{run: r, spec: r.Domain(), born: map[string]bool{}, current: map[string]map[string]any{},
-		wireIDs: map[string]string{}, ids: map[string]string{}}
+func newDevices(r *run.Run, withheld []string) *devices {
+	d := &devices{run: r, spec: r.Domain(), born: map[string]bool{}, current: map[string]map[string]any{},
+		wireIDs: map[string]string{}, ids: map[string]string{}, withheld: map[string]bool{}}
+	for _, id := range withheld {
+		d.withheld[id] = true
+	}
+	return d
+}
+
+func boundInstances(bound []wire.Bound) []string {
+	ids := make([]string, len(bound))
+	for i, b := range bound {
+		ids[i] = b.Instance
+	}
+	return ids
+}
+
+func (d *devices) announced() []string {
+	var ids []string
+	for _, id := range d.run.World.EntityIDs() {
+		if !d.withheld[id] {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+func (d *devices) instances() map[string]string {
+	instances := map[string]string{}
+	for _, id := range d.announced() {
+		instances[d.wireOf(id)] = id
+	}
+	return instances
 }
 
 func (d *devices) wireOf(id string) string {
@@ -32,7 +63,7 @@ func (d *devices) wireOf(id string) string {
 
 func (d *devices) entity(device string) (string, bool) {
 	id, ok := d.ids[device]
-	return id, ok && d.run.World.Entity(id) != nil
+	return id, ok && !d.withheld[id] && d.run.World.Entity(id) != nil
 }
 
 func (d *devices) kinds() []*model.Kind {
@@ -45,7 +76,7 @@ func (d *devices) kinds() []*model.Kind {
 
 func (d *devices) births(atNS int64) []wire.Record {
 	var records []wire.Record
-	for _, id := range d.run.World.EntityIDs() {
+	for _, id := range d.announced() {
 		records = append(records, d.birth(id, atNS))
 	}
 	return records
@@ -59,6 +90,13 @@ func (d *devices) birth(id string, atNS int64) wire.Record {
 }
 
 func (d *devices) observe(event model.SimEvent) []wire.Record {
+	if d.withheld[event.EntityID] {
+		return nil
+	}
+	return d.carried(event)
+}
+
+func (d *devices) carried(event model.SimEvent) []wire.Record {
 	var records []wire.Record
 	if !d.born[event.EntityID] {
 		records = append(records, d.birth(event.EntityID, mustTime(event.EventTime)))

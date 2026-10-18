@@ -57,6 +57,14 @@ func (j *Journal) Wire(atNS int64, direction string, record map[string]any) {
 	j.impl.Wire(atNS, direction, record)
 }
 
+func (j *Journal) Origin(atNS int64, fields map[string]any) {
+	j.impl.Origin(atNS, fields)
+}
+
+func (j *Journal) Binding(atNS int64, fields map[string]any) {
+	j.impl.Binding(atNS, fields)
+}
+
 func (j *Journal) Pacing(atNS int64, throughSeq uint64, waitedMS int64, missed bool) {
 	j.impl.Pacing(atNS, throughSeq, waitedMS, missed)
 }

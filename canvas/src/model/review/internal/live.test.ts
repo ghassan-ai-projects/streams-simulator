@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { InstanceOrigin } from "../../graph";
 import { parsePlant } from "../../plant";
 import { domain } from "../../../test/plantFixture";
 import type { LiveFacts } from "./live";
@@ -45,6 +46,7 @@ function facts(overrides: Partial<LiveFacts>): LiveFacts {
     view: null,
     faulted: new Map(),
     effectors: new Map(),
+    origins: new Map(),
     positionNs: 2e9,
     ...overrides,
   };
@@ -71,6 +73,19 @@ describe("a node's live values", () => {
 
   it("lets a position before the first reading show nothing", () => {
     expect(liveOf(facts({ positionNs: 0 }), "A/CH-1")).toMatchObject({ shown: [], status: null });
+  });
+
+  it("carries the origin and shows no simulated value as a real board's", () => {
+    const real: InstanceOrigin = { instance: "A/CH-1", kind: "real", board: "uno-07", device: "ch-1", bootId: "61" };
+    const simulated: InstanceOrigin = { ...real, instance: "CH-9", kind: "simulated", board: "mega-01" };
+    const origins = new Map<string, InstanceOrigin>([
+      [real.instance, real],
+      [simulated.instance, simulated],
+    ]);
+    expect(liveOf(facts({ origins }), "A/CH-1")).toMatchObject({ origin: real, shown: [], status: null });
+    expect(liveOf(facts({ origins }), "CH-9").origin).toBe(simulated);
+    expect(liveOf(facts({}), "CH-9").origin).toBeNull();
+    expect(hallLiveOf(facts({ origins }), "A").origin).toBeNull();
   });
 });
 

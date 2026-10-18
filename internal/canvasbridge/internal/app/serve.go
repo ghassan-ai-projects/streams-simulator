@@ -68,7 +68,8 @@ func settingsOf(cfg Config) (Settings, error) {
 }
 
 func wire(workspace *files.Workspace, executable string, settings Settings) *Bridge {
-	bridge := New(Edges{Workspace: workspace, NewSession: entropy.SessionID, Tick: process.Ticker}, settings)
+	bridge := New(Edges{Workspace: workspace, NewSession: entropy.SessionID, NewRunID: entropy.RunID, Tick: process.Ticker,
+		StartLasting: startLasting(executable, settings.WorkspaceDir)}, settings)
 	bridge.edges.RunCommand = func(ctx context.Context, argv []string, stdin []byte) (process.CommandResult, error) {
 		return process.RunWithInput(ctx, executable, settings.WorkspaceDir, argv, stdin)
 	}
@@ -76,6 +77,16 @@ func wire(workspace *files.Workspace, executable string, settings Settings) *Bri
 		return process.StartDirector(context.WithoutCancel(ctx), executable, bridge.DirectorArguments())
 	}
 	return bridge
+}
+
+func startLasting(executable, dir string) func(argv []string, stdin []byte) (Lasting, error) {
+	return func(argv []string, stdin []byte) (Lasting, error) {
+		lasting, err := process.StartLasting(executable, dir, argv, stdin)
+		if err != nil {
+			return nil, err
+		}
+		return lasting, nil
+	}
 }
 
 func openWorkspace(dir string) (*files.Workspace, error) {

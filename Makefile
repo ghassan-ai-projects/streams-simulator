@@ -62,6 +62,8 @@ build: ## Compile all packages
 	else \
 	  echo "(no cmd/ directory yet -- add cmd/<name>/main.go to enable build)"; \
 	fi
+	@# the canvas e2e tests' stand-in gateway: a test binary (test support only, never shipped) run with --standin-gateway
+	go test -c -o bin/standin-gateway ./internal/plantwire/internal/app
 
 cross-compile: ## Cross-compile linux/amd64 binary
 	@if [ -d cmd ]; then \

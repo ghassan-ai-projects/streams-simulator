@@ -17,11 +17,22 @@ type runWire struct{ run *run.Run }
 
 func (w runWire) Wire(direction string, record map[string]any) { w.run.JournalWire(direction, record) }
 
-func (w runWire) Flush() error { return nil }
+func (w runWire) Flush() error {
+	if err := w.run.FlushJournal(); err != nil {
+		return fmt.Errorf("flush the run journal: %w", err)
+	}
+	return nil
+}
+
+type noteSink interface {
+	JournalOrigin(fields map[string]any)
+	JournalBinding(fields map[string]any)
+}
 
 type recording struct {
 	wire      wireSink
 	field     *run.FieldTrace
+	notes     noteSink
 	closeWire func() error
 }
 
@@ -34,7 +45,7 @@ func openRecording(dir string, sim *simNode) (recording, error) {
 		return recording{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	if sim != nil {
-		return recording{wire: runWire{sim.run}, field: field}, nil
+		return recording{wire: runWire{sim.run}, field: field, notes: sim.run}, nil
 	}
 	return hardwareRecording(dir, field)
 }
@@ -59,6 +70,19 @@ func (c *recording) note(line domain.Traced) error {
 		}
 	}
 	return nil
+}
+
+func (c *recording) noted(notes []domain.Note) {
+	if c.notes == nil {
+		return
+	}
+	for _, note := range notes {
+		if note.Type == domain.NoteOrigin {
+			c.notes.JournalOrigin(note.Fields)
+			continue
+		}
+		c.notes.JournalBinding(note.Fields)
+	}
 }
 
 func (c *recording) flush() error {

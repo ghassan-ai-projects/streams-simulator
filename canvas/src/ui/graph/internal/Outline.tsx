@@ -3,7 +3,8 @@ import type { OutlineProps } from "./types";
 import { OctagonAlert, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { groups, matchWords, marked, belowCount, hallsOf } from "../../../model/graph";
-import type { OutlineItem as Item } from "../../../model/graph";
+import type { InstanceOrigin, OutlineItem as Item } from "../../../model/graph";
+import { OriginMark } from "./OriginMark";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import styles from "./graph.module.css";
@@ -16,6 +17,7 @@ interface SectionProps {
   readonly current: string | null;
   readonly marks: "location" | "selection";
   readonly onPick: (item: string) => void;
+  readonly origins?: ReadonlyMap<string, InstanceOrigin> | undefined;
 }
 
 function countWords(direct: number, below: number): string {
@@ -28,7 +30,13 @@ function countTitle(direct: number, below: number): string | undefined {
   return below > 0 ? `${String(below)} in child areas` : "No equipment yet";
 }
 
-function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "items"> & { readonly item: Item }) {
+function Entry({
+  item,
+  current,
+  marks,
+  onPick,
+  origins,
+}: Omit<SectionProps, "title" | "items"> & { readonly item: Item }) {
   const button = useRef<HTMLButtonElement>(null);
   const isCurrent = item.id === current;
   useEffect(() => {
@@ -47,6 +55,7 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
       >
         <span className={styles.itemId}>{item.id}</span>
         {item.kind !== "" && <span className={styles.itemKind}>{item.kind}</span>}
+        <OriginMark origin={origins?.get(item.id) ?? null} variant="glyph" />
         {item.flagged === true && (
           <span className={styles.itemIssue}>
             <OctagonAlert size={12} aria-hidden="true" />
@@ -58,7 +67,7 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
   );
 }
 
-function Section({ title, depth = 0, items, below = 0, current, marks, onPick }: SectionProps) {
+function Section({ title, depth = 0, items, below = 0, current, marks, onPick, origins }: SectionProps) {
   return (
     <details open style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
       <summary className={cx(styles.areaRow, shared.disclosure)}>
@@ -72,7 +81,7 @@ function Section({ title, depth = 0, items, below = 0, current, marks, onPick }:
       {items.length > 0 && (
         <ul className={styles.tree}>
           {items.map((item) => (
-            <Entry key={item.id} item={item} current={current} marks={marks} onPick={onPick} />
+            <Entry key={item.id} item={item} current={current} marks={marks} onPick={onPick} origins={origins} />
           ))}
         </ul>
       )}
@@ -97,7 +106,43 @@ function Filter({ value, onChange }: { readonly value: string; readonly onChange
   );
 }
 
-export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
+interface AreaSectionsProps {
+  readonly shown: ReturnType<typeof marked>;
+  readonly selected: string | null;
+  readonly onSelect: (id: string) => void;
+  readonly origins: ReadonlyMap<string, InstanceOrigin> | undefined;
+}
+
+function AreaSections({ shown, selected, onSelect, origins }: AreaSectionsProps) {
+  return (
+    <>
+      {shown.map(({ area, depth, items }, index) => (
+        <Section
+          key={area}
+          title={area}
+          depth={depth}
+          items={items}
+          below={belowCount(shown, index)}
+          current={selected}
+          marks="selection"
+          onPick={onSelect}
+          origins={origins}
+        />
+      ))}
+    </>
+  );
+}
+
+export function Outline({
+  plant,
+  hall,
+  selected,
+  onSelect,
+  onOpenHall,
+  flagged,
+  showEmptyAreas,
+  origins,
+}: OutlineProps) {
   const [filter, setFilter] = useState("");
   const { ref: navRef, cut } = useCutBottom<HTMLElement>();
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
@@ -113,18 +158,7 @@ export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, 
       {halls.length > 0 && onOpenHall !== undefined && filter === "" && (
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
       )}
-      {shown.map(({ area, depth, items }, index) => (
-        <Section
-          key={area}
-          title={area}
-          depth={depth}
-          items={items}
-          below={belowCount(shown, index)}
-          current={selected}
-          marks="selection"
-          onPick={onSelect}
-        />
-      ))}
+      <AreaSections shown={shown} selected={selected} onSelect={onSelect} origins={origins} />
       <p className={shown.length === 0 ? styles.noMatch : "sr-only"} role="status">
         {matchWords(shown, filter, plant.instances.length === 0)}
       </p>
