@@ -18,6 +18,10 @@ func Read(path string) ([]byte, error) {
 	return files.Read(path)
 }
 
+func ReadRegular(path string, limit int64) ([]byte, error) {
+	return files.ReadRegular(path, limit)
+}
+
 func ReadIfPresent(path string) ([]byte, bool, error) {
 	return files.ReadIfPresent(path)
 }

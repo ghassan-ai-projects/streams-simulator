@@ -14,7 +14,7 @@ import (
 type ServeOptions struct {
 	DomainsDir, AdaptersDir, OutDir, OperatorAddr string
 	ComponentsDirs                                []string
-	CheckDomain                                   func(*model.DomainSpec) error
+	CheckDomain                                   model.DomainCheck
 }
 
 func ServeDirector(ctx context.Context, stderr io.Writer, options ServeOptions) error {

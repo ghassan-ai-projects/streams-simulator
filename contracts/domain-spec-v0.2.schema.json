@@ -958,6 +958,7 @@
         "description": {"type": "string", "maxLength": 400},
         "args_schema": {"type": "object", "description": "JSON Schema for arguments beyond command_id."},
         "risk_class": {"enum": ["low", "medium", "high"], "default": "medium"},
+        "safe_stop": {"type": "boolean", "default": false, "description": "The command is the declared safe stop of its kind: a plant wire node announces it as safe_stop in NBIRTH.kinds and runs it without the host's freshness, epoch or policy checks. It carries no preconditions and no interlock. A kind that implements a kind file must flag the same commands the kind file flags."},
         "ack": {
           "type": "object",
           "additionalProperties": false,

@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -22,6 +23,14 @@ func TestAKindFileThatBreaksTheSchemaReportsEachViolationWithItsPointer(t *testi
 			[]model.Issue{model.LocatedIssue("/commands", `missing required property "commands"`)}},
 		{"an unknown data_type", `{"kind": "k", "metrics": [{"name": "m", "data_type": "float"}], "commands": []}`,
 			[]model.Issue{model.LocatedIssue("/metrics/0/data_type", "value not in enum")}},
+		{"a kind_digest that is stale", `{"kind": "k", "kind_digest": "sha256:00", "metrics": [], "commands": []}`, []model.Issue{kindDigestIssue}},
+		{"a kind_digest that is right", `{"kind": "k", "kind_digest": "` + emptyKindDigest + `", "metrics": [], "commands": []}`, []model.Issue{kindDigestIssue}},
+		{"an eu_range with min equal to max", `{"kind": "k", "metrics": [{"name": "m", "data_type": "number", "eu_range": {"min": 5, "max": 5}}], "commands": []}`,
+			[]model.Issue{model.LocatedIssue("/metrics/0/eu_range", "min 5 is not below max 5")}},
+		{"ranges that run backwards, sorted by pointer", `{"kind": "k", "metrics": [{"name": "a", "data_type": "number"},
+			{"name": "b", "data_type": "number", "instrument_range": {"min": 10, "max": 2.5}, "eu_range": {"min": 1, "max": 0}}], "commands": []}`,
+			[]model.Issue{model.LocatedIssue("/metrics/1/eu_range", "min 1 is not below max 0"),
+				model.LocatedIssue("/metrics/1/instrument_range", "min 10 is not below max 2.5")}},
 		{"every violation, sorted by pointer", `{"kind": "k"}`,
 			[]model.Issue{model.LocatedIssue("/commands", `missing required property "commands"`),
 				model.LocatedIssue("/metrics", `missing required property "metrics"`)}},
@@ -45,5 +54,42 @@ func TestAKindFileThatIsNotJSONIsOneUnlocatedIssue(t *testing.T) {
 	if !ok || invalid.Contract != model.ContractKindFile || invalid.Source != "bad.kind.json" || len(invalid.Issues) != 1 ||
 		invalid.Issues[0].Located || invalid.Issues[0].Message == "" || errors.Unwrap(invalid) == nil {
 		t.Fatalf("ParseKindFiles = %v (%+v), want one unlocated issue naming bad.kind.json", err, invalid)
+	}
+}
+
+const emptyKindDigest = "sha256:540c36216dd6364d21e22923590e1cfc5791f7a06c51774cd509214b0451a177"
+
+var kindDigestIssue = model.LocatedIssue("/kind_digest", "a kind file must not carry kind_digest: it is computed from the file, so remove the member")
+
+func TestAKindFileWithAKindDigestOrAnEmptyRangeNamesWhyItIsRefused(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		raw   string
+		cause error
+		text  string
+	}{
+		{"a kind_digest", `{"kind": "k", "kind_digest": "` + emptyKindDigest + `", "metrics": [], "commands": []}`, ErrKindDigestInFile,
+			"plantwire: kind file fails its schema: /kind_digest: a kind file must not carry kind_digest"},
+		{"an empty range", `{"kind": "k", "metrics": [{"name": "m", "data_type": "number", "eu_range": {"min": 3, "max": 3}}], "commands": []}`, ErrEmptyRange,
+			"plantwire: kind file fails its schema: /metrics/0/eu_range: min 3 is not below max 3"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, _, err := ParseKindFiles([]KindSource{{Path: "k.kind.json", Raw: []byte(tc.raw)}})
+			if !errors.Is(err, tc.cause) || !strings.Contains(err.Error(), tc.text) {
+				t.Fatalf("ParseKindFiles = %v, want %v with the text %q", err, tc.cause, tc.text)
+			}
+		})
+	}
+}
+
+func TestAKindFileWithRangesThatRunUpwardsIsAccepted(t *testing.T) {
+	t.Parallel()
+	raw := `{"kind": "k", "metrics": [{"name": "m", "data_type": "number", "eu_range": {"min": -1, "max": 1}, "instrument_range": {"min": -2.5, "max": 2.5}}], "commands": []}`
+	files, _, err := ParseKindFiles([]KindSource{{Path: "k.kind.json", Raw: []byte(raw)}})
+	if err != nil || len(files) != 1 {
+		t.Fatalf("ParseKindFiles = %v, %v, want the one kind file accepted", files, err)
 	}
 }

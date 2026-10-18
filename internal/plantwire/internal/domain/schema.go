@@ -71,12 +71,24 @@ func recordSchema(name string) *jsonschema.Schema {
 }
 
 func CheckKind(entry map[string]any) error {
+	if _, present := entry[kindDigestMember]; present {
+		return digestInKindFile()
+	}
 	errs := schemas()[kindFileSchema].Validate(entry)
 	if len(errs) == 0 {
-		return nil
+		return checkKindContent(entry)
 	}
 	return &model.ValidationError{Contract: model.ContractKindFile, Summary: "plantwire: kind file fails its schema: " + errs[0].Error(),
 		Issues: sortedByPointer(model.SchemaIssues(errs)), Cause: errs[0]}
+}
+
+func checkCanonical(entry map[string]any) error {
+	_, err := KindDigest(entry)
+	if err == nil {
+		return nil
+	}
+	return &model.ValidationError{Contract: model.ContractKindFile, Summary: "plantwire: kind file has no canonical form: " + err.Error(),
+		Issues: []model.Issue{model.UnlocatedIssue(err.Error())}, Cause: err}
 }
 
 func sortedByPointer(issues []model.Issue) []model.Issue {

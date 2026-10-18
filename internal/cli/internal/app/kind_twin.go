@@ -60,25 +60,28 @@ func registerTwinFlags(fs *flag.FlagSet, options *twinOptions) {
 }
 
 func scaffoldTwin(library *component.Library, options twinOptions) (any, error) {
-	kinds, err := plantwire.ReadKindFiles(options.kindFiles, options.kindDirs.items())
+	twin, err := plantwire.Scaffold(options.kindFiles, options.kindDirs.items(), options.choices, twinOf(library, options.choices))
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	choices, err := files.Read(options.choices)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	twin, err := component.Twin(library, kinds, choices, options.choices)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return placeTwin(twin, kinds, options)
+	return placeTwin(twin, options)
 }
 
-func placeTwin(twin *component.Composed, kinds map[string]map[string]any, options twinOptions) (any, error) {
-	if err := plantwire.CheckImplementsKinds(twin.Domain.Spec, kinds); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", model.WithSource(err, options.choices))
+func twinOf(library *component.Library, choicesPath string) func(map[string]map[string]any) (*component.Composed, *model.DomainSpec, error) {
+	return func(kinds map[string]map[string]any) (*component.Composed, *model.DomainSpec, error) {
+		choices, err := files.Read(choicesPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%w", err)
+		}
+		twin, err := component.Twin(library, kinds, choices, choicesPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%w", err)
+		}
+		return twin, twin.Domain.Spec, nil
 	}
+}
+
+func placeTwin(twin *component.Composed, options twinOptions) (any, error) {
 	result := twinDomain{composedDomain: composedDomain{DomainSummary: twin.Summary}, Implements: twin.Implements}
 	if err := placeComposed(&result.composedDomain, twin, options.out); err != nil {
 		return nil, err

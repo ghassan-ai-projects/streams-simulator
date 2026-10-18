@@ -15,7 +15,8 @@ type CommandResult struct {
 }
 
 func Run(ctx context.Context, executable, dir string, argv []string) (CommandResult, error) {
-	command := exec.CommandContext(ctx, executable, argv...) //nolint:gosec // G204: the bridge's own executable with argv it built
+	//nolint:gosec // G204: the bridge's own executable with argv entries the bridge built (governance/DEFERRED.md D-64)
+	command := exec.CommandContext(ctx, executable, argv...)
 	command.Dir, command.Env = dir, []string{}
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr

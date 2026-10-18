@@ -263,6 +263,7 @@
           },
           "idempotency_window_s": 60,
           "risk_class": "low",
+          "safe_stop": true,
           "description": "Safe stop: the LED goes dark."
         }
       ]
@@ -350,6 +351,7 @@
           "effect": {"dead_time_s": 0, "state_deltas": [{"state": "fan_duty", "delta": -600.0}], "time_constant_s": 0},
           "idempotency_window_s": 60,
           "risk_class": "low",
+          "safe_stop": true,
           "description": "Safe stop: the fan turns off."
         }
       ]

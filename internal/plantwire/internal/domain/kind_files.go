@@ -32,7 +32,7 @@ func ParseKindFiles(sources []KindSource) (KindFiles, []KindSummary, error) {
 	for _, source := range sources {
 		summary, err := index.parse(source)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("%w", err)
 		}
 		summaries = append(summaries, summary)
 	}
@@ -49,7 +49,11 @@ func (i kindIndex) parse(source KindSource) (KindSummary, error) {
 	if err != nil {
 		return KindSummary{}, err
 	}
-	return summarizeKind(source.Path, entry), i.add(source.Path, entry)
+	summary, err := summarizeKind(source.Path, entry)
+	if err != nil {
+		return KindSummary{}, err
+	}
+	return summary, i.add(source.Path, entry)
 }
 
 func (i kindIndex) add(path string, entry map[string]any) error {
@@ -62,8 +66,8 @@ func (i kindIndex) add(path string, entry map[string]any) error {
 }
 
 func parseKindFile(source KindSource) (map[string]any, error) {
-	var entry map[string]any
-	if err := decode(source.Raw, &entry); err != nil {
+	entry, err := decodeKind(source.Raw)
+	if err != nil {
 		return nil, model.NotJSONError(model.ContractKindFile, source.Path, "plantwire: kind file "+source.Path, err)
 	}
 	if err := CheckKind(entry); err != nil {
@@ -72,10 +76,14 @@ func parseKindFile(source KindSource) (map[string]any, error) {
 	return entry, nil
 }
 
-func summarizeKind(path string, entry map[string]any) KindSummary {
+func summarizeKind(path string, entry map[string]any) (KindSummary, error) {
+	digest, err := KindDigest(entry)
+	if err != nil {
+		return KindSummary{}, fmt.Errorf("%s: %w", path, err)
+	}
 	metrics, _ := entry["metrics"].([]any)
 	commands, _ := entry["commands"].([]any)
-	return KindSummary{Path: path, Kind: kindNameOf(entry), KindDigest: KindDigest(entry), Metrics: len(metrics), Commands: len(commands)}
+	return KindSummary{Path: path, Kind: kindNameOf(entry), KindDigest: digest, Metrics: len(metrics), Commands: len(commands)}, nil
 }
 
 func kindNameOf(entry map[string]any) string {

@@ -20,14 +20,14 @@ func TestTheDirectorCheckComparesADomainWithTheKindsDirectoriesOfTheMCPOptions(t
 	if err != nil || !slices.Equal(options.kinds.items(), []string{kinds}) {
 		t.Fatalf("parseMCPOptions = %+v, %v, want the kinds directory", options, err)
 	}
-	if err := domainCheck(options.kinds)(spec.Spec); err != nil {
-		t.Fatalf("check with the kind file = %v, want the domain accepted", err)
+	if checked, err := domainCheck(options.kinds)(spec.Spec); err != nil || len(checked) != 1 || checked[0].Kind != "pump" {
+		t.Fatalf("check with the kind file = %v, %v, want the domain accepted and the pump kind file reported", checked, err)
 	}
 	withoutKinds, err := parseMCPOptions([]string{"--role", "director"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
-	refused := domainCheck(withoutKinds.kinds)(spec.Spec)
+	_, refused := domainCheck(withoutKinds.kinds)(spec.Spec)
 	if refused == nil || !strings.Contains(refused.Error(), "no kind file of that name was loaded") {
 		t.Fatalf("check without kind files = %v, want the implementing domain refused for lack of its kind file", refused)
 	}

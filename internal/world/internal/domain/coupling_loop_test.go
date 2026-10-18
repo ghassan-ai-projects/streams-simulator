@@ -2,11 +2,11 @@ package domain
 
 import (
 	"math"
-	"math/rand"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -54,7 +54,7 @@ func TestAFeedbackLoopClosedByASampledReadAgreesWithAnIndependentRecurrence(t *t
 
 func TestAFeedbackLoopDoesNotDependOnTheOrderItIsRead(t *testing.T) {
 	t.Parallel()
-	rng := rand.New(rand.NewSource(23)) //nolint:gosec // a seeded, reproducible read schedule, not security
+	rng := randutil.NewSplitMix64(23)
 	w := coolingLoopWorld(t)
 	at := 0.0
 	for range 150 {

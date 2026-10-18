@@ -97,9 +97,9 @@ function metricJson(metric: Metric): Fields {
       ["eu_range", rangeJson(metric.range)],
       ["resolution", metric.resolution],
       ["scan_class", metric.scanClass],
-      ["writable", metric.writable],
       ["description", metric.description],
     ]),
+    writable: metric.writable,
     ...metric.extra,
   };
 }
@@ -109,9 +109,9 @@ function commandJson(command: Command): Fields {
     name: command.name,
     ...present([
       ["risk_class", command.riskClass],
-      ["safe_stop", command.safeStop],
       ["description", command.description],
     ]),
+    safe_stop: command.safeStop,
     args_schema: schemaOf(command.args),
     ...command.extra,
   };

@@ -15,7 +15,7 @@ var (
 	metricNamePattern  = regexp.MustCompile(`^[a-z][a-z0-9_]{0,23}$`)
 	commandNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 
-	kindMembers    = []string{"kind", "metrics", "commands", "kind_digest"}
+	kindMembers    = []string{"kind", "metrics", "commands"}
 	metricMembers  = []string{"name", "data_type", "unit", "eu_range", "resolution", "writable"}
 	metricRequired = []string{"name", "data_type", "resolution", "writable"}
 	commandMembers = []string{"name", "args_schema", "risk_class", "safe_stop"}

@@ -21,7 +21,12 @@ func TestTheKernelFacadeReachesEveryEdge(t *testing.T) {
 	if err := WriteAtomic(path, []byte("1")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(path, 0o640); err != nil { //nolint:gosec // the test gives the file a mode Replace must keep
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Chmod("a.json", 0o640); err != nil {
 		t.Fatal(err)
 	}
 	if err := Replace(path, []byte("2")); err != nil {
@@ -35,6 +40,15 @@ func TestTheKernelFacadeReachesEveryEdge(t *testing.T) {
 	}
 	if names, err := Names(dir); err != nil || len(names) != 1 {
 		t.Fatalf("names %v %v", names, err)
+	}
+	if raw, err := ReadRegular(path, 1); string(raw) != "2" || err != nil {
+		t.Fatalf("regular read %q %v", raw, err)
+	}
+	if _, err := ReadRegular(path, 0); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("a regular read over its limit = %v", err)
+	}
+	if _, err := ReadRegular(dir, 1); !errors.Is(err, ErrNotRegular) {
+		t.Fatalf("a regular read of a directory = %v", err)
 	}
 	if err := Replace(filepath.Join(dir, "none"), nil); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("replace of a missing file = %v", err)

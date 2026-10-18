@@ -2,12 +2,12 @@ package domain
 
 import (
 	"encoding/json"
-	"math/rand"
 	"os"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -46,7 +46,7 @@ var coupledReads = []coupledRead{
 
 func TestRandomForwardReadsAgreeWithAWorldReadOnce(t *testing.T) {
 	t.Parallel()
-	rng := rand.New(rand.NewSource(17)) //nolint:gosec // a seeded, reproducible read schedule, not security
+	rng := randutil.NewSplitMix64(17)
 	w := coupledWorld(t)
 	if _, err := w.InjectFault("unit-2", "derate", atSeconds(1500), nil); err != nil {
 		t.Fatal(err)

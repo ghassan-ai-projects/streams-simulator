@@ -19,9 +19,7 @@ func pumpKindsDirectory(t *testing.T) string {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "pump.kind.json"), raw, 0o600); err != nil {
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, dir, "pump.kind.json", raw)
 	return dir
 }
 
@@ -32,12 +30,13 @@ func TestCheckImplementsAcceptsAMatchingKindFileAndRefusesTheMissingOne(t *testi
 		t.Fatal(err)
 	}
 	compiled.Spec.Kinds[0].Implements = "pump"
-	if err := CheckImplements(compiled.Spec, []string{pumpKindsDirectory(t)}); err != nil {
-		t.Fatalf("CheckImplements = %v, want the pump kind accepted", err)
+	checked, err := CheckImplements(compiled.Spec, []string{pumpKindsDirectory(t)})
+	if err != nil || len(checked) != 1 || checked[0].Kind != "pump" || !strings.HasPrefix(checked[0].KindDigest, "sha256:") {
+		t.Fatalf("CheckImplements = %v, %v, want the pump kind accepted with its digest", checked, err)
 	}
 	var invalid *model.ValidationError
-	err = CheckImplements(compiled.Spec, nil)
-	if !errors.As(err, &invalid) || len(invalid.Issues) != 1 || invalid.Issues[0].Pointer != "/kinds/0/implements" {
+	_, err = CheckImplements(compiled.Spec, nil)
+	if !errors.As(err, &invalid) || len(invalid.Issues) != 1 || invalid.Issues[0].Pointer != "/kinds/0/implements" || !errors.Is(err, ErrKindFileMissing) {
 		t.Fatalf("CheckImplements without kind files = %v, want a domain validation error at /kinds/0/implements", err)
 	}
 }

@@ -332,7 +332,8 @@
           "confirmation_channels": ["chiller.running"],
           "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1.0}], "time_constant_s": 0},
           "idempotency_window_s": 600,
-          "risk_class": "medium"
+          "risk_class": "medium",
+          "safe_stop": true
         },
         {
           "name": "start_chiller",

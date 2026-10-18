@@ -178,3 +178,48 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > declare `air_out` for air demand with no description saying so. The simulator backlog
 > of the same round lists the failure behaviours (alarm never raised, frozen reading
 > without a quality flag, no feeder trip, no late or duplicated readings).
+
+> **Left with a directive after the nolint sweep (2026-10-18).**
+> D-60 (`test/contract/factory_scale_test.go`, `//nolint:paralleltest`): the campus speed budget compares the wall clock
+> of a 2,000-tag run with 20 s, so any parallel test in the package distorts it. Hidden dependency: the wall clock and the
+> CPU shared with other tests. Design change that would make it fixable: report the run's own work (events emitted and
+> a CPU-time or allocation counter taken by the run module on the run's goroutine) and budget that, or move the budget
+> to a benchmark (`go test -bench`) that is run alone by design. Trigger: a second wall-clock budget appears, or the
+> package gains enough parallel tests that the budget flakes.
+> D-61 (real `SIGINT` delivery): the device serve test no longer sends a real signal; `uds.serveInterruptedBy` takes the
+> interrupt source, so the test proves the source is registered before the socket is bound. That `kernel.UntilInterrupted`
+> turns a real `SIGINT` into cancellation is proven by no test, because a signal is process-wide and a re-executed helper
+> process needs `exec` of the test binary (gosec G204). Trigger to fix: a test-helper in `internal/testsupport` that
+> re-executes the test binary with a fixed, validated argument list.
+> D-62 (error text `End: ...`, `run/internal/durable`): the messages begin with the capitalised operation name `End`
+> (the `Run.End` method); the text is kept because the comment that stood on the old directive called it part of the
+> error contract and was not verified against `contracts/`, `test/pin/` and the docs in this sweep. The capital is
+> built from the constant `endOperation` so staticcheck ST1005 no longer fires. Trigger to fix: a check of those
+> places shows no contract, then lower-case the text in `endFailed` and update the two prefix assertions.
+> D-63 (`canvasbridge/internal/transport/admission.go`, `//nolint:gosec` G124): the pairing cookie has no `Secure`
+> attribute because the bridge serves plain HTTP on loopback; Safari and Go's cookie jar do not send a Secure cookie over
+> `http://`, which would unpair the canvas. Hidden dependency: the transport scheme is decided nowhere. Design change:
+> the server knows whether it is served over TLS and sets `Secure` from that fact. Trigger: the bridge serves over TLS or
+> to a remote client.
+> D-64 (`canvasbridge/internal/process/command.go` and `director.go`, `//nolint:gosec` G204): the bridge runs its own
+> executable, resolved once at start, with an argv it built; gosec only accepts literal arguments. Design change: none
+> that keeps an exec of a dynamic path; the bridge would have to embed streamsim as a library instead of running it as
+> a child process. Trigger: the canvas bridge and the binary share one process.
+
+> **Found while reviewing the physical-devices milestone M1 (2026-10-18).**
+> D-56 (`device serve`, `internal/device`): it runs a domain without the `implements` check. It serves the device emulator
+> for field-side protocol testing, where the domain is a fixture, not a node announced to a host. Trigger to fix: the
+> emulator announces a kind to a host, or a domain with `implements` is served for a hardware-in-the-loop run; then it
+> takes `--kinds-dir` and the check as `plantwire node` does.
+> D-57 (loaders that skip the check on purpose): `domain lint` judges a nominal day of the domain's behaviour, not its
+> interface; `suite` and `release` generate and digest scenarios from shipped domains, which declare no `implements`;
+> `replay`, `verify`, `scenario from-run` and `run.ExportScenarioFile` reproduce a recorded run and send nothing to a
+> host, so the recorded `implements_checked` and the domain digest are the evidence. Trigger to fix: a shipped domain
+> implements a kind file (then `suite` and `release` must refuse a drifted one), or a replay is sent to a host.
+> D-58 (error text outside the workspace): a message about a file given through `--components-dir` keeps its absolute path,
+> because the bridge relativises only paths inside the workspace. Trigger to fix: the bridge serves a remote client, or a
+> message crosses a trust boundary; then the binary reports a component by id, not by path.
+> D-59 (KIND schema, `contracts/plant-wire/schemas/KIND.schema.json`): it constrains `unit` to a length of 32 and no more
+> (no UCUM check), and does not limit how many commands of a kind are `safe_stop`. A kind with several safe stops is
+> legal today; the host takes safe stops from its commissioned inventory, not from the birth. Trigger to fix: a host
+> or gateway needs exactly one safe stop per kind, or a unit check is added to the contract.

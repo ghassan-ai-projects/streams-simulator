@@ -2,9 +2,11 @@ package architecture
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -64,8 +66,9 @@ func ratchetBase(t *testing.T) string {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("gate ratchet skipped: git is not available")
 	}
-	for _, main := range []string{"origin/main", "main"} {
-		if base, err := git(t, "merge-base", main, "HEAD"); err == nil && base != "" {
+	for _, mergeBase := range mergeBaseCommands {
+		output, err := mergeBase(t).Output()
+		if base := strings.TrimSpace(string(output)); err == nil && commitID.MatchString(base) {
 			return base
 		}
 	}
@@ -73,11 +76,17 @@ func ratchetBase(t *testing.T) string {
 	return ""
 }
 
-func git(t *testing.T, args ...string) (string, error) {
-	t.Helper()
-	command := exec.CommandContext(t.Context(), "git", append([]string{"-C", ratchetRoot}, args...)...) //nolint:gosec // G204: the arguments are constants and a commit id git printed
-	output, err := command.Output()
-	return strings.TrimSpace(string(output)), err
+var commitID = regexp.MustCompile(`^([0-9a-f]{40}|[0-9a-f]{64})$`)
+
+// Every git invocation has a fixed argument list; the commit id git printed
+// reaches git only on its standard input.
+var mergeBaseCommands = []func(*testing.T) *exec.Cmd{
+	func(t *testing.T) *exec.Cmd {
+		return exec.CommandContext(t.Context(), "git", "-C", ratchetRoot, "merge-base", "origin/main", "HEAD")
+	},
+	func(t *testing.T) *exec.Cmd {
+		return exec.CommandContext(t.Context(), "git", "-C", ratchetRoot, "merge-base", "main", "HEAD")
+	},
 }
 
 func gateViolations(t *testing.T, base string) []string {
@@ -97,11 +106,26 @@ func gateViolations(t *testing.T, base string) []string {
 
 func baseVersion(t *testing.T, base, path string) []byte {
 	t.Helper()
-	content, err := git(t, "show", base+":"+path)
+	command := exec.CommandContext(t.Context(), "git", "-C", ratchetRoot, "cat-file", "--batch")
+	command.Stdin = strings.NewReader(base + ":" + path + "\n")
+	output, err := command.Output()
 	if err != nil {
 		return nil
 	}
-	return []byte(content + "\n")
+	return blobContent(output)
+}
+
+func blobContent(output []byte) []byte {
+	header, body, found := bytes.Cut(output, []byte("\n"))
+	fields := strings.Fields(string(header))
+	if !found || len(fields) != 3 || fields[1] != "blob" {
+		return nil
+	}
+	size, err := strconv.Atoi(fields[2])
+	if err != nil || size > len(body) {
+		return nil
+	}
+	return []byte(strings.TrimSpace(string(body[:size])) + "\n")
 }
 
 func currentVersion(t *testing.T, path string) []byte {
@@ -120,11 +144,13 @@ func packageExists(pkg string) bool {
 
 func commitMessages(t *testing.T, base string) string {
 	t.Helper()
-	messages, err := git(t, "log", "--format=%B", base+"..HEAD")
+	command := exec.CommandContext(t.Context(), "git", "-C", ratchetRoot, "log", "--format=%B", "--stdin")
+	command.Stdin = strings.NewReader("HEAD\n^" + base + "\n")
+	messages, err := command.Output()
 	if err != nil {
 		t.Fatalf("read the commit messages since %s: %v", base, err)
 	}
-	return messages
+	return strings.TrimSpace(string(messages))
 }
 
 func approvals(messages string) []string {

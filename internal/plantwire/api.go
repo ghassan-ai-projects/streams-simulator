@@ -22,6 +22,10 @@ type WireFault = domain.WireFault
 type KindSummary = domain.KindSummary
 
 var (
+	ErrKindFileMissing  = domain.ErrKindFileMissing
+	ErrKindDrift        = domain.ErrKindDrift
+	ErrNotCanonical     = domain.ErrNotCanonical
+	ErrDuplicateMember  = domain.ErrDuplicateMember
 	ErrRefused          = domain.ErrRefused
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap

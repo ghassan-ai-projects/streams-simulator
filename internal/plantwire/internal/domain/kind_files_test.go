@@ -20,9 +20,12 @@ func TestParseKindFilesIndexesEachKindAndSummarisesIt(t *testing.T) {
 	if err != nil || len(files) != 2 || len(summaries) != 2 {
 		t.Fatalf("ParseKindFiles = %v, %v, %v, want two kinds", files, summaries, err)
 	}
-	pump := summaries[0]
-	if pump.Path != "pump.kind.json" || pump.Kind != "pump" || pump.Metrics != 2 || pump.Commands != 3 || pump.KindDigest != KindDigest(files["pump"]) {
-		t.Fatalf("summary = %+v, want the pump kind file with its digest", pump)
+	pump, digest := summaries[0], ""
+	if digest, err = KindDigest(files["pump"]); err != nil {
+		t.Fatal(err)
+	}
+	if pump.Path != "pump.kind.json" || pump.Kind != "pump" || pump.Metrics != 2 || pump.Commands != 3 || pump.KindDigest != digest {
+		t.Fatalf("summary = %+v, want the pump kind file with its digest %s", pump, digest)
 	}
 }
 
@@ -40,6 +43,16 @@ func TestParseKindFilesRefusesWhatIsNotAKindFile(t *testing.T) {
 			"thin.kind.json: plantwire: kind file fails its schema"},
 		{"one kind defined twice", []KindSource{{Path: "a.kind.json", Raw: []byte(valid)}, {Path: "b.kind.json", Raw: []byte(valid)}},
 			ErrKindFileDuplicate, `"valve" is defined by a.kind.json and b.kind.json`},
+		{"a second document after the first", []KindSource{{Path: "two.kind.json", Raw: []byte(valid + valid)}}, nil, "trailing JSON document"},
+		{"trailing text after the document", []KindSource{{Path: "tail.kind.json", Raw: []byte(valid + " x")}}, nil, "trailing data"},
+		{"a member named twice", []KindSource{{Path: "twice.kind.json", Raw: []byte(`{"kind": "a", "kind": "b", "metrics": [], "commands": []}`)}},
+			ErrDuplicateMember, `"kind"`},
+		{"a member named twice inside a command", []KindSource{{Path: "nested.kind.json", Raw: []byte(
+			`{"kind": "a", "metrics": [], "commands": [{"name": "go", "args_schema": {"type": "object", "type": "array"}}]}`)}},
+			ErrDuplicateMember, `"type"`},
+		{"a number beyond the range of a double", []KindSource{{Path: "huge.kind.json", Raw: []byte(
+			`{"kind": "a", "metrics": [], "commands": [{"name": "go", "args_schema": {"type": "object", "maximum": 1e999}}]}`)}},
+			ErrNotCanonical, "huge.kind.json"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

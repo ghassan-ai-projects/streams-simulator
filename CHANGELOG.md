@@ -4,6 +4,23 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A kind file never carries `kind_digest`.** The `KIND` schema forbids the member (a stale digest used to be accepted and
+  ignored), and `kind validate` and every `--kinds-dir` load refuse it at `/kind_digest`; a metric's `eu_range` and
+  `instrument_range` need `min` below `max`. The plant wire contract digest changes (schema, one invalid fixture). The canvas
+  bridge lists a kind's `kind`, a component's `id` and a `title` only when they are plain text of the expected form, and
+  lists only the path of a file over 256 KiB.
+- **A safe stop is the domain's.** An effector may carry `safe_stop: true` (domain spec). The plant wire node announces
+  and runs the commands the domain flags; `plantwire node` loses `--safe-stop` and takes `--kinds-dir`, and a domain that
+  implements a kind file is checked against it before the node connects, so the announced `kind_digest` and safe stops
+  are the kind file's. The `implements` check compares the safe-stop flag of every command. The `kind twin` scaffold
+  flags the safe stops of its kind files.
+- **The `implements` check cannot be skipped.** `run.ScenarioRunOptions.CheckDomain` with no check refuses a domain that
+  implements a kind file, as the director does (`run.CheckDomain`, one implementation). `domain validate`, `run` and
+  `sim.world.create` print `implements_checked` (`{kind, kind_digest}` per kind file checked; empty when the domain
+  implements none). Kind files are read only for a domain that implements one, only as regular files of at most 1 MiB,
+  as one JSON document with no member named twice and no number beyond the range of a double; `kind validate` no longer
+  prints a blank digest for such a file. `plantwire.CheckImplements` returns what it checked, and `plantwire.Scaffold`
+  replaces `ReadKindFiles` and `CheckImplementsKinds`: `kind twin` is one facade call.
 - **`streamsim kind twin`.** Scaffolds a runnable twin of kind files: `kind twin [<file.kind.json>...] --choices
   <choices.json> [--kinds-dir <dir>] [--out <file>]` writes a domain whose kinds `implements` the kind files, from a
   small choices document (`twin-choices-v0.1`): per metric the library instrument that measures it or `none`, per

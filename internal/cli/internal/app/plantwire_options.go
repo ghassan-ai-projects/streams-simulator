@@ -10,7 +10,7 @@ type plantWireNodeOptions struct {
 	seed                                                                 uint64
 	sliceS, durationS                                                    float64
 	capMS                                                                int64
-	policies, safeStops                                                  listFlag
+	policies, kinds                                                      listFlag
 }
 
 func parsePlantWireNodeOptions(args []string, stderr io.Writer) (plantWireNodeOptions, error) {
@@ -39,7 +39,7 @@ func registerPlantWireNodeFlags(fs *flag.FlagSet, o *plantWireNodeOptions) {
 	fs.Float64Var(&o.durationS, "duration", 3600, "world seconds to run")
 	fs.Int64Var(&o.capMS, "barrier-cap-ms", 30000, "wall-time cap of each barrier")
 	fs.Var(&o.policies, "policy", "allowed policy digest; repeatable")
-	fs.Var(&o.safeStops, "safe-stop", "safe-stop command name; repeatable")
+	registerKindsDirs(fs, &o.kinds)
 }
 
 type plantWireHostOptions struct {

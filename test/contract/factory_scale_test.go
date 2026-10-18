@@ -64,7 +64,7 @@ func TestTheCampusFixtureCarriesTwoThousandTagsComposedOnlyFromTheFactory(t *tes
 	}
 }
 
-//nolint:paralleltest // a wall-clock budget runs alone in its package
+//nolint:paralleltest // wall-clock budget: runs alone in its package (governance/DEFERRED.md D-60)
 func TestTheCampusRunsTenMinutesThroughTheRunPipelineWithinItsSpeedBudget(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the speed budget runs the 2,000-tag campus")

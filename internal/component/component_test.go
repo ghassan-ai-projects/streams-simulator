@@ -122,9 +122,7 @@ func TestACustomerDirectoryCannotUseTheStreamsimNamespace(t *testing.T) {
 	if err := os.MkdirAll(folder, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(folder, "ahu.component.json"), raw, 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, folder, "ahu.component.json", raw)
 	_, err = NewLibrary([]string{customer})
 	if err == nil || !strings.Contains(err.Error(), `reserved "streamsim/" namespace`) {
 		t.Fatalf("error = %v, want the reserved namespace refused", err)

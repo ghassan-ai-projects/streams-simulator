@@ -139,11 +139,9 @@ func writeNominalLabel(t *testing.T, dir string) string {
 // writeFile writes content to name under a fresh temporary directory.
 func writeFile(t *testing.T, name, content string) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), name)
-	if err := os.WriteFile(path, []byte(content), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
-	return path
+	dir := t.TempDir()
+	testsupport.WriteFileIn(t, dir, name, []byte(content))
+	return filepath.Join(dir, name)
 }
 
 func TestAContractViolationListsEveryIssueWithItsPointer(t *testing.T) {

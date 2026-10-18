@@ -2,7 +2,6 @@ package domain
 
 import (
 	"encoding/json"
-	"errors"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -19,38 +18,38 @@ func (fakeFacts) HasFault(id string) bool          { return id == "f-1" }
 func (fakeFacts) HasPerturbation(name string) bool { return name == "p-1" }
 func (fakeFacts) HasEffector(name string) bool     { return name == "act" }
 
-func (fakeFacts) CheckFaultParams(_ string, params map[string]any) error {
+func (fakeFacts) CheckFaultParams(_ string, params map[string]any) string {
 	return onlyParameter(params, "severity")
 }
 
-func (facts fakeFacts) CheckPerturbationParams(name string, params map[string]any) error {
+func (facts fakeFacts) CheckPerturbationParams(name string, params map[string]any) string {
 	if !facts.HasPerturbation(name) {
-		return errors.New("unknown perturbation")
+		return "unknown perturbation"
 	}
 	return onlyParameter(params, "rate")
 }
 
-func (fakeFacts) CheckPerturbationWindow(_ string, fromNS, untilNS int64) error {
+func (fakeFacts) CheckPerturbationWindow(_ string, fromNS, untilNS int64) string {
 	if untilNS != 0 && untilNS < fromNS {
-		return errors.New("window ends before it starts")
+		return "window ends before it starts"
 	}
-	return nil
+	return ""
 }
 
-func (fakeFacts) CheckEffectorArgs(_ string, args map[string]any) error {
+func (fakeFacts) CheckEffectorArgs(_ string, args map[string]any) string {
 	if _, ok := args["level"]; !ok {
-		return errors.New("missing level")
+		return "missing level"
 	}
-	return nil
+	return ""
 }
 
-func onlyParameter(params map[string]any, name string) error {
+func onlyParameter(params map[string]any, name string) string {
 	for key := range params {
 		if key != name {
-			return errors.New("no parameter " + key)
+			return "no parameter " + key
 		}
 	}
-	return nil
+	return ""
 }
 
 func command(op string, args map[string]any) model.ScenarioCommand {

@@ -106,7 +106,7 @@ func runExchange(t *testing.T, steps []exchangeStep) []map[string]any {
 		}
 	}}
 	options := sliceOptions(5)
-	options.Policies, options.SafeStop = []string{policy}, []string{"safe_stop"}
+	options.Policies = []string{policy}
 	if err := NewSession(runOf(t, testsupport.PumpBoardDomain()), host, options).Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}

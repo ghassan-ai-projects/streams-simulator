@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,6 +37,34 @@ func TestAPlantWireNodeRunsAgainstAHostAndWritesItsRunFolder(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(out, "journal.jsonl")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAPlantWireNodeChecksTheKindFilesOfItsDomainLikeEveryOtherCommand(t *testing.T) {
+	t.Parallel()
+	domains := filepath.Dir(pumpDomainImplementing(t))
+	path := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "h.sock")
+	base := func(out string, extra ...string) []string {
+		args := []string{"plantwire", "node", "--host-socket", path, "--domain", "pump-board", "--domains-dir", domains,
+			"--adapters-dir", testsupport.AdaptersDir(), "--out", out, "--duration", "180"}
+		return append(args, extra...)
+	}
+	assertImplementsRefusal(t, invoke(t, base(t.TempDir())...), "pump-board", "no kind file of that name was loaded")
+	drifted := func(raw string) string { return strings.Replace(raw, `"m3/h"`, `"l/s"`, 1) }
+	assertImplementsRefusal(t, invoke(t, base(t.TempDir(), "--kinds-dir", pumpKindsDirectory(t, drifted))...), "pump-board", "/metrics/0/unit")
+	reports := referenceHost(t, path)
+	out := t.TempDir()
+	doc := invoke(t, base(out, "--kinds-dir", pumpKindsDirectory(t, asWritten))...).mustSucceed(t).document(t, "plantwire_node")
+	if doc["out"] != out || (<-reports).Refused != "" {
+		t.Fatalf("document %v", doc)
+	}
+}
+
+func TestAPlantWireNodeTakesNoSafeStopOptionBecauseItsDomainFlagsThem(t *testing.T) {
+	t.Parallel()
+	got := invoke(t, "plantwire", "node", "--host-socket", "/tmp/x.sock", "--domain", "pump-board", "--out", t.TempDir(), "--safe-stop", "safe_stop")
+	if body := got.failure(t); got.code != 2 || body["code"] != "usage_invalid" {
+		t.Fatalf("exit %d with %v, want a usage refusal of the retired --safe-stop option", got.code, body)
 	}
 }
 

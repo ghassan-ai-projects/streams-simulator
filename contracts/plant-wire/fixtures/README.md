@@ -18,7 +18,10 @@ An exchange step is one of:
 - `{"now_ns": t}`: the node's time (world time for a simulated node) is now `t`.
 
 Every command fixture's `idempotency_key` is the digest of its content (SPEC §9), except where an exchange reuses a key on
-purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`), `capability_digest` and each kind's `kind_digest` (SPEC §5); `valid/KIND.json` is the first kind of `valid/NBIRTH.json` without its `kind_digest`.
+purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`), `capability_digest` and each kind's `kind_digest` (SPEC §5); `valid/KIND.json` is the first kind of `valid/NBIRTH.json` without its `kind_digest`. A kind file never carries a
+`kind_digest` (`invalid/KIND-has-kind-digest.json`, even a correct one): the digest is computed from the file, and a stale
+member must not be accepted and ignored. A kind file's metric ranges also need `min` below `max`; a schema cannot say that,
+so a conformant side checks it as well.
 
 The `lying-result-*` exchanges cover one command per class (setpoint, start, safe stop): the device reports success while the
 observations do not move. `verified-result` is the positive control: the observation moves, so the host counts it done.

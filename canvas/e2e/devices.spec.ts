@@ -84,3 +84,118 @@ test("a device with one reading and one command is created, saved, listed after 
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
   await expect(name).not.toHaveAttribute("aria-invalid", "true");
 });
+
+async function addNumberReading(page: Page, name: string, unit: string): Promise<void> {
+  await page.getByRole("button", { name: "Add a reading" }).click();
+  await page.getByLabel("Name", { exact: true }).fill(name);
+  await page.getByLabel("Unit", { exact: true }).fill(unit);
+  await page.getByLabel("Minimum").fill("0");
+  await page.getByLabel("Maximum").fill("100");
+}
+
+async function defineCooler(page: Page): Promise<void> {
+  await createDevice(page, "e2e_cooler");
+  await addNumberReading(page, "temperature", "Cel");
+  await addNumberReading(page, "duty", "%");
+  await page.getByLabel("Resolution", { exact: true }).fill("0.1");
+  await page.getByLabel("Setpoint").check();
+  await page.getByRole("button", { name: "Add a command" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("set_duty");
+  await page.getByLabel("Risk class").selectOption({ label: "Medium" });
+  await page.getByRole("button", { name: "Add argument" }).click();
+  await page.getByLabel("Argument 1 name").fill("duty");
+  await page.getByLabel("Argument 1 minimum").fill("0");
+  await page.getByLabel("Argument 1 maximum").fill("100");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(verdict(page, "Saved and valid.")).toBeVisible();
+}
+
+function step(page: Page, name: RegExp) {
+  return page.getByRole("navigation", { name: "Device steps" }).getByRole("button", { name });
+}
+
+async function chooseThermistor(page: Page): Promise<void> {
+  const temperature = page.getByRole("group", { name: "Reading temperature" });
+  await temperature.getByRole("button", { name: "Change the instrument of temperature" }).click();
+  await temperature.getByLabel("Find an instrument for temperature").fill("thermistor");
+  await temperature.getByRole("listbox", { name: "Instruments for temperature" }).selectOption({ index: 1 });
+  await temperature.getByRole("button", { name: "Use this instrument" }).click();
+  await expect(temperature.getByLabel("Instrument", { exact: true })).toHaveValue(/thermistor/i);
+  await temperature.getByLabel("Starts at").fill("30");
+}
+
+async function chooseGradualResponse(page: Page, timeConstant: string): Promise<void> {
+  const command = page.getByRole("group", { name: "Command set_duty" });
+  await command.getByLabel("Response").selectOption({ label: "Sets a reading, and another reading follows gradually" });
+  const effect = command.getByRole("group", { name: "Effect 1 of set_duty" });
+  await effect.getByLabel("Reading that follows").selectOption({ label: "e2e_cooler · temperature" });
+  await effect.getByLabel("Gain").fill("-0.1");
+  await effect.getByLabel("Time constant").fill(timeConstant);
+}
+
+test("a device gets a twin: an instrument and a gradual response are chosen, the binary's issue shows on its field, the twin is created, and the choices come back after a reload", async ({
+  page,
+  lab,
+}) => {
+  await defineCooler(page);
+  await step(page, /^Behaviour/).click();
+  await expect(page.getByRole("region", { name: "Behaviour of e2e_cooler" })).toBeVisible();
+  await expect(page.getByLabel("Twin name")).toHaveValue("e2e-cooler-twin");
+  await chooseThermistor(page);
+  await chooseGradualResponse(page, "-5");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  await page.getByRole("button", { name: "Create twin" }).click();
+  await expect(verdict(page, /The binary refuses the choices/)).toBeVisible();
+  const effect = page.getByRole("group", { name: "Effect 1 of set_duty" });
+  await expect(effect.getByLabel("Time constant")).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByRole("region", { name: "Issues" }).getByText("e2e_cooler · set_duty · Time constant"),
+  ).toBeVisible();
+
+  await effect.getByLabel("Time constant").fill("180");
+  await page.getByRole("button", { name: "Create twin" }).click();
+  const reading = page.getByRole("group", { name: "Reading temperature" });
+  await expect(reading.getByText("Needs a resolution.")).toBeVisible();
+  await expect(effect.getByLabel("Time constant")).not.toHaveAttribute("aria-invalid", "true");
+  await reading.getByRole("button", { name: "Set it in the Interface step" }).click();
+  await expect(page.getByRole("region", { name: "Editing e2e_cooler" })).toBeVisible();
+  await expect(page.getByLabel("Resolution", { exact: true })).toBeFocused();
+  await page.getByLabel("Resolution", { exact: true }).fill("0.1");
+  await expect(verdict(page, "Unsaved changes")).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(verdict(page, "Saved and valid.")).toBeVisible();
+  await step(page, /^Behaviour/).click();
+  await expect(page.getByRole("region", { name: "Behaviour of e2e_cooler" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Create twin" }).click();
+  await expect(verdict(page, "Twin ready.")).toBeVisible();
+  await expect(step(page, /^Check/)).toContainText("Passed");
+  expect(existsSync(join(lab.workspace, "domains", "e2e-cooler-twin.domain.json"))).toBe(true);
+  const choices = JSON.parse(readFileSync(join(lab.workspace, "twins", "e2e_cooler.twin.json"), "utf8")) as unknown;
+  expect(choices).toMatchObject({ id: "e2e-cooler-twin", kinds: [{ kind: "e2e_cooler" }] });
+
+  await step(page, /^Check/).click();
+  const check = page.getByRole("region", { name: "Check of e2e_cooler" });
+  await expect(check.getByText("The twin matches its device")).toBeVisible();
+  await check.getByText("Technical details").click();
+  await expect(check.getByText("domains/e2e-cooler-twin.domain.json")).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  await page.reload();
+  await step(page, /^Behaviour/).click();
+  await expect(page.getByLabel("Twin name")).toHaveValue("e2e-cooler-twin");
+  const temperature = page.getByRole("group", { name: "Reading temperature" });
+  await expect(temperature.getByLabel("Instrument", { exact: true })).toHaveValue(/thermistor/i);
+  await expect(temperature.getByLabel("Starts at")).toHaveValue("30");
+  const again = page.getByRole("group", { name: "Effect 1 of set_duty" });
+  await expect(again.getByLabel("Time constant")).toHaveValue("180");
+  await expect(again.getByLabel("Gain")).toHaveValue("-0.1");
+
+  await page.getByRole("button", { name: "Create twin" }).click();
+  await expect(verdict(page, /A plant with this name already exists/)).toBeVisible();
+  await page.getByRole("button", { name: "Replace it" }).click();
+  await expect(verdict(page, "Twin ready.")).toBeVisible();
+  await page.getByRole("button", { name: "Open as a plant" }).click();
+  await expect(page).toHaveURL(/#\/plant\?domain=domains%2Fe2e-cooler-twin\.domain\.json/);
+});

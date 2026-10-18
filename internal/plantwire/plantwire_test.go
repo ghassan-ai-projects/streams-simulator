@@ -105,7 +105,13 @@ func TestANodeServesAWholeSessionOverThePrivateSocket(t *testing.T) {
 func TestANodeRefusesASharedSocket(t *testing.T) {
 	t.Parallel()
 	path, _ := hostSocket(t)
-	if err := os.Chmod(filepath.Dir(path), 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
+	directory := filepath.Dir(path)
+	parent, err := os.OpenRoot(filepath.Dir(directory))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = parent.Close() }()
+	if err := parent.Chmod(filepath.Base(directory), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := Serve(t.Context(), pondRun(t), path, time.Second, Options{}); !errors.Is(err, ErrSocketNotPrivate) {

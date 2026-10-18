@@ -3,6 +3,15 @@ import type { ArgRow, Command, FieldIssue, KindFile, Range } from "./types";
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
 const fileStem = /^[A-Za-z0-9][A-Za-z0-9._-]{0,117}$/;
 
+export const twinKindRule =
+  "For a twin: lower-case letters, digits and _ only, starting with a letter, 20 characters at most.";
+
+export const twinReadingRule =
+  "For a twin: lower-case letters, digits and _ only, starting with a letter, 24 characters at most.";
+
+export const twinCommandRule =
+  "For a twin: lower-case letters, digits and _ only, starting with a letter, 64 characters at most.";
+
 export const idRule = "Letters, digits and . _ : - only, starting with a letter or digit.";
 
 export function looksLikeId(name: string): boolean {

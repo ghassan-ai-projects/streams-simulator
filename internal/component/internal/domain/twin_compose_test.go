@@ -108,6 +108,19 @@ func TestASafeStopDrivesEveryActuatedMetricToTheLowestValueOfItsRange(t *testing
 	}
 }
 
+func TestOnlyTheSafeStopsOfTheKindFileAreFlaggedSafeStopInTheTwin(t *testing.T) {
+	t.Parallel()
+	effectors := member(t, heaterTwin(t), "kinds", 0, "effectors")
+	if got := member(t, named(t, effectors, "effector", "name", "halt"), "safe_stop"); got != true {
+		t.Errorf("halt safe_stop = %v, want true: the kind file flags it", got)
+	}
+	for _, name := range []string{"set_setpoint", "ping"} {
+		if got := member(t, named(t, effectors, "effector", "name", name), "safe_stop"); got != nil {
+			t.Errorf("%s safe_stop = %v, want the member absent: the kind file does not flag it", name, got)
+		}
+	}
+}
+
 func TestAFirstOrderResponseMakesTheReadingFollowItsRestValueAndTheDrivingMetric(t *testing.T) {
 	t.Parallel()
 	dynamics := member(t, heaterTwin(t), "kinds", 0, "dynamics", 0)

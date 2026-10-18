@@ -84,12 +84,10 @@ func TestACancelledPauseStopsBeforeTheSync(t *testing.T) {
 func TestAHostRefusesASharedDirectory(t *testing.T) {
 	t.Parallel()
 	shared := filepath.Join(t.TempDir(), "shared")
-	if err := os.Mkdir(shared, 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
+	if err := os.Mkdir(shared, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(shared, 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
-		t.Fatal(err)
-	}
+	widen(t, filepath.Dir(shared), "shared", 0o755)
 	if err := ServeHost(t.Context(), filepath.Join(shared, "h.sock"), nil, Pacing{}, nil); !errors.Is(err, ErrSocketNotPrivate) {
 		t.Fatalf("ServeHost in a shared directory = %v", err)
 	}

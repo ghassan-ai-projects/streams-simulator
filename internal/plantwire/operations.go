@@ -26,16 +26,12 @@ func ParseInventory(raw []byte) (map[string]string, error) {
 	return host.ParseInventory(raw)
 }
 
-func CheckImplements(spec *model.DomainSpec, kindsDirs []string) error {
+func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, error) {
 	return app.CheckImplements(spec, kindsDirs)
 }
 
-func ReadKindFiles(paths, dirs []string) (map[string]map[string]any, error) {
-	return app.ReadKindFiles(paths, dirs)
-}
-
-func CheckImplementsKinds(spec *model.DomainSpec, kinds map[string]map[string]any) error {
-	return app.CheckImplementsKinds(spec, kinds)
+func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[string]map[string]any) (T, *model.DomainSpec, error)) (T, error) {
+	return app.Scaffold(paths, dirs, source, scaffold)
 }
 
 func ValidateKindFiles(paths []string) ([]KindSummary, error) {

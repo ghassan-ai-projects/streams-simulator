@@ -91,12 +91,16 @@ prose, so an id cannot carry an instruction.
 - `capability_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the array of `{kind, commands}` objects,
   sorted by `kind`, each `commands` array sorted by `name`, taken from `NBIRTH.kinds`.
 - **Kind file and `kind_digest`.** A kind file is a JSON document that is exactly one `NBIRTH.kinds` entry (`kind`, `metrics`,
-  `commands`) without its `kind_digest`; schema `KIND`. The `NBIRTH.kinds` entry schema is the `KIND` definition plus a required
-  `kind_digest`, so the two cannot diverge. `kind_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the
-  entry without its `kind_digest` member. `capability_digest` is not enough to say that two nodes implement the same model: it
-  covers only `{kind, commands}` and ignores metrics, so two implementations that differ in metrics, units or ranges share it.
-  A host recomputes every `kind_digest` from the entry it received and refuses a session whose digest differs
-  (`inventory_mismatch`).
+  `commands`) without its `kind_digest`; schema `KIND`. A kind file **never carries** a `kind_digest` (a stale one would be
+  accepted and ignored, so the schema forbids the member), and the ranges of its metrics (`eu_range`, `instrument_range`) need
+  `min` below `max`, which a validator checks beyond the schema. The `NBIRTH.kinds` entry schema is the `KIND` definition plus a
+  required `kind_digest`, so the two cannot diverge. `kind_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of
+  the entry without its `kind_digest` member. `capability_digest` is not enough to identify a model: it covers only
+  `{kind, commands}` and ignores metrics, so two implementations that differ in metrics, units or ranges share it.
+  The kind file is the contract. An implementation that has the file (a simulated domain) is proven equal to it by comparing
+  its own entry with the file; a device is proven to match it only by announcing a `kind_digest` equal to the file's, which a
+  host or gateway checks at commissioning. A host recomputes every `kind_digest` from the entry it received and refuses a
+  session whose digest differs (`inventory_mismatch`).
 
 ## 6. Handshake, sessions and rebirth
 

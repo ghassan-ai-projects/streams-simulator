@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"cmp"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/fs"
 	"maps"
 	"slices"
@@ -58,25 +60,35 @@ func nameOf(command any) string {
 	return name
 }
 
-func KindDigest(entry map[string]any) string {
+var ErrNotCanonical = errors.New("plantwire: canonical form of a kind")
+
+func KindDigest(entry map[string]any) (string, error) {
 	body := maps.Clone(entry)
 	delete(body, "kind_digest")
-	digest, _ := canonical.Digest(body)
-	return digest
+	digest, err := canonical.Digest(body)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrNotCanonical, err)
+	}
+	return digest, nil
 }
 
-func WithKindDigests(templates []any) []any {
+func WithKindDigests(templates []any) ([]any, error) {
 	for _, template := range templates {
 		entry := template.(map[string]any)
-		entry["kind_digest"] = KindDigest(entry)
+		digest, err := KindDigest(entry)
+		if err != nil {
+			return nil, err
+		}
+		entry["kind_digest"] = digest
 	}
-	return templates
+	return templates, nil
 }
 
 func KindsMisdigested(kinds []any) bool {
 	return slices.ContainsFunc(kinds, func(kind any) bool {
 		entry, _ := kind.(map[string]any)
 		declared, _ := entry["kind_digest"].(string)
-		return declared != KindDigest(entry)
+		digest, err := KindDigest(entry)
+		return err != nil || declared != digest
 	})
 }

@@ -1,4 +1,4 @@
-import { idRule, issuesOn, kindFacts, looksLikeId, renameKind } from "../../../model/devices";
+import { idRule, issuesOn, kindFacts, looksLikeId, renameKind, twinKindRule } from "../../../model/devices";
 import type { KindFile } from "../../../model/devices";
 import { cx, panel, useFocusOnMount } from "../../primitives";
 import styles from "./Devices.module.css";
@@ -18,6 +18,7 @@ export function KindForm({ kind, devices, issues }: FormProps & { readonly kind:
       <Field
         label="Name"
         hint={idRule}
+        also={twinKindRule}
         caution={likely ? "" : "The binary is likely to refuse this name."}
         issues={issuesOn(issues, "kind", "", "kind")}
       >

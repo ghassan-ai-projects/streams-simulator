@@ -44,42 +44,29 @@ func validateDomainFile(path string, kinds listFlag) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if err := checkImplements(c.Spec, path, kinds); err != nil {
+	checked, err := checkImplements(c.Spec, path, kinds)
+	if err != nil {
 		return nil, err
 	}
-	return domainValidation{Summary: domain.Summarize(c), Valid: true}, nil
+	return domainValidation{Summary: domain.Summarize(c), Valid: true, ImplementsChecked: checked}, nil
 }
 
 type domainValidation struct {
 	domain.Summary
-	Valid bool `json:"valid"`
+	Valid             bool                      `json:"valid"`
+	ImplementsChecked []model.ImplementsChecked `json:"implements_checked"`
 }
 
-func checkImplements(spec *model.DomainSpec, source string, kinds listFlag) error {
-	if err := plantwire.CheckImplements(spec, kinds.items()); err != nil {
-		return fmt.Errorf("streamsim: %w", model.WithSource(err, source))
+func checkImplements(spec *model.DomainSpec, source string, kinds listFlag) ([]model.ImplementsChecked, error) {
+	checked, err := plantwire.CheckImplements(spec, kinds.items())
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", model.WithSource(err, source))
 	}
-	return nil
+	return checked, nil
 }
 
-func domainCheck(kinds listFlag) func(*model.DomainSpec) error {
-	return func(spec *model.DomainSpec) error {
+func domainCheck(kinds listFlag) model.DomainCheck {
+	return func(spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
 		return checkImplements(spec, spec.ID, kinds)
 	}
-}
-
-func misplacedFlag(names []string, verb string) (string, string) {
-	for _, name := range names {
-		if applies := verbOfFlag(name); applies != verb {
-			return name, applies
-		}
-	}
-	return "", ""
-}
-
-func verbOfFlag(name string) string {
-	if name == kindsDirFlag {
-		return "validate"
-	}
-	return "lint"
 }

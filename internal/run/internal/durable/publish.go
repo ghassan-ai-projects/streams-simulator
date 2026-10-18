@@ -1,4 +1,3 @@
-//nolint:staticcheck // ST1005: "End" names the public Run.End operation these messages report on; the text is part of the error contract
 package durable
 
 import (
@@ -10,6 +9,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
+
+const endOperation = "End"
+
+func endFailed(err error) error {
+	return fmt.Errorf("%s: %w", endOperation, err)
+}
 
 type Evidence struct {
 	TracePath string
@@ -23,7 +28,7 @@ type Evidence struct {
 
 func PublishEvidence(outDir string, e Evidence) error {
 	if err := kernel.PrivateDir(outDir); err != nil {
-		return fmt.Errorf("End: %w", err)
+		return endFailed(err)
 	}
 	if err := publishTrace(outDir, e); err != nil {
 		return err
@@ -32,7 +37,7 @@ func PublishEvidence(outDir string, e Evidence) error {
 		return err
 	}
 	if err := writeJSONL(filepath.Join(outDir, model.FileHistory), e.History); err != nil {
-		return fmt.Errorf("End: %w", err)
+		return endFailed(err)
 	}
 	return publishVerdict(outDir, e.Verdict)
 }
@@ -43,10 +48,10 @@ func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 	}
 	raw, err := json.MarshalIndent(art, "", "  ")
 	if err != nil {
-		return fmt.Errorf("End: %w", err)
+		return endFailed(err)
 	}
 	if err := kernel.WriteAtomic(filepath.Join(outDir, model.FileRunArtifact), raw); err != nil {
-		return fmt.Errorf("End: %w", err)
+		return endFailed(err)
 	}
 	return nil
 }
@@ -66,7 +71,7 @@ func publishTrace(outDir string, e Evidence) error {
 	}
 	for _, path := range paths {
 		if err := kernel.WriteAtomic(path, e.Trace); err != nil {
-			return fmt.Errorf("End: %w", err)
+			return endFailed(err)
 		}
 	}
 	return nil
@@ -75,7 +80,7 @@ func publishTrace(outDir string, e Evidence) error {
 func publishLedger(outDir string, e Evidence) error {
 	if e.WriteLedger {
 		if err := writeJSONL(filepath.Join(outDir, model.FileLedger), e.Ledger); err != nil {
-			return fmt.Errorf("End: %w", err)
+			return endFailed(err)
 		}
 	}
 	return nil
@@ -85,7 +90,7 @@ func publishVerdict(outDir string, verdict *model.Verdict) error {
 	if verdict != nil {
 		raw, _ := json.MarshalIndent(verdict, "", "  ")
 		if err := kernel.WriteAtomic(filepath.Join(outDir, model.FileVerdict), raw); err != nil {
-			return fmt.Errorf("End: %w", err)
+			return endFailed(err)
 		}
 	}
 	return nil

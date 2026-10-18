@@ -25,8 +25,13 @@ func TestTheKindFileAndTheBirthShareOneKindDefinition(t *testing.T) {
 	}
 	properties := maps.Clone(entry["properties"].(map[string]any))
 	delete(properties, "kind_digest")
+	filed := maps.Clone(kindFile["properties"].(map[string]any))
+	if forbidden, _ := filed["kind_digest"].(map[string]any); forbidden["not"] == nil {
+		t.Error("the kind file schema no longer forbids kind_digest")
+	}
+	delete(filed, "kind_digest")
 	required := slices.DeleteFunc(slices.Clone(entry["required"].([]any)), func(name any) bool { return name == "kind_digest" })
-	if !reflect.DeepEqual(properties, kindFile["properties"]) || !reflect.DeepEqual(required, kindFile["required"]) || entry["type"] != kindFile["type"] {
+	if !reflect.DeepEqual(properties, filed) || !reflect.DeepEqual(required, kindFile["required"]) || entry["type"] != kindFile["type"] {
 		t.Error("the kind file schema and the NBIRTH.kinds entry schema have diverged: generate both from one definition")
 	}
 }

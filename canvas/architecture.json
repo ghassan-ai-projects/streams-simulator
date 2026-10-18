@@ -41,7 +41,7 @@
       "folders": ["src/model/devices"],
       "mayImport": ["model/shared"],
       "entrypoint": "src/model/devices/index.ts",
-      "callers": ["app/devices", "ui/devices", "ui/workspace"]
+      "callers": ["app/devices", "test", "ui/devices", "ui/workspace"]
     },
     "app/devices": {
       "kind": "application",
@@ -173,6 +173,7 @@
         "app/session",
         "app/shell",
         "app/workspace",
+        "model/devices",
         "model/graph",
         "model/plant",
         "model/review",

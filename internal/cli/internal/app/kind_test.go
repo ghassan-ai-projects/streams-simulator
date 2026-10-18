@@ -134,6 +134,50 @@ func TestRunChecksTheKindFilesOfItsDomainBeforeAnyRun(t *testing.T) {
 	invoke(t, append(base, "--kinds-dir", pumpKindsDirectory(t, asWritten))...).mustSucceed(t).document(t, "run")
 }
 
+func TestDomainValidateAndRunSayWhichKindFilesTheyCheckedAndAnEmptyListWhenThereWereNone(t *testing.T) {
+	t.Parallel()
+	domainFile, kinds := pumpDomainImplementing(t), pumpKindsDirectory(t, asWritten)
+	checkedOf := func(doc map[string]any) []any {
+		list, _ := doc["implements_checked"].([]any)
+		return list
+	}
+	validated := invoke(t, "domain", "validate", domainFile, "--kinds-dir", kinds).mustSucceed(t).document(t, "domain_validate")
+	entry, _ := checkedOf(validated)[0].(map[string]any)
+	if len(checkedOf(validated)) != 1 || entry["kind"] != "pump" || !strings.HasPrefix(entry["kind_digest"].(string), "sha256:") {
+		t.Fatalf("domain validate = %v, want the pump kind file reported with its digest", validated)
+	}
+	ran := invoke(t, "run", "--domains-dir", filepath.Dir(domainFile), "--adapters-dir", testsupport.AdaptersDir(), "--domain", "pump-board",
+		"--duration", "600", "--kinds-dir", kinds).mustSucceed(t).document(t, "run")
+	if reported := checkedOf(ran); len(reported) != 1 || !equalDocuments(reported[0], entry) {
+		t.Fatalf("run = %v, want the same kind file reported as domain validate: %v", ran, entry)
+	}
+	plain := invoke(t, "domain", "validate", testsupport.Domain("aquaculture-pond")).mustSucceed(t).document(t, "domain_validate")
+	if list, present := plain["implements_checked"].([]any); !present || len(list) != 0 {
+		t.Fatalf("domain validate of a domain that implements nothing = %v, want implements_checked as an empty list", plain)
+	}
+}
+
+func equalDocuments(a, b any) bool {
+	left, _ := json.Marshal(a)
+	right, _ := json.Marshal(b)
+	return string(left) == string(right)
+}
+
+func TestAMalformedKindFileBlocksOnlyTheDomainsThatImplementAndTheKindCommand(t *testing.T) {
+	t.Parallel()
+	broken := filepath.Dir(writeFile(t, "broken.kind.json", `{"kind": "thin"}`))
+	pond := testsupport.Domain("aquaculture-pond")
+	invoke(t, "domain", "validate", pond, "--kinds-dir", broken).mustSucceed(t).document(t, "domain_validate")
+	invoke(t, "run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--domain", "aquaculture-pond",
+		"--duration", "600", "--kinds-dir", broken).mustSucceed(t).document(t, "run")
+	if got := invoke(t, "domain", "validate", pumpDomainImplementing(t), "--kinds-dir", broken); got.code != 1 || got.failure(t)["code"] != "kind_failed" {
+		t.Fatalf("a domain that implements a kind file, beside a malformed one: exit %d, want kind_failed", got.code)
+	}
+	if got := invoke(t, "kind", "validate", filepath.Join(broken, "broken.kind.json")); got.code != 1 || got.failure(t)["code"] != "kind_failed" {
+		t.Fatalf("kind validate of the malformed file: exit %d, want kind_failed", got.code)
+	}
+}
+
 func TestDomainComposeTakesTheKindsOption(t *testing.T) {
 	t.Parallel()
 	invoke(t, "domain", "compose", pilotComposition(), "--kinds-dir", t.TempDir()).mustSucceed(t).document(t, "domain_compose")

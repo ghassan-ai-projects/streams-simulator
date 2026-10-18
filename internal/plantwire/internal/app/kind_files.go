@@ -9,47 +9,51 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/files"
 )
 
-func CheckImplements(spec *model.DomainSpec, kindsDirs []string) error {
-	sources, err := files.Directories(kindsDirs)
-	if err != nil {
-		return fmt.Errorf("%w", err)
+func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, error) {
+	if !spec.HasImplements() {
+		return []model.ImplementsChecked{}, nil
 	}
-	kindFiles, _, err := domain.ParseKindFiles(sources)
+	kindFiles, err := readKindFiles(nil, kindsDirs)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return nil, err
 	}
-	return wrapped(domain.CheckImplements(spec, kindFiles))
+	return domain.CheckImplements(spec, kindFiles)
 }
 
-func ReadKindFiles(paths, dirs []string) (map[string]map[string]any, error) {
-	byPath, err := files.Paths(paths)
+func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[string]map[string]any) (T, *model.DomainSpec, error)) (T, error) {
+	var none T
+	kindFiles, err := readKindFiles(paths, dirs)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return none, err
 	}
-	byDirectory, err := files.Directories(dirs)
+	built, spec, err := scaffold(kindFiles)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return none, err
 	}
-	kindFiles, _, err := domain.ParseKindFiles(slices.Concat(byPath, byDirectory))
-	return kindFiles, wrapped(err)
-}
-
-func CheckImplementsKinds(spec *model.DomainSpec, kinds map[string]map[string]any) error {
-	return wrapped(domain.CheckImplements(spec, kinds))
+	if _, err := domain.CheckImplements(spec, kindFiles); err != nil {
+		return none, fmt.Errorf("plantwire: check implements: %w", model.WithSource(err, source))
+	}
+	return built, nil
 }
 
 func ValidateKindFiles(paths []string) ([]domain.KindSummary, error) {
 	sources, err := files.Paths(paths)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 	_, summaries, err := domain.ParseKindFiles(sources)
-	return summaries, wrapped(err)
+	return summaries, err
 }
 
-func wrapped(err error) error {
-	if err == nil {
-		return nil
+func readKindFiles(paths, dirs []string) (domain.KindFiles, error) {
+	byPath, err := files.Paths(paths)
+	if err != nil {
+		return nil, err
 	}
-	return fmt.Errorf("%w", err)
+	byDirectory, err := files.Directories(dirs)
+	if err != nil {
+		return nil, err
+	}
+	kindFiles, _, err := domain.ParseKindFiles(slices.Concat(byPath, byDirectory))
+	return kindFiles, err
 }

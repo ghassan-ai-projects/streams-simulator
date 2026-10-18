@@ -4,10 +4,26 @@
 package testsupport
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 )
+
+var socketDirs atomic.Uint64
+
+func WriteFileIn(t *testing.T, dir, name string, content []byte) {
+	t.Helper()
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatalf("testsupport: open %s: %v", dir, err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.WriteFile(name, content, 0o600); err != nil {
+		t.Fatalf("testsupport: write %s in %s: %v", name, dir, err)
+	}
+}
 
 func RepositoryRoot() string {
 	dir, err := os.Getwd()
@@ -75,9 +91,8 @@ func DeviceConformance(validity, name string) string {
 
 func SocketPath(tb testing.TB) string {
 	tb.Helper()
-	//nolint:usetesting // t.TempDir paths exceed the unix socket path limit on macOS
-	dir, err := os.MkdirTemp("", "ss")
-	if err != nil {
+	dir := filepath.Join(os.TempDir(), fmt.Sprintf("ss%d-%d", os.Getpid(), socketDirs.Add(1)))
+	if err := os.Mkdir(dir, 0o700); err != nil {
 		tb.Fatal(err)
 	}
 	tb.Cleanup(func() {

@@ -7,10 +7,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func KindTemplates(kinds []*model.Kind, safeStops []string) []any {
+func KindTemplates(kinds []*model.Kind) []any {
 	templates := make([]any, 0, len(kinds))
 	for _, kind := range kinds {
-		templates = append(templates, map[string]any{"kind": kind.Name, "metrics": metricTemplates(kind, kind.Channels), "commands": commandTemplates(kind, safeStops)})
+		templates = append(templates, map[string]any{"kind": kind.Name, "metrics": metricTemplates(kind, kind.Channels), "commands": commandTemplates(kind)})
 	}
 	return templates
 }
@@ -70,12 +70,12 @@ func assigned(kind *model.Kind, state string) bool {
 	return false
 }
 
-func commandTemplates(kind *model.Kind, safeStops []string) []any {
+func commandTemplates(kind *model.Kind) []any {
 	commands := make([]any, 0, len(kind.Effectors))
 	for i := range kind.Effectors {
 		eff := &kind.Effectors[i]
 		commands = append(commands, map[string]any{"name": eff.Name, "args_schema": validationOnly(eff.ArgsSchema),
-			"risk_class": riskClass(eff.RiskClass), "safe_stop": slices.Contains(safeStops, eff.Name)})
+			"risk_class": riskClass(eff.RiskClass), "safe_stop": eff.SafeStop})
 	}
 	return commands
 }

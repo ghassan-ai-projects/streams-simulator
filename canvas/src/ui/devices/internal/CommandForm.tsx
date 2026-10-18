@@ -1,4 +1,4 @@
-import { changeCommand, idRule, issuesOn, looksLikeId, riskChoices } from "../../../model/devices";
+import { changeCommand, idRule, issuesOn, looksLikeId, riskChoices, twinCommandRule } from "../../../model/devices";
 import type { Command } from "../../../model/devices";
 import { cx, panel, useFocusOnMount } from "../../primitives";
 import { ArgumentRows } from "./ArgumentRows";
@@ -21,7 +21,7 @@ function Identity({ command, on, change }: CommandFields) {
   const caution = likely ? "" : "The binary is likely to refuse this name.";
   return (
     <>
-      <Field label="Name" hint={idRule} caution={caution} issues={on("name")}>
+      <Field label="Name" hint={idRule} also={twinCommandRule} caution={caution} issues={on("name")}>
         {(aria) => (
           <TextBox
             aria={aria}
@@ -69,6 +69,7 @@ function Safety({ command, on, change }: CommandFields) {
           <label className={styles.check}>
             <input
               {...aria}
+              aria-label="Safe stop"
               type="checkbox"
               checked={command.safeStop}
               onChange={(event) => {

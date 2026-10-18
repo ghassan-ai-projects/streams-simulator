@@ -24,12 +24,13 @@ func registerLintFlags(fs *flag.FlagSet) *lintFlags {
 }
 
 func (flags *lintFlags) admit(fs *flag.FlagSet, verb string) error {
-	var stray []string
-	fs.Visit(func(set *flag.Flag) { stray = append(stray, set.Name) })
-	if name, applies := misplacedFlag(stray, verb); name != "" {
-		return usagef("domain %s: --%s applies to %s only", verb, name, applies)
-	}
-	return nil
+	var misplaced error
+	fs.Visit(func(set *flag.Flag) {
+		if applies := verbOfFlag(set.Name); applies != verb && misplaced == nil {
+			misplaced = usagef("domain %s: --%s applies to %s only", verb, set.Name, applies)
+		}
+	})
+	return misplaced
 }
 
 func lintDomainFile(path string, flags *lintFlags) (any, error) {

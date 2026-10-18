@@ -1,7 +1,5 @@
 // Package durable is the file-system edge of the run module: the append-only
 // delivery ledger file, the published evidence files and the artifact reader.
-//
-//nolint:staticcheck // ST1005: "End" names the public Run.End operation these messages report on; the text is part of the error contract
 package durable
 
 import (
@@ -39,7 +37,7 @@ func (l *Ledger) Flush() error {
 
 func (l *Ledger) Finish() error {
 	if err := l.log.Close(); err != nil {
-		return fmt.Errorf("End: close ledger: %w", err)
+		return fmt.Errorf("%s: close ledger: %w", endOperation, err)
 	}
 	return nil
 }

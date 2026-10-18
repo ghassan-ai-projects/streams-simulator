@@ -163,6 +163,13 @@ func registerKindsDirs(fs *flag.FlagSet, dst *listFlag) {
 	fs.Var(dst, kindsDirFlag, "directory of kind files (*.kind.json), repeatable; a domain kind that implements a kind file needs it")
 }
 
+func verbOfFlag(name string) string {
+	if name == kindsDirFlag {
+		return "validate"
+	}
+	return "lint"
+}
+
 func registerRunFolder(fs *flag.FlagSet, dst *string, def string) {
 	fs.StringVar(dst, "out", def, "run folder for the artifact and the journal")
 }

@@ -56,7 +56,7 @@ func composeDomain(library *component.Library, raw []byte, options composeOption
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if err := checkImplements(composed.Domain.Spec, options.composition, options.kinds); err != nil {
+	if _, err := checkImplements(composed.Domain.Spec, options.composition, options.kinds); err != nil {
 		return nil, err
 	}
 	result := composedDomain{DomainSummary: composed.Summary}

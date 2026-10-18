@@ -6,6 +6,7 @@ import {
   issuesOn,
   looksLikeId,
   rangeHint,
+  twinReadingRule,
   typeChoices,
   unitChoices,
   withEnumOptions,
@@ -28,7 +29,7 @@ function Identity({ metric, on, change }: MetricFields) {
   const caution = likely ? "" : "The binary is likely to refuse this name.";
   return (
     <>
-      <Field label="Name" hint={idRule} caution={caution} issues={on("name")}>
+      <Field label="Name" hint={idRule} also={twinReadingRule} caution={caution} issues={on("name")}>
         {(aria) => (
           <TextBox
             aria={aria}
@@ -157,6 +158,7 @@ function Setpoint({ metric, on, change }: MetricFields) {
         <label className={styles.check}>
           <input
             {...aria}
+            aria-label="Setpoint"
             type="checkbox"
             checked={metric.writable}
             onChange={(event) => {

@@ -10,7 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string, check func(*model.DomainSpec) error) (*Director, error) {
+func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string, check model.DomainCheck) (*Director, error) {
 	cat, adapters, err := loadInputs(domainsDir, adaptersDir)
 	if err != nil {
 		return nil, err

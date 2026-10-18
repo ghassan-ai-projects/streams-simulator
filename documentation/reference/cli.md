@@ -56,11 +56,11 @@ Validates one domain file and reports its ID, digest, channel count, fault count
 streamsim domain validate <path> [--kinds-dir <dir>]...
 ```
 
-- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected. `domain compose` and `run` take the same option and run the same check.
+- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected and reads no kind file, so a malformed kind file in the directory blocks only a domain that implements one (and `kind validate`). The check compares the safe-stop flag of each command too: a domain flags a safe stop with `safe_stop: true` on its effector, and the kind file must flag the same commands. A kind file must be a regular file of at most 1 MiB (a symbolic link or a named pipe is refused), one JSON document, with no member named twice and no number beyond the range of a double. `domain validate` and `run` print `implements_checked`, a list of `{kind, kind_digest}` for the kind files the domain was checked against; it is empty when no kind of the domain implements one, so an empty list means there was nothing to check. `domain compose`, `run`, `plantwire node` and `mcp` take the same option and run the same check; `domain lint` takes none, because it judges a nominal day of the domain's behaviour, not its interface (`--kinds-dir` there is a usage error). A recorded run (`replay`, `verify`, `scenario from-run`) does not run it either: it reproduces a recorded run and sends nothing to a host.
 
 ### `kind validate`
 
-Checks one or more kind files against the plant wire kind schema and prints `{valid, kinds}`, where each kind is `{path, kind, kind_digest, metrics, commands}`. A kind file is one `NBIRTH.kinds` entry without its `kind_digest`; its digest is the one a host sees.
+Checks one or more kind files against the plant wire kind schema and prints `{valid, kinds}`, where each kind is `{path, kind, kind_digest, metrics, commands}`. A kind file is one `NBIRTH.kinds` entry without its `kind_digest`; its digest is the one a host sees. A kind file that carries a `kind_digest` member is refused (issue at `/kind_digest`), even a correct one, because a stale digest would be accepted and ignored; a metric's `eu_range` and `instrument_range` need `min` below `max` (issue at `/metrics/<i>/eu_range`). The kind file is the contract: `implements` proves a domain equal to it, and only an announced `kind_digest` equal to the file's proves a device matches it.
 
 ```text
 streamsim kind validate <file.kind.json>...
@@ -199,7 +199,7 @@ streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory
                          [--policy <digest>] [--epoch <n>] [--delay-ms <n>]
 streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domains-dir domains] [--adapter <id>] [--adapters-dir adapters]
                          [--session-id <id>] [--seed <n>] [--slice-s 60] [--duration 3600] [--barrier-cap-ms 30000]
-                         [--policy <digest>]... [--safe-stop <command>]...
+                         [--policy <digest>]... [--kinds-dir <dir>]...
 ```
 
 The socket's directory must be owner-only (it is created `0700` when missing); a stale socket left by a crash is replaced,
@@ -209,8 +209,9 @@ run folder. The script is a JSON array of
 unique wire-safe name, default `ref-<n>` by position) becomes the command's `command_id`; a command to a
 device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
 arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
-must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists; `--safe-stop` names commands that
-skip freshness, epoch and policy checks. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
+must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists. The commands that skip freshness, epoch and policy checks are the
+safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
+(`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
 
 ### `run`

@@ -40,7 +40,17 @@ export {
   takesInstrument,
 } from "./internal/instruments";
 export { enumOptions, withEnumOptions } from "./internal/options";
-export { deviceNameProblem, devicePath, draftProblems, idRule, looksLikeId, rangeHint } from "./internal/rules";
+export {
+  deviceNameProblem,
+  devicePath,
+  draftProblems,
+  idRule,
+  looksLikeId,
+  rangeHint,
+  twinCommandRule,
+  twinKindRule,
+  twinReadingRule,
+} from "./internal/rules";
 export {
   askedCommands,
   commandChoiceOf,
@@ -62,14 +72,8 @@ export {
   startAt,
 } from "./internal/twinEdits";
 export { parseChoices, responseOf, serialiseChoices } from "./internal/twinFile";
-export { resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
-export {
-  choiceProblems,
-  twinDomainPath,
-  twinNameLooksRight,
-  twinNameRule,
-  twinPath,
-} from "./internal/twinRules";
+export { interfaceLabel, interfaceNeeds, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
+export { choiceProblems, twinDomainPath, twinNameLooksRight, twinNameRule, twinPath } from "./internal/twinRules";
 export {
   driveFollows,
   effectWords,

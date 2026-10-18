@@ -15,6 +15,7 @@ export interface Aria {
 interface FieldProps {
   readonly label: string;
   readonly hint?: string | undefined;
+  readonly also?: string | undefined;
   readonly caution?: string;
   readonly issues: readonly string[];
   readonly children: (aria: Aria) => ReactNode;
@@ -23,11 +24,12 @@ interface FieldProps {
 interface NotesProps {
   readonly id: string;
   readonly hint: string | undefined;
+  readonly also: string | undefined;
   readonly caution: string;
   readonly issues: readonly string[];
 }
 
-function Notes({ id, hint, caution, issues }: NotesProps) {
+function Notes({ id, hint, also, caution, issues }: NotesProps) {
   return (
     <div id={id} className={styles.notes}>
       {issues.map((message, index) => (
@@ -38,13 +40,14 @@ function Notes({ id, hint, caution, issues }: NotesProps) {
       ))}
       {caution !== "" && <p className={styles.caution}>{caution}</p>}
       {hint !== undefined && <p className={panel.hint}>{hint}</p>}
+      {also !== undefined && <p className={panel.hint}>{also}</p>}
     </div>
   );
 }
 
-export function Field({ label, hint, caution = "", issues, children }: FieldProps) {
+export function Field({ label, hint, also, caution = "", issues, children }: FieldProps) {
   const id = useId();
-  const noted = issues.length > 0 || caution !== "" || hint !== undefined;
+  const noted = issues.length > 0 || caution !== "" || hint !== undefined || also !== undefined;
   const aria: Aria = {
     id,
     "aria-invalid": issues.length > 0 ? true : undefined,
@@ -55,7 +58,7 @@ export function Field({ label, hint, caution = "", issues, children }: FieldProp
       <label htmlFor={id}>{label}</label>
       <div className={styles.control}>
         {children(aria)}
-        {noted && <Notes id={`${id}-notes`} hint={hint} caution={caution} issues={issues} />}
+        {noted && <Notes id={`${id}-notes`} hint={hint} also={also} caution={caution} issues={issues} />}
       </div>
     </div>
   );

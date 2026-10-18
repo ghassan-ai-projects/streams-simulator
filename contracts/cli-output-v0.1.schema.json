@@ -272,6 +272,27 @@
         }
       }
     },
+    "implements_checked": {
+      "type": "array",
+      "description": "The kind files the domain was checked against: one entry per domain kind that implements a kind file, with the digest of that kind file. Empty when no kind of the domain implements one, so an empty list means there was nothing to check, never that the check was skipped.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "kind_digest"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind_digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
     "domain_validate": {
       "type": "object",
       "additionalProperties": false,
@@ -281,9 +302,13 @@
         "digest",
         "channels",
         "faults",
-        "effectors"
+        "effectors",
+        "implements_checked"
       ],
       "properties": {
+        "implements_checked": {
+          "$ref": "#/$defs/implements_checked"
+        },
         "valid": {
           "const": true
         },
@@ -508,9 +533,13 @@
         "trace_digest",
         "reproducible",
         "emitted",
-        "ledger"
+        "ledger",
+        "implements_checked"
       ],
       "properties": {
+        "implements_checked": {
+          "$ref": "#/$defs/implements_checked"
+        },
         "run_id": {
           "type": "string",
           "minLength": 1

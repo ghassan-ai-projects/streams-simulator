@@ -84,7 +84,7 @@ func TestEverySafeStopActsEvenWhenItRepeats(t *testing.T) {
 		}
 	}}
 	options := sliceOptions(2)
-	options.Policies, options.SafeStop = []string{policy}, []string{"stop_chiller"}
+	options.Policies = []string{policy}
 	r := utilityRun(t)
 	if err := NewSession(r, host, options).Run(t.Context()); err != nil {
 		t.Fatal(err)

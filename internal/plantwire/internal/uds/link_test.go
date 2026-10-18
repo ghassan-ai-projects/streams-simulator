@@ -31,6 +31,18 @@ func privateListener(t *testing.T) (string, net.Listener) {
 	return path, listener
 }
 
+func widen(t *testing.T, dir, name string, mode os.FileMode) {
+	t.Helper()
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.Chmod(name, mode); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func echoHost(t *testing.T, listener net.Listener, reply map[string]any) {
 	t.Helper()
 	go func() {
@@ -109,16 +121,13 @@ func TestAClosedLinkCannotSend(t *testing.T) {
 func TestASocketOthersCanReachIsRefused(t *testing.T) {
 	t.Parallel()
 	path, _ := privateListener(t)
-	if err := os.Chmod(path, 0o666); err != nil { //nolint:gosec // the test opens the socket to everyone on purpose
-		t.Fatal(err)
-	}
+	widen(t, filepath.Dir(path), filepath.Base(path), 0o666)
 	if _, err := Dial(t.Context(), path, time.Second); !errors.Is(err, ErrSocketNotPrivate) {
 		t.Fatalf("dial = %v, want a refusal of a world-writable socket", err)
 	}
 	other, _ := privateListener(t)
-	if err := os.Chmod(filepath.Dir(other), 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
-		t.Fatal(err)
-	}
+	directory := filepath.Dir(other)
+	widen(t, filepath.Dir(directory), filepath.Base(directory), 0o755)
 	if _, err := Dial(t.Context(), other, time.Second); !errors.Is(err, ErrSocketNotPrivate) {
 		t.Fatalf("dial = %v, want a refusal of a socket in a shared directory", err)
 	}
@@ -190,8 +199,9 @@ func TestARecordThatCannotBeEncodedIsNotSent(t *testing.T) {
 func TestAHandshakeAwaitsTheHostsAnswerWithItsOwnFloor(t *testing.T) {
 	t.Parallel()
 	path, listener := privateListener(t)
-	echoHost(t, listener, map[string]any{"type": "HSYNC", "protocol_version": 1, "session_id": "s-1", "seq": 0, "lane": "control", "through_seq": 0})
-	link, err := Dial(t.Context(), path, time.Millisecond)
+	release := make(chan struct{})
+	answerOnRelease(t, listener, release, map[string]any{"type": "HSYNC", "protocol_version": 1, "session_id": "s-1", "seq": 0, "lane": "control", "through_seq": 0})
+	link, err := Dial(t.Context(), path, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,10 +209,29 @@ func TestAHandshakeAwaitsTheHostsAnswerWithItsOwnFloor(t *testing.T) {
 	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); err != nil {
 		t.Fatal(err)
 	}
+	link.wait = time.Millisecond
+	time.AfterFunc(50*time.Millisecond, func() { close(release) })
 	records, met, err := link.AwaitHandshake(t.Context(), func(m domain.Message) bool { return m.Type == "HSYNC" })
 	if err != nil || !met || len(records) != 1 {
-		t.Fatalf("a handshake with a 1 ms wait still waits at least HandshakeWait: %v, %v, %v", records, met, err)
+		t.Fatalf("a handshake with a 1 ms wait answered after 50 ms still waits at least HandshakeWait: %v, %v, %v", records, met, err)
 	}
+}
+
+func answerOnRelease(t *testing.T, listener net.Listener, release <-chan struct{}, reply map[string]any) {
+	t.Helper()
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		if !bufio.NewScanner(conn).Scan() {
+			return
+		}
+		<-release
+		raw, _ := json.Marshal(reply)
+		_, _ = conn.Write(append(raw, '\n'))
+	}()
 }
 
 func TestACancelledCallerStopsBeforeWaiting(t *testing.T) {

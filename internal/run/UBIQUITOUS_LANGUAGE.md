@@ -32,6 +32,7 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Scenario export | The scenario that reproduces a recorded run, with the effector calls the world refused dropped, checked as `run --scenario` would check it, and its file content; loading the artifact and its inputs is part of the entry | `ExportScenarioFile`, `ScenarioExport`, `ScenarioFromArtifact`, `PruneRefusedCalls` | `scenario from-run` |
 | Scenario run | Resolve a scenario's inputs, check it before any sink opens (a violation is a `ScenarioCheckError`), execute it and end the run | `RunScenario`, `RunSummary`, `ScenarioCheckError` | `run`, `run --scenario` |
 | Replay file | Reproduce the run artifact at a path against the domain and adapter it recorded | `ReplayFile`, `Directories` | `replay`, `verify` |
+| Domain check | The check of a domain against the kind files its kinds implement, given to a scenario run by its surface (`model.DomainCheck`); with none given, a domain that implements a kind file is refused, so a missing check is never a skipped one. It returns what it checked (`implements_checked`). A recorded run (`ReplayFile`, `ExportScenarioFile`) and `suite` run no domain check: they reproduce or describe a run and connect to no host | `CheckDomain`, `ScenarioRunOptions.CheckDomain`, `rules.RefuseImplements`, `RunSummary.ImplementsChecked` | `implements_checked` |
 | Start bound | The latest a run's world may start, the world's own bound | `MaxStartNS` | `--start-time` |
 
 ## Retired words

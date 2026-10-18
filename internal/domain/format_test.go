@@ -23,10 +23,9 @@ func TestEveryShippedDomainIsAlreadyCanonicallyFormatted(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			copyPath := filepath.Join(t.TempDir(), id+".domain.json")
-			if err := os.WriteFile(copyPath, onDisk, 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a shipped domain id
-				t.Fatal(err)
-			}
+			dir := t.TempDir()
+			testsupport.WriteFileIn(t, dir, id+".domain.json", onDisk)
+			copyPath := filepath.Join(dir, id+".domain.json")
 			result, err := domain.Format(copyPath)
 			if err != nil || result.Changed || result.Digest != shipped(t, id).Digest {
 				t.Fatalf("Format = %+v (%v), want an unchanged file with the loaded digest", result, err)

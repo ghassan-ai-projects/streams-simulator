@@ -12,5 +12,8 @@
 | Rebirth | `NBIRTH` with the next `bd_seq` and every `DBIRTH`, in the same session |
 | Epoch floor | The highest `authority_epoch` the host announced |
 | Kind file | One `NBIRTH.kinds` entry without its `kind_digest`, in `*.kind.json`; the interface a device implements (`KindFiles`, `KindSource`) |
-| Kind files read | `ReadKindFiles` reads kind files from paths and directories into one set by kind name; `CheckImplementsKinds` runs the implements check against a set already read, so a caller that read the files once checks with the same implementation |
-| Implements | A domain kind names the kind file it implements; `CheckImplements` requires the kind's metrics and commands, as `KindTemplates` gives them, to equal the kind file after canonicalisation, and names the first differing member |
+| Regular kind file | A kind file is read only as a regular file of at most 1 MiB (`MaxKindFileBytes`), one JSON document, with no member named twice (`ErrDuplicateMember`) and a canonical form (`ErrNotCanonical`: no number beyond the range of a double) |
+| Implements | A domain kind names the kind file it implements; `CheckImplements` requires the kind's metrics and commands, safe-stop flags included, as `KindTemplates` gives them, to equal the kind file after canonicalisation, and names the first differing member. It reads kind files only for a domain that implements one |
+| Implements checked | What `CheckImplements` returns for a domain that passed: one `{kind, kind_digest}` per implementing kind, an empty list when no kind implements (`model.ImplementsChecked`) |
+| Scaffold | `Scaffold` reads kind files, hands them to a scaffold function the caller injects (the plant wire module may not import the component module), and checks that the domain it built implements them: the one entry for a twin |
+| Safe stop | A command the domain flags `safe_stop: true` on its effector; the node announces it as `safe_stop` in `NBIRTH.kinds` and runs it without freshness, epoch or policy checks. There is no node option that names safe stops: the announced flag and the executed behaviour are the domain's, and `implements` holds them equal to the kind file |

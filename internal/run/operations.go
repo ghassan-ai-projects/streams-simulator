@@ -184,3 +184,7 @@ func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*Re
 func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
 	return layer.RunScenario(ctx, scenario, options)
 }
+
+func CheckDomain(check model.DomainCheck, spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
+	return layer.CheckDomain(check, spec)
+}

@@ -13,6 +13,9 @@ func effectorDocument(k *twinKind, c *commandPlan) map[string]any {
 	if lease := leaseOf(k, c); lease != nil {
 		effector["lease"] = lease
 	}
+	if c.file.SafeStop {
+		effector["safe_stop"] = true
+	}
 	return effector
 }
 

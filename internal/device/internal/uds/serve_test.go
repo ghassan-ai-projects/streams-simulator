@@ -68,21 +68,31 @@ func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 	}
 }
 
-// A real interrupt: the handler is registered before the socket is bound, so
-// an interrupt sent once the banner shows is always caught, never fatal.
-//
-//nolint:paralleltest // the interrupt is delivered to the whole test process
+// The interrupt source is registered before the socket is bound, so an
+// interrupt delivered once the banner shows is always caught, never fatal.
 func TestDeviceStopsOnAnInterruptRegisteredBeforeBinding(t *testing.T) {
+	t.Parallel()
 	socket := testsupport.SocketPath(t)
 	stderr := &readyWriter{ready: make(chan struct{})}
+	registered := make(chan struct{})
+	var interrupt context.CancelFunc
+	source := func(parent context.Context) (context.Context, context.CancelFunc) {
+		ctx, cancel := context.WithCancel(parent)
+		interrupt = cancel
+		close(registered)
+		return ctx, cancel
+	}
 	done := make(chan error, 1)
 	go func() {
-		done <- Serve(stderr, socket, domain.New(domain.Config{}), "streamsim device: listening on "+socket)
+		done <- serveInterruptedBy(source, stderr, socket, domain.New(domain.Config{}), "streamsim device: listening on "+socket)
 	}()
 	<-stderr.ready
-	if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
-		t.Fatal(err)
+	select {
+	case <-registered:
+	default:
+		t.Fatal("the banner showed before the interrupt source was registered")
 	}
+	interrupt()
 	if err := <-done; err != nil {
 		t.Fatalf("serve: %v", err)
 	}

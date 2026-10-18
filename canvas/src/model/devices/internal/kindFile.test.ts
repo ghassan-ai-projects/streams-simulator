@@ -89,7 +89,7 @@ describe("writing a kind file", () => {
     if (kind === null) throw new Error("unreadable");
     const written = JSON.parse(serialiseKind(kind)) as typeof fan;
     expect(written.metrics[0]).toEqual(fan.metrics[0]);
-    expect(written.metrics[1]).toEqual(fan.metrics[1]);
+    expect(written.metrics[1]).toEqual({ ...fan.metrics[1], writable: false });
     expect(written.commands[1]).toEqual(fan.commands[1]);
     expect(written.title).toBe("Cooling fan");
     expect(serialiseKind(kind).endsWith("}\n")).toBe(true);
@@ -100,9 +100,25 @@ describe("writing a kind file", () => {
     if (kind === null) throw new Error("unreadable");
     expect(JSON.parse(serialiseKind(kind))).toEqual({
       kind: "k",
-      metrics: [{ name: "", eu_range: { min: 1 } }],
-      commands: [{ name: "", args_schema: { type: "object", properties: {} } }],
+      metrics: [{ name: "", eu_range: { min: 1 }, writable: false }],
+      commands: [{ name: "", safe_stop: false, args_schema: { type: "object", properties: {} } }],
     });
+  });
+
+  it("always states whether a command is a safe stop", () => {
+    const kind = parseKind('{"kind":"k","metrics":[],"commands":[{"name":"a"},{"name":"b","safe_stop":true}]}');
+    if (kind === null) throw new Error("unreadable");
+    const written = JSON.parse(serialiseKind(kind)) as {
+      readonly commands: readonly { readonly safe_stop: boolean }[];
+    };
+    expect(written.commands.map((command) => command.safe_stop)).toEqual([false, true]);
+  });
+
+  it("always states whether a reading is writable, because a twin needs the statement", () => {
+    const kind = parseKind('{"kind":"k","metrics":[{"name":"a"},{"name":"b","writable":true}],"commands":[]}');
+    if (kind === null) throw new Error("unreadable");
+    const written = JSON.parse(serialiseKind(kind)) as { readonly metrics: readonly { readonly writable: boolean }[] };
+    expect(written.metrics.map((metric) => metric.writable)).toEqual([false, true]);
   });
 
   it("starts a device with no readings and no commands", () => {

@@ -35,7 +35,12 @@ kind_entry = copy.deepcopy(kind)
 kind_entry["required"] = kind["required"] + ["kind_digest"]
 kind_entry["properties"]["kind_digest"] = digest
 kind_file = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:plant-wire:v1:KIND", "title": "KIND",
-             "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest. NBIRTH.kinds items are this definition plus a required kind_digest.", **kind}
+             "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest, which a kind file must not carry (it is computed from the file). "
+                            "NBIRTH.kinds items are this definition plus a required kind_digest. A kind file is the contract: a simulated implementation is "
+                            "proven equal to it by the implements check, and a device is proven to match it only by announcing a kind_digest equal to the file's. "
+                            "In a metric, a range needs min below max (checked by the simulator, which a schema cannot express).",
+             **copy.deepcopy(kind)}
+kind_file["properties"]["kind_digest"] = {"not": {}, "description": "Forbidden in a kind file: the digest is computed from the file."}
 board = {"type": "object", "required": ["board", "members"], "properties": {"board": ident, "members": {"type": "array", "maxItems": 4096, "items": ident}}}
 current = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64, "value": value, "quality": quality}}
 born = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64,

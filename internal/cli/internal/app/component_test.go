@@ -33,13 +33,11 @@ func customerLibrary(t *testing.T) string {
 		t.Fatal(err)
 	}
 	custom := strings.Replace(string(raw), `"id": "streamsim/ahu"`, `"id": "acme/ahu"`, 1)
-	path := filepath.Join(dir, "equipment", "ahu.component.json")
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+	folder := filepath.Join(dir, "equipment")
+	if err := os.MkdirAll(folder, 0o750); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte(custom), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, folder, "ahu.component.json", []byte(custom))
 	return dir
 }
 
@@ -186,9 +184,7 @@ func TestComponentValidateReportsAnInvalidLibraryFileWithItsPointers(t *testing.
 		t.Fatal(err)
 	}
 	broken := strings.Replace(string(raw), `"unit_family": "temperature"`, `"unit_family": "gizmo"`, 1)
-	if err := os.WriteFile(path, []byte(broken), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, filepath.Dir(path), filepath.Base(path), []byte(broken))
 	failure := invoke(t, "component", "validate", "--components-dir", dir).failure(t)
 	pointers := map[any]bool{}
 	issues, _ := failure["issues"].([]any)

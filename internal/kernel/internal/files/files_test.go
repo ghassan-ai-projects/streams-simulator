@@ -14,7 +14,12 @@ func TestAnAtomicWriteReplacesTheFileOwnerOnlyAndLeavesNoTemporary(t *testing.T)
 	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "run.json")
-	if err := os.WriteFile(path, []byte("old"), 0o644); err != nil { //nolint:gosec // the test starts from a readable file on purpose
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.WriteFile("run.json", []byte("old"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := WriteAtomic(path, []byte("new")); err != nil {

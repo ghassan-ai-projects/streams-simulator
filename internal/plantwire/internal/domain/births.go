@@ -9,16 +9,18 @@ type NodeIdentity struct {
 	ProtocolMax  int
 	BDSeq        uint64
 	PriorLastSeq int64
-	SafeStops    []string
 }
 
-func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) Record {
-	templates := WithKindDigests(KindTemplates(kinds, identity.SafeStops))
+func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) (Record, error) {
+	templates, err := WithKindDigests(KindTemplates(kinds))
+	if err != nil {
+		return Record{}, err
+	}
 	return newRecord("NBIRTH", LaneControl, map[string]any{
 		"protocol_min": Version, "protocol_max": identity.ProtocolMax, "contract_version": ContractVersion,
 		"contract_digest": ContractDigest(), "environment": identity.Environment, "bd_seq": identity.BDSeq,
 		"prior_last_seq": identity.PriorLastSeq, "capability_digest": CapabilityDigest(templates), "kinds": templates,
-		"boards": boardList(boards), "node_metrics": map[string]any{"clock_mode": "virtual", "run_state": "running"}})
+		"boards": boardList(boards), "node_metrics": map[string]any{"clock_mode": "virtual", "run_state": "running"}}), nil
 }
 
 type DeviceIdentity struct {

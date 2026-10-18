@@ -3,7 +3,6 @@ package director_test
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,9 +14,7 @@ import (
 
 func writeTemp(t *testing.T, dir, name string, content []byte) {
 	t.Helper()
-	if err := os.WriteFile(filepath.Join(dir, name), content, 0o600); err != nil {
-		t.Fatal(err)
-	}
+	testsupport.WriteFileIn(t, dir, name, content)
 }
 
 func implementingDomains(t *testing.T) string {
@@ -67,14 +64,19 @@ func TestTheDirectorChecksAnImplementingDomainWithTheCheckItWasGiven(t *testing.
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			folder := pumpKindsFolder(t, tc.withKindFile)
-			check := func(spec *model.DomainSpec) error { return plantwire.CheckImplements(spec, []string{folder}) }
+			check := func(spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
+				return plantwire.CheckImplements(spec, []string{folder})
+			}
 			d, err := director.NewFromDirs(t.Context(), implementingDomains(t), testsupport.AdaptersDir(), t.TempDir(), nil, check)
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = d.CreateWorld(director.WorldRequest{Domain: "pump-board", Seed: 1})
+			created, err := d.CreateWorld(director.WorldRequest{Domain: "pump-board", Seed: 1})
 			if tc.want == "" && err != nil {
 				t.Fatalf("CreateWorld = %v, want a world", err)
+			}
+			if reported, _ := created["implements_checked"].([]model.ImplementsChecked); tc.want == "" && (len(reported) != 1 || reported[0].Kind != "pump") {
+				t.Fatalf("implements_checked = %v, want the pump kind file the world was checked against", created["implements_checked"])
 			}
 			if tc.want != "" && (err == nil || !strings.HasPrefix(err.Error(), string(director.CodeDomainInvalid)) || !strings.Contains(err.Error(), tc.want)) {
 				t.Fatalf("CreateWorld = %v, want domain_invalid mentioning %q", err, tc.want)

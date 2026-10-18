@@ -11,6 +11,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
+const MaxKindFileBytes = 1 << 20
+
 func Directories(dirs []string) ([]domain.KindSource, error) {
 	var sources []domain.KindSource
 	for _, dir := range dirs {
@@ -41,7 +43,7 @@ func directory(dir string) ([]domain.KindSource, error) {
 func Paths(paths []string) ([]domain.KindSource, error) {
 	sources := make([]domain.KindSource, 0, len(paths))
 	for _, path := range paths {
-		raw, err := kernel.Read(path)
+		raw, err := kernel.ReadRegular(path, MaxKindFileBytes)
 		if err != nil {
 			return nil, fmt.Errorf("plantwire: read %s: %w", path, err)
 		}

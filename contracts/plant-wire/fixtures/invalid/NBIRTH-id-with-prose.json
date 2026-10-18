@@ -10,7 +10,7 @@
     "protocol_min": 1,
     "protocol_max": 1,
     "contract_version": "1.1.0",
-    "contract_digest": "sha256:1b8b51bba3a949e32bf9ea30b936da1b524618a84ccdba9d441ed2055ba61344",
+    "contract_digest": "sha256:cfc4e96d60a714d7102d4e4d1f3973957a07b5d33fd9460c80d59090be6b7607",
     "environment": "simulated",
     "bd_seq": 0,
     "prior_last_seq": -1,

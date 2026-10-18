@@ -52,9 +52,7 @@ func driftedKinds(t *testing.T, file, from, to string) string {
 			}
 			content = strings.Replace(content, from, to, 1)
 		}
-		if err := os.WriteFile(filepath.Join(dir, filepath.Base(path)), []byte(content), 0o600); err != nil {
-			t.Fatal(err)
-		}
+		testsupport.WriteFileIn(t, dir, filepath.Base(path), []byte(content))
 	}
 	return dir
 }
@@ -67,8 +65,14 @@ func TestEveryKindOfTheArduinoTwinImplementsItsKindFile(t *testing.T) {
 			t.Errorf("kind %s implements %q, want the kind file of its own name", kind.Name, kind.Implements)
 		}
 	}
-	if err := CheckImplements(spec.Spec, []string{testsupport.ThermalBoardKindsDir()}); err != nil {
-		t.Fatalf("CheckImplements = %v, want the twin to equal its three kind files", err)
+	checked, err := CheckImplements(spec.Spec, []string{testsupport.ThermalBoardKindsDir()})
+	if err != nil || len(checked) != 3 {
+		t.Fatalf("CheckImplements = %v, %v, want the twin to equal its three kind files", checked, err)
+	}
+	for _, entry := range checked {
+		if want := kindDigests(t)[entry.Kind]; entry.KindDigest != want {
+			t.Errorf("checked kind %s has digest %s, its kind file digests to %s", entry.Kind, entry.KindDigest, want)
+		}
 	}
 }
 
@@ -84,7 +88,7 @@ func TestAKindFileThatDriftsFromTheTwinIsRefusedAtTheMemberItNames(t *testing.T)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := CheckImplements(spec.Spec, []string{driftedKinds(t, tc.file, tc.from, tc.to)})
+			_, err := CheckImplements(spec.Spec, []string{driftedKinds(t, tc.file, tc.from, tc.to)})
 			var invalid *model.ValidationError
 			if !errors.As(err, &invalid) || len(invalid.Issues) != 1 || invalid.Issues[0].Pointer != tc.pointer {
 				t.Fatalf("CheckImplements = %v, want one domain issue at %s", err, tc.pointer)
@@ -162,12 +166,39 @@ func kindDigests(t *testing.T) map[string]string {
 	return digests
 }
 
+func arduinoOptions() Options {
+	return Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9,
+		KindsDirs: []string{testsupport.ThermalBoardKindsDir()}}
+}
+
+func TestANodeWhoseSafeStopsDisagreeWithItsKindFilesIsRefused(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, effector, at string
+		kind               int
+		flagged            bool
+	}{
+		{"a safe stop the kind file flags but the domain does not", "stop_fan", "/commands/1/safe_stop", 2, false},
+		{"a command the domain flags as a safe stop but the kind file does not", "set_led", "/commands/0/safe_stop", 1, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			r := arduinoRun(t)
+			r.Domain().Spec.Kinds[tc.kind].EffectorDecl(tc.effector).SafeStop = tc.flagged
+			path, _ := recordingHost(t)
+			err := Serve(t.Context(), r, path, 5*time.Second, arduinoOptions())
+			if !errors.Is(err, ErrKindDrift) || !strings.Contains(err.Error(), "at "+tc.at+":") {
+				t.Fatalf("Serve = %v, want ErrKindDrift naming %s", err, tc.at)
+			}
+		})
+	}
+}
+
 func TestTheNodeBirthsTheArduinoBoardAnnouncingTheDigestsOfItsKindFiles(t *testing.T) {
 	t.Parallel()
 	path, received := recordingHost(t)
-	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9,
-		SafeStop: []string{"stop_led", "stop_fan"}}
-	if err := Serve(t.Context(), arduinoRun(t), path, 5*time.Second, options); err != nil {
+	if err := Serve(t.Context(), arduinoRun(t), path, 5*time.Second, arduinoOptions()); err != nil {
 		t.Fatal(err)
 	}
 	records := <-received

@@ -1,6 +1,7 @@
 # Physical devices — one device model, simulated and real implementations
 
-- **Status**: design agreed in discussion with the owner, 2026-10-17, branch `simulator-new-vision`. Not built yet.
+- **Status**: design agreed in discussion with the owner, 2026-10-17, branch `simulator-new-vision`. M1 is built; §1.2, §1.5 and
+  the "As built" note at the end of §1 say what exists. M2 onwards is not built.
 - **Source**: the owner's product direction "From Simulated Streams to the Physical World" (2026-10-17), and its principle:
   *the real device is not an addition to the simulator; it is another possible implementation of a device that the simulator
   already knows how to represent.*
@@ -44,11 +45,20 @@ Only the plant wire kind is what a host sees, and it is the only one a gateway a
 
 - **Kind file.** `*.kind.json` holds exactly one `NBIRTH.kinds` entry (metrics with type, unit, ranges, scan class, writable;
   commands with argument schema, `risk_class`, `safe_stop`), validated by the plant wire kind sub-schema. Its identity is
-  `kind_digest`, the SHA-256 of its RFC 8785 canonical JSON. `capability_digest` covers only `{kind, commands}`, so two
-  implementations with different metrics would share it; it is not enough for "same model".
-- **Simulated implementation.** A domain kind declares `implements: "<kind file>"`. The domain module checks that
-  `KindTemplates` of that kind equals the kind file after canonicalisation; a mismatch is a validation error, so "the same
-  model" is a gate, not a promise.
+  `kind_digest`, the SHA-256 of its RFC 8785 canonical JSON of the entry **without** that member; a kind file never carries
+  `kind_digest` (the schema forbids it, so a stale digest cannot be accepted and ignored), and a metric's ranges need `min`
+  below `max`. `capability_digest` covers only `{kind, commands}`, so two implementations with different metrics would
+  share it; it is not enough to identify a model.
+- **Simulated implementation.** A domain kind declares `implements: "<kind file>"`. The check compares `KindTemplates` of
+  that kind with the kind file after canonicalisation and names the first differing member; a mismatch is a validation
+  error, so equality with the kind file is a gate, not a promise. A domain effector flags a safe stop with
+  `safe_stop: true`; `KindTemplates` announces that flag, so safe stop is part of the equality, and a plant wire node takes
+  its safe stops from the domain (it has no option of its own that could drift from the kind file). The check runs in
+  `domain validate`, `domain compose`, `run`, the director (`sim.world.create`), `kind twin` and `plantwire node`; recorded
+  runs and `domain lint` do not run it (see `governance/DEFERRED.md`).
+- **What the kind file proves.** The kind file is the contract. `implements` proves that a domain equals the file. A device
+  (a gateway in front of hardware) matches it only if it announces a `kind_digest` equal to the file's, which a host or the
+  gateway's commissioning checks (M2); nothing else claims "the same model".
 - **Physical implementation.** The gateway is configured with kind files and its field mapping (for device-wire-v1, today's
   capability catalog). It announces the kind file's content; it never invents metrics or commands.
 - **Board.** `boot_id`, leases and safe state stay board facts (SPEC §1). A lost link is `DDEATH link_down`; a failed sensor on a
@@ -86,11 +96,16 @@ change first.
 
 **Binary work** (the canvas computes nothing the binary owns):
 
-- kind files in the workspace (`kinds/*.kind.json`) with a validate action;
-- workspace components, read and written through the bridge (today `--components-dir` is read-only);
+- kind files in the workspace (`kinds/*.kind.json`) with a validate action (`kind.validate`);
+- workspace components (`components/equipment/*.component.json`, `components/instruments/*.instrument.json`), read and
+  written through the bridge, and handed to every command that loads the library as `--components-dir`;
 - the "behaviour implements interface" check;
-- the response templates;
-- capturing a kind from an `NBIRTH` as a draft kind file.
+- the response templates, as `kind twin`: it scaffolds a twin from kind files and a small choices document in the
+  workspace folder `twins/` (`twin-choices-v0.1`: per metric the library instrument or `none`, per command one of `direct`,
+  `first_order`, `none`), through the bridge action `kind.twin`;
+- structured issues: every refusal of a kind file, a choices file or the check is `{pointer, message}` per violation, a
+  pointer into the file (or `/kinds/<i>/implements` in a domain), so the canvas shows the member and parses no text;
+- capturing a kind from an `NBIRTH` as a draft kind file (M2, not built).
 
 **Capture from a connected board.** When a real board announces itself, its kinds can be saved as draft kind files. The
 author reviews them, then adds behaviour. This follows the contract's commissioning order (discovered → reviewed → accepted):
@@ -98,6 +113,20 @@ a birth is a claim, and a captured kind becomes the model only after review. It 
 board: connect it, capture its interface, build its twin.
 
 The gateway's field mapping (which pin drives the fan) stays in the gateway's own configuration.
+
+### 1.6 As built (M1)
+
+Deviations from the plan above:
+
+- The thermal board's LED `pattern` metric is an integer code (0 off, 1 slow blink, 2 solid) in the example twin
+  (`examples/devices/thermal-board`), not a string: string channels draw random enum values, so a twin could not follow a
+  commanded pattern. The gateway maps the code to the firmware's pattern names.
+- `plantwire node` has no `--safe-stop` option; its safe stops are the domain's `safe_stop: true` effectors, and it takes
+  `--kinds-dir` and runs the check before connecting.
+- The director fails closed: a domain that implements a kind file is refused by `sim.world.create` unless the director was
+  given the kind files (`--kinds-dir`); the bridge passes the workspace `kinds/` folder when it exists.
+- Not yet built: capture from a connected board and the gateway (M2), and the loaders listed in `governance/DEFERRED.md`
+  that skip the check on purpose.
 
 ## 2. Relay mode
 
@@ -159,6 +188,10 @@ control plane extends it rather than adding a dashboard beside it.
 | **Connection health** | Gateway and host link state, a board going offline and coming back, reboots (`boot_id` changes), stale and disconnected readings shown as such, never as normal values (covers V-8) | M4 |
 | **Interrupts** | Hold, approve each command and emergency stop (§4.2), always visible on the live screen | M5 |
 | **Twin overlay** | In Inspect, the twin's prediction drawn over the real trend (§3) | M5 |
+
+M1 changed this plan only where Go output changed: the bridge workspace listing shows a kind's `kind`, a component's `id` and
+a `title` only when they are plain text of the expected form, and only the path of a file over 256 KiB; the Devices
+section reads the listing and the structured issues, nothing else.
 
 End-to-end tests run against the real binary as today, with a scripted stand-in gateway; the repository forbids mocking the
 binary, not the hardware. The real board is checked in each round's bench design review.

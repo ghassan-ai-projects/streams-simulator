@@ -20,6 +20,38 @@ func Read(path string) ([]byte, error) {
 	return raw, nil
 }
 
+var (
+	ErrNotRegular = errors.New("kernel: not a regular file")
+	ErrTooLarge   = errors.New("kernel: file exceeds its size limit")
+)
+
+func ReadRegular(path string, limit int64) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%w: %s", ErrNotRegular, path)
+	}
+	return readUpTo(path, limit)
+}
+
+func readUpTo(path string, limit int64) ([]byte, error) {
+	// #nosec G304 -- every caller reads a path its user named, after it was found to be a regular file.
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	raw, read := io.ReadAll(io.LimitReader(file, limit+1))
+	if failed := errors.Join(read, file.Close()); failed != nil {
+		return nil, fmt.Errorf("%w", failed)
+	}
+	if int64(len(raw)) > limit {
+		return nil, fmt.Errorf("%w: %s is larger than %d bytes", ErrTooLarge, path, limit)
+	}
+	return raw, nil
+}
+
 func OpenIfPresent(path string) (io.ReadCloser, bool, error) {
 	// #nosec G304 -- every caller reads a path its user or its own run named.
 	file, err := os.Open(path)

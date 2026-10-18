@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:plant-wire:v1:KIND",
   "title": "KIND",
-  "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest. NBIRTH.kinds items are this definition plus a required kind_digest.",
+  "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest, which a kind file must not carry (it is computed from the file). NBIRTH.kinds items are this definition plus a required kind_digest. A kind file is the contract: a simulated implementation is proven equal to it by the implements check, and a device is proven to match it only by announcing a kind_digest equal to the file's. In a metric, a range needs min below max (checked by the simulator, which a schema cannot express).",
   "type": "object",
   "required": [
     "kind",
@@ -139,6 +139,10 @@
           }
         }
       }
+    },
+    "kind_digest": {
+      "not": {},
+      "description": "Forbidden in a kind file: the digest is computed from the file."
     }
   }
 }

@@ -25,8 +25,8 @@ func TestAKindNamesTheKindFileItImplementsAndFormatKeepsIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(formatted)
-	if !(strings.Index(text, `"name": "pump"`) < strings.Index(text, `"implements": "pump"`) &&
-		strings.Index(text, `"implements": "pump"`) < strings.Index(text, `"state"`)) {
+	if strings.Index(text, `"name": "pump"`) >= strings.Index(text, `"implements": "pump"`) ||
+		strings.Index(text, `"implements": "pump"`) >= strings.Index(text, `"state"`) {
 		t.Fatalf("Format puts implements after the kind's name and before its state, got:\n%s", text)
 	}
 	again, err := Parse(formatted, "formatted.json")

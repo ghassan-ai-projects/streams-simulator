@@ -12,8 +12,14 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
+type interruptSource func(parent context.Context) (context.Context, context.CancelFunc)
+
 func Serve(stderr io.Writer, socket string, d *domain.Device, banner string) error {
-	ctx, stop := kernel.UntilInterrupted(context.Background())
+	return serveInterruptedBy(kernel.UntilInterrupted, stderr, socket, d, banner)
+}
+
+func serveInterruptedBy(source interruptSource, stderr io.Writer, socket string, d *domain.Device, banner string) error {
+	ctx, stop := source(context.Background())
 	defer stop()
 	return serveUntil(stderr, socket, d, banner, ctx.Done())
 }

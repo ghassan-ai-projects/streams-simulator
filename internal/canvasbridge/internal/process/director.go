@@ -28,7 +28,8 @@ type ToolResult struct {
 }
 
 func StartDirector(ctx context.Context, executable string, args []string) (*Director, error) {
-	command := exec.CommandContext(ctx, executable, args...) //nolint:gosec // G204: the bridge's own executable with argv it built
+	//nolint:gosec // G204: the bridge's own executable with argv entries the bridge built (governance/DEFERRED.md D-64)
+	command := exec.CommandContext(ctx, executable, args...)
 	command.Env = []string{}
 	stderr := &tail{}
 	command.Stderr = stderr

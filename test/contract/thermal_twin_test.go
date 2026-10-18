@@ -9,11 +9,13 @@ package contract
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"slices"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/lint"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -28,15 +30,18 @@ func scaffoldedThermalTwin(t *testing.T) *component.Composed {
 	if err != nil {
 		t.Fatal(err)
 	}
-	kinds, err := plantwire.ReadKindFiles(nil, []string{testsupport.ThermalBoardKindsDir()})
-	if err != nil {
-		t.Fatal(err)
-	}
 	choices, err := os.ReadFile(testsupport.ThermalBoardChoices())
 	if err != nil {
 		t.Fatal(err)
 	}
-	twin, err := component.Twin(library, kinds, choices, "thermal-board.twin.json")
+	scaffold := func(kinds map[string]map[string]any) (*component.Composed, *model.DomainSpec, error) {
+		twin, err := component.Twin(library, kinds, choices, "thermal-board.twin.json")
+		if err != nil {
+			return nil, nil, fmt.Errorf("scaffold the thermal twin: %w", err)
+		}
+		return twin, twin.Domain.Spec, nil
+	}
+	twin, err := plantwire.Scaffold(nil, []string{testsupport.ThermalBoardKindsDir()}, "thermal-board.twin.json", scaffold)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,8 +73,8 @@ func TestTheScaffoldedThermalTwinImplementsItsKindFilesAndPassesTheLint(t *testi
 	if want := []string{"thermal_sensor", "indicator", "fan"}; !slices.Equal(twin.Implements, want) {
 		t.Fatalf("implements = %v, want %v", twin.Implements, want)
 	}
-	if err := plantwire.CheckImplements(twin.Domain.Spec, []string{testsupport.ThermalBoardKindsDir()}); err != nil {
-		t.Fatalf("CheckImplements = %v, want the scaffolded twin to equal its three kind files", err)
+	if checked, err := plantwire.CheckImplements(twin.Domain.Spec, []string{testsupport.ThermalBoardKindsDir()}); err != nil || len(checked) != 3 {
+		t.Fatalf("CheckImplements = %v, %v, want the scaffolded twin to equal its three kind files", checked, err)
 	}
 	report, err := lint.Check(twin.Domain, lint.Options{Seed: lint.DefaultSeed, Hours: lint.DefaultHours})
 	if err != nil || len(report.Findings) != 0 {
@@ -142,5 +147,24 @@ func TestTheScaffoldedTwinIsTheSameBytesEveryTimeAndReplaysTheSameTraceForOneSee
 	b, _ := twinTrace(t, second, 11)
 	if count < 50 || !bytes.Equal(a, b) {
 		t.Fatalf("%d events; two runs with one seed equal = %v, want a non-trivial trace that replays byte for byte", count, bytes.Equal(a, b))
+	}
+}
+
+func TestADifferentSeedGivesADifferentTraceOfTheSameScaffoldedTwin(t *testing.T) {
+	t.Parallel()
+	twin := scaffoldedThermalTwin(t)
+	a, _ := twinTrace(t, twin, 11)
+	b, _ := twinTrace(t, twin, 12)
+	if bytes.Equal(a, b) {
+		t.Fatal("seeds 11 and 12 gave one trace: the twin ignores its seed, so the equality of two runs with one seed proves nothing")
+	}
+}
+
+const scaffoldedThermalTwinDigest = "sha256:65b3325c7ad2e26b3eb26b412d3ee41cc3c2506298b654812c34b77f44dbb4c7"
+
+func TestTheScaffoldedThermalTwinIsTheKnownDocument(t *testing.T) {
+	t.Parallel()
+	if got := canonical.DigestBytes(scaffoldedThermalTwin(t).Bytes); got != scaffoldedThermalTwinDigest {
+		t.Fatalf("digest of the scaffolded thermal twin = %s, want %s: if the choices, the kind files or the scaffold changed on purpose, set the new digest", got, scaffoldedThermalTwinDigest)
 	}
 }

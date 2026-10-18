@@ -5,6 +5,7 @@ type Effector struct {
 	Description          string         `json:"description,omitempty"`
 	ArgsSchema           map[string]any `json:"args_schema"`
 	RiskClass            string         `json:"risk_class,omitempty"`
+	SafeStop             bool           `json:"safe_stop,omitempty"`
 	Ack                  Ack            `json:"ack"`
 	ConfirmationChannels []string       `json:"confirmation_channels,omitempty"`
 	Interlock            *Interlock     `json:"interlock,omitempty"`

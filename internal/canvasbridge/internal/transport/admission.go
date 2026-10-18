@@ -45,6 +45,6 @@ func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 }
 
 func sessionCookie(name, session string) *http.Cookie {
-	//nolint:gosec // G124: Secure stays unset because the bridge serves plain HTTP on loopback
+	//nolint:gosec // G124: the bridge serves plain HTTP on loopback only, where a Secure cookie is dropped by Safari and by Go's cookie jar (governance/DEFERRED.md D-63)
 	return &http.Cookie{Name: name, Value: session, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: sessionMaxAge}
 }
