@@ -73,4 +73,6 @@ export const sessionStartWords =
   "Start links the plant to the plant wire host, and through the gateway to its real boards, and runs until you stop it. " +
   "Stop ends the session and saves it as a run you can review.";
 
+export const refusedPlanWords = "streamsim refused the plan: fix what is marked below and check it again.";
+
 export const staleCheckWords = "The plan changed since this check: check it again before you start.";

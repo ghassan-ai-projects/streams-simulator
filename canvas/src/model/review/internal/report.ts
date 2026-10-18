@@ -150,5 +150,6 @@ export function runSpan(
   if (report !== null && report.endNs > report.startNs) {
     return { startNs: report.startNs, endNs: report.endNs };
   }
-  return observed ?? { startNs: 0, endNs: 0 };
+  if (observed !== null) return observed;
+  return report === null ? { startNs: 0, endNs: 0 } : { startNs: report.startNs, endNs: report.startNs };
 }

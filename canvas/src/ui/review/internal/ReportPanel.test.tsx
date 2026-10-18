@@ -150,4 +150,10 @@ describe("report panel", () => {
     expect(within(replay).getByText("trace.jsonl differs")).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
   });
+
+  it("words the true results of a connected session as one, never as an Evaluate run", () => {
+    render(<ReportPanel report={report} unit={() => ""} entity={null} connection="saved" />);
+    expect(screen.getByText(/^Connected session: the true results below/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Evaluate run/)).toBeNull();
+  });
 });

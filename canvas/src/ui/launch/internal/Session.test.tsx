@@ -65,18 +65,24 @@ describe("the session plan in the run panel", () => {
     renderSession(fake);
     planWithARealBoard();
     fireEvent.click(screen.getByRole("button", { name: "Start the session" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("the plan does not hold (plantwire_failed)");
+    const banner = await screen.findByRole("alert");
+    expect(banner).toHaveTextContent("streamsim refused the plan: fix what is marked below and check it again.");
+    expect(within(banner).getByText("the plan does not hold (plantwire_failed)")).not.toBeVisible();
     expect(screen.getByLabelText("Real board 1 device")).toHaveAccessibleDescription("The board holds no such device.");
     expect(screen.getByLabelText("Host socket")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Host socket")).toHaveFocus();
-    const others = screen.getByRole("list", { name: "Other problems in the plan" });
-    expect(others).toHaveTextContent("the domain changed on disk");
-    expect(others).toHaveTextContent("a kind file is unreadable");
+    const all = screen.getByRole("list", { name: "Problems in the plan" });
+    expect(within(all).getAllByRole("listitem")).toHaveLength(issues.length);
+    expect(all).toHaveTextContent("The board holds no such device.");
+    expect(all).toHaveTextContent("the domain changed on disk");
+    expect(all).toHaveTextContent("a kind file is unreadable");
     expect(screen.getByText("For developers")).toBeInTheDocument();
     expect(fake.calls.some((call) => call.name === "session.start")).toBe(false);
     fill("Host socket", "/tmp/other.sock");
     expect(screen.getByLabelText("Host socket")).not.toHaveAttribute("aria-invalid");
     expect(screen.getByText(/The plan changed since this check/)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/streamsim refused the plan/)).not.toBeInTheDocument();
   });
 
   it("adds a real board for an instance not yet bound, focuses it, and removes it again", () => {

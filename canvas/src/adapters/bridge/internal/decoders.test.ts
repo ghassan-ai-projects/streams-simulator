@@ -143,13 +143,24 @@ describe("workspace payload", () => {
     const decoded = workspace({
       ...wire,
       runs: [
-        { world_id: "c-1", connected: true, running: true },
+        {
+          world_id: "c-1",
+          connected: true,
+          running: true,
+          plan: {
+            instances: [
+              { instance: "zone-01", origin: "real" },
+              { instance: "fan-01", origin: "simulated" },
+            ],
+          },
+        },
         { world_id: "c-2", connected: true },
         { world_id: "w-3", connected: "yes", running: true },
       ],
     });
     expect(decoded?.runs.map((run) => run.connected)).toEqual(["running", "saved", undefined]);
     expect(decoded?.runs[2]).not.toHaveProperty("connected");
+    expect(decoded?.runs.map((run) => run.simulated)).toEqual([["fan-01"], [], undefined]);
   });
 
   it("defaults a run's missing or mistyped fields", () => {

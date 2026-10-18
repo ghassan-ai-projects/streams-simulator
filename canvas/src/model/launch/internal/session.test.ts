@@ -5,7 +5,6 @@ import {
   memberIssues,
   rowIssues,
   sessionPlanText,
-  unplacedIssues,
   withRealRow,
   withRowField,
   withoutRealRow,
@@ -75,19 +74,13 @@ describe("issue placement", () => {
     expect(rowIssues(issues, 1, "device")).toEqual([]);
   });
 
-  it("places every issue on the member it points at or names, and lists all the rest", () => {
+  it("places every issue on the member it points at or names", () => {
     expect(memberIssues(issues, "host_socket").map((issue) => issue.message)).toEqual([
       "not absolute",
       "no control character",
     ]);
     expect(memberIssues(issues, "gateway_socket").map((issue) => issue.keyword)).toEqual(["gateway_required"]);
     expect(memberIssues(issues, "seed")).toEqual([]);
-    expect(unplacedIssues(issues, 1).map((issue) => issue.message)).toEqual([
-      "a row no longer there",
-      "the domain is not known",
-      "kinds unreadable",
-    ]);
-    expect(unplacedIssues(issues, 4).map((issue) => issue.message)).not.toContain("a row no longer there");
   });
 
   it("words each issue plainly by its rule or member, keeping the binary's text for developers", () => {

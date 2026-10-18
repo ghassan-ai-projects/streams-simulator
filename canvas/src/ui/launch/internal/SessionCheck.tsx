@@ -6,8 +6,8 @@ import {
   issueDetail,
   issueWords,
   plannedWords,
+  refusedPlanWords,
   staleCheckWords,
-  unplacedIssues,
 } from "../../../model/launch";
 import { originLabels } from "../../../model/shared/origin";
 import { failureLine, OriginBadge, panel } from "../../primitives";
@@ -53,50 +53,56 @@ export function Planned({ check, binding = null, role }: PlannedProps) {
   );
 }
 
-export function IssueList({ label, issues }: { readonly label: string; readonly issues: readonly PlanIssue[] }) {
-  if (issues.length === 0) return null;
+function Developers({ issues, raw }: { readonly issues: readonly PlanIssue[]; readonly raw: string }) {
+  if (issues.length === 0 && raw === "") return null;
   return (
-    <>
-      <ul className={styles.issues} aria-label={label}>
+    <details className={styles.developers}>
+      <summary>For developers</summary>
+      {raw !== "" && <p>{raw}</p>}
+      <ul className={styles.issues}>
         {issues.map((issue, index) => (
-          <li key={`${String(index)}:${issue.pointer}`} className={launch.problem}>
-            <TriangleAlert size={13} aria-hidden="true" />
-            {issueWords(issue)}
-          </li>
+          <li key={`${String(index)}:${issue.pointer}`}>{issueDetail(issue)}</li>
         ))}
       </ul>
-      <details className={styles.developers}>
-        <summary>For developers</summary>
-        <ul className={styles.issues}>
+    </details>
+  );
+}
+
+interface IssueListProps {
+  readonly label: string;
+  readonly issues: readonly PlanIssue[];
+  readonly raw?: string;
+}
+
+export function IssueList({ label, issues, raw = "" }: IssueListProps) {
+  return (
+    <>
+      {issues.length > 0 && (
+        <ul className={styles.issues} aria-label={label}>
           {issues.map((issue, index) => (
-            <li key={`${String(index)}:${issue.pointer}`}>{issueDetail(issue)}</li>
+            <li key={`${String(index)}:${issue.pointer}`} className={launch.problem}>
+              <TriangleAlert size={13} aria-hidden="true" />
+              {issueWords(issue)}
+            </li>
           ))}
         </ul>
-      </details>
+      )}
+      <Developers issues={issues} raw={raw} />
     </>
   );
 }
 
-function Refused({
-  state,
-  rows,
-}: {
-  readonly state: Extract<ConnectState, { phase: "refused" }>;
-  readonly rows: number;
-}) {
+function Refused({ state }: { readonly state: Extract<ConnectState, { phase: "refused" }> }) {
+  if (state.stale) return <p className={panel.hint}>{staleCheckWords}</p>;
   return (
     <div className={launch.failure} role="alert" tabIndex={-1}>
-      <p>{failureLine(state.diagnostic)}</p>
-      {state.stale ? (
-        <p>{staleCheckWords}</p>
-      ) : (
-        <IssueList label="Other problems in the plan" issues={unplacedIssues(state.issues, rows)} />
-      )}
+      <p>{refusedPlanWords}</p>
+      <IssueList label="Problems in the plan" issues={state.issues} raw={failureLine(state.diagnostic)} />
     </div>
   );
 }
 
-export function CheckResult({ state, rows }: { readonly state: ConnectState; readonly rows: number }) {
+export function CheckResult({ state }: { readonly state: ConnectState }) {
   if (state.phase === "checking") {
     return (
       <p className={panel.hint} role="status">
@@ -104,7 +110,7 @@ export function CheckResult({ state, rows }: { readonly state: ConnectState; rea
       </p>
     );
   }
-  if (state.phase === "refused") return <Refused state={state} rows={rows} />;
+  if (state.phase === "refused") return <Refused state={state} />;
   if (state.phase !== "checked") return null;
   return (
     <>

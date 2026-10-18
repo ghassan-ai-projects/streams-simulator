@@ -15,8 +15,13 @@ export function unknownOrigin(instance: string): InstanceOrigin {
   return { instance, kind: "unknown", board: "", device: "", bootId: "" };
 }
 
+export function plannedSimulated(instance: string): InstanceOrigin {
+  return { instance, kind: "simulated", board: "", device: "", bootId: "" };
+}
+
 export function originWords(origin: InstanceOrigin): string {
   if (origin.kind === "unknown") return `${originLabels.unknown}: the run recorded no origin for it`;
+  if (origin.board === "") return `${originLabels[origin.kind]} · by the session plan`;
   const board = `${originLabels[origin.kind]} · board ${origin.board}`;
   return origin.kind === "real" && origin.bootId !== "" ? `${board} · boot ${origin.bootId}` : board;
 }

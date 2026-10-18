@@ -1,4 +1,4 @@
-import { cx, panel } from "../../primitives";
+import { cx, panel, useFocusOnMount } from "../../primitives";
 import type { RunKind } from "./useRunMode";
 import launch from "./LaunchPanel.module.css";
 import styles from "./Session.module.css";
@@ -19,6 +19,7 @@ interface RunModeProps {
 }
 
 export function RunMode({ kind, locked, onKind }: RunModeProps) {
+  const chosen = useFocusOnMount<HTMLInputElement>({ when: locked === "" });
   return (
     <fieldset className={cx(panel.group, styles.kinds)} disabled={locked !== ""} title={locked || undefined}>
       <legend>How this run goes</legend>
@@ -27,6 +28,7 @@ export function RunMode({ kind, locked, onKind }: RunModeProps) {
           <input
             type="radio"
             name="run-kind"
+            ref={kind === value ? chosen : undefined}
             checked={kind === value}
             onChange={() => {
               onKind(value);

@@ -17,6 +17,7 @@ export interface RunEntry {
   readonly recordedAt: string;
   readonly faults: number;
   readonly connected?: "running" | "saved";
+  readonly simulated?: readonly string[];
 }
 
 export interface KindEntry {

@@ -50,12 +50,12 @@ type Bridge struct {
 	catalog    string
 	writeMu    sync.Mutex
 	session    *liveSession
-	sessions   map[string]bool
+	sessions   map[string]json.RawMessage
 }
 
 func New(edges Edges, settings Settings) *Bridge {
 	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
-		running: map[string]bool{}, sessions: map[string]bool{}}
+		running: map[string]bool{}, sessions: map[string]json.RawMessage{}}
 }
 
 func (b *Bridge) Pair(code string) (string, error) {

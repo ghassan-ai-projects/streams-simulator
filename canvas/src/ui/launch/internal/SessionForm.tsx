@@ -76,7 +76,7 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
       <div className={cx(launch.scroll, shared.scrolls)}>
         <SessionFields draft={draft} change={change} issues={issues} />
         <RealRows plant={plant} draft={draft} change={change} issues={issues} />
-        <CheckResult state={state} rows={draft.real.length} />
+        <CheckResult state={state} />
       </div>
       <SessionFooter
         checking={checking}

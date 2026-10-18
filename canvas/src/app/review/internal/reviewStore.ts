@@ -70,7 +70,8 @@ export class ReviewStore extends Observable<ReviewState> {
     this.pending = 0;
     this.index = new PlaybackIndex();
     const connection = connectionOf(known);
-    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), connection, ...absentLoads(known) });
+    const simulated = known?.simulated ?? [];
+    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), connection, simulated, ...absentLoads(known) });
     return session;
   }
 

@@ -4,10 +4,10 @@ import type { ReviewState } from "../../../app/review";
 import { shownOrigins } from "../../../model/review";
 
 export function useShownOrigins(state: ReviewState, plant: ReadyPlant | null): ReviewState {
-  const { origins, connection } = state;
+  const { origins, connection, simulated } = state;
   const shown = useMemo(
-    () => shownOrigins(origins, plant?.plant.instances.map((instance) => instance.id) ?? [], connection),
-    [origins, plant, connection],
+    () => shownOrigins(origins, plant?.plant.instances.map((instance) => instance.id) ?? [], connection, simulated),
+    [origins, plant, connection, simulated],
   );
   return shown === origins ? state : { ...state, origins: shown };
 }

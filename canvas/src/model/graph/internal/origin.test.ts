@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { originWords, unknownOrigin } from "./origin";
+import { originWords, plannedSimulated, unknownOrigin } from "./origin";
 import type { InstanceOrigin } from "./origin";
 
 const real: InstanceOrigin = { instance: "zone-01", kind: "real", board: "uno-07", device: "zone-01", bootId: "61" };
@@ -14,5 +14,6 @@ describe("instance origin", () => {
   it("says an origin the run did not record is unknown, never simulated", () => {
     expect(unknownOrigin("fan-01")).toEqual({ instance: "fan-01", kind: "unknown", board: "", device: "", bootId: "" });
     expect(originWords(unknownOrigin("fan-01"))).toBe("Origin unknown: the run recorded no origin for it");
+    expect(originWords(plannedSimulated("fan-01"))).toBe("Simulated · by the session plan");
   });
 });

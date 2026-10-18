@@ -114,7 +114,16 @@ function ReportBody({
   if (state.report.phase === "ready") {
     const { picked, positionNs } = state;
     const shown = picked !== null && picked.atNs === positionNs ? picked : null;
-    return <ReportPanel report={state.report.value} unit={unit} entity={null} picked={shown} verify={state.verified} />;
+    return (
+      <ReportPanel
+        report={state.report.value}
+        unit={unit}
+        entity={null}
+        picked={shown}
+        verify={state.verified}
+        connection={state.connection}
+      />
+    );
   }
   if (state.report.phase === "loading")
     return (

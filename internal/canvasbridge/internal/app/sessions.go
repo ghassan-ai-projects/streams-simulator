@@ -73,7 +73,7 @@ func (b *Bridge) claimSession(check json.RawMessage) (*liveSession, string, erro
 		return nil, "", err
 	}
 	b.session = &liveSession{view: domain.SessionView{Run: run, Domain: domain.PlanDomain(check), Plan: check}}
-	b.sessions[run] = true
+	b.sessions[run] = check
 	return b.session, out, nil
 }
 
@@ -149,10 +149,11 @@ func (b *Bridge) sessionRuns(runID string) bool {
 	return b.session != nil && b.session.view.Run == runID && b.session.live()
 }
 
-func (b *Bridge) startedSession(runID string) bool {
+func (b *Bridge) startedSession(runID string) (json.RawMessage, bool) {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	return b.sessions[runID]
+	plan, started := b.sessions[runID]
+	return plan, started
 }
 
 func encodeStatus(status domain.SessionStatus) (json.RawMessage, error) {

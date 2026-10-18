@@ -10,7 +10,6 @@ export {
   memberIssues,
   rowIssues,
   sessionPlanText,
-  unplacedIssues,
   withRealRow,
   withRowField,
   withoutRealRow,
@@ -21,6 +20,7 @@ export {
   issueDetail,
   issueWords,
   plannedWords,
+  refusedPlanWords,
   sessionStartWords,
   staleCheckWords,
 } from "./internal/sessionWords";

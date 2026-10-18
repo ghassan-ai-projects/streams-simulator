@@ -102,20 +102,6 @@ export function memberIssues(issues: readonly PlanIssue[], member: PlanMember): 
   return issues.filter((issue) => onMember(issue, member));
 }
 
-const rowFields: readonly RowField[] = ["instance", "board", "device"];
-const members: readonly PlanMember[] = ["seed", "host_socket", "gateway_socket"];
-
-function placed(issue: PlanIssue, rows: number): boolean {
-  const onSomeRow = Array.from({ length: rows }, (_, index) => index).some((index) =>
-    rowFields.some((field) => onRow(issue, index, field)),
-  );
-  return onSomeRow || members.some((member) => onMember(issue, member));
-}
-
-export function unplacedIssues(issues: readonly PlanIssue[], rows: number): readonly PlanIssue[] {
-  return issues.filter((issue) => !placed(issue, rows));
-}
-
 export function freeInstance(instances: readonly string[], rows: readonly RealRow[]): string | null {
   return instances.find((id) => !rows.some((row) => row.instance === id)) ?? null;
 }

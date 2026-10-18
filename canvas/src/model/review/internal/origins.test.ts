@@ -22,6 +22,7 @@ describe("origins shown for a connected run", () => {
     expect(shown.get("zone-01")).toBe(real);
     expect(shown.get("fan-01")).toEqual({ instance: "fan-01", kind: "unknown", board: "", device: "", bootId: "" });
     expect(shownOrigins(recorded, ["zone-01", "fan-01"], "none")).toBe(recorded);
+    expect(shownOrigins(recorded, ["zone-01", "fan-01"], "saved", ["fan-01"]).get("fan-01")?.kind).toBe("simulated");
   });
 
   it("names a connected run and its gateway binding", () => {

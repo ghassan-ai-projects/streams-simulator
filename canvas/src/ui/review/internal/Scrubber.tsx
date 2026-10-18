@@ -121,6 +121,15 @@ function FirstEvent({ report, startNs }: { readonly report: Report | null; reado
   );
 }
 
+function Foot({ report, startNs, marks }: { readonly marks: readonly EventMark[] } & Parameters<typeof FirstEvent>[0]) {
+  return (
+    <div className={styles.foot}>
+      <FirstEvent report={report} startNs={startNs} />
+      <Legend marks={marks} />
+    </div>
+  );
+}
+
 const unknownClock = "--:--:--";
 
 const noOrigins: ReadonlyMap<string, InstanceOrigin> = new Map();
@@ -152,7 +161,6 @@ function TimeRow(props: RowProps) {
       <span className={styles.time}>{known ? runClock(positionNs, startNs) : unknownClock}</span>
       <span className={styles.span}>{`of ${known ? runClock(endNs, startNs) : unknownClock}`}</span>
       <span className={styles.controls}>
-        <Legend marks={marks} />
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
         <AlarmJump marks={marks} positionNs={positionNs} onEvent={onEvent} />
       </span>
@@ -195,7 +203,7 @@ export function Scrubber(props: ScrubberProps) {
         pick={pick}
         origins={props.origins ?? noOrigins}
       />
-      <FirstEvent report={report} startNs={startNs} />
+      <Foot report={report} startNs={startNs} marks={marks} />
     </div>
   );
 }

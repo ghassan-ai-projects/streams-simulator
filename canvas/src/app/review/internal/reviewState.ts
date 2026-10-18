@@ -31,6 +31,7 @@ export interface ReviewState {
   readonly speed: number;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly connection: "none" | "running" | "saved";
+  readonly simulated: readonly string[];
   readonly binding: TimedBinding | null;
 }
 
@@ -49,6 +50,7 @@ export const idle: ReviewState = {
   speed: 60,
   origins: new Map(),
   connection: "none",
+  simulated: [],
   binding: null,
 };
 
@@ -58,7 +60,8 @@ export function connectionOf(known: RunEntry | undefined): ReviewState["connecti
 
 export function withListedConnection(state: ReviewState, known: RunEntry | undefined): ReviewState {
   const listed = known?.connected;
-  return listed === undefined || listed === state.connection ? state : { ...state, connection: listed };
+  if (listed === undefined || listed === state.connection) return state;
+  return { ...state, connection: listed, simulated: known?.simulated ?? state.simulated };
 }
 
 type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" }>;

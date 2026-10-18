@@ -31,7 +31,7 @@ export {
 } from "./internal/viewport";
 export { labelPoint, wirePath } from "./internal/wirePath";
 export { routeView } from "./internal/wireView";
-export { originLabels, originWords, unknownOrigin } from "./internal/origin";
+export { originLabels, originWords, plannedSimulated, unknownOrigin } from "./internal/origin";
 export type {
   CutSide,
   InstanceOrigin,

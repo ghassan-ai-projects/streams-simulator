@@ -67,8 +67,8 @@ func (b *Bridge) runEntry(name string) domain.RunEntry {
 	running := b.runIsRunning(name)
 	entry := domain.NewRunEntry(name, b.summary(name), running, b.artifact(name))
 	entry.RecordedAt = b.recordedAt("runs/" + name + "/journal.jsonl")
-	if b.startedSession(name) {
-		return entry.AsSession(running)
+	if plan, started := b.startedSession(name); started {
+		return entry.AsSession(running, plan)
 	}
 	return entry
 }

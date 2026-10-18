@@ -94,9 +94,11 @@ describe("origins in a review", () => {
       recordedAt: "",
       faults: 0,
     };
-    store.open("c-4", { ...listed, connected: "running" });
+    store.open("c-4", { ...listed, connected: "running", simulated: ["fan-01"] });
+    expect(store.snapshot().simulated).toEqual(["fan-01"]);
     store.refreshCompleted("c-4", { ...listed, ended: true, complete: true, connected: "saved" });
     expect(store.snapshot().connection).toBe("saved");
+    expect(store.snapshot().simulated).toEqual(["fan-01"]);
     store.refreshCompleted("c-9", { ...listed, connected: "running" });
     expect(store.snapshot().connection).toBe("saved");
   });

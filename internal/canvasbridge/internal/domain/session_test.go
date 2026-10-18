@@ -69,7 +69,8 @@ func TestASessionRunFolderIsARunOfTheWorkspace(t *testing.T) {
 	if failure := SessionStillRunning("c-1"); failure.Code != "session_running" {
 		t.Fatalf("SessionStillRunning = %+v, want session_running", failure)
 	}
-	if entry := (RunEntry{WorldID: "c-1"}).AsSession(true); !entry.Connected || !entry.Running {
-		t.Fatalf("AsSession = %+v, want a running connected session", entry)
+	if entry := (RunEntry{WorldID: "c-1"}).AsSession(true, []byte(`{"instances":[]}`)); !entry.Connected || !entry.Running ||
+		string(entry.Plan) != `{"instances":[]}` {
+		t.Fatalf("AsSession = %+v, want a running connected session with its plan check", entry)
 	}
 }

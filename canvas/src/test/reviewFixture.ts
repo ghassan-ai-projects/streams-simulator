@@ -17,6 +17,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     openedAt: 0,
     origins: new Map(),
     connection: "none",
+    simulated: [],
     binding: null,
     ...overrides,
   };
