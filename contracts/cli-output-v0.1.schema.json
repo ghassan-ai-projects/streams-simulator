@@ -1020,6 +1020,20 @@
           "type": "integer",
           "minimum": 0,
           "description": "Mixed session only: commands the relay refused with unknown_device because no board of the node holds the device."
+        },
+        "forged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records dropped (and also counted in dropped) because the gateway or the simulated world sent what only the other side could: an answer to a command it was not given, or a device birth on another board or of a kind its node birth never announced."
+        },
+        "simulated_lost": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: 1 once the simulated node ended before the relay did; its devices were reported offline to the host at once."
+        },
+        "trace_incomplete": {
+          "type": "boolean",
+          "description": "True when the field trace could not take a record (full or a line too long): the relay stopped recording, disconnected the gateway, kept the host session, and the run records no field_trace_digest so that replay-trace refuses the trace."
         }
       }
     },

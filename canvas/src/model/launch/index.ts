@@ -6,15 +6,24 @@ export { runProgressWords } from "./internal/progress";
 export { modeWords, planCue, planSummary, problemWords } from "./internal/words";
 export {
   firstSessionDraft,
-  memberIssue,
-  rowIssue,
+  freeInstance,
+  memberIssues,
+  rowIssues,
   sessionPlanText,
   unplacedIssues,
   withRealRow,
   withRowField,
   withoutRealRow,
 } from "./internal/session";
-export { bindingWords, checkWords, plannedWords, roleWords, sessionStartWords } from "./internal/sessionWords";
+export {
+  bindingWords,
+  checkWords,
+  issueDetail,
+  issueWords,
+  plannedWords,
+  sessionStartWords,
+  staleCheckWords,
+} from "./internal/sessionWords";
 export type {
   Acknowledgement,
   BindingNote,

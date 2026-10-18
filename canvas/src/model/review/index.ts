@@ -1,7 +1,7 @@
 export { noteLinesByEntity } from "./internal/noteLines";
 export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
-export { withOrigin } from "./internal/origins";
+export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
 export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
 export {
@@ -47,5 +47,6 @@ export type {
   Replay,
   Report,
   Rerun,
+  TimedBinding,
   VerifyState,
 } from "./contract";

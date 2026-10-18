@@ -300,7 +300,12 @@ streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <d
   the relay; a host that is not there yet is retried every 250 ms.
 - `--out` — a folder for the journal of every record on both links (`journal.jsonl`, observer `wire` session records with the
   directions `gateway`, `node`, `host` and `relay`; a carried record is two lines, as received and as sent) and
-  `field-trace.jsonl`, every record the gateway sent in the order the relay received it (see [artifacts](artifacts.md)).
+  `field-trace.jsonl`, every record the gateway sent that decoded and belonged to an admitted session, in the order the relay
+  received it (a refused birth, an invalid record or a record of another session is journalled but not in the field trace; see
+  [artifacts](artifacts.md)). When the field trace cannot take a record (it is full, or a line is too long) the relay stops
+  recording, disconnects the gateway, refuses the next one, keeps the host session and reports `trace_incomplete`; a run
+  folder then records no `field_trace_digest`, so `replay-trace` refuses its trace. A hardware-only relay writes no `run.json`:
+  its field trace has no digest to cover it.
   Hardware has no truth, so the director stream holds only its closing record. Without it nothing is written.
 - `--domain` — makes the relay **mixed** (and then `--out` is required): the simulated world of that domain runs in the same
   node, its boards announced `simulated` beside the gateway's `hardware` boards in one `NBIRTH` whose `environment` is `mixed`
@@ -322,9 +327,14 @@ gateway as offline with its session kept, a gateway that is lost has each of its
 and a host that refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
 has no fault, perturbation or script option; `run`, `replay`, `verify`, `scenario` and `plantwire node` have no gateway option.
 The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}` (and, for a mixed relay,
-`to_simulated?`, `from_simulated?`, `unknown_device?`), where `dropped` counts the records received and not carried (invalid,
-oversize, repeated, of another session, of a type that does not travel that way, naming a device of the other origin, or with
-no host to take them).
+`to_simulated?`, `from_simulated?`, `unknown_device?`, `simulated_lost?`), plus `forged?` and `trace_incomplete?` for any relay,
+where `dropped` counts the records received and not carried (invalid, oversize, repeated, of another session, of a type that
+does not travel that way, naming a device of the other origin, or with no host to take them). `forged` counts, among those, the
+answers (`DRECEIPT`, `DRESULT`) of a side to a command routed to the other side in a mixed relay, and the device births on a
+board other than the one that announced the device or of a kind its `NBIRTH` never announced. A command for a device of a gateway
+that is not connected is refused `not_ready`; a host's rebirth request in a mixed relay reaches the gateway and the world. When
+the simulated node ends before the relay (a mailbox overflow is a failure), its devices are reported offline to the host at once
+and `simulated_lost` is 1.
 
 ### `plantwire connect`
 
@@ -347,7 +357,9 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   instance is `real` (with the board and device the gateway must announce and the digest of the kind file it must announce
   them with) or `simulated`. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
   into the plan: `unknown_instance`, `no_kind_file` (only an instance whose kind implements a kind file can be a real board),
-  `instance_bound_twice`, `device_bound_twice`, `gateway_required`, `same_socket`.
+  `instance_bound_twice`, `device_bound_twice`, `gateway_required`, `same_socket` (compared after cleaning the paths),
+  `socket_not_absolute`, `socket_parent_component` (a `..` component) and `socket_control_character`. The sockets are used
+  as cleaned paths.
 - Without `--check`, `--out` is required. With no `gateway_socket` the world is a plant wire node to the host; with one it is
   the mixed relay (`plantwire relay --domain`) and the gateway is checked against the plan at its handshake: the bound board
   must be announced (`board_missing`), hold the device (`device_missing`), and announce the instance's kind

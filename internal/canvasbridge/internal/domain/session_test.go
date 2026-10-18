@@ -3,6 +3,7 @@ package domain
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -31,17 +32,29 @@ func TestTheSessionActionsRunPlantWireConnectWithThePlanOnStandardInput(t *testi
 
 func TestASessionThatExitsCleanlyEndedAndOneThatFailsSaysWhy(t *testing.T) {
 	t.Parallel()
-	ended := SessionOutcome("c-1", []byte(`{"out":"runs/c-1","stopped":true}`), 0, "")
-	if ended.State != SessionEnded || ended.Run != "c-1" || string(ended.Result) != `{"out":"runs/c-1","stopped":true}` || ended.Failure != nil {
-		t.Fatalf("a clean exit = %+v, want ended with the command's document", ended)
+	view := SessionView{Run: "c-1", Domain: PlanDomain([]byte(`{"domain":"arduino-thermal"}`)), Plan: []byte(`{"domain":"arduino-thermal"}`)}
+	ended := view.Outcome([]byte(`{"out":"runs/c-1","stopped":true}`), 0, "")
+	if ended.State != SessionEnded || ended.Run != "c-1" || ended.Domain != "arduino-thermal" || string(ended.Result) != `{"out":"runs/c-1","stopped":true}` ||
+		ended.Failure != nil {
+		t.Fatalf("a clean exit = %+v, want ended with the command's document, the domain and the plan", ended)
 	}
-	refused := SessionOutcome("c-2", []byte(`{"error":{"code":"plantwire_failed","message":"no host"}}`), 1, "")
+	refused := view.Outcome([]byte(`{"error":{"code":"plantwire_failed","message":"no host"}}`), 1, "")
 	if refused.State != SessionFailed || refused.Failure.Code != "plantwire_failed" || refused.Result != nil {
 		t.Fatalf("a refused session = %+v, want failed with the command's error", refused)
 	}
-	crashed := SessionOutcome("c-3", nil, -1, "panic: boom\n")
+	crashed := view.Outcome(nil, -1, "panic: boom\n")
 	if crashed.State != SessionFailed || crashed.Failure.Code != "command_failed" || crashed.Failure.Message != "panic: boom" {
 		t.Fatalf("a crashed session = %+v, want failed with its last words", crashed)
+	}
+	huge := view.Outcome([]byte(`"`+strings.Repeat("x", MaxSessionResult)+`"`), 0, "")
+	if huge.State != SessionEnded || huge.Result != nil {
+		t.Fatalf("an oversized result = state %s with %d bytes, want ended without the result", huge.State, len(huge.Result))
+	}
+	if unlaunched := view.Unlaunched(errors.New("no such file")); unlaunched.State != SessionFailed || unlaunched.Failure.Message != "no such file" {
+		t.Fatalf("Unlaunched = %+v, want failed with the launch error", unlaunched)
+	}
+	if PlanDomain([]byte(`not json`)) != "" || SessionPrecheck().Name != "session.check" {
+		t.Fatal("a check that is not a document names no domain, and the precheck is session.check")
 	}
 }
 
@@ -55,5 +68,8 @@ func TestASessionRunFolderIsARunOfTheWorkspace(t *testing.T) {
 	}
 	if failure := SessionStillRunning("c-1"); failure.Code != "session_running" {
 		t.Fatalf("SessionStillRunning = %+v, want session_running", failure)
+	}
+	if entry := (RunEntry{WorldID: "c-1"}).AsSession(true); !entry.Connected || !entry.Running {
+		t.Fatalf("AsSession = %+v, want a running connected session", entry)
 	}
 }

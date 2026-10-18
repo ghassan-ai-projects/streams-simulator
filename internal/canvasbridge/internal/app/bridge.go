@@ -49,13 +49,13 @@ type Bridge struct {
 	director   Director
 	catalog    string
 	writeMu    sync.Mutex
-	sessionMu  sync.Mutex
 	session    *liveSession
+	sessions   map[string]bool
 }
 
 func New(edges Edges, settings Settings) *Bridge {
 	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
-		running: map[string]bool{}}
+		running: map[string]bool{}, sessions: map[string]bool{}}
 }
 
 func (b *Bridge) Pair(code string) (string, error) {

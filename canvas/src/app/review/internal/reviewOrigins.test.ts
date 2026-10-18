@@ -40,7 +40,38 @@ describe("origins in a review", () => {
       bootId: "62",
     });
     expect(origins.get("fan-01")?.kind).toBe("simulated");
+    expect(store.snapshot().connection).toBe("saved");
     store.open("c-2");
     expect(store.snapshot().origins.size).toBe(0);
+    expect(store.snapshot().connection).toBe("none");
+  });
+
+  it("keeps the gateway binding and takes a connected session from the listing, running or saved", () => {
+    const bridge = new FakeBridge();
+    bridge.actions.set("run.report", success(reportWire));
+    const timers = fakeClock();
+    const store = new ReviewStore(bridge.review, timers, timers);
+    const listed = {
+      worldId: "c-3",
+      ended: false,
+      complete: false,
+      incompleteReason: "",
+      explore: false,
+      seed: 1,
+      plant: "p",
+      durationS: 0,
+      recordedAt: "",
+      faults: 0,
+      connected: "running" as const,
+    };
+    store.open("c-3", listed);
+    expect(store.snapshot().connection).toBe("running");
+    const binding = { stream: "observer", seq: 2, type: "binding", at_ns: 9, outcome: "refused", issues: [] };
+    bridge.stream("c-3", [{ ...binding, refusal: "inventory_mismatch" }], null);
+    expect(store.snapshot().binding).toEqual({
+      atNs: 9,
+      binding: { matched: false, refusal: "inventory_mismatch", reason: "", issues: [] },
+    });
+    expect(store.snapshot().connection).toBe("running");
   });
 });

@@ -61,6 +61,13 @@ type RunEntry struct {
 	DurationNs       int64   `json:"duration_ns,omitempty"`
 	Faults           int     `json:"faults,omitempty"`
 	RecordedAt       string  `json:"recorded_at,omitempty"`
+	Connected        bool    `json:"connected,omitempty"`
+	Running          bool    `json:"running,omitempty"`
+}
+
+func (e RunEntry) AsSession(running bool) RunEntry {
+	e.Connected, e.Running = true, running
+	return e
 }
 
 type Listing struct {

@@ -31,7 +31,7 @@ function OriginLine({ origin }: { readonly origin: InstanceOrigin | undefined })
   return (
     <p className={parts.origin}>
       <span aria-hidden="true">
-        <OriginMark origin={origin} variant="glyph" />
+        <OriginMark origin={origin} variant="glyph" voice="silent" />
       </span>
       {originWords(origin)}
     </p>

@@ -16,6 +16,8 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     speed: 60,
     openedAt: 0,
     origins: new Map(),
+    connection: "none",
+    binding: null,
     ...overrides,
   };
 }

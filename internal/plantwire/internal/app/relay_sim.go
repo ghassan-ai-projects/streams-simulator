@@ -130,11 +130,13 @@ func (s *simNode) signal() <-chan struct{} {
 	return s.link.UpReady()
 }
 
-func (s *simNode) reap() {
+func (s *simNode) reap() bool {
 	select {
 	case err := <-s.done:
 		s.complete(err)
+		return true
 	default:
+		return false
 	}
 }
 

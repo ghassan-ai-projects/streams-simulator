@@ -1,6 +1,7 @@
 import type { SyntheticEvent } from "react";
+import { useEffect, useRef } from "react";
 import type { ConnectSession, ConnectState } from "../../../app/launch";
-import type { SessionDraft } from "../../../model/launch";
+import type { PlanIssue, SessionDraft } from "../../../model/launch";
 import { sessionStartWords } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { cx, holdEnter, panel, shared } from "../../primitives";
@@ -17,19 +18,42 @@ interface SessionFormProps {
   readonly connect: ConnectSession;
 }
 
+function liveIssues(state: ConnectState): readonly PlanIssue[] {
+  return state.phase === "refused" && !state.stale ? state.issues : [];
+}
+
+function useFocusOnRefusal(state: ConnectState) {
+  const form = useRef<HTMLFormElement>(null);
+  const refused = state.phase === "refused" && !state.stale ? state : null;
+  useEffect(() => {
+    if (refused === null) return;
+    const target = form.current?.querySelector<HTMLElement>("[aria-invalid='true'], [role='alert']");
+    target?.focus();
+  }, [refused]);
+  return form;
+}
+
 export function SessionForm({ plant, draft, change, state, connect }: SessionFormProps) {
-  const issues = state.phase === "refused" ? state.issues : [];
+  const issues = liveIssues(state);
   const checking = state.phase === "checking";
+  const form = useFocusOnRefusal(state);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!checking) void connect.start(plant.id, draft);
   };
   return (
-    <form className={launch.plan} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Session plan">
+    <form
+      ref={form}
+      className={launch.plan}
+      onSubmit={submit}
+      onKeyDown={holdEnter}
+      noValidate
+      aria-label="Session plan"
+    >
       <div className={cx(launch.scroll, shared.scrolls)}>
         <SessionFields draft={draft} change={change} issues={issues} />
         <RealRows plant={plant} draft={draft} change={change} issues={issues} />
-        <CheckResult state={state} />
+        <CheckResult state={state} rows={draft.real.length} />
       </div>
       <div className={launch.footer}>
         <p id="session-summary" className={launch.summary}>

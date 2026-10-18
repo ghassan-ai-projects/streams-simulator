@@ -12,18 +12,26 @@
   font-weight: 600;
 }
 
-.origin-real {
+.real {
   color: var(--origin-real);
 }
 
-.origin-simulated {
+.simulated {
   color: var(--origin-simulated);
 }
 
-.tag.origin-real {
+.unknown {
+  color: var(--status-warn);
+}
+
+.tag.real {
   background: var(--origin-real-bg);
 }
 
-.tag.origin-simulated {
+.tag.simulated {
   background: var(--origin-simulated-bg);
+}
+
+.tag.unknown {
+  background: var(--status-warn-bg);
 }

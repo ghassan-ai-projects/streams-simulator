@@ -67,7 +67,9 @@ export async function openSessionPanel(page: Page) {
   await page.goto(thermalPlant);
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Arduino thermal bench twin" });
-  await panel.getByRole("radio", { name: /^Connected session/ }).check();
-  await expect(panel.getByLabel("Seed", { exact: true })).toBeFocused();
+  const session = panel.getByRole("radio", { name: /^Connected session/ });
+  await session.check();
+  await expect(session).toBeFocused();
+  await expect(panel.getByLabel("Seed", { exact: true })).toBeVisible();
   return panel;
 }

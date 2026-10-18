@@ -131,3 +131,24 @@ describe("next alarm", () => {
     expect(nextAlarm([mark(20, "fault")], 0)).toBeNull();
   });
 });
+
+describe("binding mark", () => {
+  it("puts the gateway binding on the timeline at its time, with no instance to select", () => {
+    const refused = { matched: false, refusal: "inventory_mismatch", reason: "", issues: [] };
+    const marks = eventMarks(report, { atNs: 5, binding: refused });
+    const mark = marks.find((entry) => entry.kind === "binding");
+    expect(mark).toEqual({
+      atNs: 5,
+      label: "Gateway refused",
+      raw: "binding refused · inventory_mismatch",
+      kind: "binding",
+      tone: "other",
+      entity: "",
+      untilNs: null,
+    });
+    expect(kindsOf(marks)).toContain("binding");
+    const matched = eventMarks(report, { atNs: 5, binding: { ...refused, matched: true } });
+    expect(matched.find((entry) => entry.kind === "binding")?.label).toBe("Gateway matched the plan");
+    expect(eventMarks(report).some((entry) => entry.kind === "binding")).toBe(false);
+  });
+});

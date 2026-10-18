@@ -25,6 +25,9 @@ func TestASessionPlanThatBreaksItsContractIsRefusedAtTheMember(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ name, plan, pointer string }{
 		{name: "a relative socket", plan: `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"h.sock"}`, pointer: "/host_socket"},
+		{name: "a socket with a parent component", plan: `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/../h.sock"}`, pointer: "/host_socket"},
+		{name: "a gateway socket with a control character", pointer: "/gateway_socket",
+			plan: `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","gateway_socket":"/tmp/g\u0007.sock"}`},
 		{name: "a board that is no wire id", pointer: "/real/0/board",
 			plan: `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","real":[{"instance":"zone-01","board":"uno 07","device":"zone-01"}]}`},
 		{name: "an unknown member", plan: `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","duration":60}`, pointer: "/duration"},

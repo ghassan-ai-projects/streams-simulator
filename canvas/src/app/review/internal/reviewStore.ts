@@ -1,5 +1,5 @@
 import type { RunEntry } from "../../../model/workspace";
-import { PlaybackIndex, advance, withOrigin } from "../../../model/review";
+import { PlaybackIndex, advance } from "../../../model/review";
 import type { JournalEntry } from "../../../model/review";
 import type { Badge } from "../../../model/review";
 import { badgeOf } from "../../../model/review";
@@ -8,7 +8,15 @@ import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
 import { FrameLoop } from "./frameLoop";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
-import { absentLoads, finalLoadsFor, idle, knownUnfinished, toLoad } from "./reviewState";
+import {
+  absentLoads,
+  connectionOf,
+  finalLoadsFor,
+  idle,
+  knownUnfinished,
+  toLoad,
+  withSessionEntry,
+} from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export class ReviewStore extends Observable<ReviewState> {
@@ -60,7 +68,8 @@ export class ReviewStore extends Observable<ReviewState> {
     this.finals = finalLoadsFor(known);
     this.pending = 0;
     this.index = new PlaybackIndex();
-    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), ...absentLoads(known) });
+    const connection = connectionOf(known);
+    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), connection, ...absentLoads(known) });
     return session;
   }
 
@@ -148,8 +157,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private take(session: Operation, entry: JournalEntry): void {
     if (!session.live()) return;
     if (entry.kind === "observation") this.index.add(entry.observation);
-    if (entry.kind === "origin")
-      this.set({ ...this.snapshot(), origins: withOrigin(this.snapshot().origins, entry.origin) });
+    if (entry.kind === "origin" || entry.kind === "binding") this.set(withSessionEntry(this.snapshot(), entry));
     this.pending += 1;
     if (this.pending === 1) {
       this.cancelFlush = this.scheduler.schedule(250, () => {

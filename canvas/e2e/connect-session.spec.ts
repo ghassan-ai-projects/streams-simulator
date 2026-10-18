@@ -5,6 +5,7 @@ import type { Locator } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
 import { addThermalBench, openBench, openSessionPanel, runIdOf, startGateway } from "./support/session";
+import { zoomOutTo } from "./support/viewport";
 import { repository } from "./support/workspace";
 
 test.setTimeout(90_000);
@@ -20,6 +21,7 @@ async function planOneRealBoard(panel: Locator, open: Bench, device: string): Pr
   await panel.getByLabel("Host socket", { exact: true }).fill(open.host);
   await panel.getByLabel("Gateway socket", { exact: true }).fill(open.gateway);
   await panel.getByRole("button", { name: "Add a real board" }).click();
+  await expect(panel.getByLabel("Real board 1 instance", { exact: true })).toBeFocused();
   await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption("zone-01");
   await panel.getByLabel("Real board 1 board", { exact: true }).fill("uno-07");
   await panel.getByLabel("Real board 1 device", { exact: true }).fill(device);
@@ -36,9 +38,7 @@ test("a connected session links the plant to a host and a real board, and stops 
   await planOneRealBoard(panel, open, "zone-01");
   await panel.getByRole("button", { name: "Check the plan" }).click();
   const instances = panel.getByRole("region", { name: "Instances in this session" });
-  await expect(
-    instances.getByText("zone-01 · Real board · device zone-01 on board uno-07", { exact: true }),
-  ).toBeVisible();
+  await expect(instances.getByText("zone-01 · Real · device zone-01 on board uno-07", { exact: true })).toBeVisible();
   await expect(instances.getByText("fan-01 · Simulated", { exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
   await panel.getByRole("button", { name: "Start the session" }).click();
@@ -59,7 +59,13 @@ test("a connected session links the plant to a host and a real board, and stops 
   const outline = page.getByRole("navigation", { name: "Outline" });
   await expect(outline.getByRole("button", { name: /^zone-01.*Real · board uno-07 · boot 61$/ })).toBeVisible();
   await expect(outline.getByRole("button", { name: /^fan-01.*Simulated · board mega-01$/ })).toBeVisible();
-  await expect(page.getByRole("group", { name: /^zone-01,.*Real · board uno-07 · boot 61/ })).toBeVisible();
+  const node = page.getByRole("group", { name: /^zone-01,.*Real · board uno-07 · boot 61/ });
+  await expect(node).toBeVisible();
+  await expect(page.getByText("Connected session", { exact: true })).toBeVisible();
+  await page.getByRole("application", { name: "Plant graph" }).focus();
+  expect(await zoomOutTo(page, "compact", 8, () => Promise.resolve())).toBe("compact");
+  await expect(node.locator("[data-origin='real']")).toBeVisible();
+  await expect(node.locator("[data-origin='real'] [data-origin-word]")).toBeHidden();
   await outline.getByRole("button", { name: /^zone-01/ }).click();
   const observed = page.getByRole("region", { name: "Observed · zone-01" });
   await expect(observed.getByText(/This instance is a real board/)).toBeVisible();
@@ -79,7 +85,12 @@ test("a gateway that does not announce the bound device is refused, and the pane
   startGateway(open, "zone-01");
   const refused = panel.getByRole("alert");
   await expect(refused).toContainText("The gateway was refused (inventory_mismatch)", { timeout: 30_000 });
-  await expect(refused).toContainText('holds no device "zone-09"');
+  await expect(refused).toContainText("The board holds no such device.");
+  await expect(refused).toContainText("Stop the session, fix the board or device, then start it again.");
+  const instances = panel.getByRole("region", { name: "Instances in this session" });
+  await expect(
+    instances.getByText("zone-01 · Not bound: refused · not announced to the host", { exact: true }),
+  ).toBeVisible();
   await panel.getByRole("button", { name: "Stop and save" }).click();
   await expect(panel.getByText(/^The session was stopped and saved as run c-/)).toBeVisible({ timeout: 30_000 });
 });
@@ -94,5 +105,6 @@ test("a real board without a gateway is refused by the binary at the gateway soc
   await panel.getByRole("button", { name: "Check the plan" }).click();
   const gateway = panel.getByLabel("Gateway socket", { exact: true });
   await expect(gateway).toHaveAttribute("aria-invalid", "true");
-  await expect(gateway).toHaveAccessibleDescription(/the plan needs gateway_socket/);
+  await expect(gateway).toHaveAccessibleDescription("A real board needs a gateway: give the gateway socket.");
+  await expect(gateway).toBeFocused();
 });

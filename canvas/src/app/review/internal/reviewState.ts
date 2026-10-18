@@ -1,5 +1,6 @@
 import type { RunEntry } from "../../../model/workspace";
-import type { InstanceOrigin, Report, Replay } from "../../../model/review";
+import type { InstanceOrigin, JournalEntry, Report, Replay, TimedBinding } from "../../../model/review";
+import { withOrigin } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
 import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
 
@@ -29,6 +30,8 @@ export interface ReviewState {
   readonly playing: boolean;
   readonly speed: number;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
+  readonly connection: "none" | "running" | "saved";
+  readonly binding: TimedBinding | null;
 }
 
 export const idle: ReviewState = {
@@ -45,7 +48,21 @@ export const idle: ReviewState = {
   playing: false,
   speed: 60,
   origins: new Map(),
+  connection: "none",
+  binding: null,
 };
+
+export function connectionOf(known: RunEntry | undefined): ReviewState["connection"] {
+  return known?.connected ?? "none";
+}
+
+type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" }>;
+
+export function withSessionEntry(state: ReviewState, entry: SessionEntry): ReviewState {
+  const connection = state.connection === "none" ? "saved" : state.connection;
+  if (entry.kind === "origin") return { ...state, connection, origins: withOrigin(state.origins, entry.origin) };
+  return { ...state, connection, binding: { atNs: entry.atNs, binding: entry.binding } };
+}
 
 const incomplete: ReviewFailure = {
   kind: "run-incomplete",

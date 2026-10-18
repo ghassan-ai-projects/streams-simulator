@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,87 +15,105 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
 )
 
-const sessionPlan = `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock"}`
+const (
+	sessionPlan  = `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock"}`
+	sessionCheck = `{"domain":"arduino-thermal","environment":"simulated","instances":[],"implements_checked":[]}`
+)
 
 type fakeLasting struct {
+	mu      sync.Mutex
 	exit    process.LastingExit
 	exited  bool
 	stopped int
+	entered chan struct{}
+	release chan struct{}
 }
 
-func (f *fakeLasting) Exited() (process.LastingExit, bool) { return f.exit, f.exited }
+func (f *fakeLasting) Exited() (process.LastingExit, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.exit, f.exited
+}
 
 func (f *fakeLasting) Stop(time.Duration) process.LastingExit {
+	if f.entered != nil {
+		f.entered <- struct{}{}
+		<-f.release
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.stopped++
 	f.exited = true
 	return f.exit
 }
 
+func (f *fakeLasting) die(exit process.LastingExit) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.exit, f.exited = exit, true
+}
+
+func (f *fakeLasting) stops() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.stopped
+}
+
 type sessionRig struct {
 	*harness
+	mu           sync.Mutex
 	started      []*fakeLasting
 	lastingArgv  [][]string
 	lastingStdin [][]byte
 	exit         process.LastingExit
+	launched     chan struct{}
+	proceed      chan struct{}
 }
 
 func newSessionRig(t *testing.T) *sessionRig {
 	t.Helper()
-	rig := &sessionRig{harness: newHarness(t)}
+	rig := &sessionRig{harness: newHarness(t), exit: process.LastingExit{Stdout: []byte(`{"out":"runs/c-1","stopped":true}`)}}
+	rig.command = process.CommandResult{Stdout: []byte(sessionCheck)}
 	runs := 0
 	rig.bridge.edges.NewRunID = func() string {
 		runs++
 		return "c-" + strconv.Itoa(runs)
 	}
 	rig.bridge.edges.StartLasting = func(argv []string, stdin []byte) (Lasting, error) {
-		started := &fakeLasting{exit: rig.exit}
-		rig.started, rig.lastingArgv, rig.lastingStdin = append(rig.started, started), append(rig.lastingArgv, argv), append(rig.lastingStdin, stdin)
-		out, err := filepath.Rel(rig.dir, argv[len(argv)-1])
-		if err != nil {
-			t.Fatal(err)
+		if rig.launched != nil {
+			rig.launched <- struct{}{}
+			<-rig.proceed
 		}
-		rig.write(t, filepath.ToSlash(out)+"/journal.jsonl", "{}\n")
-		return started, nil
+		return rig.record(t, argv, stdin), nil
 	}
 	return rig
 }
 
-func TestAStartWaitsUntilTheSessionOpensItsRunOrDies(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.bridge.edges.StartLasting = func([]string, []byte) (Lasting, error) {
-		return &fakeLasting{exited: true, exit: process.LastingExit{Stderr: "no domain arduino-thermal", ExitCode: 1}}, nil
+func (r *sessionRig) record(t *testing.T, argv []string, stdin []byte) *fakeLasting {
+	t.Helper()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	started := &fakeLasting{exit: r.exit}
+	r.started, r.lastingArgv, r.lastingStdin = append(r.started, started), append(r.lastingArgv, argv), append(r.lastingStdin, stdin)
+	out, err := filepath.Rel(r.dir, argv[len(argv)-1])
+	if err != nil {
+		t.Error(err)
+		return started
 	}
-	if started := rig.act(t, "session.start", map[string]any{"content": sessionPlan}); started.State != domain.SessionFailed ||
-		started.Failure.Message != "no domain arduino-thermal" {
-		t.Fatalf("a start whose child died at once = %+v, want failed with its last words", started)
-	}
-	rig.bridge.edges.StartLasting = func([]string, []byte) (Lasting, error) { return &fakeLasting{}, nil }
-	ticks := 0
-	rig.bridge.edges.Tick = func(time.Duration) (<-chan time.Time, func()) {
-		always := make(chan time.Time, openAttempts)
-		for range openAttempts {
-			always <- time.Time{}
-		}
-		ticks++
-		return always, func() {}
-	}
-	if started := rig.act(t, "session.start", map[string]any{"content": sessionPlan}); started.State != domain.SessionRunning || ticks != 1 {
-		t.Fatalf("a start whose run never opened = %+v after %d waits, want it reported running once the bounded wait is over", started, ticks)
-	}
+	r.write(t, filepath.ToSlash(out)+"/journal.jsonl", "{}\n")
+	return started
 }
 
-func TestAStartThatCannotLaunchTheChildSaysWhy(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.bridge.edges.StartLasting = func([]string, []byte) (Lasting, error) { return nil, errors.New("no such executable") }
-	if _, err := rig.bridge.RunAction(context.Background(), "session.start", map[string]any{"content": sessionPlan}); err == nil ||
-		err.Error() != "no such executable" {
-		t.Fatalf("a start whose child could not launch = %v, want the launch error", err)
-	}
-	if status := rig.act(t, "session.status", nil); status.State != domain.SessionNone {
-		t.Fatalf("status after a failed launch = %+v, want none", status)
-	}
+func (r *sessionRig) child(i int) *fakeLasting {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.started[i]
+}
+
+func (r *sessionRig) children() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.started)
 }
 
 func (r *sessionRig) act(t *testing.T, name string, args map[string]any) domain.SessionStatus {
@@ -110,50 +129,71 @@ func (r *sessionRig) act(t *testing.T, name string, args map[string]any) domain.
 	return status
 }
 
-func TestAStartedSessionIsAChildTheBridgeOwnsWithItsOwnRunFolder(t *testing.T) {
+func plan() map[string]any { return map[string]any{"content": sessionPlan} }
+
+func TestAStartChecksThePlanThenRunsAChildTheBridgeOwnsWithItsOwnRunFolder(t *testing.T) {
 	t.Parallel()
 	rig := newSessionRig(t)
-	started := rig.act(t, "session.start", map[string]any{"content": sessionPlan})
-	want := []string{"plantwire", "connect", "--stdin", "--domains-dir", rig.domainsDir(), "--adapters-dir", "/adapter-files",
-		"--out", filepath.Join(rig.dir, "runs", "c-1")}
-	if started.Run != "c-1" || started.State != domain.SessionRunning || !slices.Equal(rig.lastingArgv[0], want) || string(rig.lastingStdin[0]) != sessionPlan {
-		t.Fatalf("start = %+v argv %v stdin %q, want run c-1 running as %v with the plan on stdin", started, rig.lastingArgv[0], rig.lastingStdin[0], want)
+	started := rig.act(t, "session.start", plan())
+	check := []string{"plantwire", "connect", "--check", "--stdin", "--domains-dir", rig.domainsDir(), "--adapters-dir", "/adapter-files"}
+	want := []string{"plantwire", "connect", "--stdin", "--barrier-cap-ms", domain.SessionBarrierCapMS, "--domains-dir", rig.domainsDir(),
+		"--adapters-dir", "/adapter-files", "--out", filepath.Join(rig.dir, "runs", "c-1")}
+	if !slices.Equal(rig.argv[0], check) || !slices.Equal(rig.lastingArgv[0], want) || string(rig.lastingStdin[0]) != sessionPlan {
+		t.Fatalf("check argv %v, child argv %v stdin %q, want the check %v and then the child %v", rig.argv[0], rig.lastingArgv[0], rig.lastingStdin[0], check, want)
 	}
-	if status := rig.act(t, "session.status", nil); status.Run != "c-1" || status.State != domain.SessionRunning || !rig.bridge.runIsRunning("c-1") {
-		t.Fatalf("status = %+v, want c-1 running and counted as a running run", status)
+	if started.Run != "c-1" || started.State != domain.SessionRunning || started.Domain != "arduino-thermal" || string(started.Plan) != sessionCheck {
+		t.Fatalf("start = %+v, want c-1 running for arduino-thermal with the binary's check", started)
 	}
-	_, err := rig.bridge.RunAction(context.Background(), "session.start", map[string]any{"content": sessionPlan})
+	status := rig.act(t, "session.status", nil)
+	if status.Domain != "arduino-thermal" || status.State != domain.SessionRunning || !rig.bridge.runIsRunning("c-1") {
+		t.Fatalf("status = %+v, want the session's own domain and plan, counted as a running run", status)
+	}
+	listing, err := rig.bridge.Workspace()
+	if err != nil || len(listing.Runs) != 1 || !listing.Runs[0].Connected || !listing.Runs[0].Running {
+		t.Fatalf("runs = %+v, %v, want c-1 listed as a running connected session", listing.Runs, err)
+	}
+}
+
+func TestASecondStartIsRefusedAndTwoAtOnceStartOneChild(t *testing.T) {
+	t.Parallel()
+	rig := newSessionRig(t)
+	rig.bridge.edges.RunCommand = func(context.Context, []string, []byte) (process.CommandResult, error) {
+		return process.CommandResult{Stdout: []byte(sessionCheck)}, nil
+	}
+	var wg sync.WaitGroup
+	refusals := make(chan error, 2)
+	for range 2 {
+		wg.Go(func() {
+			_, err := rig.bridge.RunAction(context.Background(), "session.start", plan())
+			refusals <- err
+		})
+	}
+	wg.Wait()
+	close(refusals)
+	refused := 0
+	for err := range refusals {
+		var failure *domain.Failure
+		if errors.As(err, &failure) && failure.Code == "session_running" {
+			refused++
+		}
+	}
+	if refused != 1 || rig.children() != 1 {
+		t.Fatalf("two starts at once: %d refused, %d children, want one of each", refused, rig.children())
+	}
+}
+
+func TestAPlanTheBinaryRefusesStartsNothing(t *testing.T) {
+	t.Parallel()
+	rig := newSessionRig(t)
+	rig.command = process.CommandResult{ExitCode: 1,
+		Stdout: []byte(`{"error":{"code":"plantwire_failed","message":"the plan does not hold","issues":[{"pointer":"/real","message":"x"}]}}`)}
+	_, err := rig.bridge.RunAction(context.Background(), "session.start", plan())
 	var failure *domain.Failure
-	if !errors.As(err, &failure) || failure.Code != "session_running" || len(rig.started) != 1 {
-		t.Fatalf("a second start = %v, want session_running and no second child", err)
+	if !errors.As(err, &failure) || failure.Code != "plantwire_failed" || len(failure.Issues) == 0 || rig.children() != 0 {
+		t.Fatalf("start of a refused plan = %v, want the binary's refusal and no child", err)
 	}
-}
-
-func TestStopEndsTheSessionAndReportsTheRunFolderItSaved(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.exit = process.LastingExit{Stdout: []byte(`{"out":"` + filepath.Join(rig.dir, "runs", "c-1") + `","stopped":true}`)}
-	rig.act(t, "session.start", map[string]any{"content": sessionPlan})
-	stopped := rig.act(t, "session.stop", nil)
-	if stopped.State != domain.SessionEnded || string(stopped.Result) != `{"out":"runs/c-1","stopped":true}` || rig.started[0].stopped != 1 {
-		t.Fatalf("stop = %+v (result %s), want ended with the run folder relative to the workspace", stopped, stopped.Result)
-	}
-	if rig.bridge.runIsRunning("c-1") {
-		t.Fatal("a stopped session's run is still counted as running")
-	}
-	if again := rig.act(t, "session.start", map[string]any{"content": sessionPlan}); again.Run != "c-2" || len(rig.started) != 2 {
-		t.Fatalf("a start after the stop = %+v, want a new session c-2", again)
-	}
-}
-
-func TestASessionThatDiesIsReportedFailedWithTheCommandsError(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.act(t, "session.start", map[string]any{"content": sessionPlan})
-	rig.started[0].exit = process.LastingExit{Stdout: []byte(`{"error":{"code":"plantwire_failed","message":"host lost"}}`), ExitCode: 1}
-	rig.started[0].exited = true
-	if status := rig.act(t, "session.status", nil); status.State != domain.SessionFailed || status.Failure.Code != "plantwire_failed" {
-		t.Fatalf("status = %+v, want failed with plantwire_failed", status)
+	if status := rig.act(t, "session.status", nil); status.State != domain.SessionNone {
+		t.Fatalf("status = %+v, want none", status)
 	}
 }
 
@@ -170,37 +210,16 @@ func TestStatusAndStopWithoutASessionSayThereIsNone(t *testing.T) {
 	}
 }
 
-func TestASessionNeverReusesARunFolderAndNeedsAPlan(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.write(t, "runs/c-1/journal.jsonl", "{}\n")
-	if _, err := rig.bridge.RunAction(context.Background(), "session.start", map[string]any{"content": sessionPlan}); !errors.Is(err, domain.ErrConflict) {
-		t.Fatalf("start onto an existing run folder = %v, want ErrConflict", err)
-	}
-	if _, err := rig.bridge.RunAction(context.Background(), "session.start", map[string]any{}); !errors.Is(err, domain.ErrBadArguments) || len(rig.started) != 0 {
-		t.Fatalf("start without a plan = %v, want ErrBadArguments and no child", err)
-	}
-}
-
-func TestClosingTheBridgeStopsALivingSession(t *testing.T) {
-	t.Parallel()
-	rig := newSessionRig(t)
-	rig.act(t, "session.start", map[string]any{"content": sessionPlan})
-	if err := rig.bridge.Close(); err != nil || rig.started[0].stopped != 1 {
-		t.Fatalf("Close = %v, stopped %d times, want the session stopped once", err, rig.started[0].stopped)
-	}
-}
-
 func TestACheckRunsConnectOnceWithThePlanAndTheWorkspaceKinds(t *testing.T) {
 	t.Parallel()
 	rig := newSessionRig(t)
 	rig.write(t, fanKind, fanKindBytes)
-	if _, err := rig.bridge.RunAction(context.Background(), "session.check", map[string]any{"content": sessionPlan}); err != nil {
+	if _, err := rig.bridge.RunAction(context.Background(), "session.check", plan()); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{"plantwire", "connect", "--check", "--stdin", "--domains-dir", rig.domainsDir(), "--adapters-dir", "/adapter-files",
 		"--kinds-dir", filepath.Join(rig.dir, "kinds")}
-	if !slices.Equal(rig.argv[0], want) || string(rig.stdin[0]) != sessionPlan || len(rig.started) != 0 {
+	if !slices.Equal(rig.argv[0], want) || string(rig.stdin[0]) != sessionPlan || rig.children() != 0 {
 		t.Fatalf("check argv %v stdin %q, want %v and no lasting child", rig.argv[0], rig.stdin[0], want)
 	}
 }

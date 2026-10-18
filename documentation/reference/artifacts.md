@@ -30,7 +30,11 @@ relays and records its digest in `run.json` as the optional member `field_trace_
 `matches: false` with `reason: file_differs` (or `file_missing`) and `file: field-trace.jsonl`; `report` lists a `field_trace` check.
 A run without a field trace has neither the member nor the file, and its bytes are what they were before the field trace existed.
 `plantwire replay-trace --run <dir>` plays the file to a host as a simulated node and refuses a folder whose `run.json` does not
-cover it. A hardware-only relay (`--out` without `--domain`) writes the file and the wire journal but no artifact.
+cover it. Only records that decoded and belonged to an admitted gateway session are in the file; a refused birth, an invalid
+record or a record of another session is not. When the file cannot take a record (full, or a line over its limit) the relay stops
+recording and the run records no `field_trace_digest`, so `replay-trace` refuses the folder (`trace_incomplete` in the relay
+document). A hardware-only relay (`--out` without `--domain`) writes the file and the wire journal but no artifact: with no
+`run.json` there is nothing to carry a digest, so that field trace has no digest cover (deferred D-75).
 
 ## Artifact lifecycle
 

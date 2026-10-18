@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	stopWithin   = 20 * time.Second
+	stopWithin   = 30 * time.Second
 	openPoll     = 100 * time.Millisecond
 	openAttempts = 100
 )
@@ -21,24 +21,6 @@ type Lasting interface {
 	Stop(within time.Duration) process.LastingExit
 }
 
-type liveSession struct {
-	run     string
-	lasting Lasting
-}
-
-func (s *liveSession) running() bool {
-	_, exited := s.lasting.Exited()
-	return !exited
-}
-
-func (s *liveSession) status() domain.SessionStatus {
-	exit, exited := s.lasting.Exited()
-	if !exited {
-		return domain.SessionStatus{Run: s.run, State: domain.SessionRunning}
-	}
-	return domain.SessionOutcome(s.run, exit.Stdout, exit.ExitCode, exit.Stderr)
-}
-
 func (b *Bridge) lasting(ctx context.Context, action domain.Action, args map[string]any) (json.RawMessage, error) {
 	if action.Lasting == domain.LastingStart {
 		return b.startSession(ctx, action, args)
@@ -46,8 +28,6 @@ func (b *Bridge) lasting(ctx context.Context, action domain.Action, args map[str
 	if _, err := action.Argv(args); err != nil {
 		return nil, err
 	}
-	b.sessionMu.Lock()
-	defer b.sessionMu.Unlock()
 	if action.Lasting == domain.LastingStop {
 		return encodeStatus(b.stopSession())
 	}
@@ -59,12 +39,15 @@ func (b *Bridge) startSession(ctx context.Context, action domain.Action, args ma
 	if err != nil {
 		return nil, err
 	}
-	b.sessionMu.Lock()
-	defer b.sessionMu.Unlock()
-	if current := b.currentSession(); current != nil && current.running() {
-		return nil, domain.SessionStillRunning(current.run)
+	check, err := b.runCommand(ctx, domain.SessionPrecheck(), args)
+	if err != nil {
+		return nil, err
 	}
-	return b.launch(ctx, argv, stdin)
+	session, out, err := b.claimSession(check)
+	if err != nil {
+		return nil, err
+	}
+	return b.launch(ctx, session, append(argv, "--out", out), stdin)
 }
 
 func (b *Bridge) sessionCommand(action domain.Action, args map[string]any) ([]string, []byte, error) {
@@ -79,39 +62,55 @@ func (b *Bridge) sessionCommand(action domain.Action, args map[string]any) ([]st
 	return append(b.absolute(parts), b.flags(action)...), stdin, nil
 }
 
-func (b *Bridge) launch(ctx context.Context, argv []string, stdin []byte) (json.RawMessage, error) {
+func (b *Bridge) claimSession(check json.RawMessage) (*liveSession, string, error) {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	if b.session != nil && b.session.live() {
+		return nil, "", domain.SessionStillRunning(b.session.view.Run)
+	}
 	run, out, err := b.freshRunFolder()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	lasting, err := b.edges.StartLasting(append(argv, "--out", out), stdin)
-	if err != nil {
-		return nil, err
-	}
-	session := &liveSession{run: run, lasting: lasting}
-	b.setSession(session)
-	b.awaitOpen(ctx, session)
-	return encodeStatus(session.status())
-}
-
-func (b *Bridge) awaitOpen(ctx context.Context, session *liveSession) {
-	journal, attempts := "runs/"+session.run+"/journal.jsonl", 0
-	_ = b.everyTick(ctx, openPoll, func() (bool, error) {
-		attempts++
-		return attempts >= openAttempts || !session.running() || b.edges.Workspace.Exists(journal), nil
-	})
+	b.session = &liveSession{view: domain.SessionView{Run: run, Domain: domain.PlanDomain(check), Plan: check}}
+	b.sessions[run] = true
+	return b.session, out, nil
 }
 
 func (b *Bridge) freshRunFolder() (string, string, error) {
-	run := b.edges.NewRunID()
-	folder, err := domain.SessionFolder(run)
+	for range domain.RunIDAttempts {
+		run := b.edges.NewRunID()
+		folder, err := domain.SessionFolder(run)
+		if err != nil {
+			return "", "", err
+		}
+		if !b.edges.Workspace.Exists(folder.Path) {
+			return run, b.absolute([]domain.ArgvPart{folder})[0], nil
+		}
+	}
+	return "", "", fmt.Errorf("%w: no free run folder after %d tries", domain.ErrConflict, domain.RunIDAttempts)
+}
+
+func (b *Bridge) launch(ctx context.Context, session *liveSession, argv []string, stdin []byte) (json.RawMessage, error) {
+	lasting, err := b.edges.StartLasting(argv, stdin)
 	if err != nil {
-		return "", "", err
+		session.fail(err)
+		return nil, err
 	}
-	if b.edges.Workspace.Exists(folder.Path) {
-		return "", "", fmt.Errorf("%w: run folder %s exists", domain.ErrConflict, folder.Path)
+	if session.attach(lasting) {
+		lasting.Stop(stopWithin)
 	}
-	return run, b.absolute([]domain.ArgvPart{folder})[0], nil
+	b.awaitOpen(ctx, session.view.Run, lasting)
+	return encodeStatus(session.status())
+}
+
+func (b *Bridge) awaitOpen(ctx context.Context, run string, lasting Lasting) {
+	journal, attempts := "runs/"+run+"/journal.jsonl", 0
+	_ = b.everyTick(ctx, openPoll, func() (bool, error) {
+		attempts++
+		_, exited := lasting.Exited()
+		return attempts >= openAttempts || exited || b.edges.Workspace.Exists(journal), nil
+	})
 }
 
 func (b *Bridge) sessionStatus() domain.SessionStatus {
@@ -126,15 +125,17 @@ func (b *Bridge) stopSession() domain.SessionStatus {
 	if current == nil {
 		return domain.SessionStatus{State: domain.SessionNone}
 	}
-	exit := current.lasting.Stop(stopWithin)
-	return domain.SessionOutcome(current.run, exit.Stdout, exit.ExitCode, exit.Stderr)
+	if lasting := current.requestStop(); lasting != nil {
+		lasting.Stop(stopWithin)
+	}
+	return current.status()
 }
 
 func (b *Bridge) stopLiving() {
-	b.sessionMu.Lock()
-	defer b.sessionMu.Unlock()
-	if current := b.currentSession(); current != nil && current.running() {
-		current.lasting.Stop(stopWithin)
+	if current := b.currentSession(); current != nil {
+		if lasting := current.requestStop(); lasting != nil {
+			lasting.Stop(stopWithin)
+		}
 	}
 }
 
@@ -144,14 +145,14 @@ func (b *Bridge) currentSession() *liveSession {
 	return b.session
 }
 
-func (b *Bridge) setSession(session *liveSession) {
-	b.stateMu.Lock()
-	defer b.stateMu.Unlock()
-	b.session = session
+func (b *Bridge) sessionRuns(runID string) bool {
+	return b.session != nil && b.session.view.Run == runID && b.session.live()
 }
 
-func (b *Bridge) sessionRuns(runID string) bool {
-	return b.session != nil && b.session.run == runID && b.session.running()
+func (b *Bridge) startedSession(runID string) bool {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	return b.sessions[runID]
 }
 
 func encodeStatus(status domain.SessionStatus) (json.RawMessage, error) {

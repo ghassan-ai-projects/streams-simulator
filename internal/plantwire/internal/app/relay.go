@@ -37,7 +37,9 @@ func serveRelay(ctx context.Context, options RelayOptions, ticks <-chan time.Tim
 		return domain.RelayStats{}, fmt.Errorf("plantwire relay: %w", err)
 	}
 	err = loop.serve(ctx)
-	return loop.relay.Stats(), err
+	stats := loop.relay.Stats()
+	stats.TraceIncomplete = loop.rec.incomplete
+	return stats, err
 }
 
 func openRelay(ctx context.Context, options RelayOptions, ticks <-chan time.Time) (*relayLoop, error) {

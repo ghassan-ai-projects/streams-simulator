@@ -5,7 +5,7 @@ import { plantTitle } from "../../../model/plant";
 import { areaCounts, hallOf } from "../../../model/graph";
 import { kindLabel } from "../../../model/shared/words";
 import type { RunRow } from "../../../model/workspace";
-import { counted, runFacts, whenOf } from "../../../model/workspace";
+import { counted, runFacts, runModeWords, whenOf } from "../../../model/workspace";
 import { MetaParts } from "../../primitives";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
@@ -37,12 +37,7 @@ function Tally({ title, rows }: { readonly title: string; readonly rows: readonl
 }
 
 function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: (worldId: string) => void }) {
-  const words = [
-    row.run.worldId,
-    row.run.explore ? "Explore" : "Evaluate",
-    ...runFacts(row.run),
-    whenOf(row.run.recordedAt),
-  ];
+  const words = [row.run.worldId, runModeWords(row.run), ...runFacts(row.run), whenOf(row.run.recordedAt)];
   return (
     <li>
       <span className={styles.figures}>

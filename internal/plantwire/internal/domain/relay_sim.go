@@ -28,8 +28,26 @@ func (r *Relay) simRecord(m *Moves, in Inbound) {
 	case !r.host.shaken || !r.host.birthed || (in.Device != "" && !r.sim.devices[in.Device]):
 		r.stats.Dropped++
 	default:
-		r.simUp(m, in)
+		r.simCarry(m, in)
 	}
+}
+
+func (r *Relay) simCarry(m *Moves, in Inbound) {
+	if r.forgedAnswer(in, OriginSimulated) {
+		r.forged()
+		return
+	}
+	r.simUp(m, in)
+}
+
+func (r *Relay) SimLost() SimMoves {
+	moves := Moves{}
+	if r.sim != nil && !r.sim.lost {
+		r.sim.lost = true
+		r.stats.SimulatedLost++
+		r.simEnded(&moves)
+	}
+	return SimMoves{Up: moves.Up, Trace: moves.Trace, Notes: moves.Notes}
 }
 
 func (r *Relay) simBirth(in Inbound) {

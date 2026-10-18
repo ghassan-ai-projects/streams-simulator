@@ -88,3 +88,28 @@
   padding: calc(2px / var(--zoom));
   font-size: 0;
 }
+
+.origin {
+  display: inline-flex;
+  flex: none;
+}
+
+.tierCompact .origin [data-origin-word],
+.tierOverview .origin [data-origin-word],
+.tierMap .origin [data-origin-word] {
+  display: none;
+}
+
+.tierCompact .origin svg,
+.tierOverview .origin svg,
+.tierMap .origin svg {
+  width: calc(12px / var(--zoom));
+  height: calc(12px / var(--zoom));
+}
+
+.tierCompact .origin > span,
+.tierOverview .origin > span,
+.tierMap .origin > span {
+  padding: calc(2px / var(--zoom));
+  border-radius: calc(4px / var(--zoom));
+}

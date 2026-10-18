@@ -28,16 +28,19 @@ describe("origin marks", () => {
         <OriginMark origin={real} />
         <OriginMark origin={simulated} variant="glyph" />
         <OriginMark origin={null} />
+        <OriginMark origin={{ ...real, kind: "unknown" }} voice="silent" />
       </p>,
     );
-    const [tag, glyph] = container.querySelectorAll("[data-origin]");
+    const [tag, glyph, unknown] = container.querySelectorAll("[data-origin]");
     expect(tag).toHaveAttribute("data-origin", "real");
     expect(tag).toHaveTextContent("Real");
     expect(tag).toHaveAttribute("title", "Real · board uno-07 · boot 61");
     expect(glyph).toHaveAttribute("data-origin", "simulated");
     expect(glyph).toHaveTextContent("Simulated · board mega-01");
     expect(tag?.querySelector("svg")?.outerHTML).not.toBe(glyph?.querySelector("svg")?.outerHTML);
-    expect(container.querySelectorAll("[data-origin]")).toHaveLength(2);
+    expect(unknown).toHaveAttribute("title", "Origin unknown: the run recorded no origin for it");
+    expect(unknown?.querySelector(".sr-only")).toBeNull();
+    expect(container.querySelectorAll("[data-origin]")).toHaveLength(3);
     expect((await axe.run(container)).violations).toEqual([]);
   });
 

@@ -12,9 +12,15 @@ const choices: readonly (readonly [RunKind, string, string])[] = [
   ],
 ];
 
-export function RunMode({ kind, onKind }: { readonly kind: RunKind; readonly onKind: (kind: RunKind) => void }) {
+interface RunModeProps {
+  readonly kind: RunKind;
+  readonly locked: string;
+  readonly onKind: (kind: RunKind) => void;
+}
+
+export function RunMode({ kind, locked, onKind }: RunModeProps) {
   return (
-    <fieldset className={cx(panel.group, styles.kinds)}>
+    <fieldset className={cx(panel.group, styles.kinds)} disabled={locked !== ""} title={locked || undefined}>
       <legend>How this run goes</legend>
       {choices.map(([value, title, words]) => (
         <label key={value} className={launch.mode}>

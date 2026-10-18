@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -55,7 +56,7 @@ func TestALastingChildRunsUntilInterruptedAndLeavesWhatItPrinted(t *testing.T) {
 		t.Fatal("the child exited before it was stopped")
 	}
 	exit := lasting.Stop(10 * time.Second)
-	if exit.ExitCode != 0 || string(exit.Stdout) != `{"stopped":true,"plan":{"seed":1}}` || exit.Stderr != "stopping" {
+	if exit.ExitCode != 0 || string(exit.Stdout) != `{"stopped":true,"plan":{"seed":1}}` || !strings.HasPrefix(exit.Stderr, "stopping") {
 		t.Fatalf("exit = %+v, want a clean exit with the document it printed, given the plan on stdin", exit)
 	}
 	if again, exited := lasting.Exited(); !exited || again.ExitCode != 0 {
@@ -71,6 +72,18 @@ func TestALastingChildThatIgnoresTheInterruptIsKilledAfterTheWait(t *testing.T) 
 	lasting := startedLasting(t, "stubborn")
 	if exit := lasting.Stop(200 * time.Millisecond); exit.ExitCode != -1 || len(exit.Stdout) != 0 {
 		t.Fatalf("exit = %+v, want the child killed", exit)
+	}
+}
+
+func TestALastingChildKeepsOnlyABoundedStdout(t *testing.T) {
+	t.Parallel()
+	lasting, err := StartLasting(self(t), t.TempDir(), []string{"--helper", "chatty"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-lasting.done
+	if exit, exited := lasting.Exited(); !exited || exit.ExitCode != 0 || len(exit.Stdout) != stdoutLimit {
+		t.Fatalf("exit code %d with %d bytes of stdout, want the first %d bytes kept", exit.ExitCode, len(exit.Stdout), stdoutLimit)
 	}
 }
 

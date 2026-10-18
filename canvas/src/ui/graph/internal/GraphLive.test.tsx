@@ -70,6 +70,15 @@ describe("a graph drawn from a connected session", () => {
     expect(node("CH-1").querySelector("[data-origin='real']")).not.toBeNull();
     expect(node("CT-1").querySelector("[data-origin='simulated']")).not.toBeNull();
     expect(node("MB-1").querySelector("[data-origin]")).toBeNull();
+    expect(node("CH-1").querySelector("[data-origin] .sr-only")).toBeNull();
+    expect(node("CH-1").querySelector("[data-origin] [data-origin-word]")).toHaveTextContent("Real");
+  });
+
+  it("marks an instance a connected run recorded no origin for as unknown, never simulated", () => {
+    const unknown = { instance: "CH-1", kind: "unknown", board: "", device: "", bootId: "" } as const;
+    draw({ live: (id) => live({ origin: id === "CH-1" ? unknown : null }) });
+    expect(node("CH-1").getAttribute("aria-label")).toContain("Origin unknown");
+    expect(node("CH-1").querySelector("[data-origin='unknown']")).not.toBeNull();
   });
 });
 

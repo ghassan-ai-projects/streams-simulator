@@ -16,6 +16,7 @@ const (
 type Traced struct {
 	Direction string
 	Record    map[string]any
+	Field     bool
 }
 
 type Moves struct {
@@ -45,6 +46,9 @@ type RelayStats struct {
 	ToSimulated     int    `json:"to_simulated,omitempty"`
 	FromSimulated   int    `json:"from_simulated,omitempty"`
 	UnknownDevice   int    `json:"unknown_device,omitempty"`
+	Forged          int    `json:"forged,omitempty"`
+	SimulatedLost   int    `json:"simulated_lost,omitempty"`
+	TraceIncomplete bool   `json:"trace_incomplete,omitempty"`
 }
 
 type gatewaySide struct {
@@ -89,6 +93,7 @@ type Relay struct {
 	gatewayDevices map[string]bool
 	sim            *simSide
 	plan           relayPlan
+	routed         routeLedger
 }
 
 func NewRelay(tickMS int64) *Relay {

@@ -139,6 +139,19 @@ describe("workspace payload", () => {
     ]);
   });
 
+  it("reads a run the bridge started as a connected session, running or saved, and no other run as one", () => {
+    const decoded = workspace({
+      ...wire,
+      runs: [
+        { world_id: "c-1", connected: true, running: true },
+        { world_id: "c-2", connected: true },
+        { world_id: "w-3", connected: "yes", running: true },
+      ],
+    });
+    expect(decoded?.runs.map((run) => run.connected)).toEqual(["running", "saved", undefined]);
+    expect(decoded?.runs[2]).not.toHaveProperty("connected");
+  });
+
   it("defaults a run's missing or mistyped fields", () => {
     const decoded = workspace({
       ...wire,

@@ -421,6 +421,85 @@ global setup only checks that it is there, `STANDIN_BIN` overrides the path; its
 - A connected session advances the world in one-second slices by default (`--slice-s 1`), as fast as the host answers each
   barrier (D-71 still applies).
 
+**As built (R9 review fixes, M3).** What the review of the connect session found, and what changed:
+
+- *A side answers only its own commands.* The mixed relay records which side each routed `DCMD` went to
+  (`routeLedger`, 4096 commands). A `DRECEIPT` or `DRESULT` from the gateway for a command routed to the world, or from
+  the world for one routed to the gateway, or for a command never routed, is dropped and counted in `dropped` and in the new
+  `forged`. A gateway `DBIRTH` on a board other than the one whose members hold the device, or of a kind the `NBIRTH` never
+  announced, is dropped the same way; a bound device born as another announced kind on the right board still passes with the
+  `device_kind_mismatch` note.
+- *The field trace holds only what was admitted.* A gateway record is marked for the trace (`Traced.Field`) only when it
+  decoded and belongs to the admitted session (an accepted `NBIRTH`, or a valid record after it): refused births, invalid
+  records, records of another session and duplicates are journalled on the wire but not in `field-trace.jsonl`, so
+  `replay-trace` no longer replays them. A full trace or a line over its limit no longer ends the relay: it stops recording,
+  disconnects the gateway (its devices die `link_down`, the host session stays), turns the next gateway away, sets
+  `trace_incomplete` and leaves `field_trace_digest` out of `run.json`, so `replay-trace` refuses the folder. The record line
+  limit of the trace is now 8 MiB, so that every record the link accepts (1 MiB, with numbers that canonicalise longer, such
+  as `1E20`) fits a line.
+- *Session plan sockets* are checked by the schema (an absolute path, no control character, no `..` component) and by the
+  plan check (`socket_not_absolute`, `socket_control_character`, `socket_parent_component`, and `same_socket` on the cleaned
+  paths); the session uses the cleaned paths.
+- *A gateway that is gone.* A `DCMD` for a device of a gateway that is not admitted is answered `DRECEIPT refused
+  not_ready` (the contract has no `link_down` reason; `not_ready` is what a device that cannot act answers). A lost or
+  departed gateway clears its devices, its pending barriers and its sequence, so an `NDEATH` followed by an `NBIRTH` at seq 0
+  on the same link is admitted. A host's rebirth `NCMD` in a mixed relay reaches the gateway and asks the world to be reborn
+  too, whether or not the gateway is there.
+- *A dead simulated node.* A full mailbox is `ErrSimOverflow`, a failure of the relay (it was swallowed as a closed link). When
+  the simulated node ends before the relay, its devices are reported `DDEATH offline` to the host at once, `simulated_lost`
+  counts it, its commands are refused `not_ready`, and the failure surfaces in the result at stop.
+- *Stop is not an error, other errors are.* A node session discards only the errors the interrupt caused (a cancellation or a
+  closed connection); a real failure while stopping is reported.
+- Not changed: `DropMalformedEvidenceDigests` keeps a malformed `field_trace_digest` on purpose (a test pins it: dropping it
+  would let a trace the artifact no longer covers pass the file check). `Gateways.Close` removes the socket path only when it
+  is still the socket the relay made. The kind digests of the plan are keyed by the kind file name in one function.
+  Deferred: D-73 to D-76 (gateway liveness, rebirth rate, the digest of a hardware-only field trace, origin records in replay).
+
+**As built (R9 review fixes, M3): the bridge and the canvas.**
+
+- *The bridge never blocks on a session.* `session.start` runs the binary's plan check first (a refused plan starts
+  nothing), claims a fresh run folder under its state lock (a taken id is retried, five times), then launches the child
+  outside any lock. `session.status` answers at once with `none`, `starting`, `running`, `stopping`, `ended` or `failed`,
+  always with the session's `domain` and the binary's check document (`plan`), so a reloaded canvas knows the plant and which
+  instance is real. A stop asked during the start is carried out as soon as the child runs; a second stop during a stop
+  answers `stopping`.
+- *A normal stop closes the run.* The child gets `--barrier-cap-ms 10000` and the stop waits up to 30 s after the interrupt,
+  longer than the cap, before it kills the child's process group (the child runs in its own group; closing the bridge stops
+  the session the same way). The child's standard output is kept up to 1 MiB, and a result document over 64 KiB is left out
+  of the status.
+- *A run the bridge started says so.* The workspace listing marks the runs of sessions this bridge started `connected`, and
+  `running` while the child lives; the canvas labels them "Connected session" (and "running"), never Explore or Evaluate.
+  This is bridge memory: after a bridge restart an old session run is labelled by its journal (an `origin` or `binding`
+  record makes the review a connected session), and the workspace list shows it as Evaluate until the binary records the
+  run mode (a binary change, not made here).
+- *The canvas keeps a session it could not stop.* A failed stop leaves the session live with a note and Stop can be tried
+  again; the follower and the poll end only when the session ended or failed. A journal stream that closes or fails is
+  noted and followed again on the next poll. The panel resumes a running or starting session with the domain and plan from
+  the status, and shows "A connected session of <plant> is running" on another plant.
+- *Plain words, every issue.* Each plan issue is worded by its rule (`keyword`) or member through one table, with the
+  binary's own text under "For developers"; every issue a field does not hold (including issues on rows that no longer
+  exist) is listed. An edit after a check clears the field errors and marks the check out of date. The seed is sent as typed:
+  a whole number as a number, anything else as text the binary refuses at `/seed`. `schema_version` stays a canvas constant:
+  neither the bridge nor the binary hands the canvas the session plan's version (a `plantwire connect --check` that accepts a
+  plan without it, or a version in the catalog, would remove it).
+- *A refused gateway on the plan list.* Each real instance reads "Not bound: refused · not announced to the host" with a
+  warning icon, and the refusal says the next step (stop, fix the board or device, start again). The world withholds a
+  refused instance from the host, so "running simulated" would be wrong.
+- *Origin marks.* One label map (`model/shared/origin.ts`, real, simulated, origin unknown) and one badge
+  (`ui/primitives` `OriginBadge`) serve the nodes, the outline, the inspector, the timeline chips and the plan list. A node
+  says its origin once (its group label); at the compact, overview and map tiers the badge is an icon of fixed screen size
+  without its word. In a connected run every instance without an `origin` record gets the "Origin unknown" mark, and a
+  missing or unknown origin in the plan check is unreadable, never simulated. The review header shows the gateway binding,
+  and the timeline shows it as a mark at its time. Effector calls reach the timeline from the report's `effector_calls`
+  (`eventMarks`), the same path as a run to completion.
+- *Focus.* Nothing takes focus when the session form opens; the run mode stays mounted (disabled while a session holds the
+  plant or a run is in progress) and keeps its arrow keys; focus moves to the live status after a start, to the saved run
+  after a stop, to the first flagged field (or the refusal) after a refused check, to the new row's instance after "Add a
+  real board", and to the error of a failed session. The mode fieldset no longer shrinks, so its heading is not clipped.
+- Deferred to R10 (live mode, the top-bar run indicator, connection health): a reload affordance in the plant screen and
+  live origin marks on the plant screen, because both need the live run view R10 builds; after a reload the session panel
+  already shows the plan summary from the status.
+
 ### 4.2 Interrupts: a local/remote switch at the node
 
 The simulator has no knowledge of its consumers, so the canvas cannot reach Agentic Stream's operator interface through the

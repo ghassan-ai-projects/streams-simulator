@@ -17,7 +17,8 @@ export interface LaneProps {
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${mark.label}`;
-const chipShort = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${mark.entity}`;
+const chipShort = (mark: EventMark, startNs: number) =>
+  `${runClock(mark.atNs, startNs)} ${mark.entity === "" ? mark.label : mark.entity}`;
 const chipWidth = (text: string) => Math.min(200, 34 + text.length * 7);
 const percent = (value: number) => `${String(value * 100)}%`;
 
@@ -80,7 +81,7 @@ function Chip({ mark, chip, text, startNs, active, pick, origin }: ChipProps) {
         }}
       >
         <Swatch kind={mark.kind} />
-        <OriginMark origin={origin} variant="glyph" />
+        <OriginMark origin={origin} variant="glyph" voice="silent" />
         {text}
       </button>
     </li>
@@ -91,7 +92,8 @@ export function usePick(startNs: number, onEvent: (mark: EventMark) => void) {
   const [said, setSaid] = useState("");
   const pick = (mark: EventMark) => {
     onEvent(mark);
-    setSaid(`${chipText(mark, startNs)}: moved to ${runClock(mark.atNs, startNs)}, ${mark.entity} selected`);
+    const selected = mark.entity === "" ? "" : `, ${mark.entity} selected`;
+    setSaid(`${chipText(mark, startNs)}: moved to ${runClock(mark.atNs, startNs)}${selected}`);
   };
   return { said, pick };
 }

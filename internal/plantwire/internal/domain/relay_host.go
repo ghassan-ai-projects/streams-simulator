@@ -140,6 +140,8 @@ func (r *Relay) deliverDown(m *Moves, in Inbound) {
 		r.stateDown(m, in)
 	case r.sim != nil && routedDown[in.Type]:
 		r.routeDown(m, in)
+	case r.sim != nil && in.Type == "NCMD" && in.Command == "rebirth":
+		r.forwardRebirth(m, in)
 	default:
 		r.forwardDown(m, in)
 	}
@@ -147,11 +149,20 @@ func (r *Relay) deliverDown(m *Moves, in Inbound) {
 
 func (r *Relay) forwardDown(m *Moves, in Inbound) {
 	fields, mapped := r.downward(in)
-	if !r.gateway.admitted || !mapped {
+	if !r.gateway.admitted {
+		r.refuseCommand(m, in, "not_ready")
+		return
+	}
+	if !mapped {
 		r.stats.Dropped++
 		return
 	}
 	r.transmitDown(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
+}
+
+func (r *Relay) forwardRebirth(m *Moves, in Inbound) {
+	r.forwardDown(m, in)
+	r.askSimRebirth(m)
 }
 
 func (r *Relay) downward(in Inbound) (map[string]any, bool) {

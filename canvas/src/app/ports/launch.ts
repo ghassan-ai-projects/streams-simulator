@@ -16,15 +16,20 @@ export type ConnectFailure =
   | { readonly kind: "refused"; readonly diagnostic: Diagnostic; readonly issues: readonly PlanIssue[] }
   | { readonly kind: "busy" | "unavailable" | "unreadable"; readonly diagnostic: Diagnostic };
 
+interface SessionFacts {
+  readonly run: string;
+  readonly domain: string;
+  readonly check: SessionCheck | null;
+}
+
 export type ConnectStatus =
   | { readonly state: "none" }
-  | { readonly state: "running" | "ended"; readonly run: string }
-  | {
+  | (SessionFacts & { readonly state: "starting" | "running" | "stopping" | "ended" })
+  | (SessionFacts & {
       readonly state: "failed";
-      readonly run: string;
       readonly diagnostic: Diagnostic;
       readonly issues: readonly PlanIssue[];
-    };
+    });
 
 export interface ConnectGateway {
   checkSession(plan: string): Promise<Outcome<SessionCheck, ConnectFailure>>;

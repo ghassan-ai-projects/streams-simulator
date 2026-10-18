@@ -1,32 +1,26 @@
-import { CircuitBoard, SquareDashed } from "lucide-react";
 import type { InstanceOrigin } from "../../../model/graph";
 import { originLabels, originWords } from "../../../model/graph";
-import { cx } from "../../primitives";
-import styles from "./origin.module.css";
+import { OriginBadge } from "../../primitives";
+import marks from "./marks.module.css";
 
-const icons = { real: CircuitBoard, simulated: SquareDashed } as const;
-
-type OriginVariant = "tag" | "glyph";
-
-export function OriginMark({
-  origin,
-  variant = "tag",
-}: {
+interface OriginMarkProps {
   readonly origin: InstanceOrigin | null;
-  readonly variant?: OriginVariant;
-}) {
+  readonly variant?: "tag" | "glyph";
+  readonly voice?: "spoken" | "silent";
+}
+
+export function OriginMark({ origin, variant = "tag", voice = "spoken" }: OriginMarkProps) {
   if (origin === null) return null;
-  const Icon = icons[origin.kind];
-  const tagged = variant === "tag";
+  const words = originWords(origin);
   return (
-    <span
-      className={cx(styles.origin, styles[`origin-${origin.kind}`], tagged && styles.tag)}
-      title={originWords(origin)}
-      data-origin={origin.kind}
-    >
-      <Icon size={12} aria-hidden="true" />
-      {tagged && <span aria-hidden="true">{originLabels[origin.kind]}</span>}
-      <span className="sr-only">{originWords(origin)}</span>
+    <span className={marks.origin}>
+      <OriginBadge
+        kind={origin.kind}
+        label={originLabels[origin.kind]}
+        title={words}
+        said={voice === "spoken" ? words : ""}
+        variant={variant}
+      />
     </span>
   );
 }

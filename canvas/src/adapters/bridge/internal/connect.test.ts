@@ -48,7 +48,12 @@ describe("connect gateway", () => {
     });
   });
 
-  it.each([[null], [{ instances: "all" }]])("refuses a check shaped %j", async (bad) => {
+  it.each([
+    [null],
+    [{ instances: "all" }],
+    [{ ...check, instances: [{ instance: "zone-01", origin: "hardware" }] }],
+    [{ ...check, instances: [{ instance: "zone-01" }] }],
+  ])("refuses a check shaped %j, never reading an unknown origin as simulated", async (bad) => {
     const outcome = await bridgeAdapter(answering(200, { result: bad })).launch.checkSession("{}");
     expect(outcome).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
   });
@@ -80,18 +85,24 @@ describe("connect gateway", () => {
     });
   });
 
-  it("starts, reads and stops the session by name and decodes every state", async () => {
-    const running = answering(200, { result: { run: "c-1", state: "running" } });
-    expect(await bridgeAdapter(running).launch.startSession("{plan}")).toEqual({
+  it("starts, reads and stops the session by name and decodes every state with its domain and plan", async () => {
+    const running = answering(200, {
+      result: { run: "c-1", state: "running", domain: "arduino-thermal", plan: check },
+    });
+    expect(await bridgeAdapter(running).launch.startSession("{plan}")).toMatchObject({
       ok: true,
-      value: { state: "running", run: "c-1" },
+      value: { state: "running", run: "c-1", domain: "arduino-thermal", check: { mixed: true } },
     });
     expect(sentTo(running)).toEqual({ url: "/api/actions/session.start", body: { args: { content: "{plan}" } } });
     const ended = answering(200, { result: { run: "c-1", state: "ended", result: { out: "runs/c-1" } } });
     expect(await bridgeAdapter(ended).launch.stopSession()).toEqual({
       ok: true,
-      value: { state: "ended", run: "c-1" },
+      value: { state: "ended", run: "c-1", domain: "", check: null },
     });
+    for (const state of ["starting", "stopping"]) {
+      const lasting = answering(200, { result: { run: "c-1", state, domain: "d" } });
+      expect(await bridgeAdapter(lasting).launch.sessionStatus()).toMatchObject({ ok: true, value: { state } });
+    }
     expect(sentTo(ended)).toEqual({ url: "/api/actions/session.stop", body: { args: {} } });
     const none = answering(200, { result: { state: "none" } });
     expect(await bridgeAdapter(none).launch.sessionStatus()).toEqual({ ok: true, value: { state: "none" } });
@@ -106,6 +117,8 @@ describe("connect gateway", () => {
       value: {
         state: "failed",
         run: "c-2",
+        domain: "",
+        check: null,
         diagnostic: { message: "host lost", displayCode: "plantwire_failed" },
         issues: [{ pointer: "", message: "x" }],
       },

@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { ConnectState, LaunchStore } from "../../../app/launch";
 import type { SessionDraft } from "../../../model/launch";
-import { firstSessionDraft } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { useStore } from "../../primitives";
 import { SessionForm } from "./SessionForm";
@@ -50,16 +49,33 @@ function OwnSession({ state, launch, onFinished, form }: OwnProps) {
   }
 }
 
+function useDraft(launch: LaunchStore, plant: string) {
+  const [draft, setDraft] = useState<SessionDraft>(() => launch.connect.draftFor(plant));
+  const change = (next: SessionDraft) => {
+    setDraft(next);
+    launch.connect.keepDraft(plant, next);
+  };
+  return { draft, change };
+}
+
 export function Session({ launch, plant, onFinished }: SessionProps) {
   const state = useStore(launch.connect);
-  const [draft, setDraft] = useState<SessionDraft>(firstSessionDraft);
+  const { draft, change } = useDraft(launch, plant.id);
   useEffect(() => {
-    void launch.connect.resume(plant.id);
-  }, [launch, plant.id]);
-  const form = <SessionForm plant={plant} draft={draft} change={setDraft} state={state} connect={launch.connect} />;
-  if (state.phase === "idle") return form;
-  if (state.domain !== plant.id) {
+    void launch.connect.resume();
+  }, [launch]);
+  const mine = state.phase === "idle" || state.domain === plant.id ? state : null;
+  const form = (
+    <SessionForm
+      plant={plant}
+      draft={draft}
+      change={change}
+      state={mine ?? { phase: "idle" }}
+      connect={launch.connect}
+    />
+  );
+  if (mine === null) {
     return state.phase === "live" || state.phase === "starting" ? <SessionElsewhere domain={state.domain} /> : form;
   }
-  return <OwnSession state={state} launch={launch} onFinished={onFinished} form={form} />;
+  return mine.phase === "idle" ? form : <OwnSession state={mine} launch={launch} onFinished={onFinished} form={form} />;
 }

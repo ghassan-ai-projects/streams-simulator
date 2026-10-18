@@ -20,6 +20,7 @@ type simSide struct {
 	out     *Transmitter
 	in      Receiver
 	started bool
+	lost    bool
 	born    map[string]string
 }
 

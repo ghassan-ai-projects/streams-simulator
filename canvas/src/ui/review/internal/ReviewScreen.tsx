@@ -13,6 +13,7 @@ import { RunPanel } from "./RunPanel";
 import { useReviewOpen } from "./useReviewOpen";
 import { useClosePlant, useRunPlant, useUnitOf } from "./useRunPlant";
 import { usePlaybackKeys } from "./usePlaybackKeys";
+import { useShownOrigins } from "./useShownOrigins";
 import styles from "./ReviewScreen.module.css";
 
 interface ReviewScreenProps {
@@ -25,9 +26,10 @@ interface ReviewScreenProps {
 }
 
 export function ReviewScreen({ review, plants, workspace, navigation, launch, worldId }: ReviewScreenProps) {
-  const state = useStore(review);
-  const view = useRunPlant(state, plants, workspace);
+  const stored = useStore(review);
+  const view = useRunPlant(stored, plants, workspace);
   const { plant } = view;
+  const state = useShownOrigins(stored, plant);
   const [hall, setHall] = useState<string | null>(null);
   useReviewOpen(review, workspace, worldId);
   useClosePlant(plants, worldId);

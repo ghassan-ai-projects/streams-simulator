@@ -23,7 +23,7 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 	}
 	ctx, stop := uds.UntilInterrupted(ctx)
 	defer stop()
-	if planned.session.GatewaySocket == "" {
+	if planned.plan.GatewaySocket == "" {
 		return connectNode(ctx, options, &planned)
 	}
 	return connectRelay(ctx, options, &planned)
@@ -45,13 +45,17 @@ func connectNode(ctx context.Context, o ConnectOptions, p *connectPlan) (Connect
 	}
 	node := p.nodeOptions(o, "node-1")
 	node.JournalOrigins = true
-	served := serveSession(ctx, r, p.session.HostSocket, o.BarrierCap, node)
+	served := serveSession(ctx, r, p.plan.HostSocket, o.BarrierCap, node)
 	stopped := ctx.Err() != nil
-	if stopped {
-		served = nil
-	}
 	_, ended := r.End(o.Out)
-	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(served, ended)
+	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(withoutInterrupt(stopped, served), ended)
+}
+
+func withoutInterrupt(stopped bool, served error) error {
+	if stopped && uds.Interrupted(served) {
+		return nil
+	}
+	return served
 }
 
 func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan) (ConnectResult, error) {
@@ -65,7 +69,7 @@ func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan) (Connec
 }
 
 func (p *connectPlan) relayOptions(o ConnectOptions) RelayOptions {
-	return RelayOptions{GatewaySocket: p.session.GatewaySocket, HostSocket: p.session.HostSocket, Out: o.Out, Ready: o.Ready,
+	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready,
 		Simulated: &SimulatedOptions{DomainsDir: o.DomainsDir, AdaptersDir: o.AdaptersDir, Domain: p.session.Domain, Adapter: connectAdapter,
 			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1")}}
 }

@@ -2,6 +2,10 @@ package domain
 
 import (
 	"fmt"
+	"path"
+	"slices"
+	"strings"
+	"unicode"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -30,9 +34,11 @@ type Bound struct {
 }
 
 type ConnectPlan struct {
-	Environment string
-	Instances   []PlannedInstance
-	Bound       []Bound
+	Environment   string
+	Instances     []PlannedInstance
+	Bound         []Bound
+	HostSocket    string
+	GatewaySocket string
 }
 
 type planCheck struct {
@@ -55,11 +61,38 @@ func CheckPlan(plan *model.SessionPlan, instances []PlanInstance) (ConnectPlan, 
 }
 
 func socketIssues(plan *model.SessionPlan) []model.Issue {
+	issues := socketPathIssues("/host_socket", "host_socket", plan.HostSocket)
+	issues = append(issues, socketPathIssues("/gateway_socket", "gateway_socket", plan.GatewaySocket)...)
+	return append(issues, socketPairIssues(plan)...)
+}
+
+func cleanSocket(socket string) string {
+	if socket == "" {
+		return ""
+	}
+	return path.Clean(socket)
+}
+
+func socketPathIssues(pointer, member, socket string) []model.Issue {
+	switch {
+	case socket == "":
+		return nil
+	case !path.IsAbs(socket):
+		return []model.Issue{model.RuleIssue(pointer, "socket_not_absolute", member, "a socket is an absolute path")}
+	case strings.IndexFunc(socket, unicode.IsControl) >= 0:
+		return []model.Issue{model.RuleIssue(pointer, "socket_control_character", member, "a socket path holds no control character")}
+	case slices.Contains(strings.Split(socket, "/"), ".."):
+		return []model.Issue{model.RuleIssue(pointer, "socket_parent_component", member, "a socket path holds no .. component")}
+	}
+	return nil
+}
+
+func socketPairIssues(plan *model.SessionPlan) []model.Issue {
 	switch {
 	case len(plan.Real) > 0 && plan.GatewaySocket == "":
 		return []model.Issue{model.RuleIssue("/real", "gateway_required", "gateway_socket",
 			"a real board is met through a gateway: the plan needs gateway_socket")}
-	case plan.GatewaySocket != "" && plan.GatewaySocket == plan.HostSocket:
+	case plan.GatewaySocket != "" && cleanSocket(plan.GatewaySocket) == cleanSocket(plan.HostSocket):
 		return []model.Issue{model.RuleIssue("/gateway_socket", "same_socket", "gateway_socket",
 			"the gateway and the host need two different sockets")}
 	}
@@ -121,7 +154,8 @@ func (c *planCheck) outcome(plan *model.SessionPlan, instances []PlanInstance) C
 	for i, instance := range instances {
 		planned[i] = c.planned(instance)
 	}
-	return ConnectPlan{Environment: environment, Instances: planned, Bound: c.bound}
+	return ConnectPlan{Environment: environment, Instances: planned, Bound: c.bound,
+		HostSocket: cleanSocket(plan.HostSocket), GatewaySocket: cleanSocket(plan.GatewaySocket)}
 }
 
 func (c *planCheck) planned(instance PlanInstance) PlannedInstance {

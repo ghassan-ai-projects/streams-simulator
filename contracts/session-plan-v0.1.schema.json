@@ -26,8 +26,9 @@
   "$defs": {
     "socket": {
       "type": "string",
-      "pattern": "^/[^\\x00]{1,102}$",
-      "x-expected": "an absolute path of at most 103 characters, the length a unix socket path may have"
+      "pattern": "^/[^\\x00-\\x1f\\x7f-\\x9f]{1,102}$",
+      "not": {"pattern": "(^|/)\\.\\.(/|$)"},
+      "x-expected": "an absolute path of at most 103 characters without control characters or a .. component, the length a unix socket path may have"
     },
     "binding": {
       "type": "object",

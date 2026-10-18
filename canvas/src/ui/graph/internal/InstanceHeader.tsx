@@ -1,5 +1,4 @@
 import type { NodeStatus } from "../../../model/graph";
-import { originLabels } from "../../../model/graph";
 import type { InstanceNodeType } from "./flow";
 import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { IdText } from "./IdText";
@@ -7,9 +6,10 @@ import { OriginMark } from "./OriginMark";
 import { shownOf } from "./shown";
 import styles from "./nodes.module.css";
 
+const originIconRoom = 2;
+
 function originRoom(data: InstanceNodeType["data"]): number {
-  const origin = data.live?.origin ?? null;
-  return origin === null ? 0 : originLabels[origin.kind].length + 2;
+  return (data.live?.origin ?? null) === null ? 0 : originIconRoom;
 }
 
 function markWords(data: InstanceNodeType["data"], status: NodeStatus): number | null {
@@ -40,7 +40,7 @@ export function InstanceHeader({
       </span>
       {words !== null && (
         <span>
-          <OriginMark origin={data.live?.origin ?? null} />
+          <OriginMark origin={data.live?.origin ?? null} voice="silent" />
           <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
           {data.live !== null && data.live.fault !== "" && (
             <span className="sr-only">{`Fault: ${data.live.fault}`}</span>

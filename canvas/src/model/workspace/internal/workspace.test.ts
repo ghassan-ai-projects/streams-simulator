@@ -3,6 +3,7 @@ import type { Workspace } from "./types";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import {
   outcomeWords,
+  runModeWords,
   plantFacts,
   plantsOf,
   runFacts,
@@ -133,6 +134,11 @@ describe("workspace catalogue", () => {
     expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);
     expect(outcomeWords({ ...abandoned, incompleteReason: "" })).toBe("Did not finish: the run did not close.");
     expect(outcomeWords(finished)).toBe("");
+    expect(outcomeWords({ ...abandoned, connected: "running" })).toBe("");
+    expect(runModeWords({ ...finished, connected: "running" })).toBe("Connected session · running");
+    expect(runModeWords({ ...finished, connected: "saved", explore: true })).toBe("Connected session");
+    expect(runModeWords(finished)).toBe("Explore");
+    expect(runModeWords({ ...finished, explore: false })).toBe("Evaluate");
     expect(outcomeWords({ ...abandoned, ended: false })).toBe("");
   });
 

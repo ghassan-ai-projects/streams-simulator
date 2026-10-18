@@ -1,6 +1,6 @@
 import { panel } from "../../primitives";
 import { Play, X } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { Plant } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
@@ -12,7 +12,9 @@ import { RunningMark } from "./RunningMark";
 import { Session } from "./Session";
 import { useLaunchDraft } from "./useLaunchDraft";
 import { useRunMode } from "./useRunMode";
+import type { RunKind } from "./useRunMode";
 import styles from "./LaunchPanel.module.css";
+import session from "./Session.module.css";
 
 interface LaunchPanelProps {
   readonly launch: LaunchStore;
@@ -53,9 +55,22 @@ function ToCompletion({ launch, plant, path, selected, onFinished }: CompletePro
   );
 }
 
+function lockWords(running: boolean, held: boolean): string {
+  if (held) return "A connected session holds this plant until you stop it.";
+  return running ? "A run is in progress." : "";
+}
+
+function useSessionPane(kind: RunKind): boolean {
+  const [opened, setOpened] = useState(kind === "session");
+  if (kind === "session" && !opened) setOpened(true);
+  return opened;
+}
+
 export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
   const state = useStore(launch);
   const mode = useRunMode(launch.connect, plant.id);
+  const sessionOpened = useSessionPane(mode.kind);
+  const running = state.phase === "running";
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
@@ -66,11 +81,14 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      {state.phase !== "running" && !mode.held && <RunMode kind={mode.kind} onKind={mode.choose} />}
-      {mode.kind === "session" ? (
-        <Session launch={launch} plant={plant} onFinished={onFinished} />
-      ) : (
+      <RunMode kind={mode.kind} locked={lockWords(running, mode.held)} onKind={mode.choose} />
+      <div className={session.pane} hidden={mode.kind !== "complete"}>
         <ToCompletion launch={launch} plant={plant} path={path} selected={selected} onFinished={onFinished} />
+      </div>
+      {sessionOpened && (
+        <div className={session.pane} hidden={mode.kind !== "session"}>
+          <Session launch={launch} plant={plant} onFinished={onFinished} />
+        </div>
       )}
     </aside>
   );

@@ -10,9 +10,11 @@ export type { LaunchState } from "./launchState";
 export type { Proposal } from "./proposalSlot";
 
 export interface ConnectSession extends Store<ConnectState> {
+  draftFor(domain: string): SessionDraft;
+  keepDraft(domain: string, draft: SessionDraft): void;
   check(domain: string, draft: SessionDraft): Promise<SessionCheck | null>;
   start(domain: string, draft: SessionDraft): Promise<void>;
-  resume(domain: string): Promise<void>;
+  resume(): Promise<void>;
   stop(): Promise<void>;
   reset(): void;
 }

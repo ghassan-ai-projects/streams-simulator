@@ -3,6 +3,7 @@ export { failureLine } from "./internal/failureLine";
 export { holdEnter } from "./internal/holdEnter";
 export { inTextField, ownsSpace, plainKey } from "./internal/keys";
 export { MetaParts } from "./internal/MetaParts";
+export { OriginBadge } from "./internal/OriginBadge";
 export { OutsideMark } from "./internal/OutsideMark";
 export { useCutBottom } from "./internal/useCutBottom";
 export { useFocusOnMount } from "./internal/useFocusOnMount";

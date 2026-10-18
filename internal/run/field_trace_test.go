@@ -189,7 +189,7 @@ func TestAFieldTraceWithoutAnArtifactIsReadAsLongAsItIsCanonical(t *testing.T) {
 		"a record that is no object":     {`{"ordinal":0,"record":[]}` + "\n", true},
 		"members out of canonical order": {`{"record":{"type":"NBIRTH"},"ordinal":0}` + "\n", true},
 		"spaces":                         {`{"ordinal": 0, "record": {"type":"NBIRTH"}}` + "\n", true},
-		"a record over a mebibyte":       {`{"ordinal":0,"record":{"padding":"` + strings.Repeat("x", 1<<20) + `"}}` + "\n", true},
+		"a record over eight MiBs":       {`{"ordinal":0,"record":{"padding":"` + strings.Repeat("x", 8<<20) + `"}}` + "\n", true},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -216,8 +216,8 @@ func TestAFieldTraceRefusesWhatItCannotRecordCanonically(t *testing.T) {
 	if err := trace.Add(map[string]any{"samples": []map[string]any{{"alias": 1}}}); !errors.Is(err, run.ErrFieldTrace) {
 		t.Fatalf("Add of a value canonical JSON does not take = %v, want ErrFieldTrace", err)
 	}
-	if err := trace.Add(map[string]any{"padding": strings.Repeat("x", 1<<20)}); !errors.Is(err, run.ErrFieldTrace) {
-		t.Fatalf("Add of a record over a mebibyte = %v, want ErrFieldTrace", err)
+	if err := trace.Add(map[string]any{"padding": strings.Repeat("x", 8<<20)}); !errors.Is(err, run.ErrFieldTrace) {
+		t.Fatalf("Add of a record over eight mebibytes = %v, want ErrFieldTrace", err)
 	}
 	if err := trace.Add(map[string]any{"type": "NBIRTH"}); err != nil {
 		t.Fatalf("Add after two refusals = %v, want the ordinal not to have moved", err)

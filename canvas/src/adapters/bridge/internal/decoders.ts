@@ -92,7 +92,13 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...connectedOf(entry),
   };
+}
+
+function connectedOf(entry: Record<string, unknown>): { readonly connected?: "running" | "saved" } {
+  if (entry.connected !== true) return {};
+  return { connected: entry.running === true ? "running" : "saved" };
 }
 
 export function library(value: unknown): readonly LibraryEntry[] | null {

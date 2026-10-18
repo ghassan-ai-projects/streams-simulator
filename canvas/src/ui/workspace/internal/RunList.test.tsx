@@ -12,6 +12,34 @@ function rowOf(worldId: string): HTMLElement {
 }
 
 describe("runs in the workspace", () => {
+  it("labels a connected session as one, running while it runs, and never as Evaluate", async () => {
+    const bridge = new FakeBridge();
+    const session = {
+      worldId: "c-1",
+      ended: false,
+      complete: false,
+      incompleteReason: "",
+      explore: false,
+      seed: 1,
+      plant: "factory-utilities",
+      durationS: 0,
+      recordedAt: "2026-10-14T10:00:00Z",
+      faults: 0,
+    };
+    bridge.workspaceOutcome = success({
+      ...sampleWorkspace,
+      runs: [
+        { ...session, connected: "running" as const },
+        { ...session, worldId: "c-2", ended: true, complete: true, connected: "saved" as const },
+      ],
+    });
+    await show(bridge);
+    expect(within(rowOf("c-1")).getByText("Connected session · running")).toBeInTheDocument();
+    expect(within(rowOf("c-1")).getByText("Running")).toBeInTheDocument();
+    expect(within(rowOf("c-2")).getByText("Connected session")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Runs" })).not.toHaveTextContent(/Evaluate|Did not finish/);
+  });
+
   it("reads a run that did not finish as Did not finish, with its reason, and never as checked", async () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({

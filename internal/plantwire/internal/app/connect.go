@@ -112,11 +112,16 @@ func loadConnectInputs(options ConnectOptions, session *model.SessionPlan) (conn
 	return connectPlan{session: session, spec: spec, adapter: adapterSpec, checked: checked}, nil
 }
 
-func planInstances(spec *simdomain.Compiled, checked []model.ImplementsChecked) []domain.PlanInstance {
+func kindFileDigests(checked []model.ImplementsChecked) map[string]string {
 	digests := map[string]string{}
 	for _, entry := range checked {
 		digests[entry.Kind] = entry.KindDigest
 	}
+	return digests
+}
+
+func planInstances(spec *simdomain.Compiled, checked []model.ImplementsChecked) []domain.PlanInstance {
+	digests := kindFileDigests(checked)
 	ids := world.PopulationIDs(spec, 0)
 	instances := make([]domain.PlanInstance, len(ids))
 	for i, id := range ids {

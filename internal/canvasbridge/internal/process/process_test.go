@@ -40,6 +40,9 @@ func helper(args []string) int {
 		return 3
 	case "linger", "stubborn":
 		return lingerUntilInterrupted(args)
+	case "chatty":
+		_, _ = os.Stdout.WriteString(strings.Repeat("x", 2<<20))
+		return 0
 	}
 	return 2
 }
