@@ -34,7 +34,7 @@ func helper(args []string) int {
 		_, _ = os.Stderr.WriteString("refused")
 		return 3
 	case "director":
-		return serveHelperDirector()
+		return serveHelperDirector(args[1:])
 	case "stderr-exit":
 		_, _ = os.Stderr.WriteString("domain factory.domain.json: invalid\n")
 		return 3
@@ -42,8 +42,9 @@ func helper(args []string) int {
 	return 2
 }
 
-func serveHelperDirector() int {
+func serveHelperDirector(args []string) int {
 	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "helper", Version: "0"}, nil)
+	addFailureTools(server, args)
 	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.die"}, func(context.Context, *mcpsdk.CallToolRequest, map[string]any) (*mcpsdk.CallToolResult, map[string]any, error) {
 		_, _ = os.Stderr.WriteString("director crashed\n")
 		os.Exit(9)
