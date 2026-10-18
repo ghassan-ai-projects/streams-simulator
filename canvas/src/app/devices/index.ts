@@ -1,4 +1,7 @@
 export type {
+  Card,
+  CaptureSession,
+  CaptureState,
   CheckFact,
   CheckRow,
   DeviceDesk,
@@ -6,11 +9,13 @@ export type {
   DeviceSession,
   Draft,
   Held,
+  Reviewed,
   Step,
   StepStatus,
   TwinDraft,
   TwinSession,
 } from "./contract";
+export { canWrite, decisionCounts, reviewedOf } from "./internal/captureSelectors";
 export { checkFacts } from "./internal/checkFacts";
 export { checkRows } from "./internal/checkRows";
 export { createDeviceDesk } from "./internal/deviceDesk";

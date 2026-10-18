@@ -1,4 +1,7 @@
 export type {
+  BoardCapture,
+  CapturedKind,
+  CaptureSource,
   DeviceFailure,
   DevicesGateway,
   DomainChecked,

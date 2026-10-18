@@ -70,6 +70,29 @@ export interface LintReport {
   readonly findings: readonly LintFinding[];
 }
 
+type CaptureComparison =
+  | { readonly status: "new" }
+  | { readonly status: "same"; readonly file: string; readonly fileDigest: string }
+  | { readonly status: "differs"; readonly file: string; readonly fileDigest: string; readonly differsAt: string };
+
+type KindDraft = Readonly<Record<string, unknown>>;
+
+export interface CapturedKind {
+  readonly kind: string;
+  readonly digest: string;
+  readonly draft: KindDraft;
+  readonly issues: readonly KindIssue[];
+  readonly comparison: CaptureComparison;
+}
+
+export interface BoardCapture {
+  readonly environment: "hardware" | "simulated";
+  readonly bdSeq: number;
+  readonly kinds: readonly CapturedKind[];
+}
+
+export type CaptureSource = { readonly content: string } | { readonly run: string };
+
 export type DeviceFailure =
   | { readonly kind: "missing" | "conflict" | "unavailable" | "unreadable"; readonly diagnostic: Diagnostic }
   | { readonly kind: "refused"; readonly diagnostic: Diagnostic; readonly issues: readonly KindIssue[] };
@@ -81,6 +104,7 @@ export interface DevicesGateway {
   writeFile(path: string, content: string, etag: string): Promise<Written>;
   check(path: string): Promise<Outcome<KindChecked, DeviceFailure>>;
   checkContent(content: string, twin: boolean): Promise<Outcome<KindChecked, DeviceFailure>>;
+  captureKinds(source: CaptureSource): Promise<Outcome<BoardCapture, DeviceFailure>>;
   listing(): Promise<Outcome<DeviceListing, DeviceFailure>>;
   instruments(query: InstrumentQuery): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
   suggest(kinds: readonly string[]): Promise<Outcome<SuggestedChoices, DeviceFailure>>;

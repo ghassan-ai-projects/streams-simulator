@@ -10,3 +10,4 @@ export type {
   TwinIssue,
 } from "./internal/twinTypes";
 export type { Choices } from "./internal/words";
+export type { DraftLines } from "./internal/captureDraft";

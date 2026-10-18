@@ -12,7 +12,8 @@ import type { KindFile } from "../../../model/devices";
 import type { KindEntry } from "../../../model/workspace";
 import type { DeviceFailure, DevicesGateway, Outcome } from "../../ports";
 import { failure, success } from "../../ports";
-import type { DeviceDesk, DeviceRow } from "./api";
+import type { CaptureSession, DeviceDesk, DeviceRow } from "./api";
+import { createCaptureSession } from "./captureStore";
 import { refusalWords } from "./deviceFailures";
 
 function exists(name: string): DeviceFailure {
@@ -44,6 +45,10 @@ class Desk implements DeviceDesk {
     const written = await this.gateway.writeFile(devicePath(stem), content, "");
     if (written.ok) return success(written.value.path);
     return failure(written.failure.kind === "conflict" ? exists(stem) : written.failure);
+  }
+
+  capture(): CaptureSession {
+    return createCaptureSession(this.gateway);
   }
 
   private async row(entry: KindEntry, domains: readonly string[]): Promise<DeviceRow> {

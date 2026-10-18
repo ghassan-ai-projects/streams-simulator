@@ -59,7 +59,7 @@ function componentEntry(entry: Record<string, unknown>): Workspace["components"]
   return { path: text(entry.path), id: text(entry.id), title: text(entry.title), class: text(entry.class) };
 }
 
-function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+export function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
   if (!Array.isArray(value)) return null;
   const decoded: T[] = [];
   for (const raw of value) {

@@ -1,0 +1,295 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 960px;
+  padding: var(--space-6) var(--space-8) var(--space-8);
+}
+
+.lead,
+.note,
+.claim,
+.facts,
+.reading {
+  margin: 0;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.panelTitle:focus-visible,
+.issues li:focus-visible,
+.refusalMessage:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.textarea,
+.select,
+.file {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.textarea {
+  min-height: 112px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  resize: vertical;
+}
+
+.select {
+  max-width: 420px;
+  height: 28px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.problem {
+  margin: 0;
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.chip,
+.origin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.originReal {
+  border-color: var(--origin-real);
+  background: var(--origin-real-bg);
+  color: var(--origin-real);
+}
+
+.originSimulated {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+.chipNew {
+  border-color: var(--accent-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.chipSame {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+}
+
+.chipDiffers,
+.chipInvalid {
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+}
+
+.chipInvalid {
+  border-color: var(--status-warn);
+}
+
+.cards {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.cardName {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.part {
+  min-width: 0;
+}
+
+.partTitle {
+  margin: 0 0 var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lines {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lines li {
+  display: grid;
+  min-width: 0;
+}
+
+.lines strong {
+  overflow-wrap: anywhere;
+}
+
+.reading {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.issues {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issues li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+}
+
+.refusal {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--status-alarm);
+  border-radius: var(--radius-lg);
+  background: var(--status-alarm-bg);
+}
+
+.refusalMessage {
+  margin: 0;
+  font-weight: 600;
+}
+
+.difference {
+  margin: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+}
+
+.technical {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+
+.technical dt {
+  color: var(--text-secondary);
+}
+
+.technical dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+}
+
+.outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.done {
+  color: var(--status-ok);
+  font-weight: 600;
+}

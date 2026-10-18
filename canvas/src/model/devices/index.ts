@@ -3,6 +3,7 @@ export type {
   Choices,
   Command,
   CommandChoice,
+  DraftLines,
   Drive,
   FieldIssue,
   Instrument,
@@ -28,6 +29,18 @@ export {
   removeItem,
   renameKind,
 } from "./internal/kindEdits";
+export { captureContent, captureLines, differenceWords, draftIssues } from "./internal/captureDraft";
+export {
+  birthWords,
+  capturePath,
+  captureSizeProblem,
+  captureTextProblem,
+  claimWords,
+  comparisonWords,
+  fileSafeName,
+  originWords,
+  refusalLines,
+} from "./internal/captureWords";
 export { blankKind, parseKind, serialiseKind } from "./internal/kindFile";
 export {
   issueSelection,

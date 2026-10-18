@@ -125,7 +125,7 @@ function wireProblem(status: number, value: unknown): WireProblem {
   };
 }
 
-function issueList(value: unknown): readonly WireIssue[] {
+export function issueList(value: unknown): readonly WireIssue[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry) => {
     if (!isRecord(entry) || typeof entry.message !== "string") return [];

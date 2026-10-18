@@ -1,4 +1,5 @@
-import { Cpu, Pencil, Plus } from "lucide-react";
+import { Cable, Cpu, Pencil, Plus } from "lucide-react";
+import type { Ref } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { DeviceDesk, DeviceRow } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
@@ -11,10 +12,16 @@ import { SectionHeading } from "./SectionHeading";
 import rowStyles from "./ListSection.module.css";
 import workspaceStyles from "./WorkspaceScreen.module.css";
 
+export interface CaptureEntry {
+  readonly onOpen: () => void;
+  readonly justLeft: boolean;
+}
+
 interface DeviceListProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
   readonly desk: DeviceDesk;
+  readonly capture: CaptureEntry;
 }
 
 interface Shown {
@@ -102,7 +109,39 @@ function NoDevices() {
   );
 }
 
-export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
+function useReturnToCapture(capture: CaptureEntry) {
+  const button = useRef<HTMLButtonElement>(null);
+  const { justLeft } = capture;
+  useEffect(() => {
+    if (justLeft) button.current?.focus();
+  }, [justLeft]);
+  return button;
+}
+
+interface HeadingActionsProps {
+  readonly creating: boolean;
+  readonly trigger: Ref<HTMLButtonElement>;
+  readonly capture: CaptureEntry;
+  readonly onToggle: () => void;
+}
+
+function HeadingActions({ creating, trigger, capture, onToggle }: HeadingActionsProps) {
+  const captureButton = useReturnToCapture(capture);
+  return (
+    <span className={rowStyles.actions}>
+      <button type="button" ref={captureButton} className={shared.secondary} onClick={capture.onOpen}>
+        <Cable size={14} aria-hidden="true" />
+        Capture from a board
+      </button>
+      <button type="button" ref={trigger} className={shared.primary} aria-expanded={creating} onClick={onToggle}>
+        <Plus size={14} aria-hidden="true" />
+        Create device
+      </button>
+    </span>
+  );
+}
+
+export function DeviceList({ workspace, navigation, desk, capture }: DeviceListProps) {
   const rows = useDeviceRows(desk, workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -114,18 +153,14 @@ export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
   return (
     <section className={rowStyles.section} aria-labelledby="devices-title">
       <SectionHeading id="devices-title" title="Devices" count={workspace.kinds.length}>
-        <button
-          type="button"
-          ref={trigger}
-          className={shared.primary}
-          aria-expanded={creating}
-          onClick={() => {
+        <HeadingActions
+          creating={creating}
+          trigger={trigger}
+          capture={capture}
+          onToggle={() => {
             setCreating(!creating);
           }}
-        >
-          <Plus size={14} aria-hidden="true" />
-          Create device
-        </button>
+        />
       </SectionHeading>
       {creating && <NewDeviceForm taken={taken} desk={desk} navigation={navigation} onCancel={close} />}
       {workspace.kinds.length === 0 ? (

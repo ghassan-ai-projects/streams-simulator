@@ -1,4 +1,5 @@
 import { Boxes, FileJson } from "lucide-react";
+import { useState } from "react";
 import type { DeviceDesk } from "../../../app/devices";
 import type { PlantMaker } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
@@ -11,7 +12,9 @@ import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
 import styles from "./WorkspaceScreen.module.css";
+import { CaptureScreen } from "./CaptureScreen";
 import { DeviceList } from "./DeviceList";
+import type { CaptureEntry } from "./DeviceList";
 import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
@@ -23,10 +26,11 @@ interface ContentsProps {
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly desk: DeviceDesk;
+  readonly capture: CaptureEntry;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsProps, "badgeFor">) {
+function EmptyWorkspace({ workspace, maker, desk, navigation, capture }: Omit<ContentsProps, "badgeFor">) {
   const examples = useExamples(maker);
   const { name } = workspace;
   return (
@@ -47,7 +51,7 @@ function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsPro
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>
       <div className={styles.deviceStrip}>
-        <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+        <DeviceList workspace={workspace} navigation={navigation} desk={desk} capture={capture} />
       </div>
     </div>
   );
@@ -70,7 +74,7 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProps) {
+function Contents({ workspace, navigation, maker, desk, capture, badgeFor }: ContentsProps) {
   const examples = useExamples(maker);
   return (
     <div className={styles.page}>
@@ -82,7 +86,7 @@ function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProp
       <div className={styles.grid}>
         <div className={styles.column}>
           <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
-          <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+          <DeviceList workspace={workspace} navigation={navigation} desk={desk} capture={capture} />
         </div>
         <div className={styles.column}>
           <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
@@ -98,13 +102,11 @@ function WorkspaceCrumb({ name }: { readonly name: string }) {
   return <Breadcrumb trail={[]} here="Workspace" heading={heading} />;
 }
 
-function WorkspaceBody({
-  state,
-  navigation,
-  maker,
-  desk,
-  badgeFor,
-}: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
+function ReadyBody(props: ContentsProps) {
+  return workspaceEmpty(props.workspace) ? <EmptyWorkspace {...props} /> : <Contents {...props} />;
+}
+
+function WorkspaceBody({ state, ...rest }: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
   if (state.phase === "loading") {
     return (
       <p className={screen.loading} role="status">
@@ -119,10 +121,24 @@ function WorkspaceBody({
       </p>
     );
   }
-  if (workspaceEmpty(state.workspace)) {
-    return <EmptyWorkspace workspace={state.workspace} maker={maker} desk={desk} navigation={navigation} />;
-  }
-  return <Contents workspace={state.workspace} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />;
+  return <ReadyBody workspace={state.workspace} {...rest} />;
+}
+
+function useCaptureEntry() {
+  const [capturing, setCapturing] = useState<"closed" | "open" | "left">("closed");
+  const entry: CaptureEntry = {
+    onOpen: () => {
+      setCapturing("open");
+    },
+    justLeft: capturing === "left",
+  };
+  return {
+    entry,
+    open: capturing === "open",
+    leave: () => {
+      setCapturing("left");
+    },
+  };
 }
 
 export function WorkspaceScreen({
@@ -139,10 +155,21 @@ export function WorkspaceScreen({
   readonly badgeFor: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
+  const { entry, open, leave } = useCaptureEntry();
+  if (open && state.phase === "ready") {
+    return <CaptureScreen workspace={state.workspace} desk={desk} navigation={navigation} onClose={leave} />;
+  }
   return (
     <>
       <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
-      <WorkspaceBody state={state} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />
+      <WorkspaceBody
+        state={state}
+        navigation={navigation}
+        maker={maker}
+        desk={desk}
+        capture={entry}
+        badgeFor={badgeFor}
+      />
     </>
   );
 }
