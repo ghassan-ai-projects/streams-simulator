@@ -83,9 +83,10 @@ type Listing struct {
 }
 
 type Record struct {
-	Index  int64
-	Type   string
-	Line   json.RawMessage
-	Closes bool
-	Seen   bool
+	Index    int64
+	Type     string
+	Line     json.RawMessage
+	Closes   bool
+	Seen     bool
+	CaughtUp bool
 }

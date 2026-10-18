@@ -29,7 +29,7 @@ def boards_of(env_name):
         return [{"board": "board-01", "environment": "simulated", "members": ["P1"]}, {"board": "board-02", "environment": "hardware", "members": ["P2"]}]
     return [{"board": "board-01", "environment": env_name, "members": ["P1", "P2"]}]
 def nbirth(seq=0, env_name="simulated", pmax=1, bd=0, prior=-1, boards=None):
-    return env("NBIRTH", "control", seq, protocol_min=1, protocol_max=pmax, contract_version="1.2.0", contract_digest=CONTRACT, environment=env_name,
+    return env("NBIRTH", "control", seq, protocol_min=1, protocol_max=pmax, contract_version="1.3.0", contract_digest=CONTRACT, environment=env_name,
         bd_seq=bd, prior_last_seq=prior, capability_digest=CAPABILITY, kinds=kinds, boards=boards or boards_of(env_name),
         node_metrics={"clock_mode": "virtual", "run_state": "running"})
 def dbirth(seq, dev="P1", boot="board-01-boot-1"):
@@ -62,7 +62,9 @@ valid = {
                values=[{"name": "flow", "alias": 1, "value": 41.0, "quality": "good"}]),
  "NSYNC": env("NSYNC", "control", 8, through_seq=7, world_time_ns=T0 + 60_000_000_000),
  "STATE": state(0), "NCMD": env("NCMD", "control", 1, command="rebirth"), "DCMD": dcmd(2, "c-1"),
- "DQUERY": env("DQUERY", "control", 3, device="P1"), "HSYNC": env("HSYNC", "control", 4, through_seq=8),
+ "DQUERY": env("DQUERY", "control", 3, device="P1"), "HSYNC": env("HSYNC", "control", 4, through_seq=8,
+    command_evidence=[{"command_id": "c-1", "device": "P1", "boot_id": "board-01-boot-1", "metric": "flow",
+        "outcome": "observed", "expected": 42, "tolerance": 0.1, "observed_value": 42}]),
 }
 def redigest(record):
     record["kinds"] = [with_digest(k) for k in record["kinds"]]; return record
@@ -73,6 +75,8 @@ def mut(base, path, value=None, delete=False):
     else: cur[path[-1]] = value
     return r
 invalid = {
+ "HSYNC-evidence-missing-value": ("HSYNC", mut(valid["HSYNC"], ["command_evidence", 0, "observed_value"], delete=True), "/command_evidence/0/observed_value"),
+ "HSYNC-evidence-negative-tolerance": ("HSYNC", mut(valid["HSYNC"], ["command_evidence", 0, "tolerance"], -1), "/command_evidence/0/tolerance"),
  "DCMD-missing-deadline": ("DCMD", mut(valid["DCMD"], ["deadline_ns"], delete=True), "/deadline_ns"),
  "DCMD-missing-epoch": ("DCMD", mut(valid["DCMD"], ["authority_epoch"], delete=True), "/authority_epoch"),
  "DCMD-missing-fallback": ("DCMD", mut(valid["DCMD"], ["fallback_on_lease_loss"], delete=True), "/fallback_on_lease_loss"),

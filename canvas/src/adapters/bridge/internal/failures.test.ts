@@ -92,6 +92,7 @@ describe("protocol failures mapped to the owning feature", () => {
       kind: "run-incomplete",
       diagnostic: { displayCode: "run_incomplete" },
     });
+    expect(reviewFailure(http("sealed", 403))).toMatchObject({ kind: "run-incomplete" });
     expect(reviewFailure(http("bridge_failed", 500))).toMatchObject({ kind: "unavailable" });
     expect(reviewFailure(http("bridge_failed", 422))).toMatchObject({ kind: "unreadable" });
     expect(reviewFailure({ kind: "transport" })).toMatchObject({ kind: "unavailable" });

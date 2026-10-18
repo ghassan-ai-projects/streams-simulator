@@ -15,8 +15,11 @@ import { PlantCentre } from "./PlantCentre";
 import { PlantFailure } from "./PlantFailure";
 import { useConsume, useLaunching, useShowRun } from "./useLaunching";
 import { usePlantLoad } from "./usePlantLoad";
+import type { Connected } from "./connected";
+import { ConnectedReadings } from "./ConnectedReadings";
 
 interface PlantScreenProps {
+  readonly connected?: Connected;
   readonly plants: PlantSession;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
@@ -32,15 +35,18 @@ function PlantSide({
   hall,
   plants,
   navigation,
+  connected,
 }: {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
+  readonly connected?: Connected;
 }) {
   return (
     <div className={screen.side}>
       <Outline
+        {...(connected === undefined ? {} : { origins: connected.origins })}
         plant={state.plant}
         hall={hall}
         selected={state.selected}
@@ -57,6 +63,7 @@ function PlantSide({
 }
 
 interface RightProps {
+  readonly connected?: Connected;
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly launch: LaunchStore;
@@ -67,9 +74,14 @@ interface RightProps {
   readonly runs: readonly RunRow[];
 }
 
-function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
+function PlantInspector({ state, hall, navigation, plants, runs, connected }: RightProps) {
   return (
     <Inspector
+      liveDetail={
+        connected !== undefined && state.selected !== null ? (
+          <ConnectedReadings connected={connected} entity={state.selected} />
+        ) : null
+      }
       plant={state.plant}
       specs={state.specs}
       selected={state.selected}
@@ -138,12 +150,20 @@ export function PlantScreen(props: PlantScreenProps) {
   const listing = usePlantLoad(plants, domain, workspace);
   if (state.phase !== "ready" || state.path !== domain)
     return <NotReady state={state} domain={domain} navigation={navigation} />;
+  const childProps = {
+    state,
+    hall,
+    plants,
+    navigation,
+    ...(props.connected === undefined ? {} : { connected: props.connected }),
+  };
   return (
     <ReactFlowProvider>
       <div className={screen.screen}>
-        <PlantSide state={state} hall={hall} plants={plants} navigation={navigation} />
-        <PlantCentre state={state} hall={hall} plants={plants} navigation={navigation} launch={launch} run={run} />
+        <PlantSide {...childProps} />
+        <PlantCentre {...childProps} launch={launch} run={run} />
         <RightPanel
+          {...(props.connected === undefined ? {} : { connected: props.connected })}
           state={state}
           hall={hall}
           launch={launch}

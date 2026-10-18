@@ -13,6 +13,8 @@ import type { PlayProps } from "./PlayControls";
 import { PlayControls, StepButton } from "./PlayControls";
 
 interface ScrubberProps extends PlayProps {
+  readonly liveMarks?: readonly EventMark[];
+  readonly onLatest?: () => void;
   readonly startNs: number;
   readonly endNs: number;
   readonly positionNs: number;
@@ -132,6 +134,8 @@ function Foot({ report, startNs, marks }: { readonly marks: readonly EventMark[]
 
 const unknownClock = "--:--:--";
 
+const minuteNs = 60e9;
+
 const noOrigins: ReadonlyMap<string, InstanceOrigin> = new Map();
 
 interface RowProps extends ScrubberProps {
@@ -168,17 +172,45 @@ function TimeRow(props: RowProps) {
   );
 }
 
+function keyTarget(key: string, shift: boolean, positionNs: number, bounds: readonly [number, number]): number | null {
+  if (key === "Home") return bounds[0];
+  if (key === "End") return bounds[1];
+  if (!shift || (key !== "ArrowLeft" && key !== "ArrowRight")) return null;
+  return positionNs + (key === "ArrowLeft" ? -minuteNs : minuteNs);
+}
+
+interface SeekKeys {
+  readonly positionNs: number;
+  readonly bounds: readonly [number, number];
+  readonly clamp: (ns: number) => number;
+  readonly onSeek: (ns: number) => void;
+  readonly onLatest: (() => void) | undefined;
+}
+
+function keyboardSeek(event: KeyboardEvent<HTMLInputElement>, keys: SeekKeys): void {
+  if (event.key === "End" && keys.onLatest !== undefined) {
+    event.preventDefault();
+    keys.onLatest();
+    return;
+  }
+  const target = keyTarget(event.key, event.shiftKey, keys.positionNs, keys.bounds);
+  if (target === null) return;
+  event.preventDefault();
+  keys.onSeek(keys.clamp(target));
+}
+
 export function Scrubber(props: ScrubberProps) {
   const { startNs, endNs, positionNs, report, onSeek, onEvent } = props;
   const span = Math.max(1, endNs - startNs);
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
-  const marks = useMemo(() => eventMarks(report, props.binding ?? null), [report, props.binding]);
+  const marks = useMemo(
+    () => [...eventMarks(report, props.binding ?? null), ...(props.liveMarks ?? [])].sort((a, b) => a.atNs - b.atNs),
+    [report, props.binding, props.liveMarks],
+  );
   const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
-    event.preventDefault();
-    onSeek(clamp(positionNs + (event.key === "ArrowLeft" ? -60e9 : 60e9)));
+    keyboardSeek(event, { positionNs, bounds: [startNs, endNs], clamp, onSeek, onLatest: props.onLatest });
   };
   return (
     <div className={styles.scrubber}>

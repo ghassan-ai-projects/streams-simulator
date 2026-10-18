@@ -124,6 +124,25 @@ func TestClosingTheGatewaysHangsUpOnAConnectionNobodyTook(t *testing.T) {
 	}
 }
 
+func TestAClosedGatewaysHangUpOnALinkNobodyTakesAndAnOpenOneHandsItOver(t *testing.T) {
+	t.Parallel()
+	client, server := net.Pipe()
+	t.Cleanup(func() { _ = server.Close() })
+	g := &Gateways{links: make(chan *Link), done: make(chan struct{})}
+	close(g.done)
+	if g.handOver(NewAccepted(client, time.Second)) {
+		t.Fatal("handOver reported a hand-over on closed gateways")
+	}
+	if _, err := client.Write([]byte("x")); !errors.Is(err, io.ErrClosedPipe) {
+		t.Fatalf("write on the hung-up link = %v, want io.ErrClosedPipe", err)
+	}
+	open := &Gateways{links: make(chan *Link, 1), done: make(chan struct{})}
+	link := NewAccepted(server, time.Second)
+	if !open.handOver(link) || <-open.Links() != link {
+		t.Fatal("open gateways did not hand the link over")
+	}
+}
+
 func TestTicksArriveAtTheirPeriodUntilStopped(t *testing.T) {
 	t.Parallel()
 	ticks, stop := Ticks(5 * time.Millisecond)

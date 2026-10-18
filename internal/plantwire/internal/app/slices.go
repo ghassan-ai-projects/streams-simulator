@@ -19,7 +19,9 @@ func (s *Session) slice(ctx context.Context, at int64) error {
 	if err := s.send(domain.Sync(s.out.LastSeq(), at)); err != nil {
 		return err
 	}
-	return s.barrier(ctx, s.out.LastSeq())
+	err := s.barrier(ctx, s.out.LastSeq())
+	s.flushLive()
+	return err
 }
 
 func (s *Session) data() []domain.Record {

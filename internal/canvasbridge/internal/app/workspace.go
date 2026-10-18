@@ -70,6 +70,16 @@ func (b *Bridge) runEntry(name string) domain.RunEntry {
 	if plan, started := b.startedSession(name); started {
 		return entry.AsSession(running, plan)
 	}
+	return b.recordedSession(name, entry, running)
+}
+
+func (b *Bridge) recordedSession(name string, entry domain.RunEntry, running bool) domain.RunEntry {
+	head, err := b.edges.Workspace.ReadFrom("runs/"+name+"/journal.jsonl", 0, firstLineLimit)
+	if err == nil {
+		if plan, connected := domain.RecordedSession(head); connected {
+			return entry.AsSession(running, plan)
+		}
+	}
 	return entry
 }
 

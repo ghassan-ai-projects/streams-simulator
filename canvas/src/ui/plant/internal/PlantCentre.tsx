@@ -1,6 +1,6 @@
-import { screen } from "../../primitives";
+import { screen, shared } from "../../primitives";
 import type { ComponentProps } from "react";
-import { Network } from "lucide-react";
+import { Network, Radio } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantSession, ReadyPlant } from "../../../app/plant";
@@ -14,8 +14,9 @@ import { ZoomBar } from "../../graph";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
+import type { Connected } from "./connected";
 
-export interface RunControls {
+interface RunControls {
   readonly launching: boolean;
   readonly button: ComponentProps<typeof RunButton>["button"];
   readonly toggle: () => void;
@@ -60,21 +61,38 @@ function Crumbs({
   return <Breadcrumb trail={trail} here={hall ?? title} heading={heading} />;
 }
 
-export function PlantCentre({
-  state,
-  hall,
-  plants,
-  navigation,
-  launch,
-  run,
-}: {
+interface PlantCentreProps {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
   readonly run: RunControls;
+  readonly connected?: Connected;
+}
+
+function LiveViewButton({
+  connected,
+  navigation,
+}: {
+  readonly connected: Connected;
+  readonly navigation: NavigationStore;
 }) {
+  return (
+    <button
+      type="button"
+      className={shared.primary}
+      onClick={() => {
+        navigation.go({ screen: "review", worldId: connected.run });
+      }}
+    >
+      <Radio size={14} aria-hidden="true" />
+      Open live view
+    </button>
+  );
+}
+
+export function PlantCentre({ state, hall, plants, navigation, launch, run, connected }: PlantCentreProps) {
   const running = useRunningHere(launch, state.plant.id);
   return (
     <section className={screen.center} aria-label={`Plant ${state.plant.id}`}>
@@ -83,10 +101,24 @@ export function PlantCentre({
         <Crumbs state={state} hall={hall} navigation={navigation} />
         <span className={styles.summary}>{summary(state, hall)}</span>
         <EditButton composition={state.composition} running={running} navigation={navigation} />
-        <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
+        {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
+        <RunButton
+          launching={run.launching}
+          running={running}
+          button={run.button}
+          onToggle={run.toggle}
+          secondary={connected !== undefined}
+        />
         <ZoomBar />
       </div>
-      <PlantCanvas state={state} hall={hall} plants={plants} navigation={navigation} launch={launch} />
+      <PlantCanvas
+        state={state}
+        hall={hall}
+        plants={plants}
+        navigation={navigation}
+        launch={launch}
+        {...(connected === undefined ? {} : { connected })}
+      />
     </section>
   );
 }

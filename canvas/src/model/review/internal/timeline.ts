@@ -9,9 +9,12 @@ export function runClock(ns: number, startNs: number): string {
   return clockOf((ns - startNs) / 1e9);
 }
 
-export type MarkKind = "fault" | "cleared" | "disturbance" | "alarm" | "effector" | "binding";
+export type MarkKind =
+  "fault" | "cleared" | "disturbance" | "alarm" | "effector" | "binding" | "command" | "connection";
 
 export const markWords: Readonly<Record<MarkKind, string>> = {
+  command: "Command evidence",
+  connection: "Connection change",
   fault: "Fault starts",
   cleared: "Disturbance ends",
   disturbance: "Other disturbance",

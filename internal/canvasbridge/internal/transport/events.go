@@ -54,6 +54,9 @@ func (s *Server) followRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *eventStream) record(record domain.Record) error {
+	if record.CaughtUp {
+		return e.send("", "caught_up", []byte("{}"))
+	}
 	if !record.Seen {
 		if err := e.send(strconv.FormatInt(record.Index, 10), "record", record.Line); err != nil {
 			return err

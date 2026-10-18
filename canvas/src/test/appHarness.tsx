@@ -31,6 +31,7 @@ function appStores(bridge: FakeBridge, hash = "#/") {
     navigation: createNavigationStore(location),
     plants: createPlantSession(bridge.plant),
     review: createReviewSession(bridge.review, timers, timers),
+    liveReview: createReviewSession(bridge.review, timers, timers),
     launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
     editor: createEditorSession(bridge.editor),

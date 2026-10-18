@@ -26,6 +26,7 @@ if (root) {
   const plants = createPlantSession(adapters.plant);
   const editor = createEditorSession(adapters.editor);
   const review = createReviewSession(adapters.review, time, time);
+  const liveReview = createReviewSession(adapters.review, time, time);
   createRoot(root).render(
     <StrictMode>
       <App
@@ -36,6 +37,7 @@ if (root) {
           navigation,
           plants,
           review,
+          liveReview,
           launch: createLaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,

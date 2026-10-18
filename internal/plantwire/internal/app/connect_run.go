@@ -31,11 +31,21 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 
 func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) {
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: p.spec, Adapter: p.adapter, Seed: p.session.WorldSeed(),
-		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out})
+		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: sessionNote(p.result())})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}
 	return r, nil
+}
+
+func sessionNote(check ConnectCheck) map[string]any {
+	if check.Instances == nil {
+		check.Instances = []domain.PlannedInstance{}
+	}
+	if check.ImplementsChecked == nil {
+		check.ImplementsChecked = []model.ImplementsChecked{}
+	}
+	return map[string]any{"mode": "connected", "plan": check}
 }
 
 func connectNode(ctx context.Context, o ConnectOptions, p *connectPlan) (ConnectResult, error) {
@@ -71,7 +81,7 @@ func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan) (Connec
 func (p *connectPlan) relayOptions(o ConnectOptions) RelayOptions {
 	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready,
 		Simulated: &SimulatedOptions{DomainsDir: o.DomainsDir, AdaptersDir: o.AdaptersDir, Domain: p.session.Domain, Adapter: connectAdapter,
-			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1")}}
+			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1"), Session: p.result()}}
 }
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {

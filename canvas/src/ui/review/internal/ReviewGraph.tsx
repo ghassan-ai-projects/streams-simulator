@@ -14,10 +14,11 @@ import { useLive } from "./useLive";
 import parts from "./ReportParts.module.css";
 import styles from "./ReviewScreen.module.css";
 
-function OpeningPlant() {
+function OpeningPlant({ state }: { readonly state: ReviewState }) {
+  const waiting = state.connection === "running" && state.sessionDomain === "";
   return (
     <p className={parts.muted} role="status">
-      Opening the plant this run used…
+      {waiting ? "Waiting for the session to name its plant…" : "Opening the plant this run used…"}
     </p>
   );
 }
@@ -43,7 +44,7 @@ export function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   );
   const live = useLive(review, state, plant, view);
   const anchor = useMemo(() => anchorOf(view, report), [view, report]);
-  if (view === null || state.report.phase === "loading") return <OpeningPlant />;
+  if (view === null || state.report.phase === "loading") return <OpeningPlant state={state} />;
   return (
     <div className={styles.graphArea}>
       <GraphBar state={state} opening={review.index.opening()} startNs={startNsOf(state, review)} />

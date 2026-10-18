@@ -19,6 +19,7 @@ type relayLoop struct {
 	gateway  *uds.Link
 	host     *uds.Link
 	ticks    <-chan time.Time
+	lastTick time.Time
 }
 
 func (l *relayLoop) serve(ctx context.Context) error {
@@ -47,8 +48,8 @@ func (l *relayLoop) awaitGateway(ctx context.Context) error {
 		return l.onHost(in, open)
 	case <-l.sim.signal():
 		return l.onSim()
-	case <-l.ticks:
-		return l.onTick(ctx)
+	case at := <-l.ticks:
+		return l.onTick(ctx, at)
 	}
 }
 
@@ -62,8 +63,8 @@ func (l *relayLoop) exchange(ctx context.Context) error {
 		return l.onHost(in, open)
 	case <-l.sim.signal():
 		return l.onSim()
-	case <-l.ticks:
-		return l.onTick(ctx)
+	case at := <-l.ticks:
+		return l.onTick(ctx, at)
 	}
 }
 
@@ -117,11 +118,22 @@ func (l *relayLoop) onHost(in domain.Inbound, open bool) error {
 	return l.apply(l.relay.FromHost(in))
 }
 
-func (l *relayLoop) onTick(ctx context.Context) error {
-	if err := l.apply(l.relay.Tick()); err != nil {
+func (l *relayLoop) onTick(ctx context.Context, at time.Time) error {
+	elapsed := l.elapsedSince(at)
+	l.rec.tickLive(elapsed)
+	if err := l.apply(l.relay.TickBy(elapsed)); err != nil {
 		return err
 	}
 	return l.ensureHost(ctx)
+}
+
+func (l *relayLoop) elapsedSince(at time.Time) int64 {
+	elapsed := relayTick.Milliseconds()
+	if !l.lastTick.IsZero() {
+		elapsed = max(1, at.Sub(l.lastTick).Milliseconds())
+	}
+	l.lastTick = at
+	return elapsed
 }
 
 func (l *relayLoop) settle() {

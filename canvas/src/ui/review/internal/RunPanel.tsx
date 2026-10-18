@@ -10,6 +10,7 @@ import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
+import { SessionEvidence } from "./SessionEvidence";
 import parts from "./ReportParts.module.css";
 import styles from "./RunPanel.module.css";
 
@@ -66,13 +67,33 @@ function Inspect(props: RunPanelProps) {
   );
 }
 
-export function RunPanel(props: RunPanelProps) {
-  const { state, review } = props;
-  const tab = state.tab;
+function RunTabs({ state, review }: Pick<RunPanelProps, "state" | "review">) {
   const tabs: readonly (readonly [Tab, string])[] = [
     ["report", "Report"],
     ["inspect", state.selected === null ? "Inspect" : `Inspect · ${state.selected}`],
   ];
+  return (
+    <div className={styles.tabs} role="group" aria-label="Run details view">
+      {tabs.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={state.tab === id}
+          className={styles.tab}
+          onClick={() => {
+            review.showTab(id);
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function RunPanel(props: RunPanelProps) {
+  const { state, review } = props;
+  const tab = state.tab;
   const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
@@ -82,23 +103,13 @@ export function RunPanel(props: RunPanelProps) {
       aria-label="Run details"
       tabIndex={0}
     >
-      <div className={styles.tabs} role="group" aria-label="Run details view">
-        {tabs.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tab === id}
-            className={styles.tab}
-            onClick={() => {
-              review.showTab(id);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <RunTabs state={state} review={review} />
       <div className={styles.body} role="region" aria-label={tab === "report" ? "Report" : "Inspect"}>
-        {tab === "inspect" ? <Inspect {...props} /> : <ReportBody state={state} unit={props.unit} />}
+        {tab === "inspect" ? (
+          <Inspect {...props} />
+        ) : (
+          <ReportBody state={state} unit={props.unit} startNs={startOf(props)} />
+        )}
       </div>
     </aside>
   );
@@ -107,22 +118,28 @@ export function RunPanel(props: RunPanelProps) {
 function ReportBody({
   state,
   unit,
+  startNs,
 }: {
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
+  readonly startNs: number;
 }) {
+  if (state.connection === "running") return <SessionEvidence state={state} startNs={startNs} />;
   if (state.report.phase === "ready") {
     const { picked, positionNs } = state;
     const shown = picked !== null && picked.atNs === positionNs ? picked : null;
     return (
-      <ReportPanel
-        report={state.report.value}
-        unit={unit}
-        entity={null}
-        picked={shown}
-        verify={state.verified}
-        connection={state.connection}
-      />
+      <>
+        {state.connection === "saved" && <SessionEvidence state={state} startNs={startNs} />}
+        <ReportPanel
+          report={state.report.value}
+          unit={unit}
+          entity={null}
+          picked={shown}
+          verify={state.verified}
+          connection={state.connection}
+        />
+      </>
     );
   }
   if (state.report.phase === "loading")

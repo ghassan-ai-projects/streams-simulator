@@ -41,13 +41,19 @@ func (g *Gateways) accept() {
 		if err != nil {
 			return
 		}
-		link := NewAccepted(conn, g.wait)
-		select {
-		case g.links <- link:
-		case <-g.done:
-			_ = link.Close()
+		if !g.handOver(NewAccepted(conn, g.wait)) {
 			return
 		}
+	}
+}
+
+func (g *Gateways) handOver(link *Link) bool {
+	select {
+	case g.links <- link:
+		return true
+	case <-g.done:
+		_ = link.Close()
+		return false
 	}
 }
 

@@ -590,3 +590,118 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 - Knowledge of Agentic Stream's operator interface in the binary or the bridge.
 - Scoring a consumer against a device's self-reports.
 - Customer devices, mappings or recordings in any repository.
+
+## R10 design decision: recorded live evidence
+
+The live screen and a reopened session consume the same observer journal. Plant wire owns the interpretation of
+admitted records into connection health, reading quality and command stages. The bridge transports that projection;
+the canvas owns presentation and whether its cursor follows the newest record. Connected-session metadata and the
+checked plan are recorded with the session so a bridge restart cannot change its classification or origins.
+
+Receipt, board report and observed effect remain separate. The reference host already checks a declared feedback
+metric against an expectation using a sample received after a successful board report. Its decision previously stayed
+in its final report. R10 adds optional `command_evidence` to `HSYNC` to carry that decision through the existing host
+channel. Each decision identifies the command, device, boot and metric, with the expectation, tolerance and observed
+value when available. This is an additive plant-wire contract change; existing hosts may omit it, which leaves the
+effect unknown. The relay forwards host content unchanged, except that it consumes `command_evidence` from `HSYNC`, and records only evidence matching the routed command and
+boot. A receipt or successful board report alone never confirms an effect. A host observation is recorded evidence,
+not independent proof of a physical effect on the bench.
+
+The existing plantwire domain layer owns these rules; its app and socket edge supply records and deterministic ticks.
+The existing run/journal modules persist observer records without interpreting plant-wire policies. No new package or
+dependency is required. Gateway silence uses a bounded watchdog even before a host heartbeat has been seen. Reading
+quality distinguishes implausible, stale and disconnected values from current readings using admitted capability data.
+
+## R10 as-built (live mode, command lifecycle, connection health)
+
+Built as the decision above, with these details and deviations:
+
+- **Projection.** `plantwire/internal/domain` `Live` folds what the host saw (the records the node or relay sent up, and the
+  host records the relay admitted) into link states (`host`, `gateway`: `unknown`, `online`, `offline`, or
+  `not_applicable` without a gateway), devices (board, environment from the `NBIRTH` boards, `unknown` for a board the birth
+  did not announce, boot id, reboot count by `boot_id` change, health) and readings with a state: `good`, `stale` (three scan
+  intervals of relay ticks without a sample, the gateway idle limit when the kind declares no scan class), `disconnected`
+  (device death, gateway link lost for hardware devices, host link lost for all), `invalid` (wrong declared type, enum or
+  outside `eu_range`) and `untrusted` (any other quality). Commands keep four separate stages: sent, receipt (`pending`,
+  `accepted`, `refused` with the reason; a `queued` receipt stays pending), the board's report, and the effect, which is
+  `observed` only for host evidence that names the same command, device and boot, follows an accepted command whose board
+  reported success on the device's current boot, and whose observed value lies within the stated tolerance of the stated
+  expectation. A receipt or result from another boot (a `refused` receipt with boot id `none`, which is how the relay and the session refuse before any boot is involved, is accepted), a regressing answer, duplicate or premature evidence changes nothing. `sent` means the host issued the command; a relay that did not route it shows that as the receipt stage. Evidence counts only from an `HSYNC` the relay routed (a dropped one counts nothing), only for a metric the device announced, with a finite tolerance no wider than the metric's `eu_range`, and an `observed` decision must agree with the latest good reading the relay holds, otherwise it is recorded as unverified; evidence for a device that is offline or rebooted leaves a mark instead of vanishing. Simulated instances have health `simulated` and never age with wall time.
+  The latest 128 commands are kept and truncation is explicit. Link changes are idempotent (one mark per change).
+- **Journal cadence (deviation from the WIP).** The WIP journalled a full snapshot after every admitted record, which for a
+  plant of n devices writes O(n) snapshots of O(n) devices per slice. The session now marks the projection changed and writes
+  one snapshot per barrier (simulated session, after the barrier) or per 250 ms relay tick (mixed session), one at every link
+  change, and a final one when the session ends; `marks` carries every change since the previous snapshot, so no mark is lost.
+  `live` and `session` records are observer session records outside the stream digest; replay does not regenerate them
+  (D-76, D-77).
+- **Session record.** `plantwire connect` writes one `session` record (`mode: connected` and the `--check` document, empty
+  lists as arrays) right after `run.opened`, for the simulated session and the mixed relay. The bridge lists a run as a
+  connected session from it when its memory has no entry (bridge restart), and the canvas reads the plan's simulated
+  instances from it. Plain `plantwire relay --domain` and `plantwire node` write neither `session` nor `live`.
+- **Contract 1.3.0.** Optional `HSYNC.command_evidence` (at most 128 entries, `observed` needs `observed_value`, tolerance
+  non-negative); schemas, the valid fixture and two invalid fixtures generated from `scripts/plant-wire`, the `DIGEST`
+  regenerated and the embedded copy equal. The reference host sends each decision once, only for a good, non-historical
+  sample of the boot the command was issued to, newer than the device's successful result; a timeout is `not_observed`.
+  The relay consumes `command_evidence`: it forwards `HSYNC` to the gateway or the simulated node without it (host-internal data, not for firmware), and only `through_seq` is mapped, as before.
+- **Gateway watchdog (D-73 fixed).** The relay counts ticks since the last admitted gateway record; stray, forged, malformed
+  and repeated records do not reset it. After 30 s it reports the devices `DDEATH link_down`, closes the gateway link and
+  records the gateway offline. It arms at admission, without a host heartbeat.
+- **Review fixes (M4).** A link change no longer writes a snapshot of its own: it waits for the next tick (a connect loop
+  would otherwise write one per connection), a repeated link state changes nothing, and the session ends with a final
+  snapshot with the links offline and readings disconnected. Elapsed time for staleness and the gateway and host watchdogs is
+  the measured time between delivered ticks, not a count of ticks (`Relay.TickBy`). Marks carry `subject` and event words.
+
+- **Canvas.** The adapter decodes `live` and `session` records strictly (an unknown stage, state or link value drops the
+  snapshot rather than guessing); the review store keeps the snapshots of a visit as an immutable chain, follows the newest
+  while the session runs, pauses following on any seek, and `Back to live` resumes; after `run.closed` the session is an
+  ordinary review and verification loads. The Run panel shows connection health and a commands table (Acceptance, Board
+  report, Effect evidence) while live and above the report once saved; the timeline adds the binary's command and connection
+  marks. Real-board readings come from the projection: a reading that is not `good` shows its state, never a value. The plant
+  screen of the session's plant shows origin marks and live readings while the session runs; the top bar shows
+  "Connected session · running · Open live view" after a reload. While a session holds the plant, the Run panel hides the
+  run-mode chooser (the blank row above the live status).
+- **Fix to the WIP: the plant screen stays mounted.** The WIP rendered `PlantScreen` directly when no session was live and
+  inside `ConnectedPlant` once one was, so starting a session remounted the plant screen and closed the Run panel (the
+  `connect-session` e2e lost "Connected session · run c-…"). `PlantRoute` now always renders `ConnectedPlant`, which opens
+  the review only for a live session of this plant and passes no session otherwise; `Stores` moved to `shell/internal/stores.ts`
+  to break the `App` ↔ `PlantRoute` import cycle, and `LiveHistory` to `reviewState.ts` to break the `liveState` ↔
+  `reviewState` cycle.
+- **Not done in R10.** The commands table distinguishes stages in words, not by colour; timeline marks from the session all
+  use the neutral tone (the binary's marks carry `kind` but no severity). After a reload the Run panel's live status has no
+  plan check (the connect state resumes from the bridge without it); the review and the workspace listing read it from the
+  `session` record. The e2e covers live following, Back to live, connection health and the reopened recording; a host that
+  issues commands (refused, unconfirmed and confirmed rows on the live screen) is covered by unit and component tests, not
+  by an e2e, because the reference host in the bench issues no commands.
+
+### M4 review fixes (canvas and bridge)
+
+- **Live history.** The review store keeps a flat, time-ordered array of snapshots (binary search by `at_ns`), drops a
+  snapshot whose state equals the previous one (the adapter gives each snapshot a key of its links, devices and commands),
+  and keeps at most 2000 snapshots and 2000 marks; when it trims, the live bar says "History trimmed before hh:mm:ss".
+  Origins under the cursor are the journalled `origin` records overlaid with the snapshot's devices (one mapping,
+  `originOf` in the model), memoised per snapshot.
+- **Unreadable snapshots.** A `live` record that does not decode, or whose command stages break the invariant (an
+  observed effect needs an accepted receipt, a successful board report and evidence), becomes a `live-unreadable` entry;
+  the live bar says "A live snapshot could not be read at hh:mm:ss; the view is not current" until the next good snapshot.
+- **Catching up.** The bridge's run event stream sends `caught_up` once it has read the journal to its end; until then
+  the live bar says "Catching up to live…" and the graph bar "catching up", not "following". The bar shows the age of the
+  last snapshot ("Last live snapshot 12 s ago"; from 30 s, a display-only rule, "No live snapshot for N s"). End on the timeline of a
+  running session is "Back to live"; focus stays on the live status after "Back to live". The end-of-load seek no longer
+  clears following for a running session.
+- **One live store.** The shell keeps a second review store open for the running session (`liveReview`), shared by the
+  plant screen and the live view and reference-counted, so moving between them keeps the history and never shows an
+  older state.
+- **Words.** Health, link, receipt, report, refusal and reading words come from one model table; a simulated device
+  reads "Simulated · no link"; a reading that is not current shows "—" and its state and quality ("untrusted · warming
+  up"); command rows show the side they were routed to, the run-clock time sent and coloured stage chips; the plant
+  screen's primary action while live is "Open live view", and Recent runs marks the running session "Live".
+- **Bridge.** `RecordedSession` accepts the `session` record only as the first observer session record of the journal.
+- **Re-review fixes.** The bench recording showed `marks: null` in 523 of 529 `live` records (the binary wrote a nil
+  slice); the decoder reads a null `marks` as no marks, so those snapshots are no longer unreadable (the binary should
+  still write `[]`). The live view of a session loads its plant from the session record's domain before any report
+  exists, asks for a failed report again once caught up, follows the newer of the newest snapshot and the newest
+  observation, and follows a running session again (after 1 s) when its event stream fails, for example while the run
+  folder does not exist yet. Pills of session marks show the binary's event words and stay inside the timeline; a node
+  card shows the short reading state (the reason is in the inspectors); simulated rows show their board but no boot.
+- **Deferred.** De-collision of overlapping timeline pills, keeping fit-zoom across a scrub, the board-readings heading
+  alignment and keeping the plan check in view are left to the next design review.

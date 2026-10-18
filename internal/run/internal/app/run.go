@@ -48,6 +48,8 @@ type Config struct {
 
 	JournalDir string
 
+	SessionRecord map[string]any
+
 	Explore bool
 
 	retainJournal bool

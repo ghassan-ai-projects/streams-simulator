@@ -30,6 +30,7 @@
 .lane {
   position: relative;
   height: 28px;
+  overflow: hidden;
   margin: 2px calc(var(--thumb) / 2) 0;
   padding: 0;
   list-style: none;
@@ -47,7 +48,7 @@
   align-items: center;
   gap: 6px;
   height: 24px;
-  max-width: 320px;
+  max-width: 200px;
   padding: 0 var(--space-2);
   overflow: hidden;
   border: 1px solid var(--border-strong);
@@ -59,6 +60,13 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+}
+
+.chipText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chip:hover {

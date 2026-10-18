@@ -10,7 +10,7 @@ An output directory is the evidence bundle for one run. The exact contents depen
 | `trace.jsonl` | Adapter-rendered consumer-visible evidence. | What the consumer could read. |
 | `ledger.jsonl` | Per-delivery terminal outcomes. | Transport classification and conservation. |
 | `world_state_history.jsonl` | Director-side world state snapshots at emissions. | Post-hoc world analysis; never consumer evidence. |
-| `journal.jsonl` | Observer journal stream, written while the run happens: identity, delivered observations, clock advances, effector acknowledgements, consumer reports, the close. | What a consumer could know; readable before the run is sealed. |
+| `journal.jsonl` | Observer journal stream, written while the run happens: identity, delivered observations, clock advances, effector acknowledgements, consumer reports, the close; for a plant wire session also the wire, origins, bindings, the connected `session` record and the `live` projection, outside the stream digest. | What a consumer could know; readable before the run is sealed. |
 | `sealed/journal.jsonl` | Director journal stream: commands, delivery rows, world state, effector outcomes, unblinding, the close. | Truth-bearing; director only. |
 | `field-trace.jsonl` | Only for a plant wire relay session (`plantwire relay --out`): every record the gateway sent, in the order the relay received it, one `{ordinal, record}` per line in RFC 8785 canonical JSON, and nothing else (no host record, no wall clock; times are the records' own event times). | An input of the run, covered by `field_trace_digest`; the gateway's side of a recording. |
 | `verdict.json` | Consumer report when submitted during the run. | Consumer claim to score. |

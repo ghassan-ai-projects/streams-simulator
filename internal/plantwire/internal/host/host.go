@@ -54,22 +54,24 @@ type Status struct {
 }
 
 type Host struct {
-	options  Options
-	out      *domain.Transmitter
-	in       domain.Receiver
-	devices  map[string]*device
-	script   []Scripted
-	issued   map[string]Scripted
-	issuedAt map[string]int64
-	order    []string
-	resultAt map[string]int64
-	samples  int64
-	report   Report
-	asked    bool
-	accepted bool
-	session  string
-	version  int
-	bdSeq    uint64
+	options    Options
+	out        *domain.Transmitter
+	in         domain.Receiver
+	devices    map[string]*device
+	script     []Scripted
+	issued     map[string]Scripted
+	issuedAt   map[string]int64
+	order      []string
+	resultAt   map[string]int64
+	issuedBoot map[string]string
+	evidence   []any
+	samples    int64
+	report     Report
+	asked      bool
+	accepted   bool
+	session    string
+	version    int
+	bdSeq      uint64
 }
 
 type device struct {
@@ -77,6 +79,7 @@ type device struct {
 	aliases map[int64]string
 	values  map[string]float64
 	updated map[string]int64
+	valid   map[string]bool
 }
 
 func New(options Options) *Host {
@@ -84,6 +87,7 @@ func New(options Options) *Host {
 	slices.SortStableFunc(script, func(a, b Scripted) int { return cmp.Compare(a.AtNS, b.AtNS) })
 	return &Host{options: options, out: domain.NewTransmitter(""), devices: map[string]*device{}, script: script,
 		issued: map[string]Scripted{}, issuedAt: map[string]int64{}, resultAt: map[string]int64{},
+		issuedBoot: map[string]string{}, evidence: []any{},
 		report: Report{Quarantined: []string{}, Commands: map[string]*Status{}}}
 }
 

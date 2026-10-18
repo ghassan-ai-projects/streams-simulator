@@ -23,9 +23,10 @@ function plantTitle(plant: ReadyPlant | null, entry: Definition | undefined, dom
 export function reviewPlantFor(state: ReviewState, shown: PlantState, workspace: Workspace | null): ReviewPlant {
   const key = `run:${state.worldId ?? ""}`;
   const report = readyReport(state);
-  const domainId = report?.domainId ?? "";
-  const entry = workspace?.domains.find((domain) => domain.id === domainId);
-  const fallback = report === null ? undefined : entry?.path;
+  const reported = report?.domainId ?? "";
+  const domainId = reported === "" ? state.sessionDomain : reported;
+  const entry = domainId === "" ? undefined : workspace?.domains.find((domain) => domain.id === domainId);
+  const fallback = entry?.path;
   const plant = shownFor(shown, key, fallback);
   return { plant, title: plantTitle(plant, entry, domainId), path: entry?.path ?? null, key, fallback };
 }

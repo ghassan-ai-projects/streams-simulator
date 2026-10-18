@@ -108,19 +108,25 @@ function Mode({ report, state }: { readonly report: Report; readonly state: Revi
 
 export function Status({ state, now }: { readonly state: ReviewState; readonly now: () => number }) {
   const current = useNow(now, state.report.phase === "loading" || state.verified.phase === "loading");
+  if (state.connection === "running")
+    return (
+      <>
+        <Connected state={state} />
+        <Announce text="Running" />
+      </>
+    );
   const elapsed = Math.max(0, Math.round((current - state.openedAt) / 1000));
   if (state.report.phase !== "ready")
     return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
-  const running = state.connection === "running" && badge === "incomplete";
-  const shown = running ? "Running" : badgeLabels[badge];
+  const shown = badgeLabels[badge];
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : shown;
   return (
     <>
       <Mode report={report} state={state} />
       <Chip badge={badge} label={label} title={integrityLine(report, state.verified)} />
-      {badge === "incomplete" && !running && <Reason text={report.incompleteReason || "the run did not close."} />}
+      {badge === "incomplete" && <Reason text={report.incompleteReason || "the run did not close."} />}
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : shown} />
     </>
   );

@@ -24,6 +24,9 @@ func (r *Run) openJournal() error {
 
 func (r *Run) journalOpened() {
 	r.journal.Opened(r.openedRecord(r.mode()))
+	if r.Config.SessionRecord != nil {
+		r.journal.Session(r.worldStartTimeNS, r.Config.SessionRecord)
+	}
 	if r.Config.Explore {
 		r.unblinded, r.unblindedAt = true, clock.Stamp()
 		r.journal.Unblinded(r.worldStartTimeNS, journal.ReasonExplore)

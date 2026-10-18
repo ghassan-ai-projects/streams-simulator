@@ -133,4 +133,29 @@ describe("plant overview", () => {
     fireEvent.click(within(recent).getByRole("button", { name: "Review w-3" }));
     expect(onReview).toHaveBeenCalledWith("w-3");
   });
+
+  it("marks the running connected session as live and opens its live view", () => {
+    const live: RunRow = {
+      plantTitle: "Campus",
+      run: {
+        worldId: "c-1",
+        ended: false,
+        complete: false,
+        incompleteReason: "",
+        explore: false,
+        seed: 1,
+        plant: "campus",
+        durationS: 0,
+        recordedAt: "2026-10-14T10:00:00Z",
+        faults: 0,
+        connected: "running",
+      },
+    };
+    const onReview = vi.fn();
+    render(<PlantOverview plant={parsePlant(domain)} runs={[live]} onReview={onReview} />);
+    const recent = screen.getByRole("region", { name: "Recent runs" });
+    expect(within(recent).getByText("Live", { exact: true })).toBeInTheDocument();
+    fireEvent.click(within(recent).getByRole("button", { name: "Open the live view of c-1" }));
+    expect(onReview).toHaveBeenCalledWith("c-1");
+  });
 });

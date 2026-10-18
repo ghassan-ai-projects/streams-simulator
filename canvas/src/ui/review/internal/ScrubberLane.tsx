@@ -17,8 +17,9 @@ export interface LaneProps {
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${mark.label}`;
-const chipShort = (mark: EventMark, startNs: number) =>
-  `${runClock(mark.atNs, startNs)} ${mark.entity === "" ? mark.label : mark.entity}`;
+const eventWords = (mark: EventMark) =>
+  mark.kind === "command" || mark.kind === "connection" || mark.entity === "" ? mark.label : mark.entity;
+const chipShort = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${eventWords(mark)}`;
 const chipWidth = (text: string) => Math.min(200, 34 + text.length * 7);
 const percent = (value: number) => `${String(value * 100)}%`;
 
@@ -82,7 +83,7 @@ function Chip({ mark, chip, text, startNs, active, pick, origin }: ChipProps) {
       >
         <Swatch kind={mark.kind} />
         <OriginMark origin={origin} variant="glyph" voice="silent" />
-        {text}
+        <span className={styles.chipText}>{text}</span>
       </button>
     </li>
   );

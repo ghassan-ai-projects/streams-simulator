@@ -6,7 +6,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-const ContractVersion = "1.2.0"
+const ContractVersion = "1.3.0"
 
 type NodeIdentity struct {
 	Environment  string

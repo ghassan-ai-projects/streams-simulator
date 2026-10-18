@@ -1,4 +1,16 @@
 export { noteLinesByEntity } from "./internal/noteLines";
+export type { LiveMark, SessionLive, SessionDevice, SessionReading, SessionCommand } from "./contract";
+export { deviceOf, originOf, readingWords } from "./internal/sessionLive";
+export {
+  commandSide,
+  deviceLine,
+  effectWords,
+  linkWords,
+  receiptWords,
+  refusalWords,
+  reportWords,
+  updateAgeWords,
+} from "./internal/sessionWords";
 export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";

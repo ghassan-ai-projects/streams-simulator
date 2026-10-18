@@ -17,6 +17,7 @@ type Traced struct {
 	Direction string
 	Record    map[string]any
 	Field     bool
+	Admitted  bool
 }
 
 type Moves struct {
@@ -28,6 +29,7 @@ type Moves struct {
 	Err          error
 	CloseHost    bool
 	CloseGateway bool
+	syncRouted   bool
 }
 
 func (m *Moves) saw(direction string, record map[string]any) {
@@ -59,6 +61,7 @@ type gatewaySide struct {
 	in       Receiver
 	out      *Transmitter
 	born     map[string]string
+	silent   int64
 }
 
 type hostSide struct {

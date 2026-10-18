@@ -28,8 +28,8 @@ func TestFollowingARunEmitsEachLineOnceByIndexAndStopsAtTheClose(t *testing.T) {
 	if err := tickUntil(h, done); err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 3 || got[0].Index != 1 || got[2].Type != "run.closed" || !got[2].Closes {
-		t.Fatalf("records after index 0 = %+v", got)
+	if len(got) != 4 || got[0].Index != 1 || !got[1].CaughtUp || got[3].Type != "run.closed" || !got[3].Closes {
+		t.Fatalf("records after index 0 = %+v, want a line, the caught-up signal once, then the rest", got)
 	}
 }
 

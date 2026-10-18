@@ -196,21 +196,22 @@ func TestARelayStopsCountingHeartbeatsOnlyOnceTheHostHasSentOne(t *testing.T) {
 	g := newRelayRig(t)
 	g.bringUp()
 	for range 100 {
-		if moves := g.relay.Tick(); moves.CloseHost {
+		if moves := tickOnce(g.relay); moves.CloseHost {
 			t.Fatal("a host that never sent a heartbeat was declared lost")
 		}
 	}
+	g.gw(DeviceData("P1", "boot-1", false, []map[string]any{Sample(1, 20.0, "good", 0)}))
 	g.hostSends(hostState(7, 1))
 	for i := range 11 {
-		if moves := g.relay.Tick(); moves.CloseHost {
+		if moves := tickOnce(g.relay); moves.CloseHost {
 			t.Fatalf("host lost after %d ticks of 250 ms with a 1000 ms heartbeat, want three missed heartbeats", i+1)
 		}
 	}
 	g.hostSends(hostState(7, 2))
 	for range 11 {
-		g.relay.Tick()
+		tickOnce(g.relay)
 	}
-	if moves := g.relay.Tick(); !moves.CloseHost || len(moves.Down) != 1 || moves.Down[0]["online"] != false {
+	if moves := tickOnce(g.relay); !moves.CloseHost || len(moves.Down) != 1 || moves.Down[0]["online"] != false {
 		t.Fatalf("moves = %+v, want the host lost on the twelfth silent tick after the last heartbeat", moves)
 	}
 }

@@ -1,6 +1,7 @@
 import type { InstanceOrigin } from "../../graph";
 import type { BindingNote } from "../../launch";
 import { shortChannel } from "../../shared/words";
+import type { SessionLive } from "./sessionLive";
 
 interface Observation {
   readonly atNs: number;
@@ -11,6 +12,9 @@ interface Observation {
 }
 
 export type JournalEntry =
+  | { readonly kind: "session"; readonly atNs: number; readonly domain: string; readonly simulated: readonly string[] }
+  | { readonly kind: "live"; readonly live: SessionLive; readonly atNs: number }
+  | { readonly kind: "live-unreadable"; readonly atNs: number }
   | { readonly kind: "observation"; readonly observation: Observation }
   | { readonly kind: "opened"; readonly atNs: number; readonly mode: string; readonly adapter: string }
   | { readonly kind: "closed"; readonly atNs: number; readonly incomplete: boolean }

@@ -122,6 +122,18 @@ func (r *Run) JournalBinding(fields map[string]any) {
 	r.journal.Binding(r.journalNow(), fields)
 }
 
+func (r *Run) JournalLive(fields map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Live(r.journalNow(), fields)
+}
+
+func (r *Run) JournalSession(fields map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Session(r.journalNow(), fields)
+}
+
 func (r *Run) FlushJournal() error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()

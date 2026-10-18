@@ -6,7 +6,8 @@ import { shortChannel } from "../../../model/shared/words";
 import { hallOf } from "../../../model/graph";
 import type { Shown } from "../../../model/graph";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../../model/graph";
-import { effectorAt, faultedAt, isRealBoard, runClock } from "../../../model/review";
+import { deviceOf, effectorAt, faultedAt, isRealBoard, readingWords, runClock } from "../../../model/review";
+import type { SessionReading } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
 import parts from "./ReportParts.module.css";
@@ -97,17 +98,50 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
   );
 }
 
-function RealBoardNote() {
+function BoardReadings({ readings }: { readonly readings: readonly SessionReading[] }) {
   return (
-    <p className={parts.muted}>
-      This instance is a real board. Its own readings are not part of this review yet, and the values the simulator
-      computed for its twin are never shown as the board&apos;s.
-    </p>
+    <table className={cells.table}>
+      <caption>Board readings</caption>
+      <thead>
+        <tr>
+          <th scope="col">Reading</th>
+          <th scope="col">Value</th>
+          <th scope="col">Quality</th>
+        </tr>
+      </thead>
+      <tbody>
+        {readings.map((reading) => {
+          const words = readingWords(reading);
+          return (
+            <tr key={reading.name}>
+              <th scope="row">{reading.name}</th>
+              <td>{words.valueText}</td>
+              <td>{words.stateWords}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function RealBoardNote({ state, entity }: { readonly state: ReviewState; readonly entity: string }) {
+  const readings = deviceOf(state.live, entity)?.readings ?? [];
+  return (
+    <>
+      <p className={parts.muted}>
+        {readings.length > 0
+          ? "This instance is a real board. These are its own readings, as the board reported them."
+          : "This instance is a real board. It has reported no reading at this time."}{" "}
+        The simulator&apos;s twin values are never shown as the board&apos;s.
+      </p>
+      {readings.length > 0 && <BoardReadings readings={readings} />}
+    </>
   );
 }
 
 export function Observed({ review, state, plant, entity }: ObservedProps) {
-  if (isRealBoard(state.origins, entity)) return <RealBoardNote />;
+  if (isRealBoard(state.origins, entity)) return <RealBoardNote state={state} entity={entity} />;
   const readings = review.index.readings(entity, state.positionNs);
   if (readings.length === 0) return <HallNote plant={plant} entity={entity} />;
   const shown = abnormalFirst(

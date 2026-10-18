@@ -59,8 +59,12 @@ func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
 	if err != nil {
 		return ConnectCheck{}, err
 	}
-	return ConnectCheck{Domain: planned.spec.Spec.ID, Environment: planned.plan.Environment, Instances: planned.plan.Instances,
-		ImplementsChecked: planned.checked}, nil
+	return planned.result(), nil
+}
+
+func (p *connectPlan) result() ConnectCheck {
+	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Instances: p.plan.Instances,
+		ImplementsChecked: p.checked}
 }
 
 func planConnect(options ConnectOptions) (connectPlan, error) {

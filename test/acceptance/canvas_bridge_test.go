@@ -151,7 +151,10 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 	checkEffectorCall(t, client, world)
 	client.action("clock.advance", map[string]any{"world_id": world, "by_ns": 60 * 1e9})
 	observed := 0
-	read := stream.until(func(event serverEvent) bool {
+	read := recordsOf(stream.until(func(event serverEvent) bool {
+		if event.name == "caught_up" {
+			return false
+		}
 		if event.name != "record" {
 			t.Fatalf("unexpected event %+v", event)
 		}
@@ -160,7 +163,7 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 		}
 		observed++
 		return observed >= 3
-	})
+	}))
 	if first := read[0]; first.recordType() != "run.opened" || first.id != "0" {
 		t.Fatalf("the stream opens with %+v", first)
 	}
@@ -263,4 +266,14 @@ func listedRun(t *testing.T, client *bridgeClient, world string) map[string]any 
 	}
 	t.Fatalf("run %s is not listed: %v", world, listing["runs"])
 	return nil
+}
+
+func recordsOf(events []serverEvent) []serverEvent {
+	var records []serverEvent
+	for _, event := range events {
+		if event.name == "record" {
+			records = append(records, event)
+		}
+	}
+	return records
 }

@@ -40,6 +40,7 @@ func (r *Relay) loseHost(m *Moves) {
 	r.lastUp = saturatingInt64(r.host.out.LastSeq())
 	last := r.host.state
 	r.host = hostSide{}
+	m.Notes = append(m.Notes, connectionNote("host", "offline"))
 	r.gateway.asked = false
 	clear(r.gateway.born)
 	if r.gateway.admitted {
@@ -73,6 +74,9 @@ func (r *Relay) FromHost(in Inbound) Moves {
 
 func (r *Relay) hostRecord(m *Moves, in Inbound) {
 	in.Within(r.host.session, Version)
+	if in.Invalid == nil && hostRecords[in.Type] && (r.host.shaken || in.Type == "STATE") {
+		m.Trace[0].Admitted = true
+	}
 	switch {
 	case !r.host.shaken:
 		r.hostHandshake(m, in)
@@ -80,6 +84,13 @@ func (r *Relay) hostRecord(m *Moves, in Inbound) {
 		r.stats.Dropped++
 	default:
 		r.deliverDown(m, in)
+		r.settleEvidence(m, in)
+	}
+}
+
+func (r *Relay) settleEvidence(m *Moves, in Inbound) {
+	if in.Type == "HSYNC" {
+		m.Trace[0].Admitted = m.syncRouted
 	}
 }
 
@@ -158,6 +169,7 @@ func (r *Relay) forwardDown(m *Moves, in Inbound) {
 		return
 	}
 	r.transmitDown(m, Record{Type: in.Type, Lane: text(in.Record, "lane"), Fields: fields})
+	m.syncRouted = m.syncRouted || in.Type == "HSYNC"
 }
 
 func (r *Relay) forwardRebirth(m *Moves, in Inbound) {
@@ -171,17 +183,18 @@ func (r *Relay) downward(in Inbound) (map[string]any, bool) {
 		return fields, true
 	}
 	through, mapped := r.host.table.gatewayFor(in.ThroughSeq)
+	delete(fields, "command_evidence")
 	fields["through_seq"] = through
 	return fields, mapped
 }
 
-func (r *Relay) Tick() Moves {
-	moves := Moves{}
+func (r *Relay) TickBy(elapsedMS int64) Moves {
+	moves := r.gatewayTick(elapsedMS)
 	if !r.host.shaken || !r.host.beating {
 		return moves
 	}
-	r.host.silent++
-	if r.host.silent*r.tickMS >= heartbeatsMissed*r.host.interval {
+	r.host.silent += elapsedMS
+	if r.host.silent >= heartbeatsMissed*r.host.interval {
 		r.loseHost(&moves)
 	}
 	return moves

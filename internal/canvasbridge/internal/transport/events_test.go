@@ -17,10 +17,11 @@ func record(index int64, line string) domain.Record {
 func TestARunIsStreamedAsServerSentEventsAndClosesAfterTheClosingRecord(t *testing.T) {
 	t.Parallel()
 	r := newRig(t)
-	r.service.records = []domain.Record{record(3, `{"type":"observation","seq":3}`), record(4, `{"type":"observation","seq":4}`),
-		{Index: 5, Type: "run.closed", Line: []byte(`{"type":"run.closed"}`), Closes: true}}
+	r.service.records = []domain.Record{record(3, `{"type":"observation","seq":3}`), {CaughtUp: true},
+		record(4, `{"type":"observation","seq":4}`), {Index: 5, Type: "run.closed", Line: []byte(`{"type":"run.closed"}`), Closes: true}}
 	got := r.do(t, req{Path: "/api/runs/w-7/events", Paired: true})
 	want := "id: 3\nevent: record\ndata: {\"type\":\"observation\",\"seq\":3}\n\n" +
+		"event: caught_up\ndata: {}\n\n" +
 		"id: 4\nevent: record\ndata: {\"type\":\"observation\",\"seq\":4}\n\n" +
 		"id: 5\nevent: record\ndata: {\"type\":\"run.closed\"}\n\n" +
 		"event: closed\ndata: {}\n\n"

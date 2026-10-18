@@ -92,7 +92,8 @@ export function reviewFailure(error: RequestFailure): ReviewFailure {
   if (error.kind !== "http") return unreached(error);
   const display = diagnostic(error.problem);
   if (isMissing(error.problem)) return { kind: "missing", diagnostic: display };
-  if (error.problem.code === "run_incomplete") return { kind: "run-incomplete", diagnostic: display };
+  if (error.problem.code === "run_incomplete" || error.problem.code === "sealed")
+    return { kind: "run-incomplete", diagnostic: display };
   return serverFault(error.problem, display);
 }
 

@@ -11,8 +11,13 @@ function openedWords(opening: Opening, startNs: number): string {
   return opening.full ? ` · readings start at ${at}` : ` · opened at ${at}, some channels report later`;
 }
 
+function readingWords(state: ReviewState): string {
+  if (state.connection === "running") return state.caughtUp ? " · live" : " · catching up";
+  return state.playback.phase === "loading" ? " · loading" : "";
+}
+
 function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
-  const loading = state.playback.phase === "loading" ? " · loading" : "";
+  const loading = readingWords(state);
   const shown = opening !== null && state.positionNs === opening.atNs ? openedWords(opening, startNs) : "";
   return `${grouped(state.playback.records)} observations${loading}${shown}`;
 }

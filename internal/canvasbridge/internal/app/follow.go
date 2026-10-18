@@ -16,12 +16,13 @@ const (
 )
 
 type follower struct {
-	bridge *Bridge
-	rel    string
-	offset int64
-	line   int64
-	after  int64
-	emit   func(domain.Record) error
+	bridge   *Bridge
+	rel      string
+	offset   int64
+	line     int64
+	after    int64
+	emit     func(domain.Record) error
+	caughtUp bool
 }
 
 func (b *Bridge) OpenRun(worldID string) error {
@@ -59,20 +60,30 @@ func (b *Bridge) everyTick(ctx context.Context, every time.Duration, step func()
 }
 
 func (f *follower) drain() (bool, error) {
-	chunk, end := f.completeLines()
-	if end < 0 {
+	chunk, read := f.readChunk()
+	if !read {
 		return false, nil
 	}
-	f.offset += int64(end + 1)
-	return f.emitLines(chunk[:end])
+	if end := bytes.LastIndexByte(chunk, '\n'); end >= 0 {
+		f.offset += int64(end + 1)
+		if done, failed := f.emitLines(chunk[:end]); failed != nil || done {
+			return done, failed
+		}
+	}
+	return false, f.signalCaughtUp(len(chunk) < followChunk)
 }
 
-func (f *follower) completeLines() ([]byte, int) {
+func (f *follower) readChunk() ([]byte, bool) {
 	chunk, err := f.bridge.edges.Workspace.ReadFrom(f.rel, f.offset, followChunk)
-	if err != nil {
-		return nil, -1
+	return chunk, err == nil
+}
+
+func (f *follower) signalCaughtUp(atEnd bool) error {
+	if !atEnd || f.caughtUp {
+		return nil
 	}
-	return chunk, bytes.LastIndexByte(chunk, '\n')
+	f.caughtUp = true
+	return f.emit(domain.Record{CaughtUp: true})
 }
 
 func (f *follower) emitLines(lines []byte) (bool, error) {

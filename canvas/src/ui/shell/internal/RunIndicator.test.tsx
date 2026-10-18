@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { createLaunchStore } from "../../../app/launch";
 import { createNavigationStore } from "../../../app/shell";
-import { failure as failed } from "../../../test/outcome";
+import { failure as failed, success } from "../../../test/outcome";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
 import { launchBridge } from "../../../test/launchFixture";
@@ -12,8 +12,9 @@ import { RunIndicator } from "./RunIndicator";
 const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain.json" };
 const plan = { seed: 1, durationS: 60, explore: true, faults: [], calls: [] };
 
-function setup() {
+function setup(status?: object) {
   const bridge = launchBridge("w-5");
+  if (status !== undefined) bridge.actions.set("session.status", success(status));
   const location = memoryLocation();
   const timers = fakeClock();
   const launch = createLaunchStore(bridge.launch, timers, timers);
@@ -56,5 +57,15 @@ describe("run indicator", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
     expect(heading).toHaveFocus();
     heading.remove();
+  });
+
+  it("leads back to the live view of a running connected session and hides itself there", async () => {
+    const { location } = setup({ run: "c-9", state: "running", domain: "mini" });
+    const open = await screen.findByRole("button", { name: "Connected session · running · Open live view" });
+    fireEvent.click(open);
+    expect(location.hash).toBe("#/review?world=c-9");
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Connected session · running · Open live view" })).toBeNull();
+    });
   });
 });

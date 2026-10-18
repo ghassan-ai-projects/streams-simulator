@@ -53,8 +53,7 @@ function ToCompletion({ launch, plant, path, selected, onFinished }: CompletePro
   );
 }
 
-function lockWords(running: boolean, held: boolean): string {
-  if (held) return "A connected session holds this plant until you stop it.";
+function lockWords(running: boolean): string {
   return running ? "A run is in progress." : "";
 }
 
@@ -72,7 +71,7 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      <RunMode kind={mode.kind} locked={lockWords(running, mode.held)} onKind={mode.choose} />
+      {!mode.held && <RunMode kind={mode.kind} locked={lockWords(running)} onKind={mode.choose} />}
       {mode.kind === "session" ? (
         <Session launch={launch} plant={plant} onFinished={onFinished} />
       ) : (

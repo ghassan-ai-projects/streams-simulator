@@ -8,6 +8,7 @@ import { planMarks, plantView } from "../../../model/graph";
 import type { PlanMark, PlantView } from "../../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
+import type { Connected } from "./connected";
 
 function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, PlanMark> | undefined {
   const run = useStore(launch);
@@ -25,6 +26,7 @@ function PlantViewGraph({
   plants,
   navigation,
   marks,
+  connected,
 }: {
   readonly view: PlantView;
   readonly state: ReadyPlant;
@@ -33,6 +35,7 @@ function PlantViewGraph({
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly marks: ReadonlyMap<string, PlanMark> | undefined;
+  readonly connected?: Connected;
 }) {
   return (
     <PlantGraph
@@ -41,6 +44,7 @@ function PlantViewGraph({
       fitKey={`${hall ?? "plant"}:${String(aspect)}`}
       panCue
       selected={state.selected}
+      {...(connected === undefined ? {} : { live: connected.live })}
       {...(marks === undefined ? {} : { marks })}
       onSelect={(id) => {
         plants.select(id);
@@ -61,12 +65,14 @@ export function PlantCanvas({
   plants,
   navigation,
   launch,
+  connected,
 }: {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
+  readonly connected?: Connected;
 }) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
@@ -84,6 +90,7 @@ export function PlantCanvas({
         plants={plants}
         navigation={navigation}
         marks={marks}
+        {...(connected === undefined ? {} : { connected })}
       />
     </div>
   );
