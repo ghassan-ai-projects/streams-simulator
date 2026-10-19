@@ -22,6 +22,10 @@ The world also records its start time, entity selection, scenario profile, time 
 
 `streamsim replay`, `streamsim verify`, `streamsim scenario from-run` and `streamsim score` use the domain and adapter specifications recorded in `run.json`, so editing a domain afterwards does not break earlier runs; the `domains/` and `adapters/` directories are read only for an older artifact that records no specifications, and (for `replay` and `verify`) to report `domain_changed` when the domain on disk now has a different digest. A recorded specification that no longer hashes to its recorded digest, or a recorded world that replays to a different world digest, is a verdict (`matches: false` with a `detail`), not a failure to run; `verify` also requires every evidence file of a complete run (trace, ledger, state history, both journals) beside the artifact and compares each with the digest `run.json` recorded and with the replay; the result names the cause in `reason`. A run that ended incomplete is never reported as matching (`reason: incomplete`), and an `incomplete` stamp that the journals' closing records or `reproducible` contradict is `incomplete_stamp`. Replay does not re-run an MCP conversation or trust a human to reproduce calls in the same order.
 
+## Inputs a physical session adds
+
+A connected session with a gateway records what the board said as a **field trace** (`field-trace.jsonl`, digest `field_trace_digest`), and a session with a control socket records the operator's controls and the node's decisions as an **interrupt log** (`interrupts.jsonl`, digest `interrupt_log_digest`). The run is then a function of the usual inputs and of those files; `replay` and `verify` check them against `run.json` like every other evidence file. A run without them has neither member nor file. See [physical devices: determinism and replay](physical-devices.md#determinism-and-replay).
+
 ## What breaks reproducibility
 
 - `wall` time mode makes delivery depend on wall-clock behavior.
