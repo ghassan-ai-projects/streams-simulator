@@ -1,3 +1,4 @@
+import type { ConnectSession } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { ReviewSession, ReviewState } from "../../../app/review";
 import { readyReport } from "../../../app/review";
@@ -8,6 +9,7 @@ import { Graph } from "./ReviewGraph";
 import type { GraphProps } from "./ReviewGraph";
 import { Scrubber } from "./Scrubber";
 import styles from "./ReviewScreen.module.css";
+import { Interrupts } from "./Interrupts";
 import { LiveControls } from "./LiveControls";
 
 function handlers(review: ReviewSession, running: boolean) {
@@ -41,10 +43,11 @@ function handlers(review: ReviewSession, running: boolean) {
 interface TimelineProps {
   readonly review: ReviewSession;
   readonly state: ReviewState;
+  readonly connect: ConnectSession;
   readonly now: () => number;
 }
 
-function Timeline({ review, state, now }: TimelineProps) {
+function Timeline({ review, state, connect, now }: TimelineProps) {
   const report = readyReport(state);
   const span = runSpan(report, review.index.bounds());
   const startNs = Math.min(span.startNs, state.liveHistory?.startNs ?? span.startNs);
@@ -52,6 +55,7 @@ function Timeline({ review, state, now }: TimelineProps) {
   return (
     <div>
       {running && <LiveControls review={review} state={state} startNs={startNs} now={now} />}
+      {running && <Interrupts review={review} state={state} connect={connect} now={now} />}
       <Scrubber
         startNs={startNs}
         endNs={Math.max(span.endNs, state.newestNs)}
@@ -69,16 +73,17 @@ function Timeline({ review, state, now }: TimelineProps) {
 }
 
 interface CentreProps extends GraphProps {
+  readonly connect: ConnectSession;
   readonly now: () => number;
   readonly worldId: string;
   readonly navigation: NavigationStore;
   readonly review: ReviewSession;
 }
 
-export function Centre({ review, state, plant, hall, onHall, worldId, navigation, now }: CentreProps) {
+export function Centre({ review, state, plant, hall, onHall, worldId, navigation, connect, now }: CentreProps) {
   return (
     <section className={styles.center} aria-label={`Run ${worldId}`}>
-      <Timeline review={review} state={state} now={now} />
+      <Timeline review={review} state={state} connect={connect} now={now} />
       {state.report.phase === "failed" && state.report.failure.kind === "missing" ? (
         <MissingRun worldId={worldId} navigation={navigation} />
       ) : (

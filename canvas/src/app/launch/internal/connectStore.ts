@@ -124,12 +124,18 @@ export class ConnectStore extends Observable<ConnectState> {
       this.take(now.domain, now.check, outcome);
       return;
     }
-    if (outcome.ok && now.phase === "live" && outcome.value.state === "stopping" && !now.stopping) {
-      this.set({ ...now, stopping: true });
-    }
+    if (outcome.ok && now.phase === "live") this.refreshLive(now, outcome.value);
     this.poll();
     const live = this.snapshot();
     if (live.phase === "live" && this.unfollow === null) this.followJournal(live.run);
+  }
+
+  private refreshLive(now: LiveSession, status: ConnectStatus): void {
+    if (status.state !== "running" && status.state !== "stopping") return;
+    const stopping = now.stopping || status.state === "stopping";
+    if (stopping !== now.stopping || status.controls !== now.controls) {
+      this.set({ ...now, stopping, controls: status.controls });
+    }
   }
 
   private settle(outcome: Outcome<ConnectStatus, ConnectFailure>): void {

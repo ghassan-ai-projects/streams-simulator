@@ -26,7 +26,13 @@ export function PlantRoute({
     onShowDetails: stores.showDetails,
   };
   return (
-    <ConnectedPlant review={stores.liveReview} plant={ready} run={run}>
+    <ConnectedPlant
+      review={stores.liveReview}
+      plant={ready}
+      run={run}
+      connect={stores.launch.connect}
+      now={() => stores.launch.nowMs()}
+    >
       {(session) => <PlantScreen {...props} {...(session === null ? {} : { connected: session })} />}
     </ConnectedPlant>
   );

@@ -1,5 +1,5 @@
-import { OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
-import type { NodeStatus } from "../../../model/graph";
+import { ClipboardCheck, Hand, OctagonAlert, OctagonX, TriangleAlert, Wrench } from "lucide-react";
+import type { NodeInterrupt, NodeStatus } from "../../../model/graph";
 import { statusWords } from "../../../model/graph";
 import { cx } from "../../primitives";
 import styles from "./marks.module.css";
@@ -29,6 +29,29 @@ export function StatusTag({
     <span className={cx(styles.tag, styles[`tag-${status}`], brief && styles.brief)} aria-hidden="true" title={words}>
       <Icon size={12} />
       <span className={styles.tagWords}>{words}</span>
+    </span>
+  );
+}
+
+const interruptIcons = { hold: Hand, approve: ClipboardCheck } as const;
+
+function interruptWord(interrupt: NodeInterrupt): string {
+  if (interrupt.latched) return "Latched";
+  return interrupt.mode === "hold" ? "Held" : "Approving";
+}
+
+export function InterruptTag({ interrupt }: { readonly interrupt: NodeInterrupt | null }) {
+  if (interrupt === null) return null;
+  const Icon = interrupt.latched ? OctagonX : interruptIcons[interrupt.mode];
+  return (
+    <span
+      className={cx(styles.tag, interrupt.latched ? styles["tag-alarm"] : styles["tag-warn"])}
+      aria-hidden="true"
+      title={interrupt.words}
+      data-interrupt={interrupt.latched ? "latched" : interrupt.mode}
+    >
+      <Icon size={12} />
+      <span className={styles.tagWords}>{interruptWord(interrupt)}</span>
     </span>
   );
 }

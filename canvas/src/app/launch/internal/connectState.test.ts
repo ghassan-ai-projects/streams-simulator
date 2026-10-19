@@ -3,7 +3,7 @@ import { isBusy, markedStale, refusedState, stateOf } from "./connectState";
 
 const diagnostic = { message: "refused", displayCode: "plantwire_failed" };
 const check = { domain: "d", mixed: false, instances: [] };
-const facts = { run: "c-1", domain: "d", check: null };
+const facts = { run: "c-1", domain: "d", check: null, controls: true };
 
 describe("connect states", () => {
   it("is busy while checking, starting or live", () => {
@@ -19,8 +19,10 @@ describe("connect states", () => {
       check,
       binding: null,
       stopping: false,
+      controls: true,
       note: null,
     });
+    expect(stateOf("d", check, { state: "running", ...facts, controls: false })).toMatchObject({ controls: false });
     expect(stateOf("", null, { state: "stopping", ...facts, domain: "other", check })).toMatchObject({
       phase: "live",
       domain: "other",

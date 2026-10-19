@@ -1,5 +1,12 @@
 import type { SessionCommand } from "../../../model/review";
-import { commandSide, effectWords, receiptWords, refusalWords, reportWords, runClock } from "../../../model/review";
+import {
+  acceptanceDetail,
+  acceptanceWords,
+  commandSide,
+  effectWords,
+  reportWords,
+  runClock,
+} from "../../../model/review";
 import cells from "./ReportTable.module.css";
 import styles from "./SessionEvidence.module.css";
 
@@ -30,8 +37,8 @@ function CommandRow({ command, startNs }: { readonly command: SessionCommand; re
       </th>
       <td className={cells.clock}>{runClock(command.sentAtNs, startNs)}</td>
       <td>
-        <Stage tone={receiptTones[command.receipt]} words={receiptWords[command.receipt]} />
-        {command.reason !== "" && <p className={styles.detail}>{refusalWords(command.reason)}</p>}
+        <Stage tone={receiptTones[command.receipt]} words={acceptanceWords(command)} />
+        {acceptanceDetail(command) !== "" && <p className={styles.detail}>{acceptanceDetail(command)}</p>}
       </td>
       <td>{reportWords[command.report]}</td>
       <td>

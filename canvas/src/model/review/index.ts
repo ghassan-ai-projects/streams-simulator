@@ -1,13 +1,56 @@
 export { noteLinesByEntity } from "./internal/noteLines";
-export type { LiveMark, SessionLive, SessionDevice, SessionReading, SessionCommand } from "./contract";
+export type {
+  ActiveScope,
+  ControlFailureKind,
+  ControlOp,
+  ControlReply,
+  ControlRequest,
+  ControlResult,
+  ControlScope,
+  CoveredDevice,
+  InterruptEvent,
+  InterruptHold,
+  InterruptRecord,
+  InterruptState,
+  LiveMark,
+  NodeNow,
+  PendingApproval,
+  ScopeChoice,
+  ScopeStatus,
+  SeenState,
+  SessionCommand,
+  SessionDevice,
+  SessionLive,
+  SessionReading,
+  StateCheck,
+} from "./contract";
+export { interruptMarks } from "./internal/interruptMarks";
+export {
+  activeScopes,
+  allDevices,
+  chosenScope,
+  interruptOf,
+  newestInterrupts,
+  scopeChoices,
+  scopeStatus,
+} from "./internal/interruptSelect";
+export {
+  deadlineWords,
+  modeLine,
+  outcomeLine,
+  pendingTitle,
+  requestWords,
+  scopeKey,
+  waitingWords,
+} from "./internal/interruptWords";
 export { deviceOf, originOf, readingWords } from "./internal/sessionLive";
 export {
+  acceptanceDetail,
+  acceptanceWords,
   commandSide,
   deviceLine,
   effectWords,
   linkWords,
-  receiptWords,
-  refusalWords,
   reportWords,
   updateAgeWords,
 } from "./internal/sessionWords";

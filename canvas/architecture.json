@@ -632,6 +632,7 @@
       "run.verify",
       "scenario.export",
       "session.check",
+      "session.control",
       "session.start",
       "session.status",
       "session.stop",

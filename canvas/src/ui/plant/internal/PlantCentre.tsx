@@ -1,4 +1,4 @@
-import { screen, shared } from "../../primitives";
+import { cx, screen, shared } from "../../primitives";
 import type { ComponentProps } from "react";
 import { Network, Radio } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
@@ -92,25 +92,44 @@ function LiveViewButton({
   );
 }
 
-export function PlantCentre({ state, hall, plants, navigation, launch, run, connected }: PlantCentreProps) {
-  const running = useRunningHere(launch, state.plant.id);
+function Bar(props: PlantCentreProps & { readonly running: string | null }) {
+  const { state, hall, navigation, run, connected, running } = props;
   return (
-    <section className={screen.center} aria-label={`Plant ${state.plant.id}`}>
-      <div className={screen.bar}>
-        <Network size={14} aria-hidden="true" />
-        <Crumbs state={state} hall={hall} navigation={navigation} />
-        <span className={styles.summary}>{summary(state, hall)}</span>
-        <EditButton composition={state.composition} running={running} navigation={navigation} />
-        {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
-        <RunButton
-          launching={run.launching}
-          running={running}
-          button={run.button}
-          onToggle={run.toggle}
-          secondary={connected !== undefined}
-        />
-        <ZoomBar />
-      </div>
+    <div className={screen.bar}>
+      <Network size={14} aria-hidden="true" />
+      <Crumbs state={state} hall={hall} navigation={navigation} />
+      <span className={styles.summary}>{summary(state, hall)}</span>
+      <EditButton composition={state.composition} running={running} navigation={navigation} />
+      {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
+      <RunButton
+        launching={run.launching}
+        running={running}
+        button={run.button}
+        onToggle={run.toggle}
+        secondary={connected !== undefined}
+      />
+      <ZoomBar />
+    </div>
+  );
+}
+
+export function PlantCentre(props: PlantCentreProps) {
+  const { state, hall, plants, navigation, launch, connected } = props;
+  const running = useRunningHere(launch, state.plant.id);
+  const bar = <Bar {...props} running={running} />;
+  return (
+    <section
+      className={cx(screen.center, connected !== undefined && styles.withInterrupts)}
+      aria-label={`Plant ${state.plant.id}`}
+    >
+      {connected === undefined ? (
+        bar
+      ) : (
+        <div className={styles.top}>
+          {bar}
+          {connected.interrupts}
+        </div>
+      )}
       <PlantCanvas
         state={state}
         hall={hall}

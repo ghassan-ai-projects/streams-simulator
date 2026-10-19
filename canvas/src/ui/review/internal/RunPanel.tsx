@@ -8,6 +8,7 @@ import type { InstanceOrigin } from "../../../model/review";
 import { OriginMark } from "../../graph";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
+import { InterruptLine } from "./InterruptLine";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
 import { SessionEvidence } from "./SessionEvidence";
@@ -52,6 +53,7 @@ function Inspect(props: RunPanelProps) {
           <span className={parts.note}>{`at ${runClock(props.state.positionNs, startOf(props))}`}</span>
         </h2>
         <OriginLine origin={props.state.origins.get(entity)} />
+        <InterruptLine state={props.state} entity={entity} />
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
       {props.state.report.phase === "ready" && (

@@ -37,6 +37,17 @@ function Binding({ state }: { readonly state: Running }) {
   );
 }
 
+function Controls({ state }: { readonly state: Running }) {
+  if (state.phase !== "live") return null;
+  return (
+    <p className={panel.hint}>
+      {state.controls
+        ? "Interrupt controls (hold, approve each command, emergency stop) are on the plant and live screens."
+        : "Interrupt controls are not available yet: the node has not opened its control socket."}
+    </p>
+  );
+}
+
 function StopButton({ state, connect }: { readonly state: Running; readonly connect: ConnectSession }) {
   const stopping = state.phase === "starting" || state.stopping;
   return (
@@ -67,6 +78,7 @@ export function SessionLive({ state, connect }: { readonly state: Running; reado
         </p>
       )}
       <Binding state={state} />
+      <Controls state={state} />
       {state.check !== null && <Planned check={state.check} binding={state.phase === "live" ? state.binding : null} />}
       <StopButton state={state} connect={connect} />
       <p className={panel.hint}>

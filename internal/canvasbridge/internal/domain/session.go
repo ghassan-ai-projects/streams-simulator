@@ -8,9 +8,10 @@ import (
 type Lifecycle string
 
 const (
-	LastingStart  Lifecycle = "start"
-	LastingStatus Lifecycle = "status"
-	LastingStop   Lifecycle = "stop"
+	LastingStart   Lifecycle = "start"
+	LastingStatus  Lifecycle = "status"
+	LastingStop    Lifecycle = "stop"
+	LastingControl Lifecycle = "control"
 )
 
 type SessionState string
@@ -36,8 +37,9 @@ var (
 	cliSessionStart = Action{Name: "session.start", Kind: KindCLI,
 		Command: []string{"plantwire", "connect", "--stdin", "--barrier-cap-ms", SessionBarrierCapMS},
 		Catalog: true, Kinds: true, Input: inputKey, Mutating: true, Lasting: LastingStart}
-	cliSessionStatus = Action{Name: "session.status", Kind: KindCLI, Command: []string{"plantwire", "connect"}, Lasting: LastingStatus}
-	cliSessionStop   = Action{Name: "session.stop", Kind: KindCLI, Command: []string{"plantwire", "connect"}, Mutating: true, Lasting: LastingStop}
+	cliSessionStatus  = Action{Name: "session.status", Kind: KindCLI, Command: []string{"plantwire", "connect"}, Lasting: LastingStatus}
+	cliSessionStop    = Action{Name: "session.stop", Kind: KindCLI, Command: []string{"plantwire", "connect"}, Mutating: true, Lasting: LastingStop}
+	cliSessionControl = Action{Name: "session.control", Kind: KindCLI, Command: []string{"plantwire", "connect"}, Mutating: true, Lasting: LastingControl}
 )
 
 func SessionPrecheck() Action {
@@ -45,18 +47,23 @@ func SessionPrecheck() Action {
 }
 
 type SessionStatus struct {
-	Run     string          `json:"run,omitempty"`
-	State   SessionState    `json:"state"`
-	Domain  string          `json:"domain,omitempty"`
-	Plan    json.RawMessage `json:"plan,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-	Failure *Failure        `json:"failure,omitempty"`
+	Run      string          `json:"run,omitempty"`
+	State    SessionState    `json:"state"`
+	Domain   string          `json:"domain,omitempty"`
+	Plan     json.RawMessage `json:"plan,omitempty"`
+	Result   json.RawMessage `json:"result,omitempty"`
+	Failure  *Failure        `json:"failure,omitempty"`
+	Controls bool            `json:"controls,omitempty"`
 }
 
 type SessionView struct {
 	Run    string
 	Domain string
 	Plan   json.RawMessage
+}
+
+func Controlling(state SessionState) bool {
+	return state == SessionStarting || state == SessionRunning || state == SessionStopping
 }
 
 func PlanDomain(check json.RawMessage) string {

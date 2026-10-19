@@ -189,7 +189,7 @@ How to read the tables:
 | ID | Expectation | Now | B |
 |---|---|---|---|
 | RUN-1 | Before Start, the panel says what Start does: "Simulate this plant for the selected duration and save a run for review". | ◐ |  |
-| RUN-2 | The panel says whether a run goes to completion or supports live control, and shows only controls that work. | ◐ "To completion" or "Connected session" (R9: linked to a plant wire host and a gateway until Stop and save; the choice stays shown, disabled while a session holds the plant, and a session run is labelled "Connected session", never Evaluate); live control is R10 to R11 |  |
+| RUN-2 | The panel says whether a run goes to completion or supports live control, and shows only controls that work. | ◐ "To completion" or "Connected session" (R9: linked to a plant wire host and a gateway until Stop and save; the choice stays shown, disabled while a session holds the plant, and a session run is labelled "Connected session", never Evaluate); live following, command stages and connection health are R10; the node interrupts (hold, approve each command, emergency stop) are an always-visible "Interrupts" region on the plant screen and the live view while a session runs (R11b) |  |
 | RUN-3 | The stop control stays visible and says whether it cancels, pauses or ends and saves the run. | ✅ "Cancel and discard"; the panel explains what cancel keeps (d9c2b8c) |  |
 | RUN-4 | Cancel is acknowledged at once, and its latency is explained without implying an in-flight command stops instantly. | ✅ "Canceling at the next step…" acknowledges the request at once |  |
 | RUN-5 | Complete, cancelled, interrupted, failed and checking are distinct states, each saying what evidence was kept. | ◐ |  |

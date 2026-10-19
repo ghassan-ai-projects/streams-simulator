@@ -1,7 +1,9 @@
-import type { InstanceOrigin, NodeStatus, PlantView, ReadoutBody, Shown } from "../../graph";
+import type { InstanceOrigin, NodeInterrupt, NodeStatus, PlantView, ReadoutBody, Shown } from "../../graph";
 import { attentionOf, hallOf, showReading, worstOf } from "../../graph";
 import type { Plant } from "../../plant";
 import { channelOf } from "../../plant";
+import { interruptOf } from "./interruptSelect";
+import { modeLine } from "./interruptWords";
 import type { PlaybackIndex } from "./playback";
 import { readoutBody } from "./reviewRows";
 import type { SessionLive } from "./sessionLive";
@@ -16,6 +18,7 @@ export interface LiveNode {
   readonly fault: string;
   readonly effector: string;
   readonly origin: InstanceOrigin | null;
+  readonly interrupt: NodeInterrupt | null;
 }
 
 export interface LiveFacts {
@@ -56,6 +59,11 @@ function readoutOf(facts: LiveFacts, id: string, shown: readonly Shown[], observ
   return node === undefined ? noReadout : readoutBody(node.pins, node.channels, shown, observed);
 }
 
+function interruptShown(facts: LiveFacts, id: string): NodeInterrupt | null {
+  const covered = interruptOf(facts.sessionLive ?? null, id);
+  return covered === null ? null : { mode: covered.mode, latched: covered.latched, words: modeLine(covered) };
+}
+
 export function liveOf(facts: LiveFacts, id: string): LiveNode {
   const shown = shownAt(facts, id);
   const observed = new Set([...facts.index.observed(id), ...shown.map((reading) => reading.channel)]);
@@ -68,6 +76,7 @@ export function liveOf(facts: LiveFacts, id: string): LiveNode {
     fault: (facts.faulted.get(id) ?? []).join(", "),
     effector: facts.effectors.get(id) ?? "",
     origin: facts.origins.get(id) ?? null,
+    interrupt: interruptShown(facts, id),
   };
 }
 
@@ -81,6 +90,7 @@ function hallNode(worst: { readonly status: NodeStatus; readonly count: number }
     fault: "",
     effector: "",
     origin: null,
+    interrupt: null,
   };
 }
 

@@ -41,8 +41,7 @@ describe("connected session evidence", () => {
     app.stores.review.seek(10e9);
     const table = await screen.findByRole("table", { name: "Command evidence" });
     expect(within(table).getAllByText("Accepted", { exact: true })).toHaveLength(2);
-    expect(within(table).getByText("Refused", { exact: true })).toBeInTheDocument();
-    expect(within(table).getByText("Under local control", { exact: true })).toBeInTheDocument();
+    expect(within(table).getByText("Refused at the node: local control", { exact: true })).toBeInTheDocument();
     expect(within(table).getByText("Unconfirmed", { exact: true })).toBeInTheDocument();
     expect(within(table).getByText("Host observed", { exact: true })).toBeInTheDocument();
     expect(within(table).getAllByText("Effect unknown", { exact: true })).toHaveLength(3);

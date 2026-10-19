@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Interrupt controls on the canvas (R11b).** The bridge starts each connected session with a control socket in an
+  owner-only directory it owns, reports `controls` in `session.status`, and the new action `session.control` sends one
+  `node-control-v0.1` request line to it and returns the node's reply unchanged (its own failures: `no_session`,
+  `control_unavailable`, `control_gone`, `control_timeout`, `control_unreadable`); `interrupts.jsonl` is an observer-readable
+  run file. The canvas decodes the journal's `interrupt` records and `live.interrupts` strictly and shows an always-visible
+  "Interrupts" region on the live view and the plant screen while a session runs: a scope (all, a board, a device), Hold,
+  Release, Approve each command, Emergency stop (latched until released), the waiting commands with Approve, Deny and their
+  deadline, the outcome of the last control, a badge on held nodes and the node's `local_control` refusals in the commands table.
+  Gate edits: the I/O edge file `process/control.go` of the canvas bridge is registered, and the canvas register's action list gains
+  `session.control`.
+
 - **Interrupts at the node (R11, binary).** `plantwire connect --control-socket <path>` opens an owner-only socket on which an
   operator holds, queues for approval or emergency-stops devices (all, a board or a device); the node only refuses or stops.
   A held command is refused `local_control`, a command in approval mode is answered `queued` until approved (handed on

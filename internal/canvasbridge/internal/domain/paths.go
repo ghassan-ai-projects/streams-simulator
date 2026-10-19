@@ -49,7 +49,7 @@ var definitionFolders = map[string]struct {
 var stemFolders = map[FileClass]string{ClassKind: "kinds"}
 
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
-	"field-trace.jsonl", "verdict.json", "label.json", "sealed/journal.jsonl"}
+	"field-trace.jsonl", "interrupts.jsonl", "verdict.json", "label.json", "sealed/journal.jsonl"}
 
 func ParsePath(rel string) (WorkspacePath, error) {
 	parts := strings.Split(rel, "/")

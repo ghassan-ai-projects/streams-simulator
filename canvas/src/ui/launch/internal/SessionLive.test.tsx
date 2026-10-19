@@ -124,6 +124,23 @@ describe("a running connected session in the run panel", () => {
     expect(screen.getByText("Waiting for the gateway to announce its boards…")).toBeInTheDocument();
   });
 
+  it("says where the interrupt controls are, or that the node has not opened its control socket", async () => {
+    const without = sessionBridge();
+    without.actions.set("session.status", success({ run: "c-9", state: "running", domain: "mini", plan: check }));
+    const first = renderSession(without);
+    expect(await screen.findByText(/Interrupt controls are not available yet/)).toBeInTheDocument();
+    first.view.unmount();
+    const controlled = sessionBridge();
+    controlled.actions.set(
+      "session.status",
+      success({ run: "c-9", state: "running", domain: "mini", plan: check, controls: true }),
+    );
+    renderSession(controlled);
+    expect(
+      await screen.findByText(/Interrupt controls \(hold, approve each command, emergency stop\) are on/),
+    ).toBeInTheDocument();
+  });
+
   it("tells this plant a session of another plant runs when the panel opens after a reload", async () => {
     const running = sessionBridge();
     running.actions.set("session.status", success({ run: "c-9", state: "running", domain: "other" }));

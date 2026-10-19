@@ -48,7 +48,7 @@ func TestRunFilesAreReadOnlyAndDefinitionsWritable(t *testing.T) {
 func TestSealedRunFilesWaitForTheEndUnlessTheRunIsExplore(t *testing.T) {
 	t.Parallel()
 	open, ended, explore := RunState{}, RunState{Ended: true}, RunState{Explore: true}
-	for file, sealedWhileOpen := range map[string]bool{"journal.jsonl": false, "trace.jsonl": false, "field-trace.jsonl": false, "run.json": true,
+	for file, sealedWhileOpen := range map[string]bool{"journal.jsonl": false, "trace.jsonl": false, "field-trace.jsonl": false, "interrupts.jsonl": false, "run.json": true,
 		"sealed/journal.jsonl": true, "ledger.jsonl": true, "world_state_history.jsonl": true} {
 		path, err := ParsePath("runs/w-1/" + file)
 		if err != nil {

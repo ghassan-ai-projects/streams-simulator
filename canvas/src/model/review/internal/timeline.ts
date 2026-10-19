@@ -10,11 +10,12 @@ export function runClock(ns: number, startNs: number): string {
 }
 
 export type MarkKind =
-  "fault" | "cleared" | "disturbance" | "alarm" | "effector" | "binding" | "command" | "connection";
+  "fault" | "cleared" | "disturbance" | "alarm" | "effector" | "binding" | "command" | "connection" | "interrupt";
 
 export const markWords: Readonly<Record<MarkKind, string>> = {
   command: "Command evidence",
   connection: "Connection change",
+  interrupt: "Interrupt control",
   fault: "Fault starts",
   cleared: "Disturbance ends",
   disturbance: "Other disturbance",

@@ -197,6 +197,7 @@ func (r *Relay) downward(in Inbound) (map[string]any, bool) {
 
 func (r *Relay) TickBy(elapsedMS int64) Moves {
 	moves := r.gatewayTick(elapsedMS)
+	r.publishInventory(&moves)
 	r.expireApprovals(&moves)
 	if !r.host.shaken || !r.host.beating {
 		return moves

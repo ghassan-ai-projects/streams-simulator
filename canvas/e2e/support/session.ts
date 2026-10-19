@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { env } from "./env";
 import type { Lab } from "./lab";
@@ -31,14 +31,21 @@ export interface Bench {
   close(): void;
 }
 
-export function openBench(binary: string): Bench {
-  const dir = mkdtempSync("/tmp/ssc-");
+export interface ScriptedCommand {
+  readonly id: string;
+  readonly afterS: number;
+  readonly device: string;
+  readonly command: string;
+  readonly args: Readonly<Record<string, unknown>>;
+}
+
+const worldStartNs = 1_767_225_600e9;
+const scriptPolicy = `sha256:${"b".repeat(64)}`;
+
+function openHost(binary: string, dir: string, extra: readonly string[]): Bench {
   const host = join(dir, "h.sock");
-  const children = [
-    spawn(binary, ["plantwire", "host", "--socket", host, "--environment", "mixed", "--delay-ms", "100"], {
-      stdio: "ignore",
-    }),
-  ];
+  const args = ["plantwire", "host", "--socket", host, "--environment", "mixed", ...extra];
+  const children = [spawn(binary, args, { stdio: "ignore" })];
   return {
     host,
     gateway: join(dir, "g.sock"),
@@ -48,6 +55,34 @@ export function openBench(binary: string): Bench {
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+export function openBench(binary: string): Bench {
+  return openHost(binary, mkdtempSync("/tmp/ssc-"), ["--delay-ms", "100"]);
+}
+
+export function openScriptedBench(binary: string, steps: readonly ScriptedCommand[]): Bench {
+  const dir = mkdtempSync("/tmp/ssc-");
+  const script = join(dir, "script.json");
+  const issued = steps.map((step) => ({
+    id: step.id,
+    at_ns: worldStartNs + step.afterS * 1e9,
+    device: step.device,
+    command: step.command,
+    args: step.args,
+  }));
+  writeFileSync(script, JSON.stringify(issued));
+  return openHost(binary, dir, ["--delay-ms", "250", "--policy", scriptPolicy, "--script", script]);
+}
+
+export async function planOneRealBoard(panel: Locator, open: Bench, device: string): Promise<void> {
+  await panel.getByLabel("Host socket", { exact: true }).fill(open.host);
+  await panel.getByLabel("Gateway socket", { exact: true }).fill(open.gateway);
+  await panel.getByRole("button", { name: "Add a real board" }).click();
+  await expect(panel.getByLabel("Real board 1 instance", { exact: true })).toBeFocused();
+  await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption("zone-01");
+  await panel.getByLabel("Real board 1 board", { exact: true }).fill("uno-07");
+  await panel.getByLabel("Real board 1 device", { exact: true }).fill(device);
 }
 
 export function startGateway(bench: Bench, device: string): void {

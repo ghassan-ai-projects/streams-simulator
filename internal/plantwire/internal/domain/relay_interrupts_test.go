@@ -233,3 +233,15 @@ func TestTheInventoryNamesEveryDeviceOfBothOriginsWithItsBoardAndClock(t *testin
 		}
 	}
 }
+
+func TestTheInventoryIsPublishedOnTheFirstTickWithNoCommandSentAndNotAgainWhenUnchanged(t *testing.T) {
+	t.Parallel()
+	g := interruptRig(t)
+	isInventory := func(e InterruptEntry) bool { return e.Event() == EventInventory }
+	if moves := g.relay.TickBy(250); !slices.ContainsFunc(moves.Interrupt, isInventory) {
+		t.Fatalf("a tick with no command sent published no inventory: %+v", moves.Interrupt)
+	}
+	if moves := g.relay.TickBy(250); slices.ContainsFunc(moves.Interrupt, isInventory) {
+		t.Fatal("an unchanged inventory was published again")
+	}
+}

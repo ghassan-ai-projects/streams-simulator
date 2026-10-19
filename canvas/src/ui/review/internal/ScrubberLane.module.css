@@ -148,3 +148,8 @@
   border-radius: 2px;
   background: var(--origin-real-bg);
 }
+
+.mark-interrupt {
+  border: 2px solid var(--status-warn);
+  background: var(--status-warn-bg);
+}

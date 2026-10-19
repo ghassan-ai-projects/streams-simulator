@@ -124,6 +124,12 @@ func (r *Relay) queuedBoot(device string) string {
 	return noBoot
 }
 
+func (r *Relay) publishInventory(m *Moves) {
+	if r.ints != nil {
+		r.syncInterruptInventory(m)
+	}
+}
+
 func (r *Relay) expireApprovals(m *Moves) {
 	if r.ints == nil {
 		return

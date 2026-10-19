@@ -8,3 +8,17 @@
 .run {
   margin-left: auto;
 }
+
+section.withInterrupts {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top > :first-child {
+  min-height: 40px;
+}

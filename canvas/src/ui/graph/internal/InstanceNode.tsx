@@ -25,7 +25,10 @@ function instanceLabel(data: InstanceNodeType["data"], selected: boolean): strin
   const { status, fault, effector } = shownOf(data);
   const origin = data.live?.origin ?? null;
   const from = origin === null ? "" : `, ${originWords(origin)}`;
-  return describeNode(data.view, { selected, status, fault, effector }) + from + (data.flagged ? ", has issues" : "");
+  const held = data.live?.interrupt ?? null;
+  const interrupt = held === null ? "" : `, ${held.words}`;
+  const described = describeNode(data.view, { selected, status, fault, effector });
+  return described + from + interrupt + (data.flagged ? ", has issues" : "");
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {

@@ -332,3 +332,33 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > relay's expires it early or late. Controls exist only on `plantwire connect`; `plantwire node` and `plantwire relay` take
 > none. The control socket has no authentication beyond its owner-only directory (SPEC section 2): any process of the same
 > user can hold or stop the node.
+> D-84 (the controls bar offers only what the newest snapshot names): the scope select lists all devices, each board and each
+> device that appears in the newest live snapshot. A board the node knows from its inventory but whose devices have not been born
+> yet cannot be held in advance from the canvas (the node would accept it), and a scope that stays set for a device that has
+> left the snapshot shows only as a chip. Trigger to fix: a bench that must hold a board before it connects; then the node
+> publishes its inventory in `live.interrupts` and the canvas offers it.
+> D-85 (one control at a time, and the countdown of a world-clock deadline): the canvas store takes no second control while one
+> waits for the node's answer (the buttons stay and the second press does nothing), so an emergency stop pressed during a slow
+> `hold` waits for it (the node itself may take up to 10 s, D-81). The deadline of a waiting command on the world clock is
+> counted from the time of the newest snapshot, so it moves with the snapshots, not with the wall clock. Trigger to fix: a stop
+> that must overtake a pending control; then the stop goes out on its own connection and the bridge does not wait for the
+> control before it.
+> D-86 (no confirmation and no operator identity): the emergency stop is one press, by design, and the bridge action
+> `session.control` has no identity beyond the browser's pairing: any paired browser of the bridge's user can hold or stop the
+> node, and the journal does not say who pressed. The bridge reports `controls` when the socket file exists, not when the node
+> answers; a stale socket is found by the first control (`control_gone`). Trigger to fix: a bench shared by several operators;
+> then a named operator travels with the request into the interrupt log.
+> D-87 (an undecodable interrupt record is told as an unreadable snapshot): the live bar's note names a snapshot when the
+> dropped record was an `interrupt` record, and the canvas keeps no separate count of dropped interrupt records. Trigger to
+> fix: a binary version that adds an interrupt event; then the decoder gets its own entry and note.
+> D-88 (a canvas-connected session has no policy allow-list): `plantwire connect` takes `--policy` only from the command line,
+> and the session plan and `session.start` never supply it, so every host command to a simulated device is refused
+> `policy_not_allowed`; a hardware device passes through to the gateway, which keeps its own policy. The R11b e2e shows this
+> (approved `ref-a` is refused at the node's normal checks). Trigger to fix: a canvas session that must command a simulated
+> device; the fix needs a design decision: an operator-supplied allow-list in the session plan, validated by the binary, and a
+> UI field for it.
+> D-89 (the relay drops a schema-invalid host record without a reason): `Relay.hostRecord` (`relay_host.go`) counts a host record
+> that fails its schema, or whose type is not a host record type, in `stats.Dropped` and writes no receipt and no evidence for
+> it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no
+> reason in the evidence; then the drop is journalled with its reason (the record type and the failing field) and the stats keep
+> the count.

@@ -797,3 +797,70 @@ deviations:
 - **Deviations from section 4.2.** The table's "`accepted` after approval" is the normal terminal receipt of the forwarded
   command, which can still be a refusal. Controls are served at barriers and relay ticks, not at once (D-81). Controls exist on
   `plantwire connect` only (D-83). The relay's stop is described in D-82.
+
+## R11b as-built (bridge and canvas)
+
+The controls of section 4.2 on the live screen. The binary keeps every rule; the bridge forwards and the canvas shows what
+the binary says, with no rule of its own and no parsing of message text.
+
+- **Bridge.** `session.start` makes an owner-only directory for the session (`os.MkdirTemp`, in the `process` edge file
+  `control.go`) and passes `--control-socket <dir>/node.sock` to `plantwire connect` before `--out`. The new action
+  `session.control` takes the `node-control-v0.1` request as its arguments, encodes them as one line (at most 4096 bytes), dials the
+  socket with `kernel.DialPrivate` (owner-only directory and socket checked), waits at most 12 s for one line and returns it
+  unchanged. A refusal of the node is a reply (`result: "refused"` with its `reason`), not a bridge error. The bridge's own
+  failures are the `422` codes `no_session`, `control_unavailable` (the session has no control socket), `control_gone`,
+  `control_timeout` (the node may still apply the control afterwards) and `control_unreadable`. `session.status` carries
+  `controls` (true while the live session's socket exists); the directory is removed when the session is seen to have ended
+  or failed, when the next session claims the slot, and when the bridge closes. `interrupts.jsonl` is registered among the
+  observer-readable run files (`paths.go`, `truth.go`). A bridge that cannot make the directory starts the session without
+  controls, and `controls` stays false.
+- **Decoder.** The journal's `interrupt` record becomes a `JournalEntry` of kind `interrupt` (event, node time, clock, op,
+  scope, flag, command id, device, verdict, resolution, result, reason). An unknown event, op, clock, result, verdict,
+  resolution or scope kind, a scope without an id (or `all` with one), a flag that is not a boolean or a node time that is not a
+  number drops the record to the same `live-unreadable` entry an unreadable snapshot gives, so the live bar says "A live
+  snapshot could not be read at hh:mm:ss; the view is not current." (the words say snapshot; the dropped record may be an
+  interrupt record, which only costs a timeline mark). The optional `live.interrupts` is decoded strictly (holds with their
+  latch, approval scopes, waiting commands with their clock, covered devices with their mode); absent or `null` means a node
+  without controls, a malformed state drops the whole snapshot. The snapshot key includes it, so a change of the state is a new
+  snapshot in the history. The reply of `session.control` is decoded the same way; a `reason` the canvas has no words for is
+  kept and shown as its own words with underscores removed.
+- **Words.** One table in the model, `reasonWords` (`sessionWords.ts`), words every refusal reason: the command table's
+  (`local_control` reads "Refused at the node: local control", distinct from a refusal of the device or the host, which
+  keeps "Refused" and the reason underneath) and the control replies' (`unknown_board`, `unknown_device`, `unknown_command`,
+  `too_many_scopes`, `node_busy`, `malformed`, `expired`, `not_ready`, `duplicate`, `session_ending`). Modes, requests, outcomes,
+  the deadline of a waiting command and the stop report are in `interruptWords.ts`; selectors (the state to show, what covers
+  an instance at the cursor, scope choices, active scopes) in `interruptSelect.ts`; the timeline marks in `interruptMarks.ts`.
+- **State shown.** The bar shows the node's newest state: the state of the last control reply while no newer snapshot arrived
+  (the store keeps the key of the newest snapshot it was read against), the newest snapshot otherwise. It is not the state at
+  the cursor: a control acts on the node now. Scrubbing back leaves the bar as it is; the node cards and the Inspect line show the
+  state at the cursor.
+- **Controls store.** `ReviewSession.controls` (`app/review`, `ControlStore`) sends one control at a time and has no optimistic
+  state: the bar shows "sent, waiting for the node's answer…", then the binary's reply or a plain failure. After a failure
+  that may have reached the node (`timeout`, `gone`, `unavailable`, `unreadable`) and after a `node_busy` refusal it reads the
+  state again with `{op: "state"}` and says whether that worked; after `no_session` and `no_controls` it does not.
+- **Screen.** An "Interrupts" region, always visible while a connected session runs: on the live view between the live bar and
+  the timeline, and on the plant screen under the plant bar. A scope select (all devices, each board, each device of the
+  newest snapshot), Hold (pressed while the scope is held), Release, Approve each command (pressed while on; the same
+  button turns it off), and Emergency stop (filled alarm colour, one press, described as sending the safe stop and holding the
+  scope, latched, until released). Chips list every hold, latch and approval scope in words and by icon; a list names the
+  commands that wait, each with Approve and Deny and the node's own deadline (world clock: time left on the run clock from the
+  newest snapshot; wall clock: ticking from the browser clock); after a decision focus moves to the waiting heading; the
+  outcome of the last control is a status line. Controls are disabled until the node publishes its first state, and the
+  panel says why (waiting, or no control socket). Nodes show a badge by icon and word (hand and "Held", octagon and "Latched",
+  clipboard and "Approving"), the node's accessible name and the Inspect lines say it in full; the commands table and the
+  timeline show the binary's decisions (marks of kind "Interrupt control": the operator's control, a refused control, an
+  approval handed on or refused, a safe stop sent). The Run panel's session status says whether the controls are available.
+- **Test.** `e2e/interrupts.spec.ts` drives the real binary: the bench host starts with `plantwire host --script` (new
+  `openScriptedBench` in the e2e support, 250 ms per barrier so the world runs four times faster than the wall clock, two
+  `set_pwm_lease` commands to the simulated fan scheduled 200 s and 240 s of world time after the start), the stand-in gateway
+  is the real board, and the test holds and releases the fan, turns approve-each on, approves one waiting command (the commands
+  table reads "Refused" and "Policy not allowed", D-88) and denies the other (the table reads "Refused at the node: local
+  control"), emergency-stops all devices (the latch is
+  shown and released), checks axe and the fit at 1280 px, then stops the session and verifies the saved run, which holds
+  `interrupts.jsonl`.
+- **Deviations.** (a) The live bar's unreadable note also covers an `interrupt` record that does not decode. (b) The deadline of
+  a world-clock command counts from the newest snapshot's time, so it moves per snapshot, not per second. (c) No new tokens: hold
+  and approval use the warn tokens, a latch and the emergency stop the alarm tokens. (d) Scopes the node reports but no device of
+  the newest snapshot belongs to (a board that has not announced) are not offered in the select. (e) Deferred (D-88): a
+  canvas-connected session has no policy allow-list, so every command to a simulated device is refused `policy_not_allowed`.
+  (f) Deferred (D-89): the relay drops a schema-invalid host record without a reason in the evidence.

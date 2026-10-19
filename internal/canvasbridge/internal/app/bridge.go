@@ -23,13 +23,16 @@ type Director interface {
 }
 
 type Edges struct {
-	Workspace     *files.Workspace
-	Tick          func(every time.Duration) (<-chan time.Time, func())
-	StartDirector func(ctx context.Context) (Director, error)
-	RunCommand    func(ctx context.Context, argv []string, stdin []byte) (process.CommandResult, error)
-	StartLasting  func(argv []string, stdin []byte) (Lasting, error)
-	NewSession    func() string
-	NewRunID      func() string
+	Workspace        *files.Workspace
+	Tick             func(every time.Duration) (<-chan time.Time, func())
+	StartDirector    func(ctx context.Context) (Director, error)
+	RunCommand       func(ctx context.Context, argv []string, stdin []byte) (process.CommandResult, error)
+	StartLasting     func(argv []string, stdin []byte) (Lasting, error)
+	NewControlSocket func() (path string, remove func(), err error)
+	ControlReady     func(path string) bool
+	SendControl      func(ctx context.Context, path string, line []byte) ([]byte, error)
+	NewSession       func() string
+	NewRunID         func() string
 }
 
 type Settings struct {

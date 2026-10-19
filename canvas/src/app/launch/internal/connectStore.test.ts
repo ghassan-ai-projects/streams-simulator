@@ -176,6 +176,24 @@ describe("a connected session", () => {
     });
   });
 
+  it("learns from the poll that the node opened its control socket, and when it is gone again", async () => {
+    const { bridge, connect, timers } = rig();
+    await connect.start("arduino-thermal", draft);
+    expect(connect.snapshot()).toMatchObject({ phase: "live", controls: false });
+    const status = (controls: boolean) =>
+      success({ run: "c-1", state: "running", domain: "arduino-thermal", controls });
+    bridge.actions.set("session.status", status(true));
+    timers.advance(2000);
+    await vi.waitFor(() => {
+      expect(connect.snapshot()).toMatchObject({ phase: "live", controls: true, stopping: false });
+    });
+    bridge.actions.set("session.status", status(false));
+    timers.advance(2000);
+    await vi.waitFor(() => {
+      expect(connect.snapshot()).toMatchObject({ phase: "live", controls: false });
+    });
+  });
+
   it("holds each plant's draft and marks its check out of date when the draft changes", async () => {
     const { connect } = rig();
     expect(connect.draftFor("arduino-thermal")).toEqual(firstSessionDraft);

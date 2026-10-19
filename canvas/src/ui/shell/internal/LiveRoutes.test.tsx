@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mountApp } from "../../../test/appHarness";
 import { stubFlowDom } from "../../../test/dom";
-import { liveWire } from "../../../test/liveFixture";
+import { interruptsWire, liveWire } from "../../../test/liveFixture";
 import { success } from "../../../test/outcome";
 import { reportWith } from "../../../test/runFixture";
 import { miniWorkspace, planHash, reviewBridge } from "../../../test/screenFixture";
@@ -99,5 +99,31 @@ describe("a running connected session across screens", () => {
     const outline = await screen.findByRole("navigation", { name: "Outline" });
     expect(await within(outline).findByRole("button", { name: /^CH-1/ })).toBeInTheDocument();
     expect(screen.getByText("Live · following newest record", { exact: true })).toBeInTheDocument();
+  });
+
+  it("keeps the interrupt controls and the hold of a board on the plant screen and on the live view", async () => {
+    const bridge = liveBridge();
+    bridge.actions.set("session.status", success({ run: "c-9", state: "running", domain: "mini", controls: true }));
+    const app = mountApp(bridge, planHash());
+    const open = await screen.findByRole("button", { name: "Open live view" });
+    const held = [{ device: "sensor", board: "uno-07", mode: "hold", latched: false }];
+    const snapshot = { ...boardSnapshot(10e9), interrupts: interruptsWire({ devices: held }) };
+    act(() => {
+      bridge.stream("c-9", [snapshot], "caught_up");
+      app.timers.advance(250);
+      app.stores.plants.select("CH-1");
+    });
+    expect(await screen.findByRole("region", { name: "Interrupts" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /^CH-1,.*Held/ })).toBeInTheDocument();
+    const instance = await screen.findByRole("region", { name: "Live instance" });
+    expect(within(instance).getByText("Held", { exact: true })).toHaveAttribute("data-interrupt", "hold");
+    fireEvent.click(open);
+    expect(await screen.findByText("Live · following newest record", { exact: true })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Interrupts" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Emergency stop" })).toBeEnabled();
+    act(() => {
+      app.stores.liveReview.select("CH-1");
+    });
+    expect(await screen.findByText("Held", { exact: true, selector: "p" })).toHaveAttribute("data-interrupt", "hold");
   });
 });

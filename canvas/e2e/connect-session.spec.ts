@@ -1,10 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import type { Locator } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
-import { addThermalBench, openBench, openSessionPanel, runIdOf, startGateway } from "./support/session";
+import {
+  addThermalBench,
+  openBench,
+  openSessionPanel,
+  planOneRealBoard,
+  runIdOf,
+  startGateway,
+} from "./support/session";
 import { zoomOutTo } from "./support/viewport";
 import { repository } from "./support/workspace";
 
@@ -16,16 +22,6 @@ test.afterEach(() => {
   bench?.close();
   bench = null;
 });
-
-async function planOneRealBoard(panel: Locator, open: Bench, device: string): Promise<void> {
-  await panel.getByLabel("Host socket", { exact: true }).fill(open.host);
-  await panel.getByLabel("Gateway socket", { exact: true }).fill(open.gateway);
-  await panel.getByRole("button", { name: "Add a real board" }).click();
-  await expect(panel.getByLabel("Real board 1 instance", { exact: true })).toBeFocused();
-  await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption("zone-01");
-  await panel.getByLabel("Real board 1 board", { exact: true }).fill("uno-07");
-  await panel.getByLabel("Real board 1 device", { exact: true }).fill(device);
-}
 
 test("a connected session links the plant to a host and a real board, and stops into a run that verifies", async ({
   page,

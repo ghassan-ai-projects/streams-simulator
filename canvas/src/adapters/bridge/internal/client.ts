@@ -2,6 +2,7 @@ import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure } from "../../
 import { isRecord, text } from "../../../model/shared/json";
 import type { Replay } from "../../../model/review";
 import { connectGateway } from "./connect";
+import { controlSession } from "./control";
 import { devicesGateway } from "./devices";
 import { followRun } from "./follow";
 import type { FailureMapper, Transport, WireProblem } from "./http";
@@ -130,6 +131,7 @@ function reviewGateway(transport: Transport): BridgeAdapters["review"] {
     verify: (runId) => verify(transport, runId),
     runDomain: (runId) => getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure),
     follow: (runId, follower) => followRun(transport, runId, follower),
+    control: (request) => controlSession(transport, request),
   };
 }
 

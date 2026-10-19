@@ -41,6 +41,7 @@ function live(overrides: Partial<NodeLive>): NodeLive {
     fault: "",
     effector: "",
     origin: null,
+    interrupt: null,
     ...overrides,
   };
 }
@@ -79,6 +80,32 @@ describe("a graph drawn from a connected session", () => {
     draw({ live: (id) => live({ origin: id === "CH-1" ? unknown : null }) });
     expect(node("CH-1").getAttribute("aria-label")).toContain("Origin unknown");
     expect(node("CH-1").querySelector("[data-origin='unknown']")).not.toBeNull();
+  });
+});
+
+describe("a graph drawn from a session with interrupts", () => {
+  const held = { mode: "hold", latched: false, words: "Held" } as const;
+  const latched = { mode: "hold", latched: true, words: "Held · latched by emergency stop" } as const;
+  const approving = { mode: "approve", latched: false, words: "Approving each command" } as const;
+
+  it("marks a held, latched and approving instance by shape and by words, never by colour alone", () => {
+    const shown = new Map<string, NodeLive["interrupt"]>([
+      ["CH-1", held],
+      ["CT-1", latched],
+      ["MB-1", approving],
+    ]);
+    draw({ live: (id) => live({ interrupt: shown.get(id) ?? null }) });
+    expect(node("CH-1").getAttribute("aria-label")).toContain(", Held");
+    expect(node("CH-1").querySelector("[data-interrupt='hold']")).toHaveTextContent("Held");
+    expect(node("CT-1").getAttribute("aria-label")).toContain("latched by emergency stop");
+    expect(node("CT-1").querySelector("[data-interrupt='latched']")).toHaveTextContent("Latched");
+    expect(node("MB-1").querySelector("[data-interrupt='approve']")).toHaveTextContent("Approving");
+  });
+
+  it("marks nothing on an instance the node does not interrupt", () => {
+    draw({ live: () => live({ interrupt: null }) });
+    expect(node("CH-1").querySelector("[data-interrupt]")).toBeNull();
+    expect(node("CH-1").getAttribute("aria-label")).not.toContain("Held");
   });
 });
 

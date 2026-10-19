@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { SessionCommand, SessionDevice, SessionLive, SessionReading } from "./sessionLive";
 import { deviceOf, deviceReadings, originOf, readingWords } from "./sessionLive";
-import { commandSide, deviceLine, effectWords, refusalWords, updateAgeWords } from "./sessionWords";
+import {
+  acceptanceDetail,
+  acceptanceWords,
+  commandSide,
+  deviceLine,
+  effectWords,
+  refusalWords,
+  updateAgeWords,
+} from "./sessionWords";
 
 const reading = (state: SessionReading["state"], quality: string, value: SessionReading["value"] = 28) => ({
   name: "temperature_c",
@@ -91,9 +99,22 @@ describe("session commands", () => {
     expect(commandSide(command)).toBe("Simulated");
     expect(commandSide({ ...command, environment: "hardware" })).toBe("Real board");
     expect(commandSide({ ...command, environment: "unknown" })).toBe("Origin unknown");
-    expect(refusalWords("local_control")).toBe("Under local control");
+    expect(refusalWords("local_control")).toBe("Refused at the node: local control");
     expect(refusalWords("board_busy")).toBe("board busy");
     expect(effectWords(command)).toBe("Effect unknown");
     expect(effectWords({ ...command, effect: "observed" })).toBe("Host observed");
+  });
+
+  it("tells a refusal at the node from a refusal of the device or the host", () => {
+    expect(acceptanceWords(command)).toBe("Refused at the node: local control");
+    expect(acceptanceDetail(command)).toBe("");
+    const device = { ...command, reason: "not_ready" };
+    expect(acceptanceWords(device)).toBe("Refused");
+    expect(acceptanceDetail(device)).toBe("Not ready");
+    const waiting = { ...command, receipt: "pending", reason: "" } as const;
+    expect(acceptanceWords(waiting)).toBe("Unconfirmed");
+    expect(acceptanceDetail(waiting)).toBe("");
+    expect(refusalWords("expired")).toBe("Expired before it was approved or accepted");
+    expect(refusalWords("node_busy")).toBe("The node was busy and may still apply this later");
   });
 });
