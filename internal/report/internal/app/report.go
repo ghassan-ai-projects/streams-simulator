@@ -89,6 +89,7 @@ var consumerSlots = []slot{
 	{model.FileTrace, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.Trace }},
 	{"journal.jsonl", domain.ObserverJournal, func(f *domain.Folder) *domain.Document { return &f.Observer }},
 	{model.FileFieldTrace, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.FieldTrace }},
+	{model.FileInterruptLog, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.InterruptLog }},
 }
 
 var directorSlots = []slot{

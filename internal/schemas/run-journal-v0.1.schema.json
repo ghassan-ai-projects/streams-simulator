@@ -8,11 +8,11 @@
   "properties": {
     "stream": {"enum": ["observer", "director"]},
     "seq": {"type": "integer", "minimum": 0, "description": "Numbers the replayable records of the stream from 0 without gaps. A session record (consumer.reported, pacing) carries the seq of the replayable record that follows it."},
-    "type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "live", "session", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed"]},
+    "type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "live", "interrupt", "session", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed"]},
     "at_ns": {"type": "integer", "description": "The world clock when the record was written; never a wall-clock read. A session record carries the time of the replayable record before it."}
   },
   "allOf": [
-    {"if": {"properties": {"stream": {"const": "observer"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "live", "session", "run.closed"]}}}},
+    {"if": {"properties": {"stream": {"const": "observer"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "observation", "clock.advanced", "effector.acknowledged", "consumer.reported", "wire", "pacing", "origin", "binding", "live", "interrupt", "session", "run.closed"]}}}},
     {"if": {"properties": {"stream": {"const": "director"}}}, "then": {"properties": {"type": {"enum": ["run.opened", "command", "delivery", "state", "effector.outcome", "kpi.truth", "fault.truth", "run.unblinded", "run.closed", "wire", "pacing"]}}}},
     {"if": {"properties": {"stream": {"const": "observer"}, "type": {"const": "run.opened"}}}, "then": {"$ref": "#/$defs/run_opened"}},
     {"if": {"properties": {"stream": {"const": "director"}, "type": {"const": "run.opened"}}}, "then": {"$ref": "#/$defs/director_opened"}},
@@ -26,6 +26,7 @@
     {"if": {"properties": {"type": {"const": "binding"}}}, "then": {"$ref": "#/$defs/binding"}},
     {"if": {"properties": {"type": {"const": "session"}}}, "then": {"$ref": "#/$defs/session"}},
     {"if": {"properties": {"type": {"const": "live"}}}, "then": {"$ref": "#/$defs/live"}},
+    {"if": {"properties": {"type": {"const": "interrupt"}}}, "then": {"$ref": "#/$defs/interrupt"}},
     {"if": {"properties": {"type": {"const": "command"}}}, "then": {"$ref": "#/$defs/command"}},
     {"if": {"properties": {"type": {"const": "delivery"}}}, "then": {"$ref": "#/$defs/delivery"}},
     {"if": {"properties": {"type": {"const": "state"}}}, "then": {"$ref": "#/$defs/state"}},
@@ -49,10 +50,16 @@
         "host": {"enum": ["unknown", "online", "offline"]},
         "gateway": {"enum": ["not_applicable", "unknown", "online", "offline"]},
         "commands_truncated": {"type": "boolean"},
+        "interrupts": {"type": "object", "required": ["holds", "approve", "pending", "devices"], "description": "Present from the first barrier or tick of a node that has a control socket: the interrupt state at the node (node-control-v0.1 $defs/state): holds with their latch, approval scopes, commands waiting for approval and every covered device."},
         "devices": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/live_device"}},
         "commands": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/live_command"}},
         "marks": {"type": "array", "maxItems": 256, "items": {"type": "object", "required": ["at_ns", "kind", "subject", "label", "entity"], "properties": {"at_ns": {"type": "integer"}, "kind": {"enum": ["command", "connection"]}, "subject": {"enum": ["host", "gateway", "device", "command"]}, "label": {"type": "string"}, "entity": {"type": "string"}}}}
       }
+    },
+    "interrupt": {
+      "description": "Observer, session. One record of the node's interrupt log (interrupt-log-v0.1) as the node wrote it: an operator control, a node decision about a command or a control, a stop. node_ns is on the clock named by clock. Outside the stream digest; the same records are in interrupts.jsonl.",
+      "required": ["event", "node_ns", "clock"],
+      "properties": {"event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect", "purge"]}, "node_ns": {"type": "integer", "minimum": 0}, "clock": {"enum": ["world", "wall"]}}
     },
     "live_device": {
       "type": "object", "required": ["device", "board", "instance", "environment", "boot_id", "health", "reboots", "readings"],

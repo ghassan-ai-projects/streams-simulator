@@ -37,6 +37,18 @@ func (r *Run) SetFieldTrace(digest string) {
 	r.run.SetFieldTrace(digest)
 }
 
+func ReadInterruptLog(dir string) ([]map[string]any, string, error) {
+	return layer.ReadInterruptLog(dir)
+}
+
+func RejectInterruptLog(dir string) error {
+	return layer.RejectInterruptLog(dir)
+}
+
+func (r *Run) SetInterruptLog(digest string) {
+	r.run.SetInterruptLog(digest)
+}
+
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }
@@ -177,6 +189,10 @@ func (r *Run) JournalLive(fields map[string]any) {
 	r.run.JournalLive(fields)
 }
 
+func (r *Run) JournalInterrupt(fields map[string]any) {
+	r.run.JournalInterrupt(fields)
+}
+
 func (r *Run) JournalSession(fields map[string]any) {
 	r.run.JournalSession(fields)
 }
@@ -235,6 +251,10 @@ func CheckDomain(check model.DomainCheck, spec *model.DomainSpec) ([]model.Imple
 
 func (t *WireTrace) Wire(direction string, record map[string]any) {
 	t.impl.Wire(direction, record)
+}
+
+func (t *WireTrace) Interrupt(fields map[string]any) {
+	t.impl.Interrupt(fields)
 }
 
 func (t *WireTrace) Flush() error {

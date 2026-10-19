@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/interrupt-log-v0.1.schema.json",
+  "title": "interrupt-log-v0.1",
+  "description": "One record of interrupts.jsonl, the evidence file of a plant wire node that ran with a control socket. Each line of the file is the RFC 8785 canonical JSON of {ordinal, record}, ordinals from 0 without gaps, and the run records the SHA-256 of the file as interrupt_log_digest. The records are of two kinds. Inputs (inventory, control, command, clock, flush) are what the node was given: the devices it can interrupt, an operator's request, a command of the host, a node clock reaching a time. Decisions (reply, verdict, resolve, stop) are what the node's rules decided about them, and effect records what the node's own stop produced. Replaying the inputs through the rules must reproduce the decisions exactly; effect records are evidence and are not replayed. The node clock is world time (virtual) for a simulated device and wall time for a hardware device; node_ns is on the clock named by clock.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event", "node_ns", "clock"],
+  "properties": {
+    "event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect", "purge"]},
+    "node_ns": {"type": "integer", "minimum": 0},
+    "clock": {"enum": ["world", "wall"]},
+    "devices": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/inventory_device"}},
+    "op": {"enum": ["hold", "release", "approve_mode", "approve", "deny", "estop", "state"]},
+    "scope": {"$ref": "#/$defs/scope"},
+    "enabled": {"type": "boolean"},
+    "command_id": {"$ref": "#/$defs/wire_id"},
+    "key": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "content": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "device": {"$ref": "#/$defs/wire_id"},
+    "name": {"$ref": "#/$defs/wire_id"},
+    "command": {"$ref": "#/$defs/wire_id"},
+    "deadline_ns": {"type": "integer", "minimum": 0},
+    "args": {"type": "object"},
+    "args_truncated": {"type": "boolean"},
+    "content_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "unreachable": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}},
+    "result": {"enum": ["applied", "refused"]},
+    "verdict": {"enum": ["pass", "refuse", "queue"]},
+    "resolution": {"enum": ["forward", "refuse"]},
+    "reason": {"enum": ["malformed", "unknown_board", "unknown_device", "unknown_command", "too_many_scopes", "local_control", "expired", "not_ready", "duplicate", "session_ending"]},
+    "waiting": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/wire_id"}},
+    "stopped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}},
+    "skipped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}},
+    "outcome": {"type": "string", "maxLength": 128},
+    "state": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"event": {"const": "inventory"}}}, "then": {"required": ["devices"]}},
+    {"if": {"properties": {"event": {"const": "control"}}}, "then": {"required": ["op"]}},
+    {"if": {"properties": {"event": {"const": "command"}}}, "then": {"required": ["command_id", "key", "content", "device", "name", "deadline_ns", "args", "args_truncated"]}},
+    {"if": {"properties": {"event": {"const": "reply"}}}, "then": {"required": ["op", "result", "state"]}},
+    {"if": {"properties": {"event": {"const": "reply"}, "op": {"const": "estop"}, "result": {"const": "applied"}}, "required": ["event", "op", "result"]}, "then": {"required": ["unreachable"]}},
+    {"if": {"properties": {"event": {"const": "verdict"}}}, "then": {"required": ["command_id", "verdict"]}},
+    {"if": {"properties": {"event": {"const": "resolve"}}}, "then": {"required": ["command_id", "resolution", "waiting"]}},
+    {"if": {"properties": {"event": {"const": "stop"}}}, "then": {"required": ["device", "command"]}},
+    {"if": {"properties": {"event": {"const": "effect"}}}, "then": {"required": ["command_id", "device", "outcome"]}},
+    {"if": {"properties": {"event": {"const": "purge"}}}, "then": {"required": ["command_id", "device", "reason"]}}
+  ],
+  "$defs": {
+    "wire_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {"kind": {"enum": ["all", "board", "device"]}, "id": {"type": "string", "maxLength": 128}}
+    },
+    "inventory_device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device", "board", "clock", "safe_stop", "unreachable"],
+      "properties": {
+        "unreachable": {"type": "boolean"},
+        "device": {"$ref": "#/$defs/wire_id"}, "board": {"type": "string", "maxLength": 128},
+        "clock": {"enum": ["world", "wall"]}, "safe_stop": {"type": "string", "maxLength": 128}
+      }
+    }
+  }
+}

@@ -85,7 +85,9 @@ export class ConnectStore extends Observable<ConnectState> {
     this.unfollow = this.gateway.followSession(run, {
       entry: (entry) => {
         const live = this.snapshot();
-        if (entry.kind === "binding" && live.phase === "live") this.set({ ...live, binding: entry.binding });
+        if (entry.kind !== "binding" || live.phase !== "live") return;
+        this.set({ ...live, binding: entry.binding });
+        this.stopFollowing();
       },
       closed: () => {
         this.lostJournal("The run journal stopped streaming; following it again.");
@@ -96,9 +98,13 @@ export class ConnectStore extends Observable<ConnectState> {
     });
   }
 
-  private lostJournal(note: string): void {
+  private stopFollowing(): void {
     this.unfollow?.();
     this.unfollow = null;
+  }
+
+  private lostJournal(note: string): void {
+    this.stopFollowing();
     const live = this.snapshot();
     if (live.phase === "live") this.set({ ...live, note });
   }
@@ -124,12 +130,18 @@ export class ConnectStore extends Observable<ConnectState> {
       this.take(now.domain, now.check, outcome);
       return;
     }
-    if (outcome.ok && now.phase === "live" && outcome.value.state === "stopping" && !now.stopping) {
-      this.set({ ...now, stopping: true });
-    }
+    if (outcome.ok && now.phase === "live") this.refreshLive(now, outcome.value);
     this.poll();
     const live = this.snapshot();
-    if (live.phase === "live" && this.unfollow === null) this.followJournal(live.run);
+    if (live.phase === "live" && live.binding === null && this.unfollow === null) this.followJournal(live.run);
+  }
+
+  private refreshLive(now: LiveSession, status: ConnectStatus): void {
+    if (status.state !== "running" && status.state !== "stopping") return;
+    const stopping = now.stopping || status.state === "stopping";
+    if (stopping !== now.stopping || status.controls !== now.controls) {
+      this.set({ ...now, stopping, controls: status.controls });
+    }
   }
 
   private settle(outcome: Outcome<ConnectStatus, ConnectFailure>): void {

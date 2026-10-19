@@ -94,10 +94,15 @@ describe("connect gateway", () => {
       value: { state: "running", run: "c-1", domain: "arduino-thermal", check: { mixed: true } },
     });
     expect(sentTo(running)).toEqual({ url: "/api/actions/session.start", body: { args: { content: "{plan}" } } });
+    const controlled = answering(200, { result: { run: "c-1", state: "running", domain: "d", controls: true } });
+    expect(await bridgeAdapter(controlled).launch.sessionStatus()).toMatchObject({
+      ok: true,
+      value: { controls: true },
+    });
     const ended = answering(200, { result: { run: "c-1", state: "ended", result: { out: "runs/c-1" } } });
     expect(await bridgeAdapter(ended).launch.stopSession()).toEqual({
       ok: true,
-      value: { state: "ended", run: "c-1", domain: "", check: null },
+      value: { state: "ended", run: "c-1", domain: "", check: null, controls: false },
     });
     for (const state of ["starting", "stopping"]) {
       const lasting = answering(200, { result: { run: "c-1", state, domain: "d" } });
@@ -119,6 +124,7 @@ describe("connect gateway", () => {
         run: "c-2",
         domain: "",
         check: null,
+        controls: false,
         diagnostic: { message: "host lost", displayCode: "plantwire_failed" },
         issues: [{ pointer: "", message: "x" }],
       },

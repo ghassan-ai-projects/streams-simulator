@@ -149,3 +149,45 @@ func TestANewPlantPassesItsEmptySwitchOnlyWhenOn(t *testing.T) {
 		t.Fatalf("a switch that is not a boolean = %v", err)
 	}
 }
+
+func TestRunTwinReportIsACommandOnTheRunThatDoesNotMutate(t *testing.T) {
+	t.Parallel()
+	action, err := Lookup("run.twin_report")
+	if err != nil || action.Kind != KindCLI || !reflect.DeepEqual(action.Command, []string{"plantwire", "twin-report"}) || action.Mutating || action.Etag || action.Input != "" {
+		t.Fatalf("run.twin_report = %+v, %v, want a read-only CLI action on plantwire twin-report", action, err)
+	}
+	if !action.Domains || action.Catalog || !action.Kinds || !action.KindsHome {
+		t.Fatalf("run.twin_report flags = %+v, want the workspace domains and kinds folders and no adapters", action)
+	}
+	got, err := action.Argv(map[string]any{"run": "r1", "domain": "arduino-thermal", "tolerance": "zone-01.temperature=2", "span_fraction": 0.1})
+	want := []ArgvPart{{Literal: "plantwire"}, {Literal: "twin-report"}, {Path: "runs/r1"}, {Literal: "--domain"}, {Literal: "arduino-thermal"},
+		{Literal: "--tolerance"}, {Literal: "zone-01.temperature=2"}, {Literal: "--span-fraction"}, {Literal: "0.1"}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("Argv = %+v, %v, want %+v", got, err, want)
+	}
+	minimal, err := action.Argv(map[string]any{"run": "r1", "domain": "arduino-thermal"})
+	if err != nil || len(minimal) != 5 {
+		t.Fatalf("minimal Argv = %+v, %v, want the command, the run and the domain only", minimal, err)
+	}
+}
+
+func TestRunTwinReportRefusesWhatItCannotRender(t *testing.T) {
+	t.Parallel()
+	action, _ := Lookup("run.twin_report")
+	cases := map[string]map[string]any{
+		"no run":                  {"domain": "arduino-thermal"},
+		"no domain":               {"run": "r1"},
+		"a flag as the domain":    {"run": "r1", "domain": "--kinds-dir=/"},
+		"a flag as the tolerance": {"run": "r1", "domain": "d", "tolerance": "-x"},
+		"an empty tolerance":      {"run": "r1", "domain": "d", "tolerance": ""},
+		"a span given as text":    {"run": "r1", "domain": "d", "span_fraction": "0.1"},
+		"a run id that climbs":    {"run": "../x", "domain": "d"},
+		"an argument it lacks":    {"run": "r1", "domain": "d", "kinds": "kinds"},
+		"the adapters directory":  {"run": "r1", "domain": "d", "adapters_dir": "/"},
+	}
+	for name, args := range cases {
+		if _, err := action.Argv(args); !errors.Is(err, ErrBadArguments) {
+			t.Errorf("%s: %v, want ErrBadArguments", name, err)
+		}
+	}
+}

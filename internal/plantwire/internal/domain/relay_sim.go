@@ -6,15 +6,16 @@ import (
 )
 
 type SimMoves struct {
-	Up    []map[string]any
-	Trace []Traced
-	Notes []Note
+	Up        []map[string]any
+	Trace     []Traced
+	Notes     []Note
+	Interrupt []InterruptEntry
 }
 
 func (r *Relay) FromSim(in Inbound) SimMoves {
 	moves := Moves{}
 	r.simRecord(&moves, in)
-	return SimMoves{Up: moves.Up, Trace: moves.Trace, Notes: moves.Notes}
+	return SimMoves{Up: moves.Up, Trace: moves.Trace, Notes: moves.Notes, Interrupt: moves.Interrupt}
 }
 
 func (r *Relay) simRecord(m *Moves, in Inbound) {
@@ -25,6 +26,7 @@ func (r *Relay) simRecord(m *Moves, in Inbound) {
 		r.simBirth(in)
 	case in.Type == "NDEATH":
 		r.simEnded(m)
+		r.forgetBoots(r.sim.devices)
 	case !r.host.shaken || !r.host.birthed || (in.Device != "" && !r.sim.devices[in.Device]):
 		r.stats.Dropped++
 	default:
@@ -33,6 +35,9 @@ func (r *Relay) simRecord(m *Moves, in Inbound) {
 }
 
 func (r *Relay) simCarry(m *Moves, in Inbound) {
+	if r.ownAnswer(m, in) {
+		return
+	}
 	if r.forgedAnswer(in, OriginSimulated) {
 		r.forged()
 		return
@@ -83,10 +88,13 @@ func (r *Relay) trackSim(in Inbound, seq uint64) {
 	switch in.Type {
 	case "DBIRTH":
 		r.sim.born[in.Device] = in.BootID
+		r.noteStopBoot(in)
 	case "DDEATH":
 		delete(r.sim.born, in.Device)
+		r.noteStopBoot(in)
 	case "NSYNC":
 		r.host.simSyncs.add(seq)
+		r.noteWorldTime(in)
 	}
 }
 

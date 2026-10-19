@@ -13,7 +13,7 @@ import (
 func TestAFieldTraceFileKeepsWhatItWasGivenAndReadsItBack(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	file, err := OpenFieldTrace(dir)
+	file, err := OpenEvidenceLog(dir, model.FileFieldTrace, NounFieldTrace)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +23,7 @@ func TestAFieldTraceFileKeepsWhatItWasGivenAndReadsItBack(t *testing.T) {
 	if err := file.Close(); err != nil {
 		t.Fatal(err)
 	}
-	raw, present, err := ReadFieldTrace(dir, 64)
+	raw, present, err := ReadEvidenceLog(dir, model.FileFieldTrace, NounFieldTrace, 64)
 	if err != nil || !present || string(raw) != "one\ntwo\n" {
 		t.Fatalf("ReadFieldTrace = %q, %v, %v, want both lines present", raw, present, err)
 	}
@@ -31,7 +31,7 @@ func TestAFieldTraceFileKeepsWhatItWasGivenAndReadsItBack(t *testing.T) {
 
 func TestAFolderWithoutAFieldTraceReadsAsAbsentNotAsAFailure(t *testing.T) {
 	t.Parallel()
-	raw, present, err := ReadFieldTrace(t.TempDir(), 64)
+	raw, present, err := ReadEvidenceLog(t.TempDir(), model.FileFieldTrace, NounFieldTrace, 64)
 	if err != nil || present || raw != nil {
 		t.Fatalf("ReadFieldTrace = %q, %v, %v, want absent and no error", raw, present, err)
 	}
@@ -50,7 +50,7 @@ func TestAFieldTraceThatCannotBeReadIsNamedAsSuch(t *testing.T) {
 	for name, dir := range map[string]string{"over the limit": tooLarge, "not a regular file": notAFile} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if _, _, err := ReadFieldTrace(dir, 4); err == nil || !strings.HasPrefix(err.Error(), "run: read field trace: ") {
+			if _, _, err := ReadEvidenceLog(dir, model.FileFieldTrace, NounFieldTrace, 4); err == nil || !strings.HasPrefix(err.Error(), "run: read field trace: ") {
 				t.Fatalf("ReadFieldTrace = %v, want a refusal that names the field trace", err)
 			}
 		})
@@ -63,10 +63,10 @@ func TestAFieldTraceFileNamesAFolderItCannotCreateAndAFileItCannotWriteAfterClos
 	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := OpenFieldTrace(blocker); err == nil || !strings.HasPrefix(err.Error(), "run: open field trace in ") {
+	if _, err := OpenEvidenceLog(blocker, model.FileFieldTrace, NounFieldTrace); err == nil || !strings.HasPrefix(err.Error(), "run: open field trace in ") {
 		t.Fatalf("OpenFieldTrace under a file = %v, want a refusal that names the folder", err)
 	}
-	file, err := OpenFieldTrace(t.TempDir())
+	file, err := OpenEvidenceLog(t.TempDir(), model.FileFieldTrace, NounFieldTrace)
 	if err != nil {
 		t.Fatal(err)
 	}

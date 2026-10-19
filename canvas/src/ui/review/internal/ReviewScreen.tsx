@@ -58,6 +58,7 @@ export function ReviewScreen(props: ReviewScreenProps) {
           onHall={setHall}
           worldId={worldId}
           navigation={navigation}
+          connect={launch.connect}
           now={() => launch.nowMs()}
         />
         <RunPanel review={review} state={state} plant={plant} unit={unit} />

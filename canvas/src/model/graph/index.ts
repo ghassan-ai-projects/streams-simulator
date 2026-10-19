@@ -35,6 +35,7 @@ export { originLabels, originWords, plannedSimulated, unknownOrigin } from "./in
 export type {
   CutSide,
   InstanceOrigin,
+  NodeInterrupt,
   NodeStatus,
   OutlineItem,
   PlanMark,

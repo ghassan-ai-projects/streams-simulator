@@ -1,5 +1,12 @@
 import type { SessionCommand } from "../../../model/review";
-import { commandSide, effectWords, receiptWords, refusalWords, reportWords, runClock } from "../../../model/review";
+import {
+  acceptanceDetail,
+  acceptanceWords,
+  commandSide,
+  effectWords,
+  reportWords,
+  runClock,
+} from "../../../model/review";
 import cells from "./ReportTable.module.css";
 import styles from "./SessionEvidence.module.css";
 
@@ -9,8 +16,21 @@ const receiptTones: Readonly<Record<SessionCommand["receipt"], string | undefine
   refused: styles.alarm,
 };
 
-function Stage({ tone, words }: { readonly tone: string | undefined; readonly words: string }) {
-  return <span className={tone}>{words}</span>;
+interface StageProps {
+  readonly label: string;
+  readonly tone?: string | undefined;
+  readonly words: string;
+  readonly detail?: string;
+}
+
+function Stage({ label, tone, words, detail = "" }: StageProps) {
+  return (
+    <li className={styles.stage}>
+      <span className={styles.stageName}>{label}</span>
+      <span className={tone}>{words}</span>
+      {detail !== "" && <span className={styles.detail}>{detail}</span>}
+    </li>
+  );
 }
 
 function CommandRow({ command, startNs }: { readonly command: SessionCommand; readonly startNs: number }) {
@@ -28,15 +48,23 @@ function CommandRow({ command, startNs }: { readonly command: SessionCommand; re
           </span>
         </p>
       </th>
-      <td className={cells.clock}>{runClock(command.sentAtNs, startNs)}</td>
       <td>
-        <Stage tone={receiptTones[command.receipt]} words={receiptWords[command.receipt]} />
-        {command.reason !== "" && <p className={styles.detail}>{refusalWords(command.reason)}</p>}
-      </td>
-      <td>{reportWords[command.report]}</td>
-      <td>
-        <Stage tone={command.effect === "observed" ? styles.ok : styles.chip} words={effectWords(command)} />
-        {command.effectEvidence !== "" && <p className={styles.detail}>{command.effectEvidence}</p>}
+        <ul className={styles.stages} aria-label={`Stages of ${command.commandId}`}>
+          <Stage label="Sent at" tone={cells.clock} words={runClock(command.sentAtNs, startNs)} />
+          <Stage
+            label="Acceptance"
+            tone={receiptTones[command.receipt]}
+            words={acceptanceWords(command)}
+            detail={acceptanceDetail(command)}
+          />
+          <Stage label="Board report" words={reportWords[command.report]} />
+          <Stage
+            label="Effect evidence"
+            tone={command.effect === "observed" ? styles.ok : styles.chip}
+            words={effectWords(command)}
+            detail={command.effectEvidence}
+          />
+        </ul>
       </td>
     </tr>
   );
@@ -50,22 +78,24 @@ export function CommandEvidence({
   readonly startNs: number;
 }) {
   return (
-    <table className={cells.table}>
-      <caption>Command evidence</caption>
-      <thead>
-        <tr>
-          {["Command", "Sent at", "Acceptance", "Board report", "Effect evidence"].map((label) => (
-            <th key={label} scope="col">
-              {label}
-            </th>
+    <div className={cells.scroll} tabIndex={0} role="region" aria-label="Command evidence, scrollable">
+      <table className={cells.table}>
+        <caption>Command evidence</caption>
+        <thead>
+          <tr>
+            {["Command", "Stages"].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {commands.map((command) => (
+            <CommandRow key={command.commandId} command={command} startNs={startNs} />
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {commands.map((command) => (
-          <CommandRow key={command.commandId} command={command} startNs={startNs} />
-        ))}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   );
 }

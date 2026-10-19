@@ -16,11 +16,12 @@ type RelayOptions struct {
 	Out           string
 	Simulated     *SimulatedOptions
 	Ready         func()
+	Control       *ControlPort
 }
 
 const (
-	relayTick = 250 * time.Millisecond
-	relayWait = 30 * time.Second
+	relayTick  = 250 * time.Millisecond
+	relayWrite = 2 * time.Second
 )
 
 func Relay(ctx context.Context, options RelayOptions) (domain.RelayStats, error) {
@@ -47,7 +48,7 @@ func openRelay(ctx context.Context, options RelayOptions, ticks <-chan time.Time
 	if err != nil {
 		return nil, err
 	}
-	relay, err := newRelay(sim)
+	relay, err := newRelay(sim, options.Control != nil)
 	if err != nil {
 		sim.discard()
 		return nil, err
@@ -63,7 +64,15 @@ func openRelaySim(ctx context.Context, options RelayOptions) (*simNode, error) {
 	return openSim(ctx, options)
 }
 
-func newRelay(sim *simNode) (*domain.Relay, error) {
+func newRelay(sim *simNode, control bool) (*domain.Relay, error) {
+	relay, err := buildRelay(sim)
+	if err == nil && control {
+		relay.EnableInterrupts()
+	}
+	return relay, err
+}
+
+func buildRelay(sim *simNode) (*domain.Relay, error) {
 	if sim == nil {
 		return domain.NewRelay(relayTick.Milliseconds()), nil
 	}
@@ -75,7 +84,7 @@ func newRelay(sim *simNode) (*domain.Relay, error) {
 }
 
 func (l *relayLoop) open(ctx context.Context) error {
-	rec, err := openRecording(l.options.Out, l.sim)
+	rec, err := openRecording(l.options.Out, l.sim, l.options.Control != nil)
 	if err != nil {
 		l.sim.discard()
 		return err
@@ -85,7 +94,7 @@ func (l *relayLoop) open(ctx context.Context) error {
 }
 
 func (l *relayLoop) listen(ctx context.Context) error {
-	gateways, err := uds.ListenGateways(ctx, l.options.GatewaySocket, relayWait)
+	gateways, err := uds.ListenGateways(ctx, l.options.GatewaySocket, relayWrite)
 	if err != nil {
 		l.sim.discard()
 		return errors.Join(err, l.rec.close())

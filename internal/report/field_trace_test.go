@@ -14,7 +14,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func folderWithFieldTrace(t *testing.T) string {
+func folderWith(t *testing.T, attach func(dir string, r *run.Run)) string {
 	t.Helper()
 	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
@@ -30,17 +30,7 @@ func folderWithFieldTrace(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	trace, err := run.NewFieldTrace(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := trace.Add(map[string]any{"type": "NBIRTH", "seq": json.Number("0")}); err != nil {
-		t.Fatal(err)
-	}
-	if err := trace.Close(); err != nil {
-		t.Fatal(err)
-	}
-	r.SetFieldTrace(trace.Digest())
+	attach(dir, r)
 	if _, err := r.Advance(t.Context(), model.DefaultStartTimeNS+120e9, false); err != nil {
 		t.Fatal(err)
 	}
@@ -48,6 +38,23 @@ func folderWithFieldTrace(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+func folderWithFieldTrace(t *testing.T) string {
+	t.Helper()
+	return folderWith(t, func(dir string, r *run.Run) {
+		trace, err := run.NewFieldTrace(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := trace.Add(map[string]any{"type": "NBIRTH", "seq": json.Number("0")}); err != nil {
+			t.Fatal(err)
+		}
+		if err := trace.Close(); err != nil {
+			t.Fatal(err)
+		}
+		r.SetFieldTrace(trace.Digest())
+	})
 }
 
 func statusOfCheck(t *testing.T, built *report.Report, name string) string {

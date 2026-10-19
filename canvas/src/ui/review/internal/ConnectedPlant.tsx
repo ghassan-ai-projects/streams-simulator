@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useCallback, useMemo } from "react";
+import type { ConnectSession } from "../../../app/launch";
 import type { ReviewSession, ReviewState } from "../../../app/review";
 import type { ReadyPlant } from "../../../app/plant";
 import type { WorkspaceStore } from "../../../app/workspace";
@@ -8,6 +9,7 @@ import type { InstanceOrigin } from "../../../model/graph";
 import { deviceLine, deviceOf, readingWords } from "../../../model/review";
 import type { NodeLive } from "../../graph";
 import { useStore } from "../../primitives";
+import { Interrupts } from "./Interrupts";
 import { useLive } from "./useLive";
 import { useReviewOpen } from "./useReviewOpen";
 import { useShownOrigins } from "./useShownOrigins";
@@ -21,6 +23,7 @@ interface ConnectedSession {
   readonly live: (id: string) => NodeLive;
   readonly device: (id: string) => DeviceView | null;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
+  readonly interrupts: ReactNode;
   readonly run: string;
 }
 
@@ -28,6 +31,8 @@ interface Props {
   readonly review: ReviewSession;
   readonly plant: ReadyPlant | null;
   readonly run: string | null;
+  readonly connect: ConnectSession;
+  readonly now: () => number;
   readonly children: (session: ConnectedSession | null) => ReactNode;
 }
 
@@ -57,12 +62,13 @@ function useDeviceView(state: ReviewState): (id: string) => DeviceView | null {
   );
 }
 
-export function ConnectedPlant({ review, plant, run, children }: Props) {
+export function ConnectedPlant({ review, plant, run, connect, now, children }: Props) {
   const stored = useStore(review);
   const state = useShownOrigins(stored, plant);
   const view = useMemo(() => (plant === null ? null : plantView(plant.plant, plant.specs, { open: null })), [plant]);
   const live = useLive(review, state, plant, view);
   const device = useDeviceView(state);
   const following = run !== null && stored.worldId === run;
-  return <>{children(following ? { live, device, origins: state.origins, run } : null)}</>;
+  const interrupts = <Interrupts review={review} state={state} connect={connect} now={now} />;
+  return <>{children(following ? { live, device, origins: state.origins, interrupts, run } : null)}</>;
 }

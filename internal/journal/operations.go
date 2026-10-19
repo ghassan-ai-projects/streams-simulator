@@ -69,6 +69,10 @@ func (j *Journal) Live(atNS int64, fields map[string]any) {
 	j.impl.Live(atNS, fields)
 }
 
+func (j *Journal) Interrupt(atNS int64, fields map[string]any) {
+	j.impl.Interrupt(atNS, fields)
+}
+
 func (j *Journal) Session(atNS int64, fields map[string]any) {
 	j.impl.Session(atNS, fields)
 }

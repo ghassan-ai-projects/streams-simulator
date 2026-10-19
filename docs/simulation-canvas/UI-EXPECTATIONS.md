@@ -164,6 +164,7 @@ How to read the tables:
 | V-13 | An Evaluate run says whether the truth is revealed, and the report agrees with the run panel. | ✗ KPI TRUTH shown while the run panel says the truth stays sealed | |
 | V-14 | Readout nodes show their full kind and have even heights. | ✗ "AC-1 compressor l…"; tall M-1 and M-2 with empty bottoms | |
 | V-15 | Header and playback controls carry text or visible tooltips. | ✗ « ‹ › » and bell are icon-only; bell purpose unclear | |
+| V-16 | A saved connected session offers "Twin vs board" in the Report tab, on user action only: the verdict by word and shape, counts, the tolerance rule and each metric's tolerance with its source, which commands reached the twin and why the others did not, and where the twin and the board part ways (choosing one moves the cursor to its start). In Inspect, a real board shows the twin's prediction (dashed, legend "Twin prediction") over its compared readings, divergences shaded, with an empty state that says why when nothing can be drawn. | ✅ R12b; a diverging chart is covered by component tests, the e2e shows the honest "Cannot judge" of the stand-in (D-92, D-93); M5: offered for any saved session that names a domain (the binary refuses a run with no board), a node safe stop is named, an unbound evidence file is flagged, focus moves to a new result once | |
 
 ## 7. Pairing
 
@@ -189,7 +190,7 @@ How to read the tables:
 | ID | Expectation | Now | B |
 |---|---|---|---|
 | RUN-1 | Before Start, the panel says what Start does: "Simulate this plant for the selected duration and save a run for review". | ◐ |  |
-| RUN-2 | The panel says whether a run goes to completion or supports live control, and shows only controls that work. | ◐ "To completion" or "Connected session" (R9: linked to a plant wire host and a gateway until Stop and save; the choice stays shown, disabled while a session holds the plant, and a session run is labelled "Connected session", never Evaluate); live control is R10 to R11 |  |
+| RUN-2 | The panel says whether a run goes to completion or supports live control, and shows only controls that work. | ◐ "To completion" or "Connected session" (R9: linked to a plant wire host and a gateway until Stop and save; the choice stays shown, disabled while a session holds the plant, and a session run is labelled "Connected session", never Evaluate); live following, command stages and connection health are R10; the node interrupts (hold, approve each command, emergency stop) are an always-visible "Interrupts" region on the plant screen and the live view while a session runs (R11b); M5: the region sits outside the scrolling part of the live view, fits one row at 1280 px, the emergency stop is never dropped or held back by a control in flight, and a new session starts with none of the last one's state |  |
 | RUN-3 | The stop control stays visible and says whether it cancels, pauses or ends and saves the run. | ✅ "Cancel and discard"; the panel explains what cancel keeps (d9c2b8c) |  |
 | RUN-4 | Cancel is acknowledged at once, and its latency is explained without implying an in-flight command stops instantly. | ✅ "Canceling at the next step…" acknowledges the request at once |  |
 | RUN-5 | Complete, cancelled, interrupted, failed and checking are distinct states, each saying what evidence was kept. | ◐ |  |

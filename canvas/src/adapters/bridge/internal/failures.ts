@@ -1,5 +1,6 @@
 import type {
   ConnectFailure,
+  ControlFailure,
   DeviceFailure,
   Diagnostic,
   EditorFailure,
@@ -7,6 +8,7 @@ import type {
   PlantFailure,
   ReviewFailure,
   SessionFailure,
+  TwinFailure,
   WorkspaceFailure,
 } from "../../../app/ports";
 import type { FailureMapper, RequestFailure, WireProblem } from "./http";
@@ -86,6 +88,27 @@ export function connectFailure(error: RequestFailure): ConnectFailure {
   if (error.problem.code === "session_running") return { kind: "busy", diagnostic: display };
   if (error.problem.status === 422) return { kind: "refused", diagnostic: display, issues: error.problem.issues };
   return serverFault(error.problem, display);
+}
+
+const controlKinds: ReadonlyMap<string, ControlFailure["kind"]> = new Map<string, ControlFailure["kind"]>([
+  ["no_session", "no-session"],
+  ["control_unavailable", "no-controls"],
+  ["control_gone", "gone"],
+  ["control_timeout", "timeout"],
+  ["control_unreadable", "unreadable"],
+]);
+
+export function controlFailure(error: RequestFailure): ControlFailure {
+  if (error.kind !== "http") return unreached(error);
+  const { problem } = error;
+  const fallback = problem.status >= 500 ? "unavailable" : "rejected";
+  return { kind: controlKinds.get(problem.code) ?? fallback, diagnostic: diagnostic(problem) };
+}
+
+export function twinFailure(error: RequestFailure): TwinFailure {
+  if (error.kind !== "http") return unreached(error);
+  const kind = error.problem.status >= 500 ? "unavailable" : "refused";
+  return { kind, diagnostic: diagnostic(error.problem) };
 }
 
 export function reviewFailure(error: RequestFailure): ReviewFailure {

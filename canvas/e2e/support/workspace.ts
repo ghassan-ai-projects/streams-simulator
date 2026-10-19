@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -11,8 +11,19 @@ export interface Fixture {
   readonly root: string;
 }
 
-function run(binary: string, args: readonly string[]): void {
-  execFileSync(binary, args, { cwd: repository, stdio: ["ignore", "ignore", "pipe"] });
+function run(binary: string, args: readonly string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, [...args], { cwd: repository, stdio: ["ignore", "ignore", "pipe"] });
+    let errors = "";
+    child.stderr.on("data", (chunk: Buffer) => {
+      errors += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (status) => {
+      if (status === 0) resolve();
+      else reject(new Error(`${binary} ${args.join(" ")} exited with ${String(status)}: ${errors}`));
+    });
+  });
 }
 
 function record(
@@ -21,9 +32,9 @@ function record(
   name: string,
   extra: readonly string[],
   domain = "factory-utilities",
-): void {
+): Promise<void> {
   const domains = join(workspace, "domains");
-  run(binary, [
+  return run(binary, [
     "run",
     "-domains-dir",
     domains,
@@ -77,50 +88,68 @@ function dropLedgerDigest(path: string): void {
   writeFileSync(path, JSON.stringify(artifact, null, 2));
 }
 
-export function buildFixture(): Fixture {
+function compose(binary: string, workspace: string, name: string, source: string): Promise<void> {
+  const composition = join(workspace, "compositions", `${name}.composition.json`);
+  copyFileSync(source, composition);
+  return run(binary, ["domain", "compose", composition, "--out", join(workspace, "domains", `${name}.domain.json`)]);
+}
+
+async function composeDomains(binary: string, workspace: string): Promise<void> {
+  const fixtures = join(import.meta.dirname, "..", "fixtures");
+  copyFileSync(join(fixtures, "alarm-playback.domain.json"), join(workspace, "domains", "alarm-playback.domain.json"));
+  copyFileSync(
+    join(repository, "examples", "chiller-pilot.domain.json"),
+    join(workspace, "domains", "chiller-pilot.domain.json"),
+  );
+  await Promise.all([
+    compose(
+      binary,
+      workspace,
+      "factory-utilities",
+      join(repository, "examples", "compositions", "factory-utilities.composition.json"),
+    ),
+    compose(binary, workspace, "campus-3", join(fixtures, "campus-3.composition.json")),
+    compose(binary, workspace, "boiler-steam-loop", join(fixtures, "boiler-steam-loop.composition.json")),
+  ]);
+}
+
+async function recordRuns(binary: string, workspace: string): Promise<void> {
+  const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
+  const stop = 'air_dryer__set_running@D-1@900@{"dryer_id":"D-1","running":0}';
+  const running = 'boiler__set_running@boiler-1@600@{"boiler_id":"boiler-1","running":1}';
+  const scaling = ["-fault", "boiler-1=boiler__scaling@600", "-effector", running];
+  const late = ["-fault", "D-1=air_dryer__prefilter_clogging@600", "-effector", stop];
+  const plain = ["w-evaluate", "w-edited", "w-tampered", "w-incomplete-stamp", "w-missing-digest"];
+  await Promise.all([
+    record(binary, workspace, "w-alarm", [], "alarm-playback"),
+    record(binary, workspace, "w-explore", ["-explore"]),
+    record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3"),
+    record(binary, workspace, "w-late", late),
+    record(binary, workspace, "w-boiler", scaling, "boiler-steam-loop"),
+    record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]),
+    ...plain.map((name) => record(binary, workspace, name, [])),
+  ]);
+}
+
+function tamperRuns(workspace: string): void {
+  const runs = join(workspace, "runs");
+  appendFileSync(join(runs, "w-edited", "trace.jsonl"), "\n");
+  dropCommands(join(runs, "w-diverged", "run.json"), "fault.inject");
+  retitleRecordedPlant(join(runs, "w-tampered", "run.json"));
+  markIncomplete(join(runs, "w-incomplete-stamp", "run.json"));
+  dropLedgerDigest(join(runs, "w-missing-digest", "run.json"));
+  editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
+}
+
+export async function buildFixture(): Promise<Fixture> {
   const root = mkdtempSync(join(tmpdir(), "streamsim-canvas-e2e-"));
   const binary = builtBinary();
   const workspace = join(root, "lab-workspace");
   for (const folder of ["domains", "compositions", "runs"]) {
     mkdirSync(join(workspace, folder), { recursive: true });
   }
-  const composition = join(workspace, "compositions", "factory-utilities.composition.json");
-  copyFileSync(join(repository, "examples", "compositions", "factory-utilities.composition.json"), composition);
-  run(binary, ["domain", "compose", composition, "--out", join(workspace, "domains", "factory-utilities.domain.json")]);
-  const campus = join(workspace, "compositions", "campus-3.composition.json");
-  copyFileSync(join(import.meta.dirname, "..", "fixtures", "campus-3.composition.json"), campus);
-  run(binary, ["domain", "compose", campus, "--out", join(workspace, "domains", "campus-3.domain.json")]);
-  copyFileSync(
-    join(import.meta.dirname, "..", "fixtures", "alarm-playback.domain.json"),
-    join(workspace, "domains", "alarm-playback.domain.json"),
-  );
-  copyFileSync(
-    join(repository, "examples", "chiller-pilot.domain.json"),
-    join(workspace, "domains", "chiller-pilot.domain.json"),
-  );
-  record(binary, workspace, "w-alarm", [], "alarm-playback");
-  record(binary, workspace, "w-explore", ["-explore"]);
-  const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
-  record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3");
-  record(binary, workspace, "w-evaluate", []);
-  const stop = 'air_dryer__set_running@D-1@900@{"dryer_id":"D-1","running":0}';
-  record(binary, workspace, "w-late", ["-fault", "D-1=air_dryer__prefilter_clogging@600", "-effector", stop]);
-  const boiler = join(workspace, "compositions", "boiler-steam-loop.composition.json");
-  copyFileSync(join(import.meta.dirname, "..", "fixtures", "boiler-steam-loop.composition.json"), boiler);
-  run(binary, ["domain", "compose", boiler, "--out", join(workspace, "domains", "boiler-steam-loop.domain.json")]);
-  const running = 'boiler__set_running@boiler-1@600@{"boiler_id":"boiler-1","running":1}';
-  const scaling = ["-fault", "boiler-1=boiler__scaling@600", "-effector", running];
-  record(binary, workspace, "w-boiler", scaling, "boiler-steam-loop");
-  record(binary, workspace, "w-edited", []);
-  appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
-  record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]);
-  dropCommands(join(workspace, "runs", "w-diverged", "run.json"), "fault.inject");
-  record(binary, workspace, "w-tampered", []);
-  retitleRecordedPlant(join(workspace, "runs", "w-tampered", "run.json"));
-  record(binary, workspace, "w-incomplete-stamp", []);
-  markIncomplete(join(workspace, "runs", "w-incomplete-stamp", "run.json"));
-  record(binary, workspace, "w-missing-digest", []);
-  dropLedgerDigest(join(workspace, "runs", "w-missing-digest", "run.json"));
-  editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
+  await composeDomains(binary, workspace);
+  await recordRuns(binary, workspace);
+  tamperRuns(workspace);
   return { binary, workspace, root };
 }

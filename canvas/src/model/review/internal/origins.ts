@@ -3,6 +3,8 @@ import { plannedSimulated, unknownOrigin } from "../../graph";
 import type { BindingNote } from "../../launch";
 import { bindingWords } from "../../launch";
 
+export type Connection = "none" | "running" | "saved";
+
 export function withOrigin(
   origins: ReadonlyMap<string, InstanceOrigin>,
   origin: InstanceOrigin,
@@ -14,7 +16,7 @@ export function withOrigin(
 export function shownOrigins(
   origins: ReadonlyMap<string, InstanceOrigin>,
   instances: readonly string[],
-  connection: "none" | "running" | "saved",
+  connection: Connection,
   simulated: readonly string[] = [],
 ): ReadonlyMap<string, InstanceOrigin> {
   if (connection === "none") return origins;

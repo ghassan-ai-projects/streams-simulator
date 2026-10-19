@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/node-control-v0.1.schema.json",
+  "title": "node-control-v0.1",
+  "description": "One request on the control socket of a running plant wire node (streamsim plantwire connect --control-socket): the local/remote switch at the node. The node may only refuse or stop; a request never originates an ordinary command and never widens what the host may do. One request per line, canonical JSON; the node answers each with one line that satisfies $defs/reply. This schema validates the request; $defs/reply describes the answer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["op"],
+  "properties": {
+    "op": {
+      "enum": ["hold", "release", "approve_mode", "approve", "deny", "estop", "state"],
+      "description": "hold: refuse every DCMD in scope (local_control). release: clear the hold, including an emergency-stop latch, on exactly that scope. approve_mode: with enabled, queue every DCMD in scope until approved, denied or expired; without, stop queuing (already queued commands stay queued). approve / deny: resolve one queued command by id. estop: perform the safe stop of every device in scope and latch a hold on the scope until released. state: read the interrupt state."
+    },
+    "scope": {"$ref": "#/$defs/scope"},
+    "enabled": {"type": "boolean", "description": "Required by approve_mode: true sets the approval mode on the scope, false clears it."},
+    "command_id": {"$ref": "#/$defs/wire_id", "description": "Required by approve and deny: the id of a queued command."},
+    "content_digest": {"$ref": "#/$defs/digest", "description": "Optional with approve and deny: the content_digest the operator saw in the pending entry. The request is refused unknown_command when the waiting command's content differs, so an operator approves what was shown and nothing else."}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"op": {"enum": ["hold", "release", "estop"]}}},
+      "then": {"required": ["scope"], "not": {"anyOf": [{"required": ["enabled"]}, {"required": ["command_id"]}, {"required": ["content_digest"]}]}}
+    },
+    {
+      "if": {"properties": {"op": {"const": "approve_mode"}}},
+      "then": {"required": ["scope", "enabled"], "not": {"anyOf": [{"required": ["command_id"]}, {"required": ["content_digest"]}]}}
+    },
+    {
+      "if": {"properties": {"op": {"enum": ["approve", "deny"]}}},
+      "then": {"required": ["command_id"], "not": {"anyOf": [{"required": ["scope"]}, {"required": ["enabled"]}]}}
+    },
+    {
+      "if": {"properties": {"op": {"const": "state"}}},
+      "then": {"not": {"anyOf": [{"required": ["scope"]}, {"required": ["enabled"]}, {"required": ["command_id"]}, {"required": ["content_digest"]}]}}
+    }
+  ],
+  "$defs": {
+    "wire_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["all", "board", "device"]},
+        "id": {"$ref": "#/$defs/wire_id", "description": "The board or device id; absent for kind all."}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "all"}}}, "then": {"not": {"required": ["id"]}}},
+        {"if": {"properties": {"kind": {"enum": ["board", "device"]}}}, "then": {"required": ["id"]}}
+      ]
+    },
+    "reply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result", "state"],
+      "description": "The answer to one request: applied, or refused with a reason. state is the interrupt state after the request in both cases.",
+      "properties": {
+        "result": {"enum": ["applied", "refused"]},
+        "reason": {"enum": ["malformed", "unknown_board", "unknown_device", "unknown_command", "too_many_scopes", "node_busy"]},
+        "op": {"enum": ["hold", "release", "approve_mode", "approve", "deny", "estop", "state"]},
+        "command_id": {"$ref": "#/$defs/wire_id"},
+        "stopped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices whose safe stop the node performed or sent."},
+        "skipped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare no safe_stop command."},
+        "unreachable": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare a safe_stop command but could not be ordered to stop (a hardware device not yet born, a simulated node that is gone). The hold is latched on them all the same; they are never listed in stopped."},
+        "state": {"$ref": "#/$defs/state"}
+      },
+      "allOf": [
+        {"if": {"properties": {"op": {"const": "estop"}, "result": {"const": "applied"}}, "required": ["op", "result"]}, "then": {"required": ["unreachable"]}}
+      ]
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["holds", "approve", "pending", "devices"],
+      "properties": {
+        "holds": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/hold"}},
+        "approve": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/scope_state"}},
+        "pending": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/pending"}},
+        "devices": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/affected"}, "description": "Every device an interrupt covers now, in device order; hold wins over approve."}
+      }
+    },
+    "scope_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {"kind": {"enum": ["all", "board", "device"]}, "id": {"type": "string"}}
+    },
+    "hold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "latched"],
+      "properties": {"kind": {"enum": ["all", "board", "device"]}, "id": {"type": "string"}, "latched": {"type": "boolean", "description": "True when an emergency stop set the hold: only release clears it."}}
+    },
+    "pending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command_id", "device", "command", "deadline_ns", "queued_at_ns", "clock", "content_digest", "args", "args_truncated"],
+      "properties": {
+        "command_id": {"$ref": "#/$defs/wire_id"}, "device": {"$ref": "#/$defs/wire_id"}, "command": {"$ref": "#/$defs/wire_id"},
+        "deadline_ns": {"type": "integer"}, "queued_at_ns": {"type": "integer"}, "clock": {"enum": ["world", "wall"]},
+        "content_digest": {"$ref": "#/$defs/digest", "description": "The digest of what is waiting (device, command, args, expected boot): echo it in approve or deny to approve exactly this."},
+        "args": {"type": "object", "description": "The command's arguments, so the operator sees what an approval would do. At most 2048 bytes of canonical JSON; larger arguments are left out ({}) and args_truncated is true."},
+        "args_truncated": {"type": "boolean"}
+      }
+    },
+    "affected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device", "board", "mode", "latched"],
+      "properties": {"device": {"$ref": "#/$defs/wire_id"}, "board": {"type": "string"}, "mode": {"enum": ["hold", "approve"]}, "latched": {"type": "boolean"}}
+    }
+  }
+}

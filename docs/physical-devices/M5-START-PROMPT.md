@@ -10,9 +10,9 @@ as-built notes), docs/design/RUN_JOURNAL.md, governance/DEFERRED.md (D-60 to D-7
 canvas/README.md, governance/CANVAS_UI_ACCEPTANCE.md, docs/simulation-canvas/UI-EXPECTATIONS.md and
 docs/simulation-canvas/ui-architecture-20261016/README.md.
 
-State: M4 is done on branch `physical-devices-m4` (pushed; `make phase-gate` green on e323b0c0). Nothing is merged; the
-owner merges at the end. First cut `physical-devices-m5` from the tip of `physical-devices-m4` and push it. Before R11,
-do item 1 of "Open from M4" in HANDOFF (check in a real browser that the first Open live view shows the plant).
+State: M1–M4 are merged to `main` (PRs 44–47; tag `pre-new-vision` marks main before them). Work on branch
+`physical-devices-m5`, already cut from main and pushed. The owner decided (2026-10-18) to finish M5 first: the items
+under "Open from M4" in HANDOFF are done after M5, not before.
 
 R11 (M5): node interrupts as a local/remote switch at the node (PHYSICAL_DEVICES §4.2): hold, approve each command,
 emergency stop; the node may only refuse or stop, never originate or widen; `local_control` refusal to the host;

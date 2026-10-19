@@ -41,6 +41,8 @@ type RunArtifact struct {
 	HistoryDigest       string `json:"history_digest,omitempty"`
 
 	FieldTraceDigest string `json:"field_trace_digest,omitempty"`
+
+	InterruptLogDigest string `json:"interrupt_log_digest,omitempty"`
 }
 
 type ArtifactRef struct {

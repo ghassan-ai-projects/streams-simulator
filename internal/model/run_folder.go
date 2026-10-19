@@ -7,6 +7,9 @@ const (
 	FileHistory     = "world_state_history.jsonl"
 	FileFieldTrace  = "field-trace.jsonl"
 
+	FileInterruptLog         = "interrupts.jsonl"
+	FileInterruptLogRejected = "interrupts.rejected.jsonl"
+
 	FileObserverJournal = "journal.jsonl"
 	FileDirectorJournal = "sealed/journal.jsonl"
 

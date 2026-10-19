@@ -42,9 +42,11 @@ function ShownReadings({ connected, entity }: { readonly connected: Connected; r
 
 export function ConnectedReadings({ connected, entity }: { readonly connected: Connected; readonly entity: string }) {
   const device = connected.device(entity);
+  const interrupt = connected.live(entity).interrupt;
   return (
     <section aria-label="Live instance">
       <OriginMark origin={connected.origins.get(entity) ?? null} />
+      {interrupt !== null && <p data-interrupt={interrupt.latched ? "latched" : interrupt.mode}>{interrupt.words}</p>}
       {device === null ? <ShownReadings connected={connected} entity={entity} /> : <DeviceReadings device={device} />}
     </section>
   );

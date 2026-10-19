@@ -23,10 +23,42 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 	}
 	ctx, stop := uds.UntilInterrupted(ctx)
 	defer stop()
-	if planned.plan.GatewaySocket == "" {
-		return connectNode(ctx, options, &planned)
+	return planned.serve(ctx, options)
+}
+
+func (p *connectPlan) serve(ctx context.Context, o ConnectOptions) (ConnectResult, error) {
+	control, err := openControl(ctx, o.ControlSocket)
+	if err != nil {
+		return ConnectResult{}, err
 	}
-	return connectRelay(ctx, options, &planned)
+	defer control.close()
+	if p.plan.GatewaySocket == "" {
+		return connectNode(ctx, o, p, control.port)
+	}
+	return connectRelay(ctx, o, p, control.port)
+}
+
+type controlEndpoint struct {
+	port   *ControlPort
+	server *uds.ControlServer
+}
+
+func openControl(ctx context.Context, path string) (*controlEndpoint, error) {
+	if path == "" {
+		return &controlEndpoint{}, nil
+	}
+	port := NewControlPort()
+	server, err := uds.ListenControl(ctx, path, port)
+	if err != nil {
+		return nil, fmt.Errorf("plantwire connect: %w", err)
+	}
+	return &controlEndpoint{port: port, server: server}, nil
+}
+
+func (c *controlEndpoint) close() {
+	if c.server != nil {
+		_ = c.server.Close()
+	}
 }
 
 func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) {
@@ -48,17 +80,40 @@ func sessionNote(check ConnectCheck) map[string]any {
 	return map[string]any{"mode": "connected", "plan": check}
 }
 
-func connectNode(ctx context.Context, o ConnectOptions, p *connectPlan) (ConnectResult, error) {
+func connectNode(ctx context.Context, o ConnectOptions, p *connectPlan, port *ControlPort) (ConnectResult, error) {
 	r, err := p.newRun(ctx, o.Out)
 	if err != nil {
 		return ConnectResult{}, err
 	}
 	node := p.nodeOptions(o, "node-1")
 	node.JournalOrigins = true
+	file, err := controlLog(&node, o.Out, port)
+	if err != nil {
+		discardRun(r)
+		return ConnectResult{}, err
+	}
+	return serveNode(ctx, o, p, r, node, file)
+}
+
+func controlLog(node *Options, dir string, port *ControlPort) (*interruptFile, error) {
+	if port == nil {
+		return nil, nil
+	}
+	node.Control = port
+	file, err := openInterruptFile(dir)
+	if err == nil {
+		node.InterruptLog = file
+	}
+	return file, err
+}
+
+func serveNode(ctx context.Context, o ConnectOptions, p *connectPlan, r *run.Run, node Options, file *interruptFile) (ConnectResult, error) {
 	served := serveSession(ctx, r, p.plan.HostSocket, o.BarrierCap, node)
 	stopped := ctx.Err() != nil
+	sealed := file.finish(o.Out)
+	r.SetInterruptLog(file.digest())
 	_, ended := r.End(o.Out)
-	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(withoutInterrupt(stopped, served), ended)
+	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(withoutInterrupt(stopped, served), errors.Join(sealed, ended))
 }
 
 func withoutInterrupt(stopped bool, served error) error {
@@ -68,18 +123,18 @@ func withoutInterrupt(stopped bool, served error) error {
 	return served
 }
 
-func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan) (ConnectResult, error) {
+func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan, port *ControlPort) (ConnectResult, error) {
 	ticks, stopTicks := uds.Ticks(relayTick)
 	defer stopTicks()
-	stats, err := serveRelay(ctx, p.relayOptions(o), ticks)
+	stats, err := serveRelay(ctx, p.relayOptions(o, port), ticks)
 	if err != nil {
 		return ConnectResult{}, err
 	}
 	return ConnectResult{Out: o.Out, Stopped: ctx.Err() != nil, Relay: &stats}, nil
 }
 
-func (p *connectPlan) relayOptions(o ConnectOptions) RelayOptions {
-	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready,
+func (p *connectPlan) relayOptions(o ConnectOptions, port *ControlPort) RelayOptions {
+	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready, Control: port,
 		Simulated: &SimulatedOptions{DomainsDir: o.DomainsDir, AdaptersDir: o.AdaptersDir, Domain: p.session.Domain, Adapter: connectAdapter,
 			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1"), Session: p.result()}}
 }

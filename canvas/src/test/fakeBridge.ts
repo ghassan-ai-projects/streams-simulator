@@ -52,6 +52,7 @@ export class FakeBridge {
   followers = new Map<string, FakeSource>();
   pairedCodes: string[] = [];
   private readonly follows: FakeSource[] = [];
+  private readonly followRuns = new Map<FakeSource, string>();
   private persisting = false;
   private readonly holds = new Map<string, Hold>();
   private readonly transport: Transport = {
@@ -92,6 +93,10 @@ export class FakeBridge {
     this.send(this.followers.get(runId), entries, end);
   }
 
+  openFollows(runId: string): number {
+    return this.follows.filter((source) => this.followRuns.get(source) === runId && source.readyState !== 2).length;
+  }
+
   streamFollow(index: number, entries: readonly object[], end: StreamEnd = "closed"): void {
     this.send(this.follows[index], entries, end);
   }
@@ -128,7 +133,10 @@ export class FakeBridge {
     });
     if (runId === undefined) this.watchers.add(source);
     else this.followers.set(decodeURIComponent(runId), source);
-    if (runId !== undefined) this.follows.push(source);
+    if (runId !== undefined) {
+      this.follows.push(source);
+      this.followRuns.set(source, decodeURIComponent(runId));
+    }
     return source;
   }
 

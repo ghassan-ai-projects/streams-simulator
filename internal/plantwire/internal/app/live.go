@@ -48,6 +48,12 @@ func (c *recording) liveConnection(fields map[string]any) {
 	}
 }
 
+func (c *recording) liveInterrupts(view map[string]any) {
+	if c.live != nil && c.live.SetInterrupts(view) {
+		c.liveChanged = true
+	}
+}
+
 func (c *recording) endLive() {
 	if c.live != nil && c.live.End(c.clock()) {
 		c.liveChanged = true

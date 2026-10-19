@@ -1,6 +1,5 @@
 import type { BindingNote, PlanIssue, SessionCheck } from "../../../model/launch";
 import type { ConnectFailure, ConnectStatus, Diagnostic } from "../../ports";
-
 export type ConnectState =
   | { readonly phase: "idle" }
   | { readonly phase: "checking"; readonly domain: string }
@@ -20,6 +19,7 @@ export type ConnectState =
       readonly check: SessionCheck | null;
       readonly binding: BindingNote | null;
       readonly stopping: boolean;
+      readonly controls: boolean;
       readonly note: string | null;
     }
   | { readonly phase: "ended"; readonly domain: string; readonly run: string }
@@ -46,8 +46,13 @@ export function refusedState(domain: string, failure: ConnectFailure): ConnectSt
   return { phase: "failed", domain, run: null, diagnostic: failure.diagnostic, issues: [] };
 }
 
-function liveState(domain: string, run: string, check: SessionCheck | null, stopping: boolean): LiveSession {
-  return { phase: "live", domain, run, check, binding: null, stopping, note: null };
+interface LiveFlags {
+  readonly stopping: boolean;
+  readonly controls: boolean;
+}
+
+function liveState(domain: string, run: string, check: SessionCheck | null, flags: LiveFlags): LiveSession {
+  return { phase: "live", domain, run, check, binding: null, ...flags, note: null };
 }
 
 export function stateOf(domain: string, check: SessionCheck | null, status: ConnectStatus): ConnectState {
@@ -59,7 +64,7 @@ export function stateOf(domain: string, check: SessionCheck | null, status: Conn
       return { phase: "starting", domain: own, check: plan };
     case "running":
     case "stopping":
-      return liveState(own, status.run, plan, status.state === "stopping");
+      return liveState(own, status.run, plan, { stopping: status.state === "stopping", controls: status.controls });
     case "ended":
       return { phase: "ended", domain: own, run: status.run };
     case "failed":

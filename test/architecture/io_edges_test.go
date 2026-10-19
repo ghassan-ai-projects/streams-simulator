@@ -50,6 +50,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/canvasbridge/internal/process/director.go":    {uses: []string{"import:os/exec"}, why: "the director child the canvas drives over MCP on stdio"},
 	"internal/canvasbridge/internal/process/lastwords.go":   {uses: []string{"call:time.NewTimer", "go-statement", "import:os", "import:os/exec"}, why: "the director child's stderr drained through a pipe so a crash is reported with its last words, bounded in wall time"},
 	"internal/canvasbridge/internal/process/self.go":        {uses: []string{"import:os"}, why: "the bridge's own executable path"},
+	"internal/canvasbridge/internal/process/control.go":     {uses: []string{"call:context.WithTimeout", "import:os"}, why: "a connected session's control socket: a private directory the bridge owns for it, and one request line sent to the node's owner-only socket with a bounded wait"},
 	"internal/canvasbridge/internal/process/lasting.go":     {uses: []string{"call:time.NewTimer", "go-statement", "import:os", "import:os/exec", "import:syscall"}, why: "a connected session's streamsim child the bridge owns until it is stopped: started in its own process group, waited on, interrupted, and its group killed after a bounded wait"},
 	"internal/canvasbridge/internal/transport/admission.go": {uses: []string{"import:net/http"}, why: "request admission and pairing over HTTP"},
 	"internal/canvasbridge/internal/transport/events.go":    {uses: []string{"import:net/http"}, why: "Server-Sent Events of run journals and workspace changes"},
@@ -66,6 +67,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/plantwire/internal/uds/await.go":    {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since"}, why: "wall-time cap of the plant wire barrier and the wait it measured"},
 	"internal/plantwire/internal/uds/listen.go":   {uses: []string{"call:time.After", "call:time.Now", "import:net", "import:os"}, why: "reference host: owner-only socket published by rename, one node session, a handshake deadline, delayed barrier answers"},
 	"internal/plantwire/internal/uds/gateways.go": {uses: []string{"go-statement", "import:net", "import:os"}, why: "relay: the gateway's owner-only socket published by the relay and accepted until closed, one link per connection"},
+	"internal/plantwire/internal/uds/control.go":  {uses: []string{"call:context.WithTimeout", "go-statement", "import:net", "import:os"}, why: "running node: the owner-only control socket an operator's controls arrive on, one goroutine per connection, each request bounded in wall time"},
 	"internal/plantwire/internal/uds/ticks.go":    {uses: []string{"call:time.NewTicker"}, why: "relay: wall-clock ticks that count missed heartbeats and pace the redial of a lost host"},
 	"internal/plantwire/internal/uds/sim.go":      {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since", "go-statement"}, why: "mixed relay: the in-process link to the simulated node, its wall-time barrier cap and the goroutine that runs the node's session"},
 }

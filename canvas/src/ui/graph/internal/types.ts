@@ -1,4 +1,12 @@
-import type { InstanceOrigin, PlantView, PlanMark, Shown, ReadoutBody, NodeStatus } from "../../../model/graph";
+import type {
+  InstanceOrigin,
+  NodeInterrupt,
+  NodeStatus,
+  PlantView,
+  PlanMark,
+  ReadoutBody,
+  Shown,
+} from "../../../model/graph";
 import type { Plant } from "../../../model/plant";
 
 export interface PlantGraphProps {
@@ -39,4 +47,5 @@ export interface NodeLive {
   readonly fault: string;
   readonly effector: string;
   readonly origin: InstanceOrigin | null;
+  readonly interrupt: NodeInterrupt | null;
 }

@@ -11,11 +11,25 @@
 
 .center {
   grid-area: center;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+.liveTop {
+  flex: none;
+  min-width: 0;
+}
+
+.body {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(236px, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .side {
@@ -35,7 +49,7 @@
 .graphArea {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 36px minmax(360px, 1fr);
+  grid-template-rows: 36px minmax(0, 1fr);
   min-height: 0;
 }
 

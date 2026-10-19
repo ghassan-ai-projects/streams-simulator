@@ -347,6 +347,7 @@ gateway, and every other instance is simulated.
 ```text
 streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir <dir>] [--adapters-dir <dir>]
                             [--kinds-dir <dir>]... [--policy <digest>]... [--slice-s 1] [--barrier-cap-ms 30000]
+                            [--control-socket <path>]
 ```
 
 ```json
@@ -367,6 +368,21 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   must be announced (`board_missing`), hold the device (`device_missing`), and announce the instance's kind
   (`kind_missing`) with the kind file's `kind_digest` (`kind_mismatch`), or the gateway is refused `inventory_mismatch`. A
   real instance is not announced by the world (it still simulates it, as the twin); its device is the board's.
+- `--control-socket <path>` — creates an owner-only unix socket (owner-only directory; a live socket or a regular file at the
+  path is refused) on which the session takes the operator's controls at the node, until it ends: **hold** (every command of the
+  host in scope is refused `local_control`), **approve each command** (a command in scope is answered `queued` and waits until the
+  operator approves it, denies it, or its deadline passes: `expired`) and **emergency stop** (the safe stop of every device in
+  scope, then a hold latched until the operator releases it), each for all devices, a board or a device. The node only refuses or
+  stops: it never originates an ordinary command, and the host's own safe-stop commands are never held. One request per line
+  (`node-control-v0.1`: `{"op": "hold" | "release" | "approve_mode" | "approve" | "deny" | "estop" | "state", "scope":
+  {"kind": "all" | "board" | "device", "id"}, "enabled", "command_id"}`), one answer per line (`{"result": "applied" | "refused",
+  "reason"?, "op", "command_id"?, "stopped"?, "skipped"?, "state": {"holds", "approve", "pending", "devices"}}`); a request the
+  node cannot take within 10 s is answered `refused` with the reason `node_busy`. `approve` and `deny` may carry the
+  `content_digest` of the waiting command (shown in the state's `pending` entry with its `args`) and are refused `unknown_command`
+  when it differs; a command id that is already waiting is refused `duplicate`; an emergency stop lists the devices it could not
+  order in `unreachable`. A control line is at most 4096 bytes and a connection idle for 60 s is closed. Controls are applied at a barrier (a node of
+  the world) or on a 250 ms tick (a relay), never in between. The run then holds `interrupts.jsonl` ([the interrupt
+  log](artifacts.md#the-interrupt-log)). Without the flag nothing changes.
 - Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
   environment, boot id) and each gateway handshake of a plan that binds an instance with its outcome (`binding` records:
   matched or refused, with the issues).
@@ -402,6 +418,35 @@ the host's answers (two replays of one trace are byte-identical). Records the re
 the first `NBIRTH`) and the recorded receipts, results and deaths are skipped and counted. The folder's `run.json`, when there is
 one, must record the digest of the trace (`field_trace_digest`); a trace that differs from it is refused before anything is
 played. The document is `{records, skipped, barriers, commands_refused, field_trace_digest, session_id}`.
+
+### `plantwire twin-report`
+
+Compares the twin with the board: where the domain that implements a board's kinds and the readings the board reported part
+ways.
+
+```text
+streamsim plantwire twin-report <run-dir> --domain <id> --kinds-dir <dir> [--domains-dir domains] [--tolerance device.metric=value] [--span-fraction 0.05]
+```
+
+The run folder must hold a field trace (a hardware or mixed session recorded by `plantwire connect` or `relay`) and the observer
+`journal.jsonl`, where the commands the host sent are recorded. The command replays the twin in a fresh, noise-free world
+driven by the commands the board **accepted** (the gateway's `DRECEIPT accepted`, no reported failure, and no interrupt refused
+or held them; a command refused or never forwarded is listed with its reason and never applied), and compares the twin's
+prediction at every recorded board reading with that reading, per device and per metric. A reading is judged only when its
+quality is `good`, it is not historical and numeric, the twin has the device and the metric, a tolerance exists, and it is not
+earlier than the first applied command; any other reading is `not_compared` with its reason, never agreement or divergence.
+The tolerance is declared with `--tolerance` (the selector is a device id, tried first, or a kind name; an unknown selector or
+a negative value is refused) or, failing that, `span_fraction` times the span of the metric's `eu_range` in its kind file
+(0.05 unless `--span-fraction` says otherwise); with neither the metric is `cannot_judge`. The document is
+[`twin-report-v0.1`](../../contracts/twin-report-v0.1.schema.json): the verdict (`agrees`, `diverges`, `cannot_judge`), a
+summary, the commands with their status, per device and metric the tolerance, a summary, the reasons for readings not compared
+and the series of the twin's predictions (at most 2000 points, truncation explicit), and each named divergence with its
+interval, its worst point and the commands in force there. The report is a pure function of the run folder, the domain, the
+kind files and the options, and exits 0 whatever the verdict. It measures the twin, not a consumer. A safe stop the node itself
+ordered on an operator's emergency stop is applied to the twin like a host command and listed with `origin: node`; when the
+board never answered it, or the twin cannot apply it, the verdict is `cannot_judge` (`node_stop_unconfirmed`,
+`node_stop_not_applied`) rather than a divergence. The interrupt log is replayed before it is used; `run.evidence_bound`
+says whether a `run.json` covers the files.
 
 ### `run`
 

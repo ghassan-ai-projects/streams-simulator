@@ -78,3 +78,18 @@ func TwinChoices() []byte { return twinChoices }
 var sessionPlan []byte
 
 func SessionPlan() []byte { return sessionPlan }
+
+//go:embed node-control-v0.1.schema.json
+var nodeControl []byte
+
+func NodeControl() []byte { return nodeControl }
+
+//go:embed interrupt-log-v0.1.schema.json
+var interruptLog []byte
+
+func InterruptLog() []byte { return interruptLog }
+
+//go:embed twin-report-v0.1.schema.json
+var twinReport []byte
+
+func TwinReport() []byte { return twinReport }

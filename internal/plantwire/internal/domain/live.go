@@ -80,6 +80,9 @@ type Live struct {
 	truncated bool
 	seen      map[string]bool
 	seenOrder []string
+
+	interrupts      map[string]any
+	interruptDigest string
 }
 
 func NewLive(gateway bool, instances map[string]string, bound []Bound) *Live {
@@ -94,7 +97,11 @@ func NewLive(gateway bool, instances map[string]string, bound []Bound) *Live {
 func (l *Live) Fields() map[string]any {
 	marks := append([]LiveMark{}, l.marks[max(0, len(l.marks)-maxLiveMarks):]...)
 	l.marks = nil
-	return map[string]any{"host": l.host, "gateway": l.gateway, "devices": l.sortedDevices(), "commands": l.commandCopies(), "marks": marks, "commands_truncated": l.truncated}
+	fields := map[string]any{"host": l.host, "gateway": l.gateway, "devices": l.sortedDevices(), "commands": l.commandCopies(), "marks": marks, "commands_truncated": l.truncated}
+	if l.interrupts != nil {
+		fields["interrupts"] = l.interrupts
+	}
+	return fields
 }
 
 func (l *Live) orderedDevices() []*LiveDevice {

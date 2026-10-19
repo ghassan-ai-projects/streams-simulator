@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
@@ -50,5 +52,67 @@ func TestTheWiredBridgeKnowsItsAbsoluteFoldersAndAFreshCode(t *testing.T) {
 	}
 	if result, err := bridge.edges.RunCommand(context.Background(), nil, nil); err != nil || result.ExitCode != 1 {
 		t.Fatalf("the command edge runs the configured executable: %+v, %v", result, err)
+	}
+}
+
+func TestTheWiredDirectorEdgeStartsItsExecutableOrSaysWhy(t *testing.T) {
+	t.Parallel()
+	workspace, err := openWorkspace(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	falsy, err := exec.LookPath("false")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bridge := wire(workspace, falsy, Settings{WorkspaceDir: t.TempDir(), AdaptersDir: "adapters"})
+	if _, err := bridge.edges.StartDirector(context.Background()); err == nil || !strings.Contains(err.Error(), "canvasbridge: start the director") {
+		t.Fatalf("the director edge with an executable that exits at once = %v, want the start error", err)
+	}
+}
+
+type announcement struct {
+	mu   sync.Mutex
+	text strings.Builder
+	seen chan struct{}
+	once sync.Once
+}
+
+func (a *announcement) Write(p []byte) (int, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.text.Write(p)
+	if strings.Contains(a.text.String(), "pairing code ") {
+		a.once.Do(func() { close(a.seen) })
+	}
+	return len(p), nil
+}
+
+func (a *announcement) String() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.text.String()
+}
+
+func TestServingAnnouncesItsAddressAndPairingCodeAndStopsWhenCancelled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stderr := &announcement{seen: make(chan struct{})}
+	served := make(chan error, 1)
+	go func() {
+		served <- Serve(ctx, Config{Workspace: t.TempDir(), UIDir: t.TempDir(), Addr: "127.0.0.1:0", AdaptersDir: "adapters", Stderr: stderr})
+	}()
+	select {
+	case err := <-served:
+		t.Fatalf("Serve returned before it announced itself: %v", err)
+	case <-stderr.seen:
+	}
+	cancel()
+	if err := <-served; err != nil {
+		t.Fatalf("Serve after cancellation = %v, want a clean stop", err)
+	}
+	if text := stderr.String(); !strings.Contains(text, "canvas: http://127.0.0.1:") || !strings.Contains(text, "canvas: pairing code ") {
+		t.Fatalf("announcement = %q, want the address and the pairing code", text)
 	}
 }

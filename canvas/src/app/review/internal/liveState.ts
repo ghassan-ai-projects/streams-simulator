@@ -1,10 +1,20 @@
-import type { EventMark, InstanceOrigin, JournalEntry, PlaybackIndex, SessionLive } from "../../../model/review";
-import { originOf } from "../../../model/review";
+import type {
+  EventMark,
+  InstanceOrigin,
+  InterruptRecord,
+  JournalEntry,
+  PlaybackIndex,
+  SessionLive,
+} from "../../../model/review";
+import { interruptMarks, originOf } from "../../../model/review";
 import type { RunEntry } from "../../../model/workspace";
 import type { LiveHistory, ReviewState } from "./reviewState";
 
 export type LiveItem =
-  { readonly kind: "snapshot"; readonly live: SessionLive } | { readonly kind: "unreadable"; readonly atNs: number };
+  | { readonly kind: "snapshot"; readonly live: SessionLive }
+  | { readonly kind: "unreadable"; readonly atNs: number }
+  | { readonly kind: "interrupt-unreadable"; readonly atNs: number }
+  | { readonly kind: "interrupt"; readonly atNs: number; readonly record: InterruptRecord };
 
 const maxLiveSnapshots = 2000;
 const maxLiveMarks = 2000;
@@ -94,26 +104,40 @@ function appendSnapshots(history: LiveHistory | null, fresh: readonly SessionLiv
   };
 }
 
-function withMarks(current: readonly EventMark[], fresh: readonly SessionLive[]): readonly EventMark[] {
-  const marks = fresh.flatMap((entry) =>
-    entry.marks.map((mark) => ({
-      atNs: mark.atNs,
-      label: mark.label,
-      raw: mark.label,
-      kind: mark.kind,
-      tone: "other" as const,
-      entity: mark.entity,
-      untilNs: null,
-    })),
-  );
+function snapshotMarks(live: SessionLive): readonly EventMark[] {
+  return live.marks.map((mark) => ({
+    atNs: mark.atNs,
+    label: mark.label,
+    raw: mark.label,
+    kind: mark.kind,
+    tone: "other" as const,
+    entity: mark.entity,
+    untilNs: null,
+  }));
+}
+
+function itemMarks(item: LiveItem): readonly EventMark[] {
+  if (item.kind === "snapshot") return snapshotMarks(item.live);
+  return item.kind === "interrupt" ? interruptMarks(item.record, item.atNs) : [];
+}
+
+function withMarks(current: readonly EventMark[], items: readonly LiveItem[]): readonly EventMark[] {
+  const marks = items.flatMap(itemMarks);
   if (marks.length === 0) return current;
   return [...current, ...marks].slice(-maxLiveMarks);
 }
 
 function unreadableAfter(current: number | null, items: readonly LiveItem[]): number | null {
   let unreadable = current;
-  for (const item of items) unreadable = item.kind === "unreadable" ? item.atNs : null;
+  for (const item of items) {
+    if (item.kind === "unreadable") unreadable = item.atNs;
+    else if (item.kind === "snapshot") unreadable = null;
+  }
   return unreadable;
+}
+
+function interruptUnreadableAfter(current: number | null, items: readonly LiveItem[]): number | null {
+  return items.reduce((newest, item) => (item.kind === "interrupt-unreadable" ? item.atNs : newest), current);
 }
 
 function followsNewest(state: ReviewState): boolean {
@@ -127,8 +151,9 @@ function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: nu
   const updated: ReviewState = {
     ...state,
     liveHistory,
-    liveMarks: withMarks(state.liveMarks, fresh),
+    liveMarks: withMarks(state.liveMarks, items),
     liveUnreadableNs: unreadableAfter(state.liveUnreadableNs, items),
+    interruptUnreadableNs: interruptUnreadableAfter(state.interruptUnreadableNs, items),
     newestNs: liveHistory?.endNs ?? state.newestNs,
     lastLiveAtMs: fresh.length > 0 ? nowMs : state.lastLiveAtMs,
   };
@@ -137,6 +162,8 @@ function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: nu
 
 export function liveItemOf(entry: JournalEntry): LiveItem | null {
   if (entry.kind === "live") return { kind: "snapshot", live: entry.live };
+  if (entry.kind === "interrupt") return { kind: "interrupt", atNs: entry.atNs, record: entry.record };
+  if (entry.kind === "interrupt-unreadable") return { kind: "interrupt-unreadable", atNs: entry.atNs };
   return entry.kind === "live-unreadable" ? { kind: "unreadable", atNs: entry.atNs } : null;
 }
 

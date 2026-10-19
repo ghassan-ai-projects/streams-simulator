@@ -27,6 +27,9 @@ const (
 	ContractTwinChoices     Contract = "twin-choices-v0.1"
 	ContractSessionPlan     Contract = "session-plan-v0.1"
 	ContractPlantWireBirth  Contract = "plant-wire-nbirth"
+	ContractNodeControl     Contract = "node-control-v0.1"
+	ContractInterruptLog    Contract = "interrupt-log-v0.1"
+	ContractTwinReport      Contract = "twin-report-v0.1"
 )
 
 type Issue struct {

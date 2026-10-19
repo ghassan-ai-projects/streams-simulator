@@ -15,3 +15,4 @@ export type {
   Viewport,
 } from "./internal/types";
 export type { InstanceOrigin } from "./internal/origin";
+export type { NodeInterrupt } from "./internal/interrupt";

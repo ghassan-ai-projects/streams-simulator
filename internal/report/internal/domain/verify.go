@@ -17,17 +17,11 @@ func verify(folder Folder) Verification {
 }
 
 func (f Folder) document(file string) Document {
-	switch file {
-	case model.FileTrace:
-		return f.Trace
-	case model.FileObserverJournal:
-		return f.Observer
-	case model.FileDirectorJournal:
-		return f.Director
-	case model.FileLedger:
-		return f.Ledger
-	case model.FileFieldTrace:
-		return f.FieldTrace
+	documents := map[string]Document{model.FileTrace: f.Trace, model.FileObserverJournal: f.Observer,
+		model.FileDirectorJournal: f.Director, model.FileLedger: f.Ledger, model.FileFieldTrace: f.FieldTrace,
+		model.FileInterruptLog: f.InterruptLog}
+	if doc, known := documents[file]; known {
+		return doc
 	}
 	return f.History
 }

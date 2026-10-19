@@ -35,6 +35,16 @@ func NewFieldTrace(dir string) (*FieldTrace, error) {
 	return &FieldTrace{impl: inner}, nil
 }
 
+type InterruptLog = FieldTrace
+
+func NewInterruptLog(dir string) (*InterruptLog, error) {
+	inner, err := layer.OpenInterruptLog(dir)
+	if err != nil {
+		return nil, err
+	}
+	return &FieldTrace{impl: inner}, nil
+}
+
 type WireTrace struct {
 	impl *layer.WireTrace
 }

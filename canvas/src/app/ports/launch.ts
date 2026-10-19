@@ -20,6 +20,7 @@ interface SessionFacts {
   readonly run: string;
   readonly domain: string;
   readonly check: SessionCheck | null;
+  readonly controls: boolean;
 }
 
 export type ConnectStatus =

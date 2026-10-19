@@ -36,22 +36,33 @@ type KindSummary = domain.KindSummary
 
 type TwinRules = domain.TwinRules
 
+type TwinReportOptions = app.TwinReportOptions
+
+type TwinReportDocument = domain.TwinReport
+
 type Capture = domain.Capture
 
 var (
-	ErrKindFileMissing  = domain.ErrKindFileMissing
-	ErrKindDrift        = domain.ErrKindDrift
-	ErrNotCanonical     = domain.ErrNotCanonical
-	ErrTwinRequirements = domain.ErrTwinRequirements
-	ErrDuplicateMember  = domain.ErrDuplicateMember
-	ErrRefused          = domain.ErrRefused
-	ErrNoBirth          = domain.ErrNoBirth
-	ErrBirthRefused     = domain.ErrBirthRefused
-	ErrSealedStream     = domain.ErrSealedStream
-	ErrNoReplayBirth    = domain.ErrNoReplayBirth
-	ErrNotObserver      = domain.ErrNotObserver
-	ErrPlanRefused      = app.ErrPlanRefused
-	ErrHostLost         = app.ErrHostLost
-	ErrHostGap          = app.ErrHostGap
-	ErrSocketNotPrivate = uds.ErrSocketNotPrivate
+	ErrKindFileMissing   = domain.ErrKindFileMissing
+	ErrKindDrift         = domain.ErrKindDrift
+	ErrNotCanonical      = domain.ErrNotCanonical
+	ErrTwinRequirements  = domain.ErrTwinRequirements
+	ErrDuplicateMember   = domain.ErrDuplicateMember
+	ErrRefused           = domain.ErrRefused
+	ErrNoBirth           = domain.ErrNoBirth
+	ErrBirthRefused      = domain.ErrBirthRefused
+	ErrSealedStream      = domain.ErrSealedStream
+	ErrNoReplayBirth     = domain.ErrNoReplayBirth
+	ErrNotObserver       = domain.ErrNotObserver
+	ErrPlanRefused       = app.ErrPlanRefused
+	ErrHostLost          = app.ErrHostLost
+	ErrHostGap           = app.ErrHostGap
+	ErrSocketNotPrivate  = uds.ErrSocketNotPrivate
+	ErrTwinNoJournal     = app.ErrTwinNoJournal
+	ErrTwinJournalDigest = app.ErrTwinJournalDigest
+	ErrTwinJournal       = domain.ErrTwinJournal
+	ErrTwinTolerance     = domain.ErrTwinTolerance
+	ErrTwinKinds         = domain.ErrTwinKinds
+	ErrTwinNoDevices     = domain.ErrTwinNoDevices
+	ErrTwinSpan          = domain.ErrTwinSpan
 )

@@ -12,12 +12,19 @@ const (
 	maxWaiting = 64
 )
 
-func (s *Session) command(m domain.Message) error {
-	c := domain.CommandOf(m)
+func (s *Session) command(in domain.Inbound) error {
+	c := domain.CommandOf(in.Message)
 	switch {
 	case c.Content() == "":
 		return s.answer(c.ID, c, refused("malformed"))
-	case s.safeStop(c):
+	case s.ints != nil:
+		return s.judged(in, c)
+	}
+	return s.dispatch(c)
+}
+
+func (s *Session) dispatch(c domain.Command) error {
+	if s.safeStop(c) {
 		return s.executeSafeStop(c)
 	}
 	return s.checked(c)

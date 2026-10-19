@@ -41,12 +41,19 @@ describe("connected session evidence", () => {
     app.stores.review.seek(10e9);
     const table = await screen.findByRole("table", { name: "Command evidence" });
     expect(within(table).getAllByText("Accepted", { exact: true })).toHaveLength(2);
-    expect(within(table).getByText("Refused", { exact: true })).toBeInTheDocument();
-    expect(within(table).getByText("Under local control", { exact: true })).toBeInTheDocument();
+    expect(within(table).getByText("Refused at the node: local control", { exact: true })).toBeInTheDocument();
     expect(within(table).getByText("Unconfirmed", { exact: true })).toBeInTheDocument();
     expect(within(table).getByText("Host observed", { exact: true })).toBeInTheDocument();
     expect(within(table).getAllByText("Effect unknown", { exact: true })).toHaveLength(3);
-    expect(within(table).getByRole("columnheader", { name: "Sent at" })).toBeInTheDocument();
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent),
+    ).toEqual(["Command", "Stages"]);
+    for (const stage of ["Sent at", "Acceptance", "Board report", "Effect evidence"]) {
+      expect(within(table).getAllByText(stage, { exact: true })).toHaveLength(4);
+    }
+    expect(screen.getByRole("region", { name: "Command evidence, scrollable" })).toHaveAttribute("tabindex", "0");
     expect(within(table).getAllByText(/· Simulated ·/)).toHaveLength(3);
     expect(within(table).getAllByText(/· Real board ·/)).toHaveLength(1);
     const health = screen.getByRole("region", { name: "Connection health" });

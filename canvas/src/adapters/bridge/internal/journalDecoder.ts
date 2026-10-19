@@ -1,10 +1,12 @@
 import type { JournalEntry } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
 import { issueList } from "./http";
+import { interruptRecord } from "./interruptDecoder";
 import { liveSnapshot } from "./liveDecoder";
 
 const journalTypes = [
   "live",
+  "interrupt",
   "session",
   "observation",
   "run.opened",
@@ -33,7 +35,14 @@ export function journalEntry(value: string): JournalEntry | null {
     if (live === null) return { kind: "live-unreadable", atNs: number(parsed.at_ns) };
     return { kind: "live", atNs: live.atNs, live };
   }
+  if (parsed.type === "interrupt") return interruptEntry(parsed);
   return projectEntry(parsed);
+}
+
+function interruptEntry(parsed: Record<string, unknown>): JournalEntry {
+  const atNs = number(parsed.at_ns);
+  const record = interruptRecord(parsed);
+  return record === null ? { kind: "interrupt-unreadable", atNs } : { kind: "interrupt", atNs, record };
 }
 
 function validEnvelope(entry: Record<string, unknown>): boolean {

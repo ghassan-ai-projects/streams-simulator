@@ -25,6 +25,9 @@ func (b *Bridge) lasting(ctx context.Context, action domain.Action, args map[str
 	if action.Lasting == domain.LastingStart {
 		return b.startSession(ctx, action, args)
 	}
+	if action.Lasting == domain.LastingControl {
+		return b.control(ctx, args)
+	}
 	if _, err := action.Argv(args); err != nil {
 		return nil, err
 	}
@@ -47,7 +50,7 @@ func (b *Bridge) startSession(ctx context.Context, action domain.Action, args ma
 	if err != nil {
 		return nil, err
 	}
-	return b.launch(ctx, session, append(argv, "--out", out), stdin)
+	return b.launch(ctx, session, append(append(argv, b.controlFlags(session)...), "--out", out), stdin)
 }
 
 func (b *Bridge) sessionCommand(action domain.Action, args map[string]any) ([]string, []byte, error) {
@@ -65,8 +68,8 @@ func (b *Bridge) sessionCommand(action domain.Action, args map[string]any) ([]st
 func (b *Bridge) claimSession(check json.RawMessage) (*liveSession, string, error) {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	if b.session != nil && b.session.live() {
-		return nil, "", domain.SessionStillRunning(b.session.view.Run)
+	if err := b.vacated(); err != nil {
+		return nil, "", err
 	}
 	run, out, err := b.freshRunFolder()
 	if err != nil {
@@ -75,6 +78,17 @@ func (b *Bridge) claimSession(check json.RawMessage) (*liveSession, string, erro
 	b.session = &liveSession{view: domain.SessionView{Run: run, Domain: domain.PlanDomain(check), Plan: check}}
 	b.sessions[run] = check
 	return b.session, out, nil
+}
+
+func (b *Bridge) vacated() error {
+	if b.session == nil {
+		return nil
+	}
+	if b.session.live() {
+		return domain.SessionStillRunning(b.session.view.Run)
+	}
+	b.session.releaseControl()
+	return nil
 }
 
 func (b *Bridge) freshRunFolder() (string, string, error) {
@@ -101,7 +115,7 @@ func (b *Bridge) launch(ctx context.Context, session *liveSession, argv []string
 		lasting.Stop(stopWithin)
 	}
 	b.awaitOpen(ctx, session.view.Run, lasting)
-	return encodeStatus(session.status())
+	return encodeStatus(b.statusOf(session))
 }
 
 func (b *Bridge) awaitOpen(ctx context.Context, run string, lasting Lasting) {
@@ -115,7 +129,7 @@ func (b *Bridge) awaitOpen(ctx context.Context, run string, lasting Lasting) {
 
 func (b *Bridge) sessionStatus() domain.SessionStatus {
 	if current := b.currentSession(); current != nil {
-		return current.status()
+		return b.statusOf(current)
 	}
 	return domain.SessionStatus{State: domain.SessionNone}
 }
@@ -128,7 +142,7 @@ func (b *Bridge) stopSession() domain.SessionStatus {
 	if lasting := current.requestStop(); lasting != nil {
 		lasting.Stop(stopWithin)
 	}
-	return current.status()
+	return b.statusOf(current)
 }
 
 func (b *Bridge) stopLiving() {
@@ -136,6 +150,7 @@ func (b *Bridge) stopLiving() {
 		if lasting := current.requestStop(); lasting != nil {
 			lasting.Stop(stopWithin)
 		}
+		current.releaseControl()
 	}
 }
 

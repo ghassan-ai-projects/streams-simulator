@@ -1,5 +1,6 @@
 import type { RunEntry } from "../../../model/workspace";
 import type {
+  Connection,
   EventMark,
   InstanceOrigin,
   JournalEntry,
@@ -35,6 +36,7 @@ export interface ReviewState {
   readonly liveHistory: LiveHistory | null;
   readonly liveMarks: readonly EventMark[];
   readonly liveUnreadableNs: number | null;
+  readonly interruptUnreadableNs: number | null;
   readonly lastLiveAtMs: number | null;
   readonly caughtUp: boolean;
   readonly worldId: string | null;
@@ -54,7 +56,7 @@ export interface ReviewState {
   readonly speed: number;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly recordedOrigins: ReadonlyMap<string, InstanceOrigin>;
-  readonly connection: "none" | "running" | "saved";
+  readonly connection: Connection;
   readonly simulated: readonly string[];
   readonly sessionDomain: string;
   readonly binding: TimedBinding | null;
@@ -67,6 +69,7 @@ export const idle: ReviewState = {
   liveHistory: null,
   liveMarks: [],
   liveUnreadableNs: null,
+  interruptUnreadableNs: null,
   lastLiveAtMs: null,
   caughtUp: false,
   worldId: null,
@@ -94,7 +97,7 @@ export function endedSinceReport(state: ReviewState, worldId: string, known: Run
   return known?.ended === true && state.worldId === worldId && report.phase === "ready" && !report.value.ended;
 }
 
-function connectionOf(known: RunEntry | undefined): ReviewState["connection"] {
+function connectionOf(known: RunEntry | undefined): Connection {
   return known?.connected ?? "none";
 }
 

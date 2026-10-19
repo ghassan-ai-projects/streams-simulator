@@ -20,6 +20,7 @@ type wireHost struct {
 	tx       *domain.Transmitter
 	received []map[string]any
 	held     bool
+	stalled  bool
 	pending  []uint64
 	changed  chan struct{}
 }
@@ -51,10 +52,26 @@ func (h *wireHost) serve() {
 	scanner := bufio.NewScanner(conn)
 	scanner.Buffer(make([]byte, 1<<20), 1<<20)
 	for scanner.Scan() {
+		if h.isStalled() {
+			<-h.t.Context().Done()
+			return
+		}
 		if in, ok := domain.Decode(scanner.Bytes()); ok {
 			h.handle(in)
 		}
 	}
+}
+
+func (h *wireHost) stall() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.stalled = true
+}
+
+func (h *wireHost) isStalled() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.stalled
 }
 
 func (h *wireHost) handle(in domain.Inbound) {

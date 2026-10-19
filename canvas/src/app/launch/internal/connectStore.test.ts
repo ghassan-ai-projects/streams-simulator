@@ -69,6 +69,23 @@ describe("a connected session", () => {
     expect(bridge.followers.has("c-1")).toBe(false);
   });
 
+  it("stops following the run once its binding is known, so the review's stream is the only one left", async () => {
+    const { bridge, connect, timers } = rig();
+    await connect.start("arduino-thermal", draft);
+    expect(bridge.openFollows("c-1")).toBe(1);
+    bridge.stream(
+      "c-1",
+      [{ stream: "observer", seq: 1, type: "binding", at_ns: 0, outcome: "matched", issues: [] }],
+      null,
+    );
+    expect(connect.snapshot()).toMatchObject({ binding: { matched: true } });
+    expect(bridge.openFollows("c-1")).toBe(0);
+    timers.advance(2000);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.openFollows("c-1")).toBe(0);
+  });
+
   it("notices a session that died while it was watched and says why", async () => {
     const { bridge, connect, timers } = rig();
     await connect.start("arduino-thermal", draft);
@@ -173,6 +190,24 @@ describe("a connected session", () => {
     timers.advance(2000);
     await vi.waitFor(() => {
       expect(connect.snapshot()).toMatchObject({ phase: "ended" });
+    });
+  });
+
+  it("learns from the poll that the node opened its control socket, and when it is gone again", async () => {
+    const { bridge, connect, timers } = rig();
+    await connect.start("arduino-thermal", draft);
+    expect(connect.snapshot()).toMatchObject({ phase: "live", controls: false });
+    const status = (controls: boolean) =>
+      success({ run: "c-1", state: "running", domain: "arduino-thermal", controls });
+    bridge.actions.set("session.status", status(true));
+    timers.advance(2000);
+    await vi.waitFor(() => {
+      expect(connect.snapshot()).toMatchObject({ phase: "live", controls: true, stopping: false });
+    });
+    bridge.actions.set("session.status", status(false));
+    timers.advance(2000);
+    await vi.waitFor(() => {
+      expect(connect.snapshot()).toMatchObject({ phase: "live", controls: false });
     });
   });
 

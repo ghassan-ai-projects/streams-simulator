@@ -39,13 +39,18 @@ func (r *Relay) loseHost(m *Moves) {
 	m.CloseHost = true
 	r.lastUp = saturatingInt64(r.host.out.LastSeq())
 	last := r.host.state
+	r.leaveHost(m)
 	r.host = hostSide{}
 	m.Notes = append(m.Notes, connectionNote("host", "offline"))
-	r.gateway.asked = false
-	clear(r.gateway.born)
+	r.forgetGatewayBirths()
 	if r.gateway.admitted {
 		r.offline(m, last)
 	}
+}
+
+func (r *Relay) forgetGatewayBirths() {
+	r.gateway.asked = false
+	clear(r.gateway.born)
 }
 
 func (r *Relay) offline(m *Moves, last map[string]any) {
@@ -149,6 +154,8 @@ func (r *Relay) deliverDown(m *Moves, in Inbound) {
 	switch {
 	case in.Type == "STATE":
 		r.stateDown(m, in)
+	case r.ints != nil && in.Type == "DCMD":
+		r.gatedCommand(m, in)
 	case r.sim != nil && routedDown[in.Type]:
 		r.routeDown(m, in)
 	case r.sim != nil && in.Type == "NCMD" && in.Command == "rebirth":
@@ -190,6 +197,8 @@ func (r *Relay) downward(in Inbound) (map[string]any, bool) {
 
 func (r *Relay) TickBy(elapsedMS int64) Moves {
 	moves := r.gatewayTick(elapsedMS)
+	r.publishInventory(&moves)
+	r.expireApprovals(&moves)
 	if !r.host.shaken || !r.host.beating {
 		return moves
 	}

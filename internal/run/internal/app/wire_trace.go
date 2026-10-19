@@ -22,6 +22,10 @@ func (t *WireTrace) Wire(direction string, record map[string]any) {
 	t.journal.Wire(0, direction, record)
 }
 
+func (t *WireTrace) Interrupt(fields map[string]any) {
+	t.journal.Interrupt(0, fields)
+}
+
 func (t *WireTrace) Flush() error {
 	if err := t.journal.Flush(); err != nil {
 		return fmt.Errorf("run: wire trace: %w", err)

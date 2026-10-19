@@ -82,6 +82,8 @@ var cliAppFiles = map[string]cliFile{
 	"plantwire_relay_options.go": {"option parsing", []string{"internal/plantwire"}, 46},
 	"plantwire_replay.go":        {"command: plantwire replay-trace", []string{"internal/plantwire"}, 46},
 	"plantwire_connect.go":       {"command: plantwire connect", []string{cliF, "internal/plantwire"}, 95},
+	"plantwire_twin.go":          {"command: plantwire twin-report", []string{"internal/plantwire"}, 25},
+	"plantwire_twin_options.go":  {"option parsing", nil, 33},
 }
 
 // cliEdge declares what one of the CLI's own edges may import and how large it

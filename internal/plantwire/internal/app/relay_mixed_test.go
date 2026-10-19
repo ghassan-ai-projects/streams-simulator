@@ -58,12 +58,17 @@ func mixedOptions(t *testing.T, out string) RelayOptions {
 
 func startMixedRelay(t *testing.T, hostPath string, options RelayOptions) startedRelay {
 	t.Helper()
+	return startMixedRelayTicked(t, hostPath, options, nil)
+}
+
+func startMixedRelayTicked(t *testing.T, hostPath string, options RelayOptions, ticks <-chan time.Time) startedRelay {
+	t.Helper()
 	options.GatewaySocket, options.HostSocket = filepath.Join(filepath.Dir(hostPath), "g.sock"), hostPath
 	ctx, cancel := context.WithCancel(t.Context())
 	ready, done := make(chan struct{}), make(chan relayRun, 1)
 	options.Ready = func() { close(ready) }
 	go func() {
-		stats, err := serveRelay(ctx, options, nil)
+		stats, err := serveRelay(ctx, options, ticks)
 		done <- relayRun{stats: stats, err: err}
 	}()
 	select {

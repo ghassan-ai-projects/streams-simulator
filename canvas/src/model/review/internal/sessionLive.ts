@@ -1,5 +1,6 @@
 import type { InstanceOrigin } from "../../graph";
 import type { OriginKind } from "../../shared/origin";
+import type { InterruptState } from "./interrupts";
 
 type ReadingState = "good" | "simulated" | "stale" | "disconnected" | "invalid" | "untrusted";
 export type DeviceHealth = "online" | "offline" | "simulated";
@@ -57,6 +58,7 @@ export interface SessionLive {
   readonly gateway: LinkState;
   readonly devices: readonly SessionDevice[];
   readonly commands: readonly SessionCommand[];
+  readonly interrupts: InterruptState | null;
 }
 
 interface ReadingView {

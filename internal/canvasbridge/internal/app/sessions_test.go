@@ -66,6 +66,7 @@ type sessionRig struct {
 	lastingArgv  [][]string
 	lastingStdin [][]byte
 	exit         process.LastingExit
+	control      *controlFake
 	launched     chan struct{}
 	proceed      chan struct{}
 }
@@ -74,6 +75,7 @@ func newSessionRig(t *testing.T) *sessionRig {
 	t.Helper()
 	rig := &sessionRig{harness: newHarness(t), exit: process.LastingExit{Stdout: []byte(`{"out":"runs/c-1","stopped":true}`)}}
 	rig.command = process.CommandResult{Stdout: []byte(sessionCheck)}
+	rig.control = newControlFake(rig.bridge)
 	runs := 0
 	rig.bridge.edges.NewRunID = func() string {
 		runs++
@@ -137,7 +139,7 @@ func TestAStartChecksThePlanThenRunsAChildTheBridgeOwnsWithItsOwnRunFolder(t *te
 	started := rig.act(t, "session.start", plan())
 	check := []string{"plantwire", "connect", "--check", "--stdin", "--domains-dir", rig.domainsDir(), "--adapters-dir", "/adapter-files"}
 	want := []string{"plantwire", "connect", "--stdin", "--barrier-cap-ms", domain.SessionBarrierCapMS, "--domains-dir", rig.domainsDir(),
-		"--adapters-dir", "/adapter-files", "--out", filepath.Join(rig.dir, "runs", "c-1")}
+		"--adapters-dir", "/adapter-files", "--control-socket", fakeControlSocket, "--out", filepath.Join(rig.dir, "runs", "c-1")}
 	if !slices.Equal(rig.argv[0], check) || !slices.Equal(rig.lastingArgv[0], want) || string(rig.lastingStdin[0]) != sessionPlan {
 		t.Fatalf("check argv %v, child argv %v stdin %q, want the check %v and then the child %v", rig.argv[0], rig.lastingArgv[0], rig.lastingStdin[0], check, want)
 	}

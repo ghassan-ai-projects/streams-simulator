@@ -4,6 +4,60 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **M5 re-review fixes in the binary.** An emergency stop of the relay names a gateway device that went offline (or that an
+  earlier birth announced) as `unreachable`, and a hold scoped to it is accepted, instead of the device vanishing from the
+  inventory; the stop keeps the last host epoch and never carries epoch 0. A retry of a waiting command with the same content is
+  answered `queued`; a purge of an approved command replays; an emergency stop never drops a scope and is served first by the
+  control port; every device of a stop is stopped even when a state record fails to send; a queued safe stop is not purged;
+  `twin-report` refuses a run whose interrupt log was set aside; `interrupts.rejected.jsonl` is never overwritten. Contracts
+  changed: `node-control-v0.1` and `interrupt-log-v0.1` require `unreachable` on an applied `estop` reply.
+
+- **M5 review fixes in the binary.** A node of the world refuses, as `local_control`, every command it had queued for a future
+  start time when a hold, an emergency stop or approval mode covers its device, so a stopped device is not restarted by a command
+  accepted before the stop. A command id that is already waiting for approval is refused `duplicate`, and a pending entry now
+  shows the command's `args` (bounded, `args_truncated`) and `content_digest`; `approve` and `deny` may carry `content_digest`
+  and are refused `unknown_command` when it differs. An emergency stop is never refused for capacity, names the devices it could
+  not order in `unreachable`, and is performed even when answering the host fails. The safe-stop exemption is decided by the
+  rules from the inventory (the declared stop without arguments) and no longer from a logged flag. The relay refuses host
+  command ids starting `node-stop-`, gives each stop its own idempotency key, sends the stop to the gateway before records for
+  the host and drops a host that stalls a write for 2 s (was 30 s) and still sends an emergency stop to the gateway afterwards, on the last boot each device announced. A log that does not replay is renamed
+  `interrupts.rejected.jsonl` and `plantwire connect` fails. `twin-report` applies the node's own safe stops to the twin
+  (`origin: node`, `cannot_judge` with `node_stop_unconfirmed` or `node_stop_not_applied` when it cannot), replays the rules of
+  the interrupt log before using it, refuses a missing log that `run.json` records, states `evidence_bound`, and reads
+  `journal.jsonl` only if it is a regular file of at most 64 MiB. The control socket accepts the bridge's longest line and
+  closes an idle connection after 60 s; the bridge picks a socket path short enough for the platform or starts without controls.
+  Contracts changed: `node-control-v0.1`, `interrupt-log-v0.1` (events `purge`; `args`, `args_truncated`, inventory
+  `unreachable`; no `safe_stop` input), `twin-report-v0.1`, `run-journal-v0.1`. No gate was loosened.
+- **Twin versus board (R12, binary).** `streamsim plantwire twin-report <run-dir> --domain <id> --kinds-dir <dir>` replays the
+  domain that implements a board's kinds in a fresh noise-free world, driven by the commands the board accepted (not those
+  refused, held, queued or never forwarded), and reports per device and metric where the twin's prediction and the board's
+  recorded readings part ways beyond declared tolerances (`--tolerance device.metric=value`, else a fraction of the metric's
+  `eu_range` span, else the metric is `cannot_judge`). New contract `twin-report-v0.1`; the bridge gains the action
+  `run.twin_report`, which returns the report unchanged. Gate edits: the CLI files `plantwire_twin.go` and
+  `plantwire_twin_options.go` are registered in `cliAppFiles`.
+
+- **Interrupt controls on the canvas (R11b).** The bridge starts each connected session with a control socket in an
+  owner-only directory it owns, reports `controls` in `session.status`, and the new action `session.control` sends one
+  `node-control-v0.1` request line to it and returns the node's reply unchanged (its own failures: `no_session`,
+  `control_unavailable`, `control_gone`, `control_timeout`, `control_unreadable`); `interrupts.jsonl` is an observer-readable
+  run file. The canvas decodes the journal's `interrupt` records and `live.interrupts` strictly and shows an always-visible
+  "Interrupts" region on the live view and the plant screen while a session runs: a scope (all, a board, a device), Hold,
+  Release, Approve each command, Emergency stop (latched until released), the waiting commands with Approve, Deny and their
+  deadline, the outcome of the last control, a badge on held nodes and the node's `local_control` refusals in the commands table.
+  Gate edits: the I/O edge file `process/control.go` of the canvas bridge is registered, and the canvas register's action list gains
+  `session.control`.
+
+- **Interrupts at the node (R11, binary).** `plantwire connect --control-socket <path>` opens an owner-only socket on which an
+  operator holds, queues for approval or emergency-stops devices (all, a board or a device); the node only refuses or stops.
+  A held command is refused `local_control`, a command in approval mode is answered `queued` until approved (handed on
+  unchanged), denied (`local_control`) or past its deadline (`expired`), a host's own safe stop is never held, and an
+  emergency stop performs each safe stop in scope and latches a hold until released. One rule set serves a node of the world
+  and the relay (hardware and mixed). New contracts `node-control-v0.1` (the request and its answer) and `interrupt-log-v0.1`;
+  a session with a control socket writes `interrupts.jsonl`, covered by the optional `interrupt_log_digest` of `run.json` and
+  checked by `replay`, `verify` and `report` (an `interrupt_log` check), and journals each record as an observer `interrupt`
+  session record; the `live` snapshot gains the optional `interrupts` member. A run without a control socket has neither the
+  member nor the file, and no golden or pin changed. Gate edits: the I/O edge file `uds/control.go` is registered.
+
 - **The field trace as a run input, and mixed sessions.** `plantwire relay --out <dir>` now writes `field-trace.jsonl` beside
   its journal: every record the gateway sent, in the order the relay received it, one canonical `{ordinal, record}` line
   each and nothing else. `plantwire relay --domain <id> ...` adds the simulated world to the node: the gateway's boards

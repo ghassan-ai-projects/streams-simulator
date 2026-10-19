@@ -15,7 +15,7 @@ const healthWords: Readonly<Record<DeviceHealth, string>> = {
   simulated: "Simulated · no link",
 };
 
-export const receiptWords: Readonly<Record<SessionCommand["receipt"], string>> = {
+const receiptWords: Readonly<Record<SessionCommand["receipt"], string>> = {
   pending: "Unconfirmed",
   accepted: "Accepted",
   refused: "Refused",
@@ -28,18 +28,37 @@ export const reportWords: Readonly<Record<SessionCommand["report"], string>> = {
   unknown: "Board report unknown",
 };
 
-const reasonWords: Readonly<Record<string, string>> = {
-  not_ready: "Not ready",
-  local_control: "Under local control",
-  stale_epoch: "Stale authority epoch",
-  expired: "Expired",
-  policy_not_allowed: "Policy not allowed",
-  session_ending: "Session ending",
-  unknown_device: "Unknown device",
-};
+const reasonWords: ReadonlyMap<string, string> = new Map(
+  Object.entries({
+    not_ready: "Not ready",
+    local_control: "Refused at the node: local control",
+    stale_epoch: "Stale authority epoch",
+    expired: "Expired before it was approved or accepted",
+    policy_not_allowed: "Policy not allowed",
+    session_ending: "Session ending",
+    unknown_device: "The node has no such device",
+    unknown_board: "The node has no such board",
+    unknown_command:
+      "That command no longer waits, or its content is not what was shown: it may have been decided or expired",
+    too_many_scopes: "Too many holds and approval scopes are set; release one first",
+    node_busy: "The node was busy and may still apply this later",
+    malformed: "The node could not read the request",
+    duplicate: "A command with different content already uses this command id or key",
+  }),
+);
 
 export function refusalWords(reason: string): string {
-  return reasonWords[reason] ?? reason.replaceAll("_", " ");
+  return reasonWords.get(reason) ?? reason.replaceAll("_", " ");
+}
+
+export function acceptanceWords(command: SessionCommand): string {
+  if (command.receipt === "refused" && command.reason === "local_control") return refusalWords(command.reason);
+  return receiptWords[command.receipt];
+}
+
+export function acceptanceDetail(command: SessionCommand): string {
+  if (command.reason === "" || (command.receipt === "refused" && command.reason === "local_control")) return "";
+  return refusalWords(command.reason);
 }
 
 export function effectWords(command: SessionCommand): string {

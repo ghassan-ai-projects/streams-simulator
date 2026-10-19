@@ -149,6 +149,16 @@ test("clicking a mark seeks and selects its instance and leaves the Report open 
   await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("the report's effector calls and disturbances fit the panel at 1280 px", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/review?world=w-boiler");
+  const details = page.getByRole("complementary", { name: "Run details" });
+  const calls = details.getByRole("region", { name: "Effector calls" });
+  await expect(calls).toBeVisible({ timeout: 60_000 });
+  await expect.poll(() => details.evaluate((aside) => aside.scrollWidth <= aside.clientWidth)).toBe(true);
+  await expect.poll(() => calls.evaluate((region) => region.scrollWidth <= region.clientWidth)).toBe(true);
+});
+
 test("a review says under the scrubber what happens first, or that nothing does", async ({ page }) => {
   await page.goto("/#/review?world=w-boiler");
   await expect(page.getByText("First: fault · scaling on boiler-1 at 00:10:00 · 1 effector call")).toBeVisible({

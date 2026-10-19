@@ -36,21 +36,27 @@ func TestEvidenceDigestsNameEveryDigestFieldTheArtifactRecords(t *testing.T) {
 func TestTheFieldTraceDigestIsAnEvidenceSlotOnlyForARunThatHasOne(t *testing.T) {
 	t.Parallel()
 	good := "sha256:" + strings.Repeat("c", 64)
-	without := (&RunArtifact{ExpectedTraceDigest: good}).EvidenceDigests()
-	for _, digest := range without {
-		if digest.Name == "field_trace" {
-			t.Fatalf("a run without a field trace lists %+v, want no field trace slot", digest)
+	checkOptionalEvidenceSlot(t, optionalSlot{name: "field_trace", file: FileFieldTrace, field: "field_trace_digest"},
+		&RunArtifact{ExpectedTraceDigest: good}, &RunArtifact{ExpectedTraceDigest: good, FieldTraceDigest: good}, good)
+}
+
+type optionalSlot struct{ name, file, field string }
+
+func checkOptionalEvidenceSlot(t *testing.T, slot optionalSlot, without, with *RunArtifact, good string) {
+	t.Helper()
+	for _, digest := range without.EvidenceDigests() {
+		if digest.Name == slot.name {
+			t.Fatalf("a run without a %s lists %+v, want no %s slot", slot.name, digest, slot.name)
 		}
 	}
-	with := &RunArtifact{ExpectedTraceDigest: good, FieldTraceDigest: good}
 	found := false
 	for _, digest := range with.EvidenceDigests() {
-		if digest.Name == "field_trace" {
-			found = digest.File == FileFieldTrace && digest.Field == "field_trace_digest" && digest.Digest == good && !digest.Replayable
+		if digest.Name == slot.name {
+			found = digest.File == slot.file && digest.Field == slot.field && digest.Digest == good && !digest.Replayable
 		}
 	}
-	if !found || len(with.EvidenceDigests()) != len(without)+1 {
-		t.Fatalf("evidence of a run with a field trace = %+v, want one more slot, field_trace_digest on %s", with.EvidenceDigests(), FileFieldTrace)
+	if !found || len(with.EvidenceDigests()) != len(without.EvidenceDigests())+1 {
+		t.Fatalf("evidence of a run with a %s = %+v, want one more slot, %s on %s", slot.name, with.EvidenceDigests(), slot.field, slot.file)
 	}
 }
 
@@ -73,5 +79,21 @@ func TestDropMalformedEvidenceDigestsKeepsOnlyWellFormedOnes(t *testing.T) {
 		if digest.Digest != want[digest.Name] {
 			t.Errorf("%s digest = %q, want %q", digest.Name, digest.Digest, want[digest.Name])
 		}
+	}
+}
+
+func TestTheInterruptLogDigestIsAnEvidenceSlotOnlyForARunThatHasOne(t *testing.T) {
+	t.Parallel()
+	good := "sha256:" + strings.Repeat("d", 64)
+	checkOptionalEvidenceSlot(t, optionalSlot{name: "interrupt_log", file: FileInterruptLog, field: "interrupt_log_digest"},
+		&RunArtifact{ExpectedTraceDigest: good}, &RunArtifact{ExpectedTraceDigest: good, InterruptLogDigest: good}, good)
+}
+
+func TestAMalformedInterruptLogDigestIsKeptSoThatTheFileCheckFailsOnIt(t *testing.T) {
+	t.Parallel()
+	art := &RunArtifact{InterruptLogDigest: "sha256:00"}
+	art.DropMalformedEvidenceDigests()
+	if art.InterruptLogDigest != "sha256:00" {
+		t.Fatalf("interrupt_log_digest = %q, want the malformed value kept: dropping it would let a log that the artifact no longer covers pass", art.InterruptLogDigest)
 	}
 }

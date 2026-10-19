@@ -12,10 +12,11 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire"
 )
 
-const connectUsage = "usage: streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir d] [--adapters-dir a] [--kinds-dir k]"
+const connectUsage = "usage: streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir d] [--adapters-dir a] [--kinds-dir k] [--control-socket <path>]"
 
 type plantWireConnectOptions struct {
 	plan, out, domainsDir, adaptersDir string
+	control                            string
 	stdin, check                       bool
 	sliceS                             float64
 	capMS                              int64
@@ -63,6 +64,7 @@ func registerConnectFlags(fs *flag.FlagSet, o *plantWireConnectOptions) {
 	registerAdaptersDir(fs, &o.adaptersDir, "adapters")
 	registerKindsDirs(fs, &o.kinds)
 	fs.Var(&o.policies, "policy", "allowed policy digest of commands to simulated devices; repeatable")
+	fs.StringVar(&o.control, "control-socket", "", "owner-only unix socket the node's hold, approval and emergency-stop controls arrive on")
 	fs.Float64Var(&o.sliceS, "slice-s", 1, "world seconds per slice")
 	fs.Int64Var(&o.capMS, "barrier-cap-ms", 30000, "wall-time cap of each barrier")
 }
@@ -84,5 +86,6 @@ func (o plantWireConnectOptions) connect(s *session) (plantwire.ConnectOptions, 
 		plan, source = strings.NewReader(string(raw)), o.plan
 	}
 	return plantwire.ConnectOptions{Plan: plan, Source: source, DomainsDir: o.domainsDir, AdaptersDir: o.adaptersDir, KindsDirs: o.kinds.items(),
-		Policies: o.policies.items(), Out: o.out, SliceNS: int64(o.sliceS * 1e9), BarrierCap: time.Duration(o.capMS) * time.Millisecond}, nil
+		Policies: o.policies.items(), Out: o.out, SliceNS: int64(o.sliceS * 1e9), ControlSocket: o.control,
+		BarrierCap: time.Duration(o.capMS) * time.Millisecond}, nil
 }

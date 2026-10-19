@@ -34,6 +34,7 @@ interface Facts {
   readonly run: string;
   readonly domain: string;
   readonly check: SessionCheck | null;
+  readonly controls: boolean;
 }
 
 function failedStatus(facts: Facts, failure: Record<string, unknown>): ConnectStatus {
@@ -53,7 +54,12 @@ function lastingState(value: unknown): (typeof lastingStates)[number] | null {
 function connectStatus(value: unknown): ConnectStatus | null {
   if (!isRecord(value)) return null;
   if (value.state === "none") return { state: "none" };
-  const facts = { run: text(value.run), domain: text(value.domain), check: sessionCheck(value.plan) };
+  const facts = {
+    run: text(value.run),
+    domain: text(value.domain),
+    check: sessionCheck(value.plan),
+    controls: value.controls === true,
+  };
   const state = lastingState(value.state);
   if (state !== null) return { state, ...facts };
   return value.state === "failed" ? failedStatus(facts, record(value.failure)) : null;

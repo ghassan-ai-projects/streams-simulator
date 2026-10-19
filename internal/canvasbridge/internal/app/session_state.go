@@ -12,6 +12,8 @@ type liveSession struct {
 	lasting  Lasting
 	stopping bool
 	failed   *domain.SessionStatus
+	control  string
+	remove   func()
 }
 
 func (s *liveSession) status() domain.SessionStatus {
@@ -71,4 +73,26 @@ func (s *liveSession) requestStop() Lasting {
 	}
 	s.stopping = true
 	return s.lasting
+}
+
+func (s *liveSession) offerControl(path string, remove func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.control, s.remove = path, remove
+}
+
+func (s *liveSession) controlPath() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.control
+}
+
+func (s *liveSession) releaseControl() {
+	s.mu.Lock()
+	remove := s.remove
+	s.remove = nil
+	s.mu.Unlock()
+	if remove != nil {
+		remove()
+	}
 }

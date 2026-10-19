@@ -69,6 +69,39 @@ against the workspace's own kind files. A domain is checked against the kind fil
 
 **Issues are machine-readable.** Every issue of `kind.validate`, `kind.check`, `kind.twin` and `domain.validate` is `{pointer?, message, keyword?, member?}`: `pointer` an RFC 6901 pointer into the file the command named, `message` plain English for a person, `keyword` the JSON Schema keyword that failed (`type`, `enum`, `pattern`, `required`, `additionalProperties`, `minimum`, `exclusiveMinimum`, `maxLength`, ...) or a stable rule code of the binary (`twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`, `twin_name_pattern`, `twin_range`, `domain_rule`, `implements_drift`, ...), and `member` the named member a rule is about (`resolution`, `writable`, `safe_stop`, `unit`, `eu_range`, `data_type`, the property a `required` or `additionalProperties` issue names). The canvas places an issue on a field by `pointer` and `member`, picks a fix by `keyword`, and writes its own plain label for each keyword; no text is parsed and no copy of the binary's name patterns, unit aliases or defaults lives in the canvas.
 
+**Session actions** (`plantwire connect`, one connected session at a time; PHYSICAL_DEVICES "As built (R9)", "R11b as-built"):
+
+| Action | Arguments | Runs | Returns |
+|---|---|---|---|
+| `session.check` | `{content}`: the plan | `plantwire connect --check --stdin` | the check document |
+| `session.start` | `{content}` | a lasting `plantwire connect --stdin --control-socket <path> --out runs/<id>` child the bridge owns | the status |
+| `session.status` | none | nothing | `{state: none, starting, running, stopping, ended or failed, run?, domain?, plan?, result?, failure?, controls?}`; `controls` is true while the live session's control socket exists |
+| `session.stop` | none | an interrupt, then at most 30 s, then a kill | the final status |
+| `session.control` | the `node-control-v0.1` request (`op`, `scope?`, `enabled?`, `command_id?`) | one line to the node's control socket | the node's one-line reply document, unchanged |
+
+`session.control` validates nothing about the control: the bridge encodes the arguments as one JSON line (at most 4096
+bytes, `413 too_large` above it), sends it to the owner-only socket of the living session and returns the node's reply
+unchanged, a refusal included (`{result: "refused", reason: ...}` is a reply, not an error). The socket lives in a
+directory the bridge makes for the session (`os.MkdirTemp`, owner-only, removed when the session ends or the bridge closes),
+passed to the child as `--control-socket`; a bridge that cannot make it starts the session without controls (`controls`
+stays false). The bridge waits at most 12 s for the answer (the node answers `node_busy` itself after 10 s). Its own
+failures are `422` with a code: `no_session` (no connected session is running), `control_unavailable` (the session has no
+control socket), `control_gone` (the socket is not there, is not owner-only or refused the connection), `control_timeout` (no
+answer in time: the node may still apply the control afterwards, so read the state with `{op: "state"}` before sending it
+again) and `control_unreadable` (the answer was not one JSON document). The reply document is the contract's
+`$defs/reply`; the bridge does not look inside it. `runs/<id>/interrupts.jsonl` is an observer file like `field-trace.jsonl`:
+readable while the run is open.
+
+**Run actions.** `run.twin_report` (R12) runs `streamsim plantwire twin-report runs/<run> --domain <id> --domains-dir <workspace>/domains
+--kinds-dir <workspace>/kinds [--tolerance <selector.metric=value[,...]>] [--span-fraction <f>]` and returns the report
+(`twin-report-v0.1`) unchanged, whatever its verdict: a `diverges` or `cannot_judge` report is a result, not an error. Arguments:
+`{run, domain, tolerance?, span_fraction?}` (`run` a run id of `runs/`, `domain` the id of the twin domain in `domains/`,
+`tolerance` one text of comma-separated `selector.metric=value` entries, `span_fraction` a number). The bridge validates
+nothing about the report and decides nothing about the tolerances: the binary owns every rule. A run without a field trace, a
+twin that implements none of the board's kinds, an unknown tolerance selector or a journal that differs from its recorded digest
+is the binary's failure document (`plantwire_failed`, `domain_not_found` or `file_not_found`). The kinds folder is always passed,
+even before it exists (a missing folder is the binary's `file_not_found`).
+
 **Dry-run actions** (point-in-time answers from the binary; none writes a file):
 
 | Action | Arguments | Runs | Returns |

@@ -102,6 +102,13 @@ func WriteAtomic(path string, data []byte) error {
 	return nil
 }
 
+func Rename(from, to string) error {
+	if err := os.Rename(from, to); err != nil {
+		return &fs.PathError{Op: "rename", Path: from, Err: err}
+	}
+	return nil
+}
+
 func Replace(path string, data []byte) error {
 	info, err := os.Stat(path)
 	if err == nil {

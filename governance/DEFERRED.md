@@ -305,3 +305,145 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > taken. The binary writes the `session` record once, as the first observer record after `run.opened`, and a reader
 > must not trust a `session` record found anywhere else. Trigger to fix: a recording used as evidence of what a board did;
 > then the projection is derived again from the `wire` records on read.
+> D-80 (the rules of an interrupt log are replayed in-process only): a session replays its own `interrupts.jsonl` through the
+> rules when it ends (`app.VerifyInterruptLog`) and leaves `interrupt_log_digest` out of `run.json` when the log does not
+> replay; `replay`, `verify` and `report` check the file only against that digest. There is no `plantwire` subcommand that
+> re-runs the rules over a log found in a folder, so an edit that also rewrites `run.json` is caught only by a caller of the
+> function. Trigger to fix: a folder received from elsewhere that must be audited for its interrupts; then a read-only
+> `plantwire interrupts <run-dir>` command (one facade call) prints the verdict and the first record that does not replay.
+> D-81 (controls are served between steps, not at once): a simulated node (`Session`) takes controls at the end of a barrier,
+> before it processes the host's records of that barrier; a relay takes them on its 250 ms tick. An emergency stop therefore
+> acts at the next barrier or tick, not instantly, and a control sent while a barrier waits for a slow host waits with it
+> (the socket answers `refused` with `node_busy` after 10 s without having applied it, except for the narrow race where the
+> node takes the request at the same moment). The firmware's own lease and safe state remain the last line of defence
+> (PHYSICAL_DEVICES section 5). Trigger to fix: a bench that needs a stop in under a tick; then the relay serves the control
+> channel in its own select case and the world's barrier wait is made interruptible.
+> D-82 (the emergency stop of a relay, and what the host is told): a relay sends the declared safe-stop command to the gateway
+> (or to the simulated node) with arguments `{}`, a deadline 30 s ahead on the clock of the device's origin, the host's last
+> authority epoch and a zero policy digest, and consumes the receipt and result (the host never sent that command; they are
+> recorded as `effect` records). A safe-stop command that needs arguments cannot be stopped this way: the world refuses it
+> `out_of_range`, the effect is recorded, and the hold still latches. A relay sends no `DSTATE` for the stop (a node of the world
+> does, from its own state); the host learns of the hold from the `local_control` refusals that follow. A device not yet born,
+> or whose kind is not yet known to the relay, is reported `skipped` or recorded `device_not_born` and is not stopped.
+> D-83 (approvals that wait are not kept across the host): a command waiting for approval when the host is lost is refused
+> `session_ending` (relay) or abandoned with the session (node), never kept for a returning host; switching approval mode off
+> does not release or refuse commands already waiting (only the operator, the deadline, a hold or the end of the session do);
+> a hardware command waits against the relay's wall clock (the tick time), so a skew between the host's clock and the
+> relay's expires it early or late. Controls exist only on `plantwire connect`; `plantwire node` and `plantwire relay` take
+> none. The control socket has no authentication beyond its owner-only directory (SPEC section 2): any process of the same
+> user can hold or stop the node.
+> D-84 (the controls bar offers only what the newest snapshot names): the scope select lists all devices, each board and each
+> device that appears in the newest live snapshot. A board the node knows from its inventory but whose devices have not been born
+> yet cannot be held in advance from the canvas (the node would accept it), and a scope that stays set for a device that has
+> left the snapshot shows only as a chip. Trigger to fix: a bench that must hold a board before it connects; then the node
+> publishes its inventory in `live.interrupts` and the canvas offers it.
+> D-85 (one control at a time, and the countdown of a world-clock deadline): the canvas store takes no second control while one
+> waits for the node's answer (the buttons stay and the second press does nothing), so an emergency stop pressed during a slow
+> `hold` waits for it (the node itself may take up to 10 s, D-81). The deadline of a waiting command on the world clock is
+> counted from the time of the newest snapshot, so it moves with the snapshots, not with the wall clock. Trigger to fix: a stop
+> that must overtake a pending control; then the stop goes out on its own connection and the bridge does not wait for the
+> control before it.
+> D-86 (no confirmation and no operator identity): the emergency stop is one press, by design, and the bridge action
+> `session.control` has no identity beyond the browser's pairing: any paired browser of the bridge's user can hold or stop the
+> node, and the journal does not say who pressed. The bridge reports `controls` when the socket file exists, not when the node
+> answers; a stale socket is found by the first control (`control_gone`). Trigger to fix: a bench shared by several operators;
+> then a named operator travels with the request into the interrupt log.
+> D-87 (an undecodable interrupt record is told as an unreadable snapshot): the live bar's note names a snapshot when the
+> dropped record was an `interrupt` record, and the canvas keeps no separate count of dropped interrupt records. Trigger to
+> fix: a binary version that adds an interrupt event; then the decoder gets its own entry and note.
+> D-88 (a canvas-connected session has no policy allow-list): `plantwire connect` takes `--policy` only from the command line,
+> and the session plan and `session.start` never supply it, so every host command to a simulated device is refused
+> `policy_not_allowed`; a hardware device passes through to the gateway, which keeps its own policy. The R11b e2e shows this
+> (approved `ref-a` is refused at the node's normal checks). Trigger to fix: a canvas session that must command a simulated
+> device; the fix needs a design decision: an operator-supplied allow-list in the session plan, validated by the binary, and a
+> UI field for it.
+> D-89 (the relay drops a schema-invalid host record without a reason): `Relay.hostRecord` (`relay_host.go`) counts a host record
+> that fails its schema, or whose type is not a host record type, in `stats.Dropped` and writes no receipt and no evidence for
+> it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no
+> reason in the evidence; then the drop is journalled with its reason (the record type and the failing field) and the stats keep
+> the count.
+> D-90 (the twin report places a command by sequence, not by a clock): the time a command takes effect on the twin is the latest
+> board event time recorded before the gateway's receipt for it (`at_ns`), so it is exact only to one reading interval of the
+> board, and the twin starts from the initial state its domain declares at the earliest reading time in the field trace, not from the
+> board's state then. A board that was already warm at the first reading shows as a divergence until the first applied command
+> and the report does not judge those readings (`before_first_command`). Trigger to fix: a bench whose twin needs the board's
+> own state at the start; then the options take an initial state per device, or the first good readings seed the twin.
+> D-91 (the twin report knows no command history before the recording and no effects of simulated devices): only the host's
+> commands to devices of the board that appear in the run's observer journal are applied; commands to simulated devices of a
+> mixed session are ignored, a device of the board that no twin entity matches (same wire id, kind implemented) is
+> `no_twin_entity`, and a board that changed its boot or rebooted mid-session is not told apart. Trigger to fix: a mixed
+> session whose twin must include the simulated peers' effects.
+> D-92 (the Inspect twin overlay draws the report's series, in the board's own time base): a real board has no trend chart in
+> Inspect (a readings table at the cursor), so the overlay draws the board's compared readings and the twin's prediction from the
+> report's `series.points` (at most 2000, the first ones when truncated), not the whole recorded trend, and it only has points
+> where a reading was compared (none before the first applied command, none for a reading that was not good). The report's times
+> are the board's own event times; the canvas treats them as run times (`runClock`, `seek`), which holds when the gateway stamps
+> its events on the run clock and not otherwise. Trigger to fix: a board trend in Inspect (V-5), or a gateway whose clock is not
+> the run clock; then the binary reports the offset or maps the times and the canvas draws the board's full trace.
+> D-93 (the canvas offers no span fraction and no per-metric tolerance form): `run.twin_report` takes `span_fraction`, and the
+> tolerance field is free text in the binary's `device.metric=value, kind.metric=value` form, checked by the binary only. Trigger to
+> fix: a user who needs another default share or gets a refusal often; then the binary lists the metrics that can be given a
+> tolerance and the canvas offers a field per metric.
+> D-94 (a command already at the gateway cannot be cancelled by the node): when a hold or an emergency stop covers a hardware
+> device, the relay refuses what the host sends from then on, but a command it already forwarded (one the gateway queued for
+> its `not_before_ns`, one in flight) is the gateway's now and still runs; the node can refuse or stop, not recall. A node of
+> the world does purge its own waiting commands (refused `local_control`, `purge` records). Trigger to fix: a gateway that
+> exposes a way to cancel a queued command; then the relay asks for it as part of the stop.
+> D-95 (the twin report can agree on little): `agrees` also holds with a tolerance as wide as the metric's whole `eu_range`
+> (nothing can diverge) and with one reading compared out of thousands. Trigger to fix: a bench where an `agrees` was read as
+> proof; then the report carries a coverage figure (compared over all readings) and calls a vacuous tolerance `partial`.
+> D-96 (a command's time is steerable by the board): the report places a command at the latest board event time recorded
+> before the gateway's receipt, so a board that stamps its own events can move where a command lands on the twin's clock.
+> Trigger to fix: a board that cannot be trusted with its clock; then the relay stamps the field trace with its own receive time.
+> D-97 (a session that ends with commands waiting sends them no receipt): a node of the world logs the end of the session
+> (`flush`, each waiting command `resolve`d `session_ending`) but sends nothing, because the contract has the host count commands
+> still queued at a session's end as refused `session_ending`. Trigger to fix: a host that cannot do that; then the node sends
+> the terminal receipt before `NDEATH`.
+> D-98 (an answer of `node_busy` may still apply): a control the node had taken when the 10 s allowance ended is applied and
+> answered into a reply nobody reads; the bridge's `control_timeout` means "read the state", not "it did not happen".
+> D-99 (an emergency stop of a relay can still wait one bounded host write): the relay is one loop. The stop to the gateway is
+> sent before the relay's records for the host, a stalled host is dropped after a 2 s write (and the stop is then still sent,
+> on the last boot the gateway announced), and controls are taken on the next tick, so a stop waits at most one such write and
+> one tick (about 2.25 s), not 30 s. Per-link writers would remove the wait. A stop addressed to a boot the device has left
+> is refused by the gateway `wrong_boot`, and the node does not retry on the new boot.
+> The 2 s write deadline applies to every relay link, the gateway's too: a gateway that stalls a write for 2 s is dropped and
+> redialled like a stalled host.
+> D-100 (a safe stop that needs arguments, a rejected log): only the declared safe-stop command **without arguments** is exempt
+> from a hold or an approval mode and only it is ordered by an emergency stop; a safe stop whose effector requires arguments
+> is held like any command. A log that does not replay (or could not be written) is renamed `interrupts.rejected.jsonl`,
+> the run records no `interrupt_log_digest`, and `plantwire connect` fails with `ErrInterruptLogRejected`; only the twin
+> report looks for the renamed file, to refuse a report that would ignore the stops. Trigger to fix: a domain whose safe stop takes arguments; then the declared arguments join the inventory.
+> D-101 (the canvas asks for twin files that may not exist): the device list reads `twins/<stem>.twin.json` for every kind
+> (`DeviceDesk.twinStatus`, `loadTwin`) and the browser logs a 404 for each kind without a twin choices file. The workspace
+> listing names domains, compositions, scenarios, kinds and components, not twin choices files, so the canvas cannot know which
+> exist. Bridge change needed (not made in the canvas round): list `twins` in `workspace.list`; then the desk reads only those.
+> Trigger to fix: a workspace with several kinds and no twins that is opened with the console in view.
+> D-102 (the canvas orders an answer against snapshots by their content, not by a time): a control reply carries no time and a
+> snapshot's time is the run clock, so a snapshot generated before a control but delivered after its reply is told by equality
+> with a state the reply superseded (`SeenState.older`, at most four) and ignored until a snapshot with another state arrives. A
+> node-side change that returns the state to a superseded one stays hidden until the next change or the next control. Trigger to
+> fix: a reply or snapshot that carries a sequence number the canvas can compare; then the guard is that comparison.
+> D-103 (node tags on the plant keep their short words): the "Held", "Latched" and "Approving" tags on a plant node are three
+> short words in `ui/graph` with the full words as the tag's title and the node's accessible name; the review panel and the
+> Interrupts bar use the long words (`Held · latched by emergency stop`, `Approving each command`) from one table. Unifying
+> them needs the graph module to import the review module's words or the words to move to a shared model. Trigger to fix: a
+> third place that words a hold.
+> D-104 (an emergency stop of a node with nothing to stop reads as applied): when no device in scope declares a safe stop, or the
+> inventory is still empty (a relay before the gateway's birth), the stop is `applied` with empty `stopped` and `unreachable`.
+> A device that was announced and is offline is now listed `unreachable` (the relay remembers every device announced in the
+> session), but "applied" with three empty lists is still shown as a clean stop. Trigger to fix: a bench operator reading it as
+> "everything stopped"; then the reply carries the count of devices it covered.
+> D-105 (a device never born has no known kind): the relay learns a device's kind, and so its safe stop, from its `DBIRTH`. A
+> device named in the gateway's `NBIRTH` boards that never sent a `DBIRTH` is in the inventory with no safe stop, so an emergency
+> stop lists it `skipped` and not `unreachable`. Trigger to fix: a board whose devices are announced only by name; then the node
+> birth carries the kind of each member.
+> D-106 (a node of the world serves controls at the barrier): a control submitted to a node of the world waits for the next
+> barrier, so an emergency stop waits for the slice in progress (the relay serves controls every tick). The port orders an
+> emergency stop ahead of every other waiting control and gives it a place when ordinary requests fill the backlog. Trigger to
+> fix: slices long enough for a stop to wait too long on a bench; then the world serves controls between steps.
+
+> D-107 (per-device mark for a stop that could not be sent): after an emergency stop, a device the node could not order to stop (listed `unreachable`) shows the same Latched badge on the plant as a stopped device; only the outcome text names it. Give it its own badge (shape and words) from the reply's `unreachable` list. Found in the final M5 browser spot check.
+>
+> D-108 (outcome wording of a partial emergency stop): the outcome line opens "was applied" even when a stop could not be sent, and the unreachable sentence uses a plural for one device ("fan-01: they may still be energised"). Lead with the failure and agree number. Found in the final M5 browser spot check.
+>
+> D-109 (transient plant clip after the bar resizes): for 0.5 to 1 s after the Interrupts bar grows or shrinks, the frame node sits partly outside the pane before the refit; gone by 2 s. Refit in the same frame as the resize. Found in the final M5 browser spot check.

@@ -1,18 +1,10 @@
 import type { LiveMark, SessionLive, SessionDevice, SessionCommand, SessionReading } from "../../../model/review";
-import { isRecord, list, number, record, text } from "../../../model/shared/json";
+import { list, number, record, text } from "../../../model/shared/json";
+import { choice, rows } from "./decodeKit";
+import { optionalInterrupts } from "./interruptDecoder";
 
 const environments = ["simulated", "hardware", "unknown"] as const;
 const links = ["unknown", "online", "offline", "not_applicable"] as const;
-
-function choice<T extends string>(value: unknown, choices: readonly T[]): value is T {
-  return typeof value === "string" && choices.includes(value as T);
-}
-
-function rows<T>(value: unknown, decode: (row: Record<string, unknown>) => T | null): readonly T[] | null {
-  if (!Array.isArray(value)) return null;
-  const result = value.map((row) => (isRecord(row) ? decode(row) : null));
-  return result.includes(null) ? null : (result as T[]);
-}
 
 function reading(row: Record<string, unknown>): SessionReading | null {
   if (!choice(row.state, ["good", "simulated", "stale", "disconnected", "invalid", "untrusted"])) return null;
@@ -97,7 +89,7 @@ function commandState(row: unknown): Record<string, unknown> {
 
 function stateKey(row: Record<string, unknown>): string {
   const commands = list(row.commands).map(commandState);
-  return JSON.stringify([row.host, row.gateway, row.devices, commands, row.commands_truncated]);
+  return JSON.stringify([row.host, row.gateway, row.devices, commands, row.commands_truncated, row.interrupts ?? null]);
 }
 
 export function liveSnapshot(row: Record<string, unknown>): SessionLive | null {
@@ -105,7 +97,8 @@ export function liveSnapshot(row: Record<string, unknown>): SessionLive | null {
   const devices = rows(row.devices, device);
   const commands = rows(row.commands, command);
   const marks = row.marks === null ? [] : rows(row.marks, mark);
-  if (devices === null || commands === null || marks === null) return null;
+  const interrupts = optionalInterrupts(row.interrupts);
+  if (devices === null || commands === null || marks === null || interrupts === null) return null;
   return {
     key: stateKey(row),
     atNs: number(row.at_ns),
@@ -115,5 +108,6 @@ export function liveSnapshot(row: Record<string, unknown>): SessionLive | null {
     commands,
     marks,
     commandsTruncated: row.commands_truncated === true,
+    interrupts: interrupts.value,
   };
 }

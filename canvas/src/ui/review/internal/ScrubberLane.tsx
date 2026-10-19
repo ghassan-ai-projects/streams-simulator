@@ -75,7 +75,7 @@ function Chip({ mark, chip, text, startNs, active, pick, origin }: ChipProps) {
       <button
         type="button"
         className={active ? styles.chipActive : styles.chip}
-        title={`${runClock(mark.atNs, startNs)} · ${mark.raw}`}
+        title={`${chipText(mark, startNs)} · ${mark.raw}`}
         aria-label={chipText(mark, startNs)}
         onClick={() => {
           pick(mark);

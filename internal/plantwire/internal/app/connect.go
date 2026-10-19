@@ -21,16 +21,17 @@ const (
 )
 
 type ConnectOptions struct {
-	Plan        io.Reader
-	Source      string
-	DomainsDir  string
-	AdaptersDir string
-	KindsDirs   []string
-	Policies    []string
-	Out         string
-	SliceNS     int64
-	BarrierCap  time.Duration
-	Ready       func()
+	Plan          io.Reader
+	Source        string
+	DomainsDir    string
+	AdaptersDir   string
+	KindsDirs     []string
+	Policies      []string
+	Out           string
+	SliceNS       int64
+	ControlSocket string
+	BarrierCap    time.Duration
+	Ready         func()
 }
 
 type ConnectCheck struct {

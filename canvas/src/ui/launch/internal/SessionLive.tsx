@@ -37,6 +37,17 @@ function Binding({ state }: { readonly state: Running }) {
   );
 }
 
+function Controls({ state }: { readonly state: Running }) {
+  if (state.phase !== "live") return null;
+  return (
+    <p className={panel.hint}>
+      {state.controls
+        ? "Interrupt controls (hold, approve each command, emergency stop) are on the plant and live screens."
+        : "Interrupt controls are not available yet: the node has not opened its control socket."}
+    </p>
+  );
+}
+
 function StopButton({ state, connect }: { readonly state: Running; readonly connect: ConnectSession }) {
   const stopping = state.phase === "starting" || state.stopping;
   return (
@@ -67,6 +78,7 @@ export function SessionLive({ state, connect }: { readonly state: Running; reado
         </p>
       )}
       <Binding state={state} />
+      <Controls state={state} />
       {state.check !== null && <Planned check={state.check} binding={state.phase === "live" ? state.binding : null} />}
       <StopButton state={state} connect={connect} />
       <p className={panel.hint}>
@@ -77,7 +89,13 @@ export function SessionLive({ state, connect }: { readonly state: Running; reado
   );
 }
 
-export function SessionEnded({ run, onOpen }: { readonly run: string; readonly onOpen: () => void }) {
+interface EndedProps {
+  readonly run: string;
+  readonly onOpen: () => void;
+  readonly onAnother: () => void;
+}
+
+export function SessionEnded({ run, onOpen, onAnother }: EndedProps) {
   const status = useFocusOnMount<HTMLParagraphElement>();
   return (
     <div className={panel.body}>
@@ -86,6 +104,9 @@ export function SessionEnded({ run, onOpen }: { readonly run: string; readonly o
       </p>
       <button type="button" className={cx(shared.primary, panel.primary)} onClick={onOpen}>
         Open the review
+      </button>
+      <button type="button" className={cx(shared.secondary, panel.secondary)} onClick={onAnother}>
+        Set up another run
       </button>
     </div>
   );

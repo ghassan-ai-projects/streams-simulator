@@ -36,6 +36,9 @@ type Options struct {
 
 	NoWireJournal  bool
 	JournalOrigins bool
+
+	Control      *ControlPort
+	InterruptLog InterruptLog
 }
 
 var ErrBadOptions = errors.New("plantwire: invalid node options")
@@ -77,12 +80,16 @@ type Session struct {
 	safeStops   int
 	live        *domain.Live
 	liveChanged bool
+	ints        *interruptSide
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
 	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
 	if options.JournalOrigins && !options.NoWireJournal {
 		s.live = domain.NewLive(false, s.devices.instances(), options.Bound)
+	}
+	if options.Control != nil {
+		s.ints = &interruptSide{gate: domain.NewInterruptGate(), port: options.Control, log: options.InterruptLog}
 	}
 	r.SetDeliveryObserver(func(event model.SimEvent) { s.events = append(s.events, event) })
 	return s
@@ -168,6 +175,9 @@ func (s *Session) journalWire(direction string, record map[string]any) {
 }
 
 func (s *Session) close() error {
+	if s.ints != nil {
+		s.recordInterrupts(s.ints.gate.Flush(domain.ClockWorld, s.now()).Entries)
+	}
 	return s.send(domain.NodeDeath(s.bdSeq, "shutdown"))
 }
 

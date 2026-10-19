@@ -42,6 +42,10 @@ func WriteAtomic(path string, data []byte) error {
 	return files.WriteAtomic(path, data)
 }
 
+func Rename(from, to string) error {
+	return files.Rename(from, to)
+}
+
 func Replace(path string, data []byte) error {
 	return files.Replace(path, data)
 }
