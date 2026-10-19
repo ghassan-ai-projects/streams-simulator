@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Physical devices: public documentation (R13).** New guide `documentation/guides/physical-devices.md` and architecture page
+  `documentation/architecture/physical-devices.md`; a "Physical devices" section in the limitations page, the roadmap, the
+  security model and the claims matrix; `streamsim canvas` documented in the CLI reference; the twin-choices contract, the
+  `interrupts.jsonl` and `interrupts.rejected.jsonl` files and the physical-session journal records documented in the
+  references. Documentation only: no code, contract, test or gate changed.
+
 - **Policy allow-list (D-88), P2: bridge and canvas.** The workspace may hold `settings/default.policies.json`
   (`{"policies": [...]}`), the one file of `settings/`: the bridge reads and writes it through the file routes with the etag,
   atomic owner-only write and size rules of every workspace file, checks its path and size only, never lists it and never

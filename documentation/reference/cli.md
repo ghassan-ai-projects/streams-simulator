@@ -15,7 +15,7 @@ that value). A command given more positional arguments than it takes fails with
 
 ## Output contract
 
-Every command except `help` and `mcp` prints exactly **one JSON document** on stdout, for
+Every command except `help`, `mcp` and `canvas` (which owns its stdout and prints no document) prints exactly **one JSON document** on stdout, for
 success and for failure ([design](../../docs/design/CLI_SURFACE.md), [schema](../../contracts/cli-output-v0.1.schema.json)). stderr carries human diagnostics only.
 
 | Exit | stdout |
@@ -37,8 +37,8 @@ binary (`twin_member_required`, `twin_unit_required`, `twin_instrument_mismatch`
 JSON). `member` names the member a rule is about (`resolution`, `writable`, `safe_stop`, `unit`, `eu_range`, `data_type`, or the
 missing or extra property of `required` and `additionalProperties`). `message` stays plain English; a
 surface never parses it. `result` carries the command's report for a failed check (for example the replay
-report of a failed `verify`). `mcp` owns its stdout for the protocol and reports failures on
-stderr only; `device serve` prints no success document while it serves.
+report of a failed `verify`). `mcp` and `canvas` own their stdout (the protocol; the server) and report failures on
+stderr only, a failing `canvas` exiting 1 or 2 with nothing on stdout; `device serve` prints no success document while it serves.
 
 ## Commands
 
@@ -213,6 +213,21 @@ Flags:
 - `--adapters-dir <path>` — adapter directory; defaults to `adapters`.
 - `adapter verify <path>` — renders the conformance fixture and checks it against the adapter's declared output schema and golden file. It fails when a declared check fails, and when the adapter declares neither (nothing would be compared); the result reports `schema_checked` and `golden_checked`.
 
+### `canvas`
+
+Serves the visual canvas and its bridge on a loopback address until interrupted. The canvas is a client of the binary, equal to the command line: it computes nothing the binary owns, and the bridge maps each canvas action to one binary command ([physical-device actions](../architecture/physical-devices.md#bridge-actions)). The built canvas is not embedded; build it first (`npm ci --ignore-scripts && npm run build` in `canvas/`, which writes `canvas/dist`).
+
+```text
+streamsim canvas --workspace <dir> --ui-dir <dir> [--addr 127.0.0.1:0] [--adapters-dir adapters] [--components-dir <dir>]...
+```
+
+- `--workspace` — required. The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/`, `settings/` and `runs/`. Keep it outside the repository when it holds customer data.
+- `--ui-dir` — required. The built canvas, for example `canvas/dist`.
+- `--addr` — the listen address; a non-loopback address is refused. The default `127.0.0.1:0` picks a free port.
+- `--adapters-dir`, `--components-dir` — as for the other commands.
+
+The address and a one-time pairing code are printed on **stderr**; stdout carries no document. A browser pairs once with the code and then holds a session cookie. A connected session started from the canvas runs `plantwire connect` as a child process, one at a time, and the bridge stops it when it closes.
+
 ### `device serve`
 
 Serves the data-defined device emulator over a Unix domain socket for a typed
@@ -280,7 +295,7 @@ arrives after its result. The host sends each verification decision once in its 
 must send its birth within 10 s; after a refusal the host closes the connection. The host carries its `--policy` digest (`sha256:` and 64 lower-case hexadecimal digits) in every command it issues; it signs nothing, and a host with a `--script` and no well-formed `--policy` is a usage error (the reserved all-zero stop digest is refused too). The node accepts a command only when the command's digest is on the node's `--policy` list (at most 8 distinct digests; a malformed, repeated or reserved digest is refused as bad options before the node connects). The commands that skip freshness, epoch and policy checks are the
 safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
 (`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
-`HSYNC`; `--delay-ms` makes the reference host slow.
+`HSYNC`; `--delay-ms` makes the reference host slow. **Give the reference host a `--delay-ms` (for example 250) for any session longer than a few seconds:** with none, the world free-runs and writes about 75 MB of run folder per second (a 6 second run wrote about 450 MB), and `plantwire twin-report` then refuses the run because its `journal.jsonl` is over 64 MiB. A `--script` command's `at_ns` is **world** time, which starts at 1767225600000000000 (2026-01-01T00:00:00Z) by default, not wall time; its `id` is the command's `command_id`; `--script` needs a well-formed `--policy`, else the command is a usage error (exit 2, `usage_invalid`). The host prints its report when the session ends cleanly; if you stop the node while the host is waiting out a `--delay-ms`, the host may exit 1 (`plantwire host: write ...: broken pipe`) without a report, and a host interrupted before any node arrived exits 1 (`accept ...: use of closed network connection`): take the evidence from the run's `journal.jsonl` (deferred D-115).
 
 ### `plantwire relay`
 
@@ -375,7 +390,7 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   `policy_listed_twice` and `policy_reserved`; a list that is empty, longer than 8 or holds a malformed digest breaks the
   plan's schema (`minItems`, `maxItems`, `pattern`). The sockets are used
   as cleaned paths.
-- Without `--check`, `--out` is required. With no `gateway_socket` the world is a plant wire node to the host; with one it is
+- Without `--check`, `--out` is required, and **it must be a new folder for every session**: reusing one silently replaces `run.json`, the journals and the traces and leaves a stale `interrupts.jsonl` beside them, so `verify` can print `matches: true` for a mixture (deferred D-114). Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks a unique `c-<8 hex>` name. The host's socket must exist: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). With no `gateway_socket` the world is a plant wire node to the host; with one it is
   the mixed relay (`plantwire relay --domain`) and the gateway is checked against the plan at its handshake: the bound board
   must be announced (`board_missing`), hold the device (`device_missing`), and announce the instance's kind
   (`kind_missing`) with the kind file's `kind_digest` (`kind_mismatch`), or the gateway is refused `inventory_mismatch`. A
@@ -385,7 +400,7 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   host in scope is refused `local_control`), **approve each command** (a command in scope is answered `queued` and waits until the
   operator approves it, denies it, or its deadline passes: `expired`) and **emergency stop** (the safe stop of every device in
   scope, then a hold latched until the operator releases it), each for all devices, a board or a device. The node only refuses or
-  stops: it never originates an ordinary command, and the host's own safe-stop commands are never held. One request per line
+  stops: it never originates an ordinary command, and a device's declared safe-stop command is never held or queued when it carries no arguments (a safe stop with arguments is held like any command, D-100). One request per line
   (`node-control-v0.1`: `{"op": "hold" | "release" | "approve_mode" | "approve" | "deny" | "estop" | "state", "scope":
   {"kind": "all" | "board" | "device", "id"}, "enabled", "command_id"}`), one answer per line (`{"result": "applied" | "refused",
   "reason"?, "op", "command_id"?, "stopped"?, "skipped"?, "state": {"holds", "approve", "pending", "devices"}}`); a request the
@@ -394,7 +409,7 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   when it differs; a command id that is already waiting is refused `duplicate`; an emergency stop lists the devices it could not
   order in `unreachable`. A control line is at most 4096 bytes and a connection idle for 60 s is closed. Controls are applied at a barrier (a node of
   the world) or on a 250 ms tick (a relay), never in between. The run then holds `interrupts.jsonl` ([the interrupt
-  log](artifacts.md#the-interrupt-log)). Without the flag nothing changes.
+  log](artifacts.md#the-interrupt-log)). Without the flag nothing changes. A `release` must name the same scope as the `hold` or the stop it clears ("on exactly that scope"): a hold on a device is not cleared by releasing `all`. The `state` reply lists in `devices` only the devices that have a non-default mode, so it is `[]` on a quiet session. At most 64 scopes are set, at most 64 commands wait for approval (each with at most 8 repeats), and a node has at most 4096 devices. Example lines: `{"op":"release","scope":{"kind":"device","id":"fan-01"}}`, `{"op":"approve","command_id":"<id>"}`, `{"op":"deny","command_id":"<id>"}`. A client needs to talk to a Unix socket: `nc -U -w 2 <socket>` works with the macOS and OpenBSD netcat (GNU netcat has no `-U`); `socat - UNIX-CONNECT:<socket>` works everywhere.
 - Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
   environment, boot id) and each gateway handshake of a plan that binds an instance with its outcome (`binding` records:
   matched or refused, with the issues).
@@ -458,7 +473,7 @@ kind files and the options, and exits 0 whatever the verdict. It measures the tw
 ordered on an operator's emergency stop is applied to the twin like a host command and listed with `origin: node`; when the
 board never answered it, or the twin cannot apply it, the verdict is `cannot_judge` (`node_stop_unconfirmed`,
 `node_stop_not_applied`) rather than a divergence. The interrupt log is replayed before it is used; `run.evidence_bound`
-says whether a `run.json` covers the files.
+says whether a `run.json` covers the files. Limits: the command reads `journal.jsonl` through a 64 MiB cap and refuses a larger one (`journal.jsonl is larger than 67108864 bytes`; a field trace and an interrupt log are capped at 64 MiB too, which is what a reference host with no `--delay-ms` produces within seconds), and refuses a field trace whose readings span more than 7 days.
 
 ### `run`
 

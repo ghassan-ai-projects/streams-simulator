@@ -1,7 +1,10 @@
 # Physical devices — one device model, simulated and real implementations
 
-- **Status**: design agreed in discussion with the owner, 2026-10-17, branch `simulator-new-vision`. M1 is built; §1.2, §1.5 and
-  the "As built" note at the end of §1 say what exists. M2 onwards is not built.
+- **Status**: design agreed in discussion with the owner, 2026-10-17. M1 to M5 and the policy allow-list are built in the
+  binary, the bridge and the canvas, against a scripted stand-in gateway; each round's "As built" section says what exists and
+  where it deviates from the plan. Not built, and not verified here: the gateway's plant wire side, the Agentic Stream and Tamoz
+  changes, the independent instrument and the physical bench exits (briefs in `docs/physical-devices/briefs/`). The public
+  summary is `documentation/guides/physical-devices.md`.
 - **Source**: the owner's product direction "From Simulated Streams to the Physical World" (2026-10-17), and its principle:
   *the real device is not an addition to the simulator; it is another possible implementation of a device that the simulator
   already knows how to represent.*
@@ -577,7 +580,8 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 ## 9. Deferred
 
 - **Time in mixed sessions.** Agentic Stream can hold a simulated world at each barrier; a real board cannot be held. How the
-  world is paced when a real board is present is decided when M3 starts.
+  world is paced when a real board is present is decided when M3 starts. *Decided in M3: not paced; the world advances barrier
+  by barrier as fast as the host answers (D-71).*
 - Authentication, several users, customer sites and production reliability of the control plane (D6).
 - Remote gateways: TCP needs mutual authentication in a new contract version.
 - Incident reproduction with faults injected on a recording; more boards; fleet-scale mixed runs.

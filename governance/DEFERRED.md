@@ -451,3 +451,41 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > characters, so the textarea and the trust line break a digest inside the token and the footer names only the first three
 > digests ("and N more"). The full list is in the field. Trigger to fix: a wider panel or a request to see all digests at Start;
 > then show the list in a scrollable, selectable block above Start. Found in the Chrome review of P2.
+>
+> D-111 (**Medium**, design limit; the live effect stage cannot be confirmed by another device's metric): `Live.confirm` accepts `command_evidence` only
+> for the commanded device, a metric its kind announced, and a reading the relay holds for that same device
+> (`live_evidence.go`: `awaitsEvidence`, `plausibleEvidence`, `heldReadingAgrees`). A bench instrument that is a separate device
+> (a tachometer, a current sensor, a second thermometer) therefore cannot confirm a command on the live screen, and the host's
+> only evidence for the real fan is the board's own report of its duty. The independent confirmation of a physical effect is the
+> owner's offline comparison (`docs/physical-devices/briefs/bench-instrument.md`). Trigger to fix: the owner wants the
+> instrument's verdict on the live screen; then either the instrument's reading becomes a metric of the commanded device's kind
+> (a kind change and a new digest) or an evidence member names the device that observed (a plant wire contract change, 1.4.0).
+> Found while writing the R13 bench brief.
+>
+> D-112 (**Medium**; a hardware-only session has no carrier for `command_evidence`): evidence travels in an `HSYNC`, and an `HSYNC` is
+> routed only when it answers a barrier a side raised. A simulated world raises one every slice; a hardware gateway runs in wall
+> time and sends no `NSYNC` (SPEC section 8), so in a `plantwire relay` without `--domain`, or in any session whose gateway is
+> the only node, no `HSYNC` is routed and the effect stage stays `unknown` (`relay_router.go` `routeSync`, `relay_host.go`
+> `settleEvidence`). In a mixed session the world's barrier carries it. Trigger to fix: a production-shape host that must show
+> an observed effect for a hardware-only node; then the contract names how a host sends evidence outside a barrier (a new
+> record or a gateway-raised `NSYNC`), or the relay raises a barrier of its own. Found while writing the R13 host brief.
+>
+> D-113 (**Low**, pre-release; the contract-version check is an equality, SPEC says a minimum): SPEC section 6 refuses `contract_unsupported` for "a
+> `contract_version` below the host's minimum, or a `contract_digest` it does not know at that version", but
+> `domain.ContractUnsupported` refuses any version or digest other than the binary's own (`negotiate.go`), so a gateway one
+> contract version behind or ahead is refused even when it would work. Pre-release, so harmless today. Trigger to fix: the first
+> field deployment (SPEC promises compatibility from then); then the host keeps a table of the contract versions and digests it
+> accepts. Found while writing the R13 gateway brief.
+>
+> D-114 (**Medium**; `plantwire connect --out` accepts an existing run folder): a second session with the same `--out` silently
+> replaces `run.json`, the journals and the traces and leaves a stale `interrupts.jsonl` beside them, and `verify` then prints
+> `matches: true` for the mixture. The canvas is safe (it claims a fresh `c-<8 hex>` folder, retrying a taken name). Trigger to
+> fix: any CLI bench with repeated attempts; then `connect --out` refuses a folder that already holds a `run.json` or any run
+> file (a product change, not made in R13; the docs say a new folder for every session). Found by the R13 documentation review.
+>
+> D-115 (**Low**; the reference host's exit behaviour when its node is stopped): `plantwire host` run with `--delay-ms` exits 1
+> with `plantwire host: write ...: broken pipe` and no report when `plantwire connect` is stopped during a barrier wait, and exits
+> 1 with `accept ...: use of closed network connection` when it is interrupted before any node arrived. A bench script that waits
+> for the report gets none; the evidence is in the node's `journal.jsonl`. Trigger to fix: a bench that relies on the host's
+> report; then a node that ends and an interrupt before a node arrives are both a clean end with the report printed. Found by the
+> R13 documentation review.

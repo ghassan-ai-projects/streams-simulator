@@ -20,7 +20,7 @@ The simulator is a test instrument. Its credibility comes from making the observ
 ## What it is not
 
 - It is not a message broker or a production event transport.
-- It is not a physics engine, an industrial controller, or an emergency-stop system.
+- It is not a physics engine, an industrial controller, or an emergency-stop system. With a real board attached ([physical devices](../guides/physical-devices.md)) it can hold, approve or stop commands at its node (a declared safe stop without arguments is never held), but it only refuses or stops, never originates an ordinary command, and the board's own firmware stays the last line of defence.
 - It is not a consumer-specific benchmark binary. Consumer names, schemas, and behavior belong in adapters or external consumers.
 - It is not a claim that arbitrary remote effects are exactly once. The simulator can make its own command log deterministic; it cannot make an external system transactional.
 - It is not a license to publish benchmark numbers without a fresh, reproducible evidence bundle.

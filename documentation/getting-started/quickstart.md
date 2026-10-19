@@ -51,6 +51,7 @@ Verification loads the artifact, replays the command log against a fresh world b
 - Run the [reference consumer](../guides/consumer-integration.md) against a native JSONL trace.
 - Use [replay and debugging](../guides/replay-and-debugging.md) to inspect a failure.
 - Use [MCP integration](../reference/mcp.md) when the consumer must control and actuate a live world.
+- Use [physical devices](../guides/physical-devices.md) to define a device as a kind file, run a twin of it, and put a real board beside simulated ones (the guide's first steps need only the repository, no hardware).
 
 ## Next reads
 

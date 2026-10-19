@@ -15,6 +15,7 @@ Diagnose from evidence in this order: command output, run artifact, replay resul
 | `unknown_effector` | Domain contract | Read the operator nameplate/effector list; do not invent names. |
 | Trace is missing records | Delivery | Inspect `ledger.jsonl` before blaming the consumer. |
 | Shipped-domain schema failure | Working-tree inventory | A file in `domains/` failed validation or the inventory changed without matching test and manifest updates; see [limitations](../limitations.md). |
+| Gateway refused (`inventory_mismatch`, `contract_unsupported`, `environment_mismatch`), commands `policy_not_allowed` or `local_control`, a device `stale` or "Origin unknown" | Physical devices | [Physical devices: when something does not work](../guides/physical-devices.md#when-something-does-not-work). |
 | `make ci-check` stops early | Tooling or code | Read the first failing target; missing release tools are intentional failures. |
 
 ## Escalation packet

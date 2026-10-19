@@ -11,6 +11,10 @@ This section gives the public reading order for the simulator design. The detail
 5. [Ground truth and scoring](../../docs/design/GROUND_TRUTH_AND_SCORING.md) — oracle, ledger, action, and benchmark rules.
 6. [Domain catalog](../../docs/design/DOMAIN_CATALOG.md) — specified coverage and build order; specified is not shipped.
 
+## Physical devices
+
+[Physical devices](../../docs/design/PHYSICAL_DEVICES.md) is the design record for kind files, twins, the relay, mixed sessions, the live control plane, node interrupts and the twin report, with an as-built note for each round. It is implemented; the public summary is [the guide](../guides/physical-devices.md), [the architecture page](../architecture/physical-devices.md) and [the limitations](../limitations.md#physical-devices).
+
 ## Status discipline
 
 The archive contains documents written at different stages. In particular, older technical-design text may describe SQLite, Go versions, or commands that do not match the current implementation. The accepted implementation uses file-based JSON artifacts; verify current behavior against [`internal/`](../../internal/) and [the limitations page](../limitations.md).

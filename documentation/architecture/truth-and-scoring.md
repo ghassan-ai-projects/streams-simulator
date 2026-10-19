@@ -34,6 +34,10 @@ The consumer verdict and ground-truth record are validated against the versioned
 
 The score is meaningful only with the exact run artifact, ledger, truth label, simulator version, domain/adapter digests, and consumer inputs that produced it. A score copied without those inputs is not an auditable benchmark result.
 
+## Hardware devices have no truth
+
+Sealed truth and scoring apply to simulated devices. A real board announced through a gateway has no generative truth: its readings are what it reported, and a `DRESULT` is self-reported and may be wrong. The simulator does not score a consumer against a board's self-reports. A physical effect counts only when an independent instrument observes it, and the host's own check of a reading the board itself reported is recorded evidence, not independent proof. The twin report compares a twin with a board's readings; it measures the twin, not a consumer. See [physical devices: truth boundary](physical-devices.md#truth-boundary).
+
 ## Implementation evidence
 
 The scoring bundle `scorecard-bundle-v0.2` uses shared online/offline policies for judgment, delivery admission, evidence grounding and action fidelity. Judgment selects the earliest detection regardless of verdict ordering. Identity-conflict handling requires a reported conflict admission when identity reuse applies; appropriate-action credit requires the scenario entity. Malformed citations fail grounding in both paths. Online resolution and deadline metrics still require world history and are not inferred by the offline path. An unavailable offline ledger produces conservative zero metrics; an available empty ledger retains the existing vacuous-success convention. These metric corrections retain the JSON field layout.

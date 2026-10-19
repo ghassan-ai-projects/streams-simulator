@@ -25,6 +25,13 @@ Read [limitations](limitations.md) before treating the current checkout as a rel
 - [CLI reference](reference/cli.md)
 - [Replay and debugging](guides/replay-and-debugging.md)
 
+### I want to test against a real board
+
+- [Physical devices: a real board beside simulated ones](guides/physical-devices.md) — kind files, twins, capture, mixed sessions, live mode, interrupts, the twin report
+- [Physical devices: architecture](architecture/physical-devices.md) — modules, data flow, determinism and the truth boundary
+- [Physical devices: limitations](limitations.md#physical-devices) — read before trusting a bench result
+- [Security model](architecture/security-model.md#physical-devices-and-the-control-socket) — the control socket and the policy allow-list
+
 ### I want to integrate a consumer
 
 - [Consumer integration](guides/consumer-integration.md)
@@ -61,6 +68,7 @@ Read [limitations](limitations.md) before treating the current checkout as a rel
 
 - **Evaluator:** [product](overview/product.md) → [quickstart](getting-started/quickstart.md) → [methodology](benchmark/methodology.md) → [limitations](limitations.md) → [evidence](benchmark/evidence.md)
 - **Consumer integrator:** [quickstart](getting-started/quickstart.md) → [consumer integration](guides/consumer-integration.md) → [MCP](reference/mcp.md) → [contracts](reference/contracts.md) → [artifacts](reference/artifacts.md)
+- **Bench engineer (real board):** [physical devices guide](guides/physical-devices.md) → [physical devices limitations](limitations.md#physical-devices) → [CLI: `plantwire`](reference/cli.md#plantwire-connect) → [artifacts](reference/artifacts.md) → [security model](architecture/security-model.md#physical-devices-and-the-control-socket)
 - **Domain author:** [concepts](overview/concepts.md) → [domain authoring](guides/authoring-domains.md) → [domain contract](reference/contracts.md) → [validation](architecture/domains-and-adapters.md)
 - **Adapter author:** [concepts](overview/concepts.md) → [adapter authoring](guides/authoring-adapters.md) → [adapter contract](reference/contracts.md) → [golden verification](guides/authoring-adapters.md#workflow)
 - **Failure investigator:** [operations](operations/operations.md) → [troubleshooting](operations/troubleshooting.md) → [replay](guides/replay-and-debugging.md) → [artifacts](reference/artifacts.md)
