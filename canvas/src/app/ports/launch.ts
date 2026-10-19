@@ -32,7 +32,22 @@ export type ConnectStatus =
       readonly issues: readonly PlanIssue[];
     });
 
+export type PolicyDefaultFile =
+  | { readonly state: "absent" }
+  | { readonly state: "present"; readonly policies: readonly string[]; readonly etag: string }
+  | { readonly state: "unreadable"; readonly etag: string };
+
+export interface PolicyDefaultFailure {
+  readonly kind: "conflict" | "unavailable" | "unreadable";
+  readonly diagnostic: Diagnostic;
+}
+
 export interface ConnectGateway {
+  readPolicyDefault(): Promise<Outcome<PolicyDefaultFile, PolicyDefaultFailure>>;
+  savePolicyDefault(
+    policies: readonly string[],
+    etag: string,
+  ): Promise<Outcome<{ readonly etag: string }, PolicyDefaultFailure>>;
   checkSession(plan: string): Promise<Outcome<SessionCheck, ConnectFailure>>;
   startSession(plan: string): Promise<Outcome<ConnectStatus, ConnectFailure>>;
   sessionStatus(): Promise<Outcome<ConnectStatus, ConnectFailure>>;

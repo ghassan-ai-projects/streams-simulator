@@ -77,7 +77,7 @@ func TestAPlantWireHostReportsItsSession(t *testing.T) {
 	inventory := writeFile(t, "inventory.json", `{"P1": "pump"}`)
 	hosted := make(chan outcome, 1)
 	go func() {
-		hosted <- invoke(t, "plantwire", "host", "--socket", path, "--script", script, "--inventory", inventory)
+		hosted <- invoke(t, "plantwire", "host", "--socket", path, "--script", script, "--inventory", inventory, "--policy", hostPolicy)
 	}()
 	waitForSocket(t, path)
 	options := plantwire.Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: 1767225600000000000 + 180e9}
@@ -137,4 +137,59 @@ func pumpBoardRun(t *testing.T) *run.Run {
 		t.Fatal(err)
 	}
 	return r
+}
+
+const hostPolicy = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+func TestAConnectedSessionTakesItsPolicyListFromThePlanAndHasNoPolicyOption(t *testing.T) {
+	t.Parallel()
+	got := invokeWithInput(t, benchPlan("zone-01"), append(checkArgs(thermalDomains(t)), "--policy", hostPolicy)...)
+	message, _ := got.failure(t)["message"].(string)
+	if got.code != 2 || !strings.Contains(message+got.stderr, "policy") {
+		t.Fatalf("exit %d with %q %q, want a usage refusal of the undefined --policy", got.code, message, got.stderr)
+	}
+}
+
+func TestAScriptedHostWithoutAWellFormedPolicyIsAUsageErrorBeforeItListens(t *testing.T) {
+	t.Parallel()
+	script := writeFile(t, "script.json", `[{"at_ns": 1767225660000000000, "device": "P1", "command": "start", "args": {}}]`)
+	cases := map[string][]string{"no policy": nil, "a malformed policy": {"--policy", "nope"},
+		"the reserved stop digest": {"--policy", "sha256:0000000000000000000000000000000000000000000000000000000000000000"}}
+	for name, extra := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			path := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "h.sock")
+			got := invoke(t, append([]string{"plantwire", "host", "--socket", path, "--script", script}, extra...)...)
+			body := got.failure(t)
+			message, _ := body["message"].(string)
+			if got.code != 2 || body["code"] != "usage_invalid" || !strings.Contains(message, "policy digest") {
+				t.Fatalf("exit %d with %v, want a usage error about the host's policy digest", got.code, body)
+			}
+			if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
+				t.Fatalf("Stat of the socket = %v, want a host that never listened", err)
+			}
+		})
+	}
+}
+
+func TestANodeOrMixedRelayWithABrokenPolicyFlagIsRefusedAsBadOptionsBeforeItConnects(t *testing.T) {
+	t.Parallel()
+	dir := filepath.Dir(testsupport.SocketPath(t))
+	domains := []string{"--domain", "pump-board", "--domains-dir", filepath.Dir(testsupport.PumpBoardDomain()), "--adapters-dir", testsupport.AdaptersDir()}
+	cases := map[string][]string{
+		"a node": append([]string{"plantwire", "node", "--host-socket", filepath.Join(dir, "h.sock"), "--out", t.TempDir()}, domains...),
+		"a mixed relay": append([]string{"plantwire", "relay", "--gateway-socket", filepath.Join(dir, "g.sock"), "--host-socket", filepath.Join(dir, "h.sock"),
+			"--out", t.TempDir()}, domains...),
+	}
+	for name, args := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got := invoke(t, append(args, "--policy", "nope")...)
+			body := got.failure(t)
+			message, _ := body["message"].(string)
+			if got.code != 1 || body["code"] != "plantwire_failed" || !strings.Contains(message, "64 lower-case hexadecimal digits") {
+				t.Fatalf("exit %d with %v, want plantwire_failed saying what a policy digest is", got.code, body)
+			}
+		})
+	}
 }

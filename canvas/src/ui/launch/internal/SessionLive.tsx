@@ -3,6 +3,7 @@ import type { BindingNote } from "../../../model/launch";
 import { bindingWords } from "../../../model/launch";
 import { cx, failureLine, panel, shared, useFocusOnMount } from "../../primitives";
 import { IssueList, Planned } from "./SessionCheck";
+import { PolicyInEffect } from "./SessionPolicies";
 import launch from "./LaunchPanel.module.css";
 import styles from "./Session.module.css";
 
@@ -80,6 +81,7 @@ export function SessionLive({ state, connect }: { readonly state: Running; reado
       <Binding state={state} />
       <Controls state={state} />
       {state.check !== null && <Planned check={state.check} binding={state.phase === "live" ? state.binding : null} />}
+      {state.check !== null && <PolicyInEffect policies={state.check.policies} />}
       <StopButton state={state} connect={connect} />
       <p className={panel.hint}>
         The session runs until you stop it, also when you close this panel or leave the plant. Stop ends it and saves

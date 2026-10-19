@@ -16,7 +16,7 @@ func (l *Live) sent(r map[string]any, at int64) bool {
 	}
 	c := &LiveCommand{CommandID: text(r, "command_id"), Device: text(r, "device"), Environment: l.environmentOf(text(r, "device")),
 		Command: text(r, "command"), BootID: text(r, "expected_boot_id"), Sent: true, Receipt: "pending", Report: "pending",
-		Effect: "unknown", SentAtNS: at, UpdatedAtNS: at}
+		Effect: "unknown", SentAtNS: at, UpdatedAtNS: at, policy: text(r, "policy_digest")}
 	l.commands = append(l.commands, c)
 	if len(l.commands) > maxLiveCommands {
 		l.commands = slices.Clone(l.commands[1:])
@@ -67,8 +67,16 @@ func (l *Live) receipt(c *LiveCommand, r map[string]any, at int64) bool {
 		return false
 	}
 	c.Receipt, c.Reason, c.UpdatedAtNS = status, text(r, "reason"), at
+	c.PolicyDigest = refusedPolicy(c)
 	l.mark(at, "command", "command", c.Device+" command "+c.Command+" "+status, c.Device)
 	return true
+}
+
+func refusedPolicy(c *LiveCommand) string {
+	if c.Receipt == "refused" && c.Reason == "policy_not_allowed" && policyDigest.MatchString(c.policy) {
+		return c.policy
+	}
+	return ""
 }
 
 func (l *Live) result(c *LiveCommand, r map[string]any, at int64) bool {

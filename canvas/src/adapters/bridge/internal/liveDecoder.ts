@@ -46,8 +46,19 @@ function stagesHold(row: Record<string, unknown>): boolean {
   );
 }
 
+const digestShape = /^sha256:[0-9a-f]{64}$/;
+
+function refusedDigest(row: Record<string, unknown>): string | null {
+  const digest = row.policy_digest;
+  if (digest === undefined) return "";
+  const refused = row.receipt === "refused" && row.reason === "policy_not_allowed";
+  return refused && typeof digest === "string" && digestShape.test(digest) ? digest : null;
+}
+
 function command(row: Record<string, unknown>): SessionCommand | null {
+  const policyDigest = refusedDigest(row);
   if (
+    policyDigest === null ||
     !choice(row.receipt, ["pending", "accepted", "refused"]) ||
     !choice(row.report, ["pending", "succeeded", "failed", "unknown"]) ||
     !choice(row.effect, ["unknown", "observed"]) ||
@@ -66,6 +77,7 @@ function command(row: Record<string, unknown>): SessionCommand | null {
     report: row.report,
     effect: row.effect,
     effectEvidence: text(row.effect_evidence),
+    policyDigest,
     sentAtNs: number(row.sent_at_ns),
     updatedAtNs: number(row.updated_at_ns),
   };

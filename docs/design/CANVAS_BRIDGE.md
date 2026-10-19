@@ -25,12 +25,18 @@ serves until interrupted. The workspace is a folder:
 | `twins/*.twin.json` | Twin choices (`twin-choices-v0.1`): the instrument of each metric and the response of each command, from which `kind.twin` scaffolds a twin | read, write |
 | `components/equipment/*.component.json` | Workspace equipment components | read, write |
 | `components/instruments/*.instrument.json` | Workspace instrument components | read, write |
+| `settings/default.policies.json` | The workspace default of the Connect session form's allowed policy digests, `{"policies": [...]}`; the one file of `settings/` (no other name, no other folder holds a policy file) | read, write |
 | `runs/<world_id>/…` | Run folders written by the director | read only, truth-gated (§4) |
 
 `components/` is a customer component directory in the library's own layout (`equipment/` and `instruments/` below it,
 as `--components-dir` expects), so the bridge hands that folder to every command that loads the library. `kinds/` is a
 kind directory (`--kinds-dir`). Neither folder is created at start: a workspace without `kinds/` or `components/` passes
 no flag for it, and a domain that `implements` a kind file then fails closed, because its kind file is not loaded.
+
+`settings/default.policies.json` only pre-fills a new Connect session form (policy allow-list, D-88). The bridge checks its path
+and size only (the same `etag`, atomic owner-only write and 8 MiB cap as every file) and never its content: the canvas saves
+the list the binary echoed from `plantwire connect --check`, and the binary alone validates digests. It is not in the
+workspace listing, no action argument resolves to `settings/`, and an absent file reads `404 not_found`.
 
 Any other path, an absolute path, `..`, a symlink leaving the workspace or a file over 8 MiB is refused. A folder carrying
 the `STREAMSIM_CUSTOMER_WORKSPACE` marker is served like any other, and must live outside every repository.

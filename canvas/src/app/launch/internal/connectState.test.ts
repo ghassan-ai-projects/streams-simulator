@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isBusy, markedStale, refusedState, stateOf } from "./connectState";
 
 const diagnostic = { message: "refused", displayCode: "plantwire_failed" };
-const check = { domain: "d", mixed: false, instances: [] };
+const check = { domain: "d", mixed: false, instances: [], policies: [] };
 const facts = { run: "c-1", domain: "d", check: null, controls: true };
 
 describe("connect states", () => {

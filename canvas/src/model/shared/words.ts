@@ -27,3 +27,11 @@ export function spaced(name: string): string {
 
 export const evaluateRule =
   "The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.";
+
+const digestParts = /^(sha256:)([0-9a-f]{64})$/;
+
+export function shortDigest(digest: string): string {
+  const parts = digestParts.exec(digest);
+  const [, scheme = "", hex = ""] = parts ?? [];
+  return parts === null ? digest : `${scheme}${hex.slice(0, 8)}…${hex.slice(-8)}`;
+}

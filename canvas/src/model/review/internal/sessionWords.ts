@@ -56,9 +56,27 @@ export function acceptanceWords(command: SessionCommand): string {
   return receiptWords[command.receipt];
 }
 
+const policyRefusalSides: Readonly<Record<string, string>> = {
+  real: "Policy not allowed by the gateway",
+  simulated: "Policy not allowed by this session",
+};
+
 export function acceptanceDetail(command: SessionCommand): string {
   if (command.reason === "" || (command.receipt === "refused" && command.reason === "local_control")) return "";
+  if (command.reason === "policy_not_allowed") {
+    return policyRefusalSides[originKindOf(command.environment)] ?? refusalWords(command.reason);
+  }
   return refusalWords(command.reason);
+}
+
+export const copyFailedWords = "Could not copy; select the digest instead.";
+
+export function copiedWords(commandId: string): string {
+  return `Copied the policy digest of ${commandId}.`;
+}
+
+export function digestListedWords(domain: string): string {
+  return `The digest is in the draft session plan of ${domain}. It applies to the next session; a running session keeps its list.`;
 }
 
 export function effectWords(command: SessionCommand): string {

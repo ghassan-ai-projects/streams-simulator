@@ -1,9 +1,17 @@
 import type { SessionCheck, SessionDraft } from "../../../model/launch";
-import { firstSessionDraft, sessionPlanText } from "../../../model/launch";
+import {
+  filledFromDefault,
+  firstSessionDraft,
+  keptFromRecord,
+  sessionPlanText,
+  withPolicyListed,
+} from "../../../model/launch";
 import { Observable } from "../../shared";
 import type { ConnectFailure, ConnectGateway, ConnectStatus, Outcome, Scheduler } from "../../ports";
+import type { RunKind } from "./api";
 import type { ConnectState, LiveSession } from "./connectState";
 import { isBusy, markedStale, refusedState, stateOf } from "./connectState";
+import { PolicyDefault } from "./policyDefault";
 
 const pollMs = 2000;
 const lastingStates: readonly ConnectStatus["state"][] = ["starting", "running", "stopping"];
@@ -12,27 +20,65 @@ export class ConnectStore extends Observable<ConnectState> {
   private unfollow: (() => void) | null = null;
   private unpoll: (() => void) | null = null;
   private readonly drafts = new Map<string, SessionDraft>();
+  private readonly kinds = new Map<string, RunKind>();
+  readonly defaults: PolicyDefault;
 
   constructor(
     private readonly gateway: ConnectGateway,
     private readonly scheduler: Scheduler,
   ) {
     super({ phase: "idle" });
+    this.defaults = new PolicyDefault(gateway);
   }
 
   draftFor(domain: string): SessionDraft {
     return this.drafts.get(domain) ?? firstSessionDraft;
   }
 
+  kindFor(domain: string): RunKind {
+    return this.kinds.get(domain) ?? "complete";
+  }
+
+  chooseKind(domain: string, kind: RunKind): void {
+    this.kinds.set(domain, kind);
+  }
+
+  setUpNext(domain: string, policies: readonly string[]): void {
+    this.drafts.set(domain, keptFromRecord(policies));
+    this.kinds.set(domain, "session");
+  }
+
   keepDraft(domain: string, draft: SessionDraft): void {
     this.drafts.set(domain, draft);
+    this.defaults.forgetSave();
     const state = this.snapshot();
     const next = markedStale(state, domain);
     if (next !== state) this.set(next);
   }
 
+  async prefill(domain: string): Promise<SessionDraft | null> {
+    const policies = await this.defaults.load();
+    if (this.drafts.has(domain) || policies === null || policies.length === 0) return null;
+    const draft = filledFromDefault(firstSessionDraft, policies);
+    this.drafts.set(domain, draft);
+    return draft;
+  }
+
+  addPolicy(domain: string, digest: string): SessionDraft {
+    const draft = withPolicyListed(this.draftFor(domain), digest);
+    this.keepDraft(domain, draft);
+    return draft;
+  }
+
+  async saveDefault(domain: string): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase !== "checked" || state.stale || state.domain !== domain) return;
+    await this.defaults.save(state.check.policies);
+  }
+
   async check(domain: string, draft: SessionDraft): Promise<SessionCheck | null> {
     if (isBusy(this.snapshot())) return null;
+    this.defaults.forgetSave();
     this.set({ phase: "checking", domain });
     const outcome = await this.gateway.checkSession(sessionPlanText(domain, draft));
     this.set(

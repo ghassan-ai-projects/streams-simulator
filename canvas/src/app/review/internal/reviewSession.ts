@@ -1,4 +1,4 @@
-import type { Clock, ReviewGateway, Scheduler } from "../../ports";
+import type { Clipboard, Clock, ReviewGateway, Scheduler } from "../../ports";
 import { createOperationIdentity } from "../../shared";
 import type { ReviewSession } from "./api";
 import type { ControlSession } from "./controlStore";
@@ -7,11 +7,18 @@ import { ReviewStore } from "./reviewStore";
 import type { TwinSession } from "./twinStore";
 import { TwinStore } from "./twinStore";
 
+const noClipboard: Clipboard = { copy: () => Promise.resolve(false) };
+
 class ControlledReview extends ReviewStore implements ReviewSession {
   readonly controls: ControlSession;
   readonly twin: TwinSession;
 
-  constructor(gateway: ReviewGateway, clock: Clock, scheduler: Scheduler) {
+  constructor(
+    gateway: ReviewGateway,
+    clock: Clock,
+    scheduler: Scheduler,
+    private readonly clipboard: Clipboard,
+  ) {
     super(gateway, clock, scheduler, createOperationIdentity());
     this.controls = new ControlStore(gateway, {
       run: () => this.snapshot().worldId,
@@ -22,8 +29,17 @@ class ControlledReview extends ReviewStore implements ReviewSession {
     });
     this.twin = new TwinStore(gateway);
   }
+
+  copyText(text: string): Promise<boolean> {
+    return this.clipboard.copy(text);
+  }
 }
 
-export function createReviewSession(gateway: ReviewGateway, clock: Clock, scheduler: Scheduler): ReviewSession {
-  return new ControlledReview(gateway, clock, scheduler);
+export function createReviewSession(
+  gateway: ReviewGateway,
+  clock: Clock,
+  scheduler: Scheduler,
+  clipboard: Clipboard = noClipboard,
+): ReviewSession {
+  return new ControlledReview(gateway, clock, scheduler, clipboard);
 }

@@ -40,7 +40,8 @@ export interface ScriptedCommand {
 }
 
 const worldStartNs = 1_767_225_600e9;
-const scriptPolicy = `sha256:${"b".repeat(64)}`;
+export const scriptPolicy = `sha256:${"b".repeat(64)}`;
+export const shortScriptPolicy = "sha256:bbbbbbbb…bbbbbbbb";
 
 function openHost(binary: string, dir: string, extra: readonly string[]): Bench {
   const host = join(dir, "h.sock");
@@ -88,6 +89,10 @@ export async function planOneRealBoard(
   await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption(instance);
   await panel.getByLabel("Real board 1 board", { exact: true }).fill("uno-07");
   await panel.getByLabel("Real board 1 device", { exact: true }).fill(device);
+}
+
+export async function listPolicies(panel: Locator, policies: readonly string[]): Promise<void> {
+  await panel.getByLabel("Allowed policy digests", { exact: true }).fill(policies.join("\n"));
 }
 
 export function startGateway(bench: Bench, device: string, kind = "thermal_sensor"): void {

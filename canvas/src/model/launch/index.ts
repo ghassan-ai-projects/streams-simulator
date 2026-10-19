@@ -5,6 +5,26 @@ export { draftOf, firstDraft, pickedOnGraph, planOf } from "./internal/draft";
 export { runProgressWords } from "./internal/progress";
 export { modeWords, planCue, planSummary, problemWords } from "./internal/words";
 export {
+  filledFromDefault,
+  isPolicyIssue,
+  keepForNextRun,
+  keptFromRecord,
+  keptWords,
+  policyHint,
+  policyListWords,
+  prefilledWords,
+  policyNotes,
+  policyNoteWords,
+  recordedPolicyWords,
+  refusedFieldWords,
+  saveDefaultHint,
+  saveDefaultWords,
+  trustWords,
+  unreadableDefaultWords,
+  withPolicyListed,
+  withPolicyText,
+} from "./internal/policies";
+export {
   firstSessionDraft,
   freeInstance,
   memberIssues,
@@ -38,6 +58,7 @@ export type {
   PlanMember,
   PlannedInstance,
   PlanProblem,
+  PolicyNote,
   RealRow,
   RowField,
   SessionCheck,

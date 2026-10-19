@@ -94,11 +94,15 @@ export {
   unboundEvidenceWords,
   verdictWords,
 } from "./internal/twinWords";
+export { recordedPolicyWords } from "../launch";
 export {
   acceptanceDetail,
   acceptanceWords,
   commandSide,
+  copiedWords,
+  copyFailedWords,
   deviceLine,
+  digestListedWords,
   effectWords,
   linkWords,
   reportWords,

@@ -1043,11 +1043,12 @@
     "plantwire_connect_check": {
       "type": "object",
       "description": "plantwire connect --check: the session plan read against its domain and kind files; nothing is started. Each instance of the plant is real (a board the gateway must announce) or simulated.",
-      "required": ["domain", "environment", "instances", "implements_checked"],
+      "required": ["domain", "environment", "instances", "implements_checked", "policies"],
       "additionalProperties": false,
       "properties": {
         "domain": {"type": "string", "minLength": 1},
         "environment": {"enum": ["simulated", "mixed"], "description": "mixed when the plan has a gateway: its boards are announced beside the world's."},
+        "policies": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/digest"}, "description": "The allow-list in effect, sorted; empty when the plan names none."},
         "instances": {
           "type": "array",
           "items": {

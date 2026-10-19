@@ -28,4 +28,25 @@ describe("proposing another run", () => {
     expect(launch.proposal("mini")).toBeNull();
     expect(location.hash).toBe(before);
   });
+
+  it("sets up another connected session for a connected run: no sockets, the recorded list kept, the mode kept", () => {
+    const { location, launch, navigation } = setup();
+    const digest = `sha256:${"a".repeat(64)}`;
+    const state = reviewState({ connection: "saved", sessionDomain: "mini", sessionPolicies: [digest] });
+    proposeRerun(launch, navigation, state, "c-4", "domains/mini.domain.json");
+    expect(launch.proposal("mini")).toBeNull();
+    expect(launch.connect.draftFor("mini")).toMatchObject({
+      hostSocket: "",
+      policies: digest,
+      policiesFrom: "previous",
+    });
+    expect(launch.connect.kindFor("mini")).toBe("session");
+    expect(location.hash).toContain("launch=1");
+  });
+
+  it("keeps no list for a connected run that recorded none", () => {
+    const { launch, navigation } = setup();
+    proposeRerun(launch, navigation, reviewState({ connection: "saved" }), "c-4", "domains/mini.domain.json");
+    expect(launch.connect.draftFor("mini")).toMatchObject({ policies: "", policiesFrom: "operator" });
+  });
 });

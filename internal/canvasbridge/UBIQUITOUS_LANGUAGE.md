@@ -3,7 +3,8 @@
 | Term | Meaning |
 |---|---|
 | Bridge | The local HTTP server behind `streamsim canvas`; the canvas's only way to the simulator |
-| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/` (`equipment/`, `instruments/`), `runs/` |
+| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/` (`equipment/`, `instruments/`), `settings/` (the one policy default file), `runs/` |
+| Policy default | `settings/default.policies.json` (`ClassPolicies`): the workspace default of the allowed policy digests that pre-fills a new Connect session form; read and written through the file routes with the etag rules, never listed, never an action argument, its content checked by the binary and never by the bridge |
 | Twin choices | A `twins/*.twin.json` file: the instrument of each metric and the response of each command from which the `kind.twin` action scaffolds a twin into `domains/` |
 | Kind stems | The `kinds` argument of `kind.twin` and `kind.suggest`: the stems of `kinds/<stem>.kind.json` that are in the twin, resolved by the bridge to workspace paths, repeats counted once; the whole `kinds/` folder is never passed to these actions (`ShapeStems`, `StemPath`, `ArgvPart.Existing`) |
 | Pairing code | A one-time code the bridge prints on stderr; exchanged once for a session cookie |

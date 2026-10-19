@@ -111,16 +111,16 @@ describe("session words", () => {
     const simulated = { instance: "fan-01", role: "simulated", kind: "fan", board: "", device: "" } as const;
     expect(plannedWords(real)).toBe("zone-01 · Real · device zone-01 on board uno-07");
     expect(plannedWords(simulated)).toBe("fan-01 · Simulated");
-    expect(checkWords({ domain: "d", mixed: true, instances: [real, simulated] })).toBe(
+    expect(checkWords({ domain: "d", mixed: true, instances: [real, simulated], policies: [] })).toBe(
       "The plan holds: 1 real board and 1 simulated instance.",
     );
-    expect(checkWords({ domain: "d", mixed: true, instances: [simulated, simulated] })).toBe(
+    expect(checkWords({ domain: "d", mixed: true, instances: [simulated, simulated], policies: [] })).toBe(
       "The plan holds: 2 simulated instances beside the gateway's boards.",
     );
-    expect(checkWords({ domain: "d", mixed: false, instances: [simulated] })).toBe(
+    expect(checkWords({ domain: "d", mixed: false, instances: [simulated], policies: [] })).toBe(
       "The plan holds: 1 simulated instance.",
     );
-    expect(checkWords({ domain: "d", mixed: false, instances: [real, real] })).toContain("2 real boards");
+    expect(checkWords({ domain: "d", mixed: false, instances: [real, real], policies: [] })).toContain("2 real boards");
   });
 
   it("says whether the gateway matched the plan, and the next step when it did not", () => {

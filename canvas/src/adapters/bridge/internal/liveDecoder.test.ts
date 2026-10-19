@@ -115,6 +115,7 @@ describe("binary session evidence", () => {
       atNs: 0,
       domain: "arduino-thermal",
       simulated: ["fan-01"],
+      policies: null,
     });
     expect(journalEntry(JSON.stringify({ ...envelope, plan: {} }))).toBeNull();
     expect(journalEntry(JSON.stringify({ ...envelope, mode: "evaluate", plan }))).toBeNull();

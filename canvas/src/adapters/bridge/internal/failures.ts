@@ -6,6 +6,7 @@ import type {
   EditorFailure,
   LaunchFailure,
   PlantFailure,
+  PolicyDefaultFailure,
   ReviewFailure,
   SessionFailure,
   TwinFailure,
@@ -87,6 +88,13 @@ export function connectFailure(error: RequestFailure): ConnectFailure {
   const display = diagnostic(error.problem);
   if (error.problem.code === "session_running") return { kind: "busy", diagnostic: display };
   if (error.problem.status === 422) return { kind: "refused", diagnostic: display, issues: error.problem.issues };
+  return serverFault(error.problem, display);
+}
+
+export function policyDefaultFailure(error: RequestFailure): PolicyDefaultFailure {
+  if (error.kind !== "http") return unreached(error);
+  const display = diagnostic(error.problem);
+  if (error.problem.code === "conflict") return { kind: "conflict", diagnostic: display };
   return serverFault(error.problem, display);
 }
 

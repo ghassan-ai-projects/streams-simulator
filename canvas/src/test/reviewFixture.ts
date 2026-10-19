@@ -20,6 +20,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     connection: "none",
     simulated: [],
     sessionDomain: "",
+    sessionPolicies: null,
     binding: null,
     following: false,
     newestNs: 0,
