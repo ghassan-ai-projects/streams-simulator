@@ -11,22 +11,32 @@ export function wiresUnderNodes(atLeast = 1): Audit {
     nodes.find(
       ({ box }) => x > box.left - margin && x < box.right + margin && y > box.top - margin && y < box.bottom + margin,
     );
+  const clearance = (x: number, y: number) =>
+    Math.min(
+      ...nodes.map(({ box }) =>
+        Math.hypot(
+          Math.max(box.left - margin - x, 0, x - box.right - margin),
+          Math.max(box.top - margin - y, 0, y - box.bottom - margin),
+        ),
+      ),
+    );
   const found: string[] = [];
   const paths = [...document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path")];
   paths.forEach((path) => {
     const matrix = path.getScreenCTM();
     if (matrix === null) return;
+    const scale = Math.hypot(matrix.a, matrix.b, matrix.c, matrix.d);
     const length = path.getTotalLength();
-    for (let at = 16; at < length - 16; at += 1) {
+    for (let at = 16; at < length - 16;) {
       const point = path.getPointAtLength(at);
-      const hit = under(
-        point.x * matrix.a + point.y * matrix.c + matrix.e,
-        point.x * matrix.b + point.y * matrix.d + matrix.f,
-      );
+      const x = point.x * matrix.a + point.y * matrix.c + matrix.e;
+      const y = point.x * matrix.b + point.y * matrix.d + matrix.f;
+      const hit = under(x, y);
       if (hit !== undefined) {
         found.push(`${path.closest(".react-flow__edge")?.getAttribute("data-id") ?? "wire"} under ${hit.id}`);
         break;
       }
+      at += Math.max(1, Math.floor(clearance(x, y) / scale));
     }
   });
   return { considered: paths.length, problems: found, met: paths.length >= atLeast };
@@ -72,15 +82,19 @@ export function wiresNearTitles(atLeast = 1): Audit {
     const matrix = path.getScreenCTM();
     if (matrix === null) return;
     const id = path.closest(".react-flow__edge")?.getAttribute("data-id") ?? "wire";
-    for (let at = 0; at <= path.getTotalLength(); at += 3) {
+    const scale = Math.hypot(matrix.a, matrix.b, matrix.c, matrix.d);
+    for (let at = 0; at <= path.getTotalLength();) {
       const point = path.getPointAtLength(at);
       const x = point.x * matrix.a + point.y * matrix.c + matrix.e;
       const y = point.x * matrix.b + point.y * matrix.d + matrix.f;
+      let nearest = Infinity;
       for (const { title, box } of texts) {
         const dx = Math.max(box.left - x, 0, x - box.right);
         const dy = Math.max(box.top - y, 0, y - box.bottom);
+        nearest = Math.min(nearest, Math.hypot(dx, dy));
         if (Math.hypot(dx, dy) < 8) found.add(`${id} near ${title}`);
       }
+      at += 3 * Math.max(1, Math.floor((nearest - 8) / (3 * scale)));
     }
   });
   const problems = [...found];
