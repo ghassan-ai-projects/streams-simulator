@@ -351,15 +351,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > D-87 (an undecodable interrupt record is told as an unreadable snapshot): the live bar's note names a snapshot when the
 > dropped record was an `interrupt` record, and the canvas keeps no separate count of dropped interrupt records. Trigger to
 > fix: a binary version that adds an interrupt event; then the decoder gets its own entry and note.
-> D-88 (a canvas-connected session has no policy allow-list): `plantwire connect` takes `--policy` only from the command line,
-> and the session plan and `session.start` never supply it, so every host command to a simulated device is refused
-> `policy_not_allowed`; a hardware device passes through to the gateway, which keeps its own policy. The R11b e2e shows this
-> (approved `ref-a` is refused at the node's normal checks). Trigger to fix: a canvas session that must command a simulated
-> device; the fix needs a design decision: an operator-supplied allow-list in the session plan, validated by the binary, and a
-> UI field for it.
-> D-88 progress: the binary half (plan `policies`, validation, echo, record, enforcement, the refused digest on the `live` command)
-> is built (P1, `docs/design/PHYSICAL_DEVICES.md` "Policy allow-list P1 as-built"). The bridge file class, the canvas form, the
-> default and the commands-table digest are P2; D-88 closes after P2.
+> D-88 (a canvas-connected session has no policy allow-list): **closed** by P1 (binary) and P2 (bridge and canvas). The session
+> plan carries `policies` (1 to 8 policy digests, validated by the binary), the Connect session form has an "Allowed policy
+> digests" field, the workspace default `settings/default.policies.json` pre-fills a new draft only, a command refused
+> `policy_not_allowed` shows the host's digest with Copy and "Use this digest", and the first end-to-end proof that an approved
+> command executes on a simulated device is in `canvas/e2e/interrupts.spec.ts`. See `docs/design/PHYSICAL_DEVICES.md` "Policy
+> allow-list P1 as-built" and "P2 as-built".
 > D-89 (the relay drops a schema-invalid host record without a reason): `Relay.hostRecord` (`relay_host.go`) counts a host record
 > that fails its schema, or whose type is not a host record type, in `stats.Dropped` and writes no receipt and no evidence for
 > it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no

@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { Bench } from "./session";
-import { openScriptedBench, openSessionPanel, planOneRealBoard, startGateway } from "./session";
+import { listPolicies, openScriptedBench, openSessionPanel, planOneRealBoard, startGateway } from "./session";
 
 export const lease = { duty_permille: 300, lease_ms: 5000 };
 
@@ -14,7 +14,11 @@ export interface Started {
   readonly bench: Bench;
 }
 
-export async function startedSession(page: Page, lab: { readonly binary: string }): Promise<Started> {
+export async function startedSession(
+  page: Page,
+  lab: { readonly binary: string },
+  policies: readonly string[] = [],
+): Promise<Started> {
   const bench = openScriptedBench(lab.binary, [
     { id: "ref-a", afterS: 160, device: "fan-01", command: "set_pwm_lease", args: lease },
     { id: "ref-b", afterS: 190, device: "fan-01", command: "set_pwm_lease", args: lease },
@@ -22,6 +26,7 @@ export async function startedSession(page: Page, lab: { readonly binary: string 
   try {
     const panel = await openSessionPanel(page);
     await planOneRealBoard(panel, bench, "zone-01");
+    if (policies.length > 0) await listPolicies(panel, policies);
     await panel.getByRole("button", { name: "Start the session" }).click();
     await expect(panel.getByText(/^Connected session · run c-[0-9a-f]{8}$/)).toBeVisible();
     startGateway(bench, "zone-01");

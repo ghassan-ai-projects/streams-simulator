@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { browserClock, hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
+import { browserClipboard, browserClock, hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
 import { bridgeAdapter, browserTransport } from "./adapters/bridge";
 import { createDeviceDesk, createDeviceSession } from "./app/devices";
 import { createEditorSession } from "./app/editor";
@@ -25,8 +25,9 @@ if (root) {
   const navigation = createNavigationStore(hashLocation(window));
   const plants = createPlantSession(adapters.plant);
   const editor = createEditorSession(adapters.editor);
-  const review = createReviewSession(adapters.review, time, time);
-  const liveReview = createReviewSession(adapters.review, time, time);
+  const clipboard = browserClipboard(window.navigator.clipboard);
+  const review = createReviewSession(adapters.review, time, time, clipboard);
+  const liveReview = createReviewSession(adapters.review, time, time, clipboard);
   createRoot(root).render(
     <StrictMode>
       <App

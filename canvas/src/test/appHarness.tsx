@@ -6,6 +6,7 @@ import { createPlantMaker, createPlantSession } from "../app/plant";
 import { createReviewSession } from "../app/review";
 import { createSession } from "../app/session";
 import { createNavigationStore, createPanelStore, createThemeStore } from "../app/shell";
+import type { Clipboard } from "../app/ports";
 import { createWorkspaceStore } from "../app/workspace";
 import { App } from "../ui/shell";
 import type { FakeBridge } from "./fakeBridge";
@@ -20,7 +21,7 @@ function themes() {
   );
 }
 
-function appStores(bridge: FakeBridge, hash = "#/") {
+function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
   const location = memoryLocation(hash);
   const timers = fakeClock();
   const shown: string[] = [];
@@ -30,8 +31,8 @@ function appStores(bridge: FakeBridge, hash = "#/") {
     workspace: createWorkspaceStore(bridge.workspace),
     navigation: createNavigationStore(location),
     plants: createPlantSession(bridge.plant),
-    review: createReviewSession(bridge.review, timers, timers),
-    liveReview: createReviewSession(bridge.review, timers, timers),
+    review: createReviewSession(bridge.review, timers, timers, clipboard),
+    liveReview: createReviewSession(bridge.review, timers, timers, clipboard),
     launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
     editor: createEditorSession(bridge.editor),
@@ -46,8 +47,8 @@ function appStores(bridge: FakeBridge, hash = "#/") {
   return { stores, location, timers, shown };
 }
 
-export function mountApp(bridge: FakeBridge, hash = "#/") {
-  const mounted = appStores(bridge, hash);
+export function mountApp(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
+  const mounted = appStores(bridge, hash, clipboard);
   const view = render(<App stores={mounted.stores} />);
   return { ...mounted, view };
 }

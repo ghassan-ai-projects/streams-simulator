@@ -1,7 +1,9 @@
 import { TriangleAlert } from "lucide-react";
+import type { PolicyDefaultState } from "../../../app/launch";
 import type { PlanIssue, PlanMember, SessionDraft } from "../../../model/launch";
 import { issueWords, memberIssues } from "../../../model/launch";
 import { cx, panel } from "../../primitives";
+import { PolicyField } from "./PolicyField";
 import launch from "./LaunchPanel.module.css";
 
 export interface DraftEdit {
@@ -64,7 +66,11 @@ const fields: readonly (readonly [PlanMember, string, string, TextKey, string])[
   ["gateway_socket", "Gateway socket", "empty: every instance simulated", "gatewaySocket", "session-gateway"],
 ];
 
-export function SessionFields({ draft, change, issues }: DraftEdit) {
+interface SessionFieldsProps extends DraftEdit {
+  readonly defaults: PolicyDefaultState;
+}
+
+export function SessionFields({ draft, change, issues, defaults }: SessionFieldsProps) {
   return (
     <fieldset className={panel.group}>
       <legend>Session</legend>
@@ -85,6 +91,7 @@ export function SessionFields({ draft, change, issues }: DraftEdit) {
         The host socket is the one the plant wire host listens on. The gateway socket is the one this session opens for
         a gateway with real boards; leave it empty to run every instance simulated.
       </p>
+      <PolicyField draft={draft} change={change} issues={issues} defaults={defaults} />
     </fieldset>
   );
 }

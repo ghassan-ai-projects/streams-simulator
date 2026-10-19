@@ -59,6 +59,7 @@ export interface ReviewState {
   readonly connection: Connection;
   readonly simulated: readonly string[];
   readonly sessionDomain: string;
+  readonly sessionPolicies: readonly string[] | null;
   readonly binding: TimedBinding | null;
 }
 
@@ -89,6 +90,7 @@ export const idle: ReviewState = {
   connection: "none",
   simulated: [],
   sessionDomain: "",
+  sessionPolicies: null,
   binding: null,
 };
 
@@ -114,7 +116,13 @@ export function withSessionEntry(state: ReviewState, entry: SessionEntry): Revie
     return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
   const connection = state.connection === "none" ? "saved" : state.connection;
   if (entry.kind === "session")
-    return { ...state, connection, simulated: entry.simulated, sessionDomain: entry.domain };
+    return {
+      ...state,
+      connection,
+      simulated: entry.simulated,
+      sessionDomain: entry.domain,
+      sessionPolicies: entry.policies,
+    };
   if (entry.kind === "origin")
     return {
       ...state,

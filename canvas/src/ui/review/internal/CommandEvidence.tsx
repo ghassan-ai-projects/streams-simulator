@@ -7,6 +7,8 @@ import {
   reportWords,
   runClock,
 } from "../../../model/review";
+import type { PolicyActions } from "./PolicyRefusal";
+import { PolicyRefusal } from "./PolicyRefusal";
 import cells from "./ReportTable.module.css";
 import styles from "./SessionEvidence.module.css";
 
@@ -33,7 +35,13 @@ function Stage({ label, tone, words, detail = "" }: StageProps) {
   );
 }
 
-function CommandRow({ command, startNs }: { readonly command: SessionCommand; readonly startNs: number }) {
+interface RowProps {
+  readonly command: SessionCommand;
+  readonly startNs: number;
+  readonly policy: PolicyActions;
+}
+
+function CommandRow({ command, startNs, policy }: RowProps) {
   return (
     <tr>
       <th scope="row">
@@ -57,6 +65,7 @@ function CommandRow({ command, startNs }: { readonly command: SessionCommand; re
             words={acceptanceWords(command)}
             detail={acceptanceDetail(command)}
           />
+          {command.policyDigest !== "" && <PolicyRefusal command={command} {...policy} />}
           <Stage label="Board report" words={reportWords[command.report]} />
           <Stage
             label="Effect evidence"
@@ -70,13 +79,13 @@ function CommandRow({ command, startNs }: { readonly command: SessionCommand; re
   );
 }
 
-export function CommandEvidence({
-  commands,
-  startNs,
-}: {
+interface EvidenceProps {
   readonly commands: readonly SessionCommand[];
   readonly startNs: number;
-}) {
+  readonly policy: PolicyActions;
+}
+
+export function CommandEvidence({ commands, startNs, policy }: EvidenceProps) {
   return (
     <div className={cells.scroll} tabIndex={0} role="region" aria-label="Command evidence, scrollable">
       <table className={cells.table}>
@@ -92,7 +101,7 @@ export function CommandEvidence({
         </thead>
         <tbody>
           {commands.map((command) => (
-            <CommandRow key={command.commandId} command={command} startNs={startNs} />
+            <CommandRow key={command.commandId} command={command} startNs={startNs} policy={policy} />
           ))}
         </tbody>
       </table>

@@ -188,6 +188,8 @@ describe("a running connected session in the run panel", () => {
       seed: "1",
       hostSocket: "/tmp/h.sock",
       gatewaySocket: "",
+      policies: "",
+      policiesFrom: "operator",
       real: [],
       nextKey: 0,
     });

@@ -1,11 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
-import { addThermalBench, runIdOf } from "./support/session";
+import { addThermalBench, runIdOf, scriptPolicy, shortScriptPolicy } from "./support/session";
 import { boxOf, controlsOf, startedSession } from "./support/interruptBench";
 import { repository } from "./support/workspace";
 
@@ -47,8 +47,10 @@ async function approveAndDeny(page: Page, controls: Locator): Promise<void> {
   const waiting = controls.getByRole("group", { name: "Commands waiting for approval" });
   await expect(waiting.getByRole("heading")).toBeFocused();
   const table = page.getByRole("table", { name: "Command evidence" });
-  await expect(table.getByRole("row", { name: /ref-a/ })).toContainText("Refused");
-  await expect(table.getByRole("row", { name: /ref-a/ })).toContainText("Policy not allowed");
+  const executed = table.getByRole("row", { name: /ref-a/ });
+  await expect(executed).toContainText("Accepted", { timeout: 30_000 });
+  await expect(executed).toContainText("Board reports success", { timeout: 30_000 });
+  await expect(executed).not.toContainText("Policy not allowed");
   const deny = controls.getByRole("button", { name: "Deny ref-b", exact: true });
   await expect(deny).toBeVisible({ timeout: 90_000 });
   await deny.click();
@@ -86,9 +88,10 @@ test("the interrupt controls hold, approve and stop the node of a live session, 
   lab,
 }) => {
   addThermalBench(lab);
-  const started = await startedSession(page, lab);
+  const started = await startedSession(page, lab, [scriptPolicy]);
   bench = started.bench;
   const { panel } = started;
+  await expect(panel.getByRole("region", { name: "Allowed policies in effect" })).toContainText(shortScriptPolicy);
   await holdAndReleaseOnThePlant(page);
   await page.getByRole("button", { name: "Open live view", exact: true }).click();
   await expect(page.getByText("Live · following newest record", { exact: true })).toBeVisible();
@@ -112,4 +115,8 @@ test("the interrupt controls hold, approve and stop the node of a live session, 
     },
   );
   expect(JSON.parse(verified.toString()) as unknown).toMatchObject({ matches: true });
+  const artifact = JSON.parse(readFileSync(join(lab.workspace, "runs", run, "run.json"), "utf8")) as {
+    command_log: { op: string }[];
+  };
+  expect(artifact.command_log.some((command) => command.op === "effector.invoke")).toBe(true);
 });

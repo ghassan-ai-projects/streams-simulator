@@ -27,4 +27,5 @@ export interface ReviewSession extends Store<ReviewState> {
   select(entity: string | null): void;
   reveal(positionNs: number, entity: string): void;
   showTab(tab: ReviewState["tab"]): void;
+  copyText(text: string): Promise<boolean>;
 }

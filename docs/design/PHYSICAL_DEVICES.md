@@ -526,8 +526,10 @@ Rules:
 - **Read-only first.** A hardware board announces its kind's commands, but Agentic Stream's commissioned inventory denies them
   until M5.
 - **Transport.** v1 is Unix socket only, owner-only (SPEC §2): gateway, simulator and Agentic Stream run on the bench machine.
-- **Device-side safety.** Expiry, lease, `boot_id`, idempotency, policy digest and safe stop remain device-wire-v1 duties in the
-  firmware; neither the gateway nor the simulator stands in for them.
+- **Device-side safety.** Expiry, lease, `boot_id`, idempotency and safe stop remain device-wire-v1 duties in the firmware;
+  neither the gateway nor the simulator stands in for them. The policy digest is not one of them: the gateway checks it for a
+  real board (SPEC §13, `policy_not_allowed`, from its own list) and the simulator for a simulated device (the session plan's
+  `policies`); device-wire-v1 has no policy reject code and the firmware does not refuse on it.
 - **Thermal experiment.** Every milestone keeps the emulated joined run and the physical Arduino bench green.
 
 ## 6. Reference devices
@@ -1252,3 +1254,51 @@ file class and the canvas form are P2.
 - **Gate edits.** None. New files carry no I/O and need no register entry.
 - **Deviations from the note.** None in behaviour. `Serve` checks the node's flag list before it dials, so `node --policy nope`
   fails as bad options without a host.
+
+## Policy allow-list P2 as-built (bridge and canvas)
+
+Design: [POLICY-ALLOW-LIST](../physical-devices/POLICY-ALLOW-LIST.md) (D-88, closed). P2 is the bridge file class, the canvas
+form and the commands-table digest.
+
+- **The default file.** `settings/default.policies.json`, `{"policies": [...]}`, is the one file of `settings/`
+  (`FileClass` `policies`, `domain.ParsePath` accepts exactly that name; any other name in `settings/` and the file in `domains/`,
+  `kinds/` or `components/` are `bad_path`). It goes through the existing `GET /api/file` and `PUT /api/file`: `etag` is
+  `domain.Version`, a stale or missing etag on an existing file is `conflict`, the write is atomic and owner-only, the cap is the
+  generic 8 MiB, an absent file reads `404 not_found`. The bridge checks path and size only: the canvas saves what the binary
+  echoed, and the binary validates digests when the plan is checked. The file is not in the workspace listing or the change feed,
+  and no action argument resolves to it. `session.check` and `session.start` need no bridge logic: the plan travels unchanged and
+  the check document and the `session` record carry `policies`.
+- **Form and default.** The Connect session panel has "Allowed policy digests" (a textarea, one digest per line, empty means
+  none; the canvas deduplicates, sorts and checks nothing). `ConnectGateway` gains `readPolicyDefault` and `savePolicyDefault`
+  (the bridge adapter implements them with the file routes; an absent file is `absent`, a file that does not decode as exactly
+  `{"policies": [strings]}` is `unreadable` and pre-fills nothing). `ConnectSession.prefill(domain)` runs when the panel opens:
+  it re-reads the default, learns the etag, and fills a draft the plant has never held (marked `policiesFrom: "default"`, shown
+  with "Pre-filled from the workspace default."); typing marks it the operator's and removes the note; "Clear the list" empties it.
+  A draft that exists is never overwritten, also when the read finishes after the operator typed. Deviation from the note:
+  `draftFor` stays synchronous and the fill is the async `prefill`, because the default is read through the bridge.
+- **Save as default.** The button exists only after a passing check of the current draft that is not stale; the store checks the
+  same (`saveDefault(domain)` returns on any other state) and saves the check document's `policies` (the binary's sorted list),
+  never the typed text, with the etag of the last read (read again first when that read failed; an unreadable default is
+  overwritten only by this explicit action). An empty list is saved as `{"policies": []}`. A `conflict` reports that the default
+  changed elsewhere, saves nothing, and re-reads the file so a second press saves from the new version. The result is
+  `connect.defaults` (`PolicyDefaultState`), a store beside the connect state.
+- **List in effect.** The check result and the running session show "Allowed policies: none. Commands to simulated devices are
+  refused, except safe stops." or "Allowed policies: N" with each digest shortened (first and last 8 hex digits, the full digest
+  for assistive technology) from the binary's check document. The review decodes `plan.policies` of the `session` record into
+  `ReviewState.sessionPolicies` (strict: not a list of strings drops the record; absent reads "Allowed policies: not recorded.").
+- **The commands table.** `live` command entries are decoded with an optional `policy_digest`, strict: it must be a well-formed
+  digest and appear only on a `refused` command with reason `policy_not_allowed`, otherwise the record is dropped as unreadable.
+  The detail reads "Policy not allowed by this session" for a simulated device and "Policy not allowed by the gateway" for a real
+  board. A "Policy" row under the stages shows "Host's policy sha256:bbbbbbbb…bbbbbbbb" with "Copy policy digest" (a new
+  `Clipboard` port, `copyText` on the review session, `browserClipboard`) and "Use this digest". Copy says "Copied the policy
+  digest of <command id>." or, if the browser refuses, "Could not copy; select the digest instead." and shows the full digest.
+  "Use this digest" is shown when the session record names its plant; it appends the digest to that plant's draft
+  (`ConnectSession.addPolicy`, once per digest, marked the operator's) and says the running session keeps its list.
+- **Set up another run.** Keeps the list (and its source) of the last draft; the sockets and the real boards are cleared as before.
+  Deviation from the note: without it a digest added from a refusal would be lost before the next plan could use it.
+- **Gate edits.** None. No new module, stylesheet or I/O edge; `architecture.json` allow-lists are unchanged (callers are
+  regenerated).
+- **E2E.** `interrupts.spec.ts` lists the scripted policy: the approved `ref-a` is `Accepted` and `Board reports success`, and the
+  saved run's command log holds an `effector.invoke` and still verifies. `policies.spec.ts`: a session with no list shows the refusal
+  with the digest, Copy puts the full digest on the clipboard, "Use this digest" fills the next plan; Save as default writes the
+  sorted list and a reloaded panel is pre-filled and says so; the binary's refusals sit on the field by digest.

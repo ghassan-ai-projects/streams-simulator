@@ -1,9 +1,10 @@
 import type { SessionCheck, SessionDraft } from "../../../model/launch";
-import { firstSessionDraft, sessionPlanText } from "../../../model/launch";
+import { filledFromDefault, firstSessionDraft, sessionPlanText, withPolicyListed } from "../../../model/launch";
 import { Observable } from "../../shared";
 import type { ConnectFailure, ConnectGateway, ConnectStatus, Outcome, Scheduler } from "../../ports";
 import type { ConnectState, LiveSession } from "./connectState";
 import { isBusy, markedStale, refusedState, stateOf } from "./connectState";
+import { PolicyDefault } from "./policyDefault";
 
 const pollMs = 2000;
 const lastingStates: readonly ConnectStatus["state"][] = ["starting", "running", "stopping"];
@@ -12,12 +13,14 @@ export class ConnectStore extends Observable<ConnectState> {
   private unfollow: (() => void) | null = null;
   private unpoll: (() => void) | null = null;
   private readonly drafts = new Map<string, SessionDraft>();
+  readonly defaults: PolicyDefault;
 
   constructor(
     private readonly gateway: ConnectGateway,
     private readonly scheduler: Scheduler,
   ) {
     super({ phase: "idle" });
+    this.defaults = new PolicyDefault(gateway);
   }
 
   draftFor(domain: string): SessionDraft {
@@ -29,6 +32,26 @@ export class ConnectStore extends Observable<ConnectState> {
     const state = this.snapshot();
     const next = markedStale(state, domain);
     if (next !== state) this.set(next);
+  }
+
+  async prefill(domain: string): Promise<SessionDraft | null> {
+    const policies = await this.defaults.load();
+    if (this.drafts.has(domain) || policies === null || policies.length === 0) return null;
+    const draft = filledFromDefault(firstSessionDraft, policies);
+    this.drafts.set(domain, draft);
+    return draft;
+  }
+
+  addPolicy(domain: string, digest: string): SessionDraft {
+    const draft = withPolicyListed(this.draftFor(domain), digest);
+    this.keepDraft(domain, draft);
+    return draft;
+  }
+
+  async saveDefault(domain: string): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase !== "checked" || state.stale || state.domain !== domain) return;
+    await this.defaults.save(state.check.policies);
   }
 
   async check(domain: string, draft: SessionDraft): Promise<SessionCheck | null> {

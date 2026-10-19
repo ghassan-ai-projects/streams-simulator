@@ -1,5 +1,5 @@
 import { TriangleAlert } from "lucide-react";
-import type { ConnectState } from "../../../app/launch";
+import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { BindingNote, PlanIssue, PlannedInstance, SessionCheck } from "../../../model/launch";
 import {
   checkWords,
@@ -12,6 +12,7 @@ import {
 import { originLabels } from "../../../model/shared/origin";
 import { failureLine, OriginBadge, panel } from "../../primitives";
 import launch from "./LaunchPanel.module.css";
+import { PolicyInEffect, SaveDefault } from "./SessionPolicies";
 import styles from "./Session.module.css";
 
 function notBound(planned: PlannedInstance, binding: BindingNote | null): boolean {
@@ -102,7 +103,13 @@ function Refused({ state }: { readonly state: Extract<ConnectState, { phase: "re
   );
 }
 
-export function CheckResult({ state }: { readonly state: ConnectState }) {
+interface CheckResultProps {
+  readonly state: ConnectState;
+  readonly connect: ConnectSession;
+  readonly domain: string;
+}
+
+export function CheckResult({ state, connect, domain }: CheckResultProps) {
   if (state.phase === "checking") {
     return (
       <p className={panel.hint} role="status">
@@ -116,6 +123,8 @@ export function CheckResult({ state }: { readonly state: ConnectState }) {
     <>
       {state.stale && <p className={panel.hint}>{staleCheckWords}</p>}
       <Planned check={state.check} role="status" />
+      <PolicyInEffect policies={state.check.policies} />
+      {!state.stale && <SaveDefault connect={connect} domain={domain} />}
     </>
   );
 }

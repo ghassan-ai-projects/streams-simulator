@@ -187,7 +187,7 @@ export function InstrumentPicker({ metric, value, instruments, aria, reveal, onP
   const shown = instruments === null ? value : chosenInstrumentWords(value, instruments);
   return (
     <div className={tw.picker}>
-      <textarea {...aria} className={notes.chosen} readOnly rows={2} value={shown} />
+      <textarea {...aria} className={cx(shared.sunkenField, notes.chosen)} readOnly rows={2} value={shown} />
       {instruments === null ? (
         <p className={panel.hint}>The instrument list could not be read, so only plain readings can be chosen.</p>
       ) : (

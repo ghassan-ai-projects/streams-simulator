@@ -1,6 +1,6 @@
 # Policy allow-list for simulated devices (D-88): design
 
-Status: decided by the owner on 2026-10-19; P1 (contract and binary) built, P2 (bridge and canvas) not built. Two rounds (P1, P2) after the M5 reviews close. File and line
+Status: decided by the owner on 2026-10-19; P1 (contract and binary) and P2 (bridge and canvas) built. Two rounds (P1, P2) after the M5 reviews close. File and line
 references are to `f491fbbc` (branch `physical-devices-m5`).
 
 ## Decisions
@@ -302,3 +302,36 @@ Differences and additions:
   satisfies the journal schema.
 - The `live` command's `policy_digest` is copied only when it is well formed (`refusedPolicy`), a second guard beside the
   observer's schema check.
+
+## As built (P2)
+
+The bridge and canvas half is built as §6 and §7 say; see "Policy allow-list P2 as-built (bridge and canvas)" in
+`docs/design/PHYSICAL_DEVICES.md`. Differences and additions:
+
+- The file class accepts exactly `settings/default.policies.json` (not a `*.policies.json` suffix in `settings/`), so nothing else
+  can be written into `settings/` and no listing, change feed or action knows the folder.
+- `ConnectStore.draftFor` stays synchronous. The pre-fill is `ConnectSession.prefill(domain)` (async, run when the panel
+  opens), because the default is read through the bridge; the rule is the note's: only a draft the plant never held, never an
+  edited one, and the note shows while the field is the default's.
+- The workspace default state is `connect.defaults`; "Save as default" is also guarded in the store (a fresh passing check of the
+  same plant), not only hidden in the form.
+- "Set up another run" keeps the list and its source, so a digest added with "Use this digest" survives to the next plan.
+- The review decodes `plan.policies` strictly; a `session` record whose `policies` is not a list of strings is dropped.
+- Copy is a `Clipboard` port reached through the review session (`copyText`); the table also shows the full digest to select
+  when the browser refuses to copy.
+- R13 wording (§8) is recorded here for that round; the public docs are not written yet.
+
+## Wording for the R13 briefs (from §8, unchanged)
+
+- **Gateway brief**: the gateway keeps its own list of allowed policy digests in its own configuration and refuses a `DCMD` whose
+  `policy_digest` is not on it with `DRECEIPT refused policy_not_allowed`, in the SPEC §9 check order; it skips the check for its
+  devices' safe stops (the relay's emergency stop carries `sha256:` and 64 zeros); the list holds several digests so a narrowing
+  can be rolled out; it logs the list in effect at start; device-wire-v1 has no policy reject code, so the firmware receives
+  `policy_digest` unchanged and does not refuse on it.
+- **Agentic Stream brief**: say where an operator reads the digest the host puts in every `DCMD` (a setting, a log line at start,
+  or an API) and confirm that narrowing the policy gives a new digest. Until then the operator has two sources: the first refused
+  command in the canvas commands table (shortened, with Copy), or the observer journal's `wire` records with direction `host`.
+- **Bench check**: start the mixed session with the host's digest in the plan's allowed policy digests and in the gateway's list;
+  send one command to a simulated device and one to the real board; both must read "Accepted"; if one is refused
+  `policy_not_allowed`, its list differs (the row shows the digest the host used); after a narrowing add the new digest on both
+  sides, then remove the old one.

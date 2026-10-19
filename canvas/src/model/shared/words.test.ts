@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { humanise, kindLabel, spaced } from "./words";
+import { humanise, kindLabel, shortDigest, spaced } from "./words";
 
 describe("shared words", () => {
   it("spaces underscores and humanises ids", () => {
@@ -14,5 +14,12 @@ describe("shared words", () => {
     expect(kindLabel("air_compressor_2")).toBe("air compressor");
     expect(kindLabel("compressor_lead__air_compressor_2")).toBe("air compressor");
     expect(kindLabel("chiller")).toBe("chiller");
+  });
+
+  it("shortens a policy digest to its scheme and the first and last eight hex digits, and leaves anything else as it is", () => {
+    const digest = `sha256:${"a".repeat(8)}${"0".repeat(48)}${"b".repeat(8)}`;
+    expect(shortDigest(digest)).toBe("sha256:aaaaaaaa…bbbbbbbb");
+    expect(shortDigest("sha256:abc")).toBe("sha256:abc");
+    expect(shortDigest("")).toBe("");
   });
 });

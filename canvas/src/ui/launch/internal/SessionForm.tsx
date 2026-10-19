@@ -4,7 +4,7 @@ import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { PlanIssue, SessionDraft } from "../../../model/launch";
 import { sessionStartWords } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
-import { cx, holdEnter, panel, shared } from "../../primitives";
+import { cx, holdEnter, panel, shared, useStore } from "../../primitives";
 import { RealRows } from "./RealRows";
 import { CheckResult } from "./SessionCheck";
 import { SessionFields } from "./SessionFields";
@@ -60,6 +60,7 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
   const issues = liveIssues(state);
   const checking = state.phase === "checking";
   const form = useFocusOnRefusal(state);
+  const defaults = useStore(connect.defaults);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!checking) void connect.start(plant.id, draft);
@@ -74,9 +75,9 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
       aria-label="Session plan"
     >
       <div className={cx(launch.scroll, shared.scrolls)}>
-        <SessionFields draft={draft} change={change} issues={issues} />
+        <SessionFields draft={draft} change={change} issues={issues} defaults={defaults} />
         <RealRows plant={plant} draft={draft} change={change} issues={issues} />
-        <CheckResult state={state} />
+        <CheckResult state={state} connect={connect} domain={plant.id} />
       </div>
       <SessionFooter
         checking={checking}

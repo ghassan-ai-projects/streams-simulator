@@ -1,4 +1,5 @@
 import { failureLine, shared } from "../../primitives";
+import type { ConnectSession } from "../../../app/launch";
 import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
 import { startNsOf } from "../../../app/review";
@@ -21,6 +22,7 @@ type Tab = "report" | "inspect";
 
 interface RunPanelProps {
   readonly review: ReviewSession;
+  readonly connect: ConnectSession;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
   readonly unit: (entity: string, state: string) => string;
@@ -113,7 +115,13 @@ export function RunPanel(props: RunPanelProps) {
         {tab === "inspect" ? (
           <Inspect {...props} />
         ) : (
-          <ReportBody review={review} state={state} unit={props.unit} startNs={startOf(props)} />
+          <ReportBody
+            review={review}
+            connect={props.connect}
+            state={state}
+            unit={props.unit}
+            startNs={startOf(props)}
+          />
         )}
       </div>
     </aside>
@@ -122,12 +130,14 @@ export function RunPanel(props: RunPanelProps) {
 
 function ReadyReport({
   review,
+  connect,
   state,
   report,
   unit,
   startNs,
 }: {
   readonly review: ReviewSession;
+  readonly connect: ConnectSession;
   readonly state: ReviewState;
   readonly report: Report;
   readonly unit: (entity: string, name: string) => string;
@@ -137,7 +147,9 @@ function ReadyReport({
   const shown = picked !== null && picked.atNs === positionNs ? picked : null;
   return (
     <>
-      {state.connection === "saved" && <SessionEvidence state={state} startNs={startNs} />}
+      {state.connection === "saved" && (
+        <SessionEvidence review={review} connect={connect} state={state} startNs={startNs} />
+      )}
       <TwinPanel review={review} state={state} startNs={startNs} />
       <ReportPanel
         report={report}
@@ -153,18 +165,30 @@ function ReadyReport({
 
 function ReportBody({
   review,
+  connect,
   state,
   unit,
   startNs,
 }: {
   readonly review: ReviewSession;
+  readonly connect: ConnectSession;
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
   readonly startNs: number;
 }) {
-  if (state.connection === "running") return <SessionEvidence state={state} startNs={startNs} />;
+  if (state.connection === "running")
+    return <SessionEvidence review={review} connect={connect} state={state} startNs={startNs} />;
   if (state.report.phase === "ready")
-    return <ReadyReport review={review} state={state} report={state.report.value} unit={unit} startNs={startNs} />;
+    return (
+      <ReadyReport
+        review={review}
+        connect={connect}
+        state={state}
+        report={state.report.value}
+        unit={unit}
+        startNs={startNs}
+      />
+    );
   if (state.report.phase === "loading")
     return (
       <p className={parts.muted} role="status">

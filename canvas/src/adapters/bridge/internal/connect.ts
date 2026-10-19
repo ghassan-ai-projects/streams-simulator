@@ -1,9 +1,11 @@
 import type { ConnectGateway, ConnectStatus, PlannedInstance, SessionCheck } from "../../../app/ports";
 import { isRecord, list, record, text } from "../../../model/shared/json";
+import { names } from "./decodeKit";
 import { connectFailure } from "./failures";
 import { followRun } from "./follow";
 import type { Transport } from "./http";
 import { action, issueList } from "./http";
+import { readPolicyDefault, savePolicyDefault } from "./policyDefault";
 
 const roles = ["real", "simulated"] as const;
 
@@ -22,11 +24,13 @@ function planned(value: unknown): PlannedInstance | null {
 function sessionCheck(value: unknown): SessionCheck | null {
   if (!isRecord(value) || !Array.isArray(value.instances)) return null;
   const instances = list(value.instances).map(planned);
-  if (instances.some((instance) => instance === null)) return null;
+  const policies = value.policies === undefined ? null : names(value.policies);
+  if (instances.some((instance) => instance === null) || policies === null) return null;
   return {
     domain: text(value.domain),
     mixed: value.environment === "mixed",
     instances: instances.filter((instance): instance is PlannedInstance => instance !== null),
+    policies,
   };
 }
 
@@ -67,6 +71,8 @@ function connectStatus(value: unknown): ConnectStatus | null {
 
 export function connectGateway(transport: Transport): ConnectGateway {
   return {
+    readPolicyDefault: () => readPolicyDefault(transport),
+    savePolicyDefault: (policies, etag) => savePolicyDefault(transport, policies, etag),
     checkSession: (plan) => action(transport, "session.check", { content: plan }, sessionCheck, connectFailure),
     startSession: (plan) => action(transport, "session.start", { content: plan }, connectStatus, connectFailure),
     sessionStatus: () => action(transport, "session.status", {}, connectStatus, connectFailure),

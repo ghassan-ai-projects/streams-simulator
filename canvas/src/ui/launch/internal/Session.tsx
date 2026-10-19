@@ -57,12 +57,17 @@ function OwnSession({ state, launch, onFinished, form, forget }: OwnProps) {
 
 function useDraft(launch: LaunchStore, plant: string) {
   const [draft, setDraft] = useState<SessionDraft>(() => launch.connect.draftFor(plant));
+  useEffect(() => {
+    void launch.connect.prefill(plant).then((filled) => {
+      if (filled !== null) setDraft(filled);
+    });
+  }, [launch, plant]);
   const change = (next: SessionDraft) => {
     setDraft(next);
     launch.connect.keepDraft(plant, next);
   };
   const forget = () => {
-    change(firstSessionDraft);
+    change({ ...firstSessionDraft, policies: draft.policies, policiesFrom: draft.policiesFrom });
   };
   return { draft, change, forget };
 }

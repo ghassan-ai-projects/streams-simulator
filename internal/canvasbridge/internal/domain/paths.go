@@ -19,6 +19,7 @@ const (
 	ClassEquipment   FileClass = "equipment"
 	ClassInstrument  FileClass = "instrument"
 	ClassRun         FileClass = "run"
+	ClassPolicies    FileClass = "policies"
 )
 
 const MaxFileBytes = 8 << 20
@@ -46,6 +47,8 @@ var definitionFolders = map[string]struct {
 	"components/instruments": {ClassInstrument, ".instrument.json"},
 }
 
+const policyDefaultRel = "settings/default.policies.json"
+
 var stemFolders = map[FileClass]string{ClassKind: "kinds"}
 
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
@@ -54,14 +57,25 @@ var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.json
 func ParsePath(rel string) (WorkspacePath, error) {
 	parts := strings.Split(rel, "/")
 	if !slices.ContainsFunc(parts, badSegment) {
-		if path, ok := definitionPath(rel, parts); ok {
-			return path, nil
-		}
-		if path, ok := runPath(rel, parts); ok {
+		if path, ok := knownPath(rel, parts); ok {
 			return path, nil
 		}
 	}
 	return WorkspacePath{}, fmt.Errorf("%w: %q", ErrBadPath, rel)
+}
+
+func knownPath(rel string, parts []string) (WorkspacePath, bool) {
+	if path, ok := definitionPath(rel, parts); ok {
+		return path, true
+	}
+	if path, ok := runPath(rel, parts); ok {
+		return path, true
+	}
+	return policyDefaultPath(rel)
+}
+
+func policyDefaultPath(rel string) (WorkspacePath, bool) {
+	return WorkspacePath{Rel: rel, Class: ClassPolicies}, rel == policyDefaultRel
 }
 
 func StemPath(class FileClass, stem string) (WorkspacePath, error) {
