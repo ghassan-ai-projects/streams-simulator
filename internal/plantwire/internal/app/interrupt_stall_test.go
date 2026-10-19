@@ -33,8 +33,8 @@ func TestAHostThatStopsReadingDoesNotHoldTheEmergencyStopBackForLongerThanOneBou
 	started := time.Now()
 	controlThroughTicks(t, port, ticks, `{"op":"estop","scope":{"kind":"device","id":"fan-01"}}`)
 	stop := ofType(recordsOf(gateway.await(ofKind("DCMD"))), "DCMD")[0]
-	if waited := time.Since(started); stop["device"] != "fan-01" || stop["command"] != "stop_fan" || stop["expected_boot_id"] != "boot-1" || waited > 10*time.Second {
-		t.Fatalf("stop %v reached the gateway after %v, want the stop within one bounded host write, not the 30 s a stalled host once cost", stop, waited)
+	if waited := time.Since(started); stop["device"] != "fan-01" || stop["command"] != "stop_fan" || stop["expected_boot_id"] != "boot-1" || waited >= 4*time.Second {
+		t.Fatalf("stop %v reached the gateway after %v, want the stop within about one 2 s bounded host write (limit 4 s), not the 30 s a stalled host once cost", stop, waited)
 	}
 	relay.stop()
 }

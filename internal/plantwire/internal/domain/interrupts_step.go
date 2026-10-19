@@ -24,7 +24,7 @@ func (m *Interrupts) command(in InterruptEntry) []InterruptEntry {
 	case isDeclaredSafeStop(device, in):
 		return verdictOf(in, VerdictPass, "")
 	case m.idWaiting(in.Text("command_id")):
-		return verdictOf(in, VerdictRefuse, reasonDuplicate)
+		return m.retried(in)
 	case m.holdCovers(device):
 		return verdictOf(in, VerdictRefuse, ReasonLocalControl)
 	case m.approveCovers(device):
@@ -35,7 +35,21 @@ func (m *Interrupts) command(in InterruptEntry) []InterruptEntry {
 
 func isDeclaredSafeStop(d InterruptDevice, in InterruptEntry) bool {
 	args, _ := in["args"].(map[string]any)
-	return d.SafeStop != "" && in.Text("name") == d.SafeStop && len(args) == 0 && in["args_truncated"] != true
+	return declaredStop(d, in.Text("name"), args, in["args_truncated"] == true)
+}
+
+func declaredStop(d InterruptDevice, name string, args map[string]any, truncated bool) bool {
+	return d.SafeStop != "" && name == d.SafeStop && len(args) == 0 && !truncated
+}
+
+func (m *Interrupts) retried(in InterruptEntry) []InterruptEntry {
+	id := in.Text("command_id")
+	index := slices.IndexFunc(m.pending, func(p *pendingApproval) bool { return p.id == id || slices.Contains(p.waiting, id) })
+	p := m.pending[index]
+	if p.content == in.Text("content") && p.key == in.Text("key") {
+		return verdictOf(in, VerdictQueue, "")
+	}
+	return verdictOf(in, VerdictRefuse, reasonDuplicate)
 }
 
 func (m *Interrupts) idWaiting(id string) bool {

@@ -17,30 +17,93 @@ func isInterruptInput(event string) bool {
 
 func isEvidenceEvent(event string) bool { return event == EventEffect || event == EventPurge }
 
-type evidenceLedger struct{ stopped, passed map[string]bool }
+type restriction struct {
+	scope Scope
+	at    int
+}
+
+type evidenceLedger struct {
+	stopped      map[string]bool
+	devices      map[string]string
+	boards       map[string]string
+	passed       map[string]int
+	restrictions []restriction
+	request      InterruptEntry
+}
 
 func checkEvidence(records []map[string]any) error {
-	ledger := evidenceLedger{stopped: map[string]bool{}, passed: map[string]bool{}}
+	ledger := &evidenceLedger{stopped: map[string]bool{}, devices: map[string]string{}, boards: map[string]string{}, passed: map[string]int{}}
 	for at, record := range records {
-		if fault := ledger.note(InterruptEntry(record)); fault != "" {
+		if fault := ledger.note(at, InterruptEntry(record)); fault != "" {
 			return fmt.Errorf("%w: record %d %s", ErrInterruptReplay, at, fault)
 		}
 	}
 	return nil
 }
 
-func (l evidenceLedger) note(entry InterruptEntry) string {
-	switch {
-	case entry.Event() == EventStop:
-		l.stopped[entry.Text("device")] = true
-	case entry.Event() == EventVerdict && entry.Text("verdict") == VerdictPass:
-		l.passed[entry.Text("command_id")] = true
-	case entry.Event() == EventEffect && !l.stopped[entry.Text("device")]:
-		return fmt.Sprintf("is an effect on %q, which no stop ordered", entry.Text("device"))
-	case entry.Event() == EventPurge && !l.passed[entry.Text("command_id")]:
-		return fmt.Sprintf("purges %q, which no verdict passed", entry.Text("command_id"))
+func (l *evidenceLedger) note(at int, entry InterruptEntry) string {
+	l.trackInputs(entry)
+	l.trackDecisions(at, entry)
+	switch entry.Event() {
+	case EventEffect:
+		if !l.stopped[entry.Text("device")] {
+			return fmt.Sprintf("is an effect on %q, which no stop ordered", entry.Text("device"))
+		}
+	case EventPurge:
+		return l.purgeFault(entry)
 	}
 	return ""
+}
+
+func (l *evidenceLedger) trackInputs(entry InterruptEntry) {
+	switch entry.Event() {
+	case EventInventory:
+		for _, d := range inventoryOf(entry) {
+			l.boards[d.Device] = d.Board
+		}
+	case EventCommand:
+		l.devices[entry.Text("command_id")] = entry.Text("device")
+	case EventControl:
+		l.request = entry
+	case EventStop:
+		l.stopped[entry.Text("device")] = true
+	}
+}
+
+func (l *evidenceLedger) trackDecisions(at int, entry InterruptEntry) {
+	switch {
+	case entry.Event() == EventVerdict && entry.Text("verdict") == VerdictPass:
+		l.passed[entry.Text("command_id")] = at
+	case entry.Event() == EventResolve && entry.Text("resolution") == ResolutionForward:
+		for _, id := range append([]string{entry.Text("command_id")}, stringsOf(entry["waiting"])...) {
+			l.passed[id] = at
+		}
+	case entry.Event() == EventReply && entry.Text("result") == ResultApplied && restricts(l.request):
+		l.restrictions = append(l.restrictions, restriction{scope: scopeOf(l.request["scope"]), at: at})
+	}
+}
+
+func restricts(request InterruptEntry) bool {
+	return request.Op() == OpHold || request.Op() == OpEStop || (request.Op() == OpApproveMode && request["enabled"] == true)
+}
+
+func (l *evidenceLedger) purgeFault(entry InterruptEntry) string {
+	id, device := entry.Text("command_id"), entry.Text("device")
+	passedAt, passed := l.passed[id]
+	switch {
+	case !passed:
+		return fmt.Sprintf("purges %q, which no verdict passed", id)
+	case l.devices[id] != device:
+		return fmt.Sprintf("purges %q on %q, but it was sent to %q", id, device, l.devices[id])
+	case !l.covered(device, passedAt):
+		return fmt.Sprintf("purges %q, which no hold, stop or approval mode applied since covers", id)
+	}
+	return ""
+}
+
+func (l *evidenceLedger) covered(device string, after int) bool {
+	subject := InterruptDevice{Device: device, Board: l.boards[device]}
+	return slices.ContainsFunc(l.restrictions, func(r restriction) bool { return r.at > after && r.scope.covers(subject) })
 }
 
 func ReplayInterrupts(records []map[string]any) error {

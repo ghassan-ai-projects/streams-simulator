@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **M5 re-review fixes in the binary.** An emergency stop of the relay names a gateway device that went offline (or that an
+  earlier birth announced) as `unreachable`, and a hold scoped to it is accepted, instead of the device vanishing from the
+  inventory; the stop keeps the last host epoch and never carries epoch 0. A retry of a waiting command with the same content is
+  answered `queued`; a purge of an approved command replays; an emergency stop never drops a scope and is served first by the
+  control port; every device of a stop is stopped even when a state record fails to send; a queued safe stop is not purged;
+  `twin-report` refuses a run whose interrupt log was set aside; `interrupts.rejected.jsonl` is never overwritten. Contracts
+  changed: `node-control-v0.1` and `interrupt-log-v0.1` require `unreachable` on an applied `estop` reply.
+
 - **M5 review fixes in the binary.** A node of the world refuses, as `local_control`, every command it had queued for a future
   start time when a hold, an emergency stop or approval mode covers its device, so a stopped device is not restarted by a command
   accepted before the stop. A command id that is already waiting for approval is refused `duplicate`, and a pending entry now

@@ -10,6 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 var twinFanDevice = []domain.InterruptDevice{{Device: "fan-01", Board: "mega-01", Clock: domain.ClockWall, SafeStop: "stop_fan"},
@@ -147,6 +148,16 @@ func TestAnInterruptLogTheArtifactRecordsButTheFolderLacksIsAnErrorAndNotNoInter
 	}
 	if _, err := TwinReport(t.Context(), twinOptions(t, dir)); !errors.Is(err, ErrTwinNoInterruptLog) {
 		t.Fatalf("TwinReport = %v, want ErrTwinNoInterruptLog", err)
+	}
+}
+
+func TestAFolderWhoseInterruptLogWasSetAsideAsUnreplayableIsRefusedBecauseTheStopsAreUnknown(t *testing.T) {
+	t.Parallel()
+	field, host := twinRecords(t, noOffset, twinRenewals("accepted"))
+	dir := writeTwinFolder(t, field, host)
+	testsupport.WriteFileIn(t, dir, model.FileInterruptLogRejected, []byte("{}\n"))
+	if _, err := TwinReport(t.Context(), twinOptions(t, dir)); !errors.Is(err, ErrTwinInterruptLogRejected) {
+		t.Fatalf("TwinReport = %v, want ErrTwinInterruptLogRejected rather than a report that ignores the stops", err)
 	}
 }
 

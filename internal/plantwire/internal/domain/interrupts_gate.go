@@ -70,9 +70,10 @@ func boundedArgs(args map[string]any) (map[string]any, bool) {
 	return args, false
 }
 
-func (g *InterruptGate) Covers(request InterruptEntry, device string) bool {
+func (g *InterruptGate) Covers(request InterruptEntry, c Command) bool {
 	restricts := request.Op() == OpHold || request.Op() == OpEStop || (request.Op() == OpApproveMode && request["enabled"] == true)
-	return restricts && scopeOf(request["scope"]).covers(g.machine.deviceNamed(device))
+	device := g.machine.deviceNamed(c.Device)
+	return restricts && scopeOf(request["scope"]).covers(device) && !declaredStop(device, c.Name, c.Args, false)
 }
 
 func (g *InterruptGate) Control(request InterruptEntry, clock string, nodeNS int64) GateOutcome {
@@ -125,11 +126,17 @@ func (g *InterruptGate) verdict(o *GateOutcome, out InterruptEntry, judged *Inbo
 	case VerdictPass:
 		o.Proceed = true
 	case VerdictQueue:
-		g.payloads[id] = *judged
-		o.Queued = append(o.Queued, GateAnswer{CommandID: id, Device: judged.Device})
+		g.queue(o, id, *judged)
 	default:
 		o.Refused = append(o.Refused, GateAnswer{CommandID: id, Device: judged.Device, Reason: out.Text("reason")})
 	}
+}
+
+func (g *InterruptGate) queue(o *GateOutcome, id string, in Inbound) {
+	if _, held := g.payloads[id]; !held {
+		g.payloads[id] = in
+	}
+	o.Queued = append(o.Queued, GateAnswer{CommandID: id, Device: in.Device})
 }
 
 func (g *InterruptGate) resolved(o *GateOutcome, out InterruptEntry) {

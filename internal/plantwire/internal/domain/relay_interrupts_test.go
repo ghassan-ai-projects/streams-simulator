@@ -30,6 +30,16 @@ func stoppableBirth(t *testing.T) Record {
 	return record
 }
 
+func deviceOnlyBirth(t *testing.T) Record {
+	t.Helper()
+	record, err := NodeBirthOf(NodeIdentity{Environment: EnvironmentHardware, ProtocolMax: 1, PriorLastSeq: -1, ClockMode: "wall"}, stoppableKinds(),
+		[]model.Board{{Name: "b-1", Members: []string{"P1"}, Environment: EnvironmentHardware}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return record
+}
+
 func interruptRig(t *testing.T) *relayRig {
 	t.Helper()
 	g := newRelayRig(t)

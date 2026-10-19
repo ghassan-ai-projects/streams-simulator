@@ -43,7 +43,7 @@ func (m *Interrupts) scopeFault(in InterruptEntry, scope Scope) string {
 		return ""
 	case !m.known(scope):
 		return unknownReason(scope)
-	case op != OpEStop && m.addsScope(op, scope) && len(m.holds)+len(m.approves) >= maxInterruptScopes:
+	case op != OpEStop && m.addsScope(op, scope) && m.ordinaryScopes() >= maxInterruptScopes:
 		return ReasonTooManyScopes
 	}
 	return ""
@@ -81,7 +81,6 @@ func (m *Interrupts) hold(in InterruptEntry, scope Scope, latch bool) []Interrup
 	if !latch {
 		return append(out, m.reply(in, ResultApplied, ""))
 	}
-	m.evictBeyondCap(scope)
 	plan := m.stops(in, scope)
 	return append(append(plan.entries, out...), m.reply(in, ResultApplied, "", "stopped", anys(plan.stopped), "skipped", anys(plan.skipped),
 		"unreachable", anys(plan.unreachable)))
@@ -114,19 +113,14 @@ func (p *stopPlan) take(d InterruptDevice, in InterruptEntry) {
 	}
 }
 
-func (m *Interrupts) overCap() bool { return len(m.holds)+len(m.approves) > maxInterruptScopes }
-
-func (m *Interrupts) evictBeyondCap(latch Scope) {
-	for _, scope := range sortedScopes(m.approves) {
-		if m.overCap() && latch.containsScope(scope, m.devices) {
-			delete(m.approves, scope)
-		}
-	}
+func (m *Interrupts) ordinaryScopes() int {
+	count := len(m.approves)
 	for _, scope := range sortedScopes(m.holds) {
-		if m.overCap() && scope != latch && !m.holds[scope] && latch.containsScope(scope, m.devices) {
-			delete(m.holds, scope)
+		if !m.holds[scope] {
+			count++
 		}
 	}
+	return count
 }
 
 func (m *Interrupts) clear(in InterruptEntry, scope Scope) []InterruptEntry {

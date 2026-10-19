@@ -205,3 +205,53 @@ func TestALogThatDoesNotReplayIsSetAsideAndTheSessionSaysSo(t *testing.T) {
 		t.Fatalf("ReadInterruptLog = %v, want the folder to hold no interrupt log", err)
 	}
 }
+
+type stateFailingHost struct{ *scriptedHost }
+
+func (h *stateFailingHost) Send(records []map[string]any) error {
+	for _, record := range records {
+		if record["type"] == "DSTATE" {
+			return errHostGone
+		}
+	}
+	return h.scriptedHost.Send(records)
+}
+
+func TestEveryDeviceOfAnEmergencyStopIsStoppedEvenWhenTellingTheHostTheStateOfTheFirstFails(t *testing.T) {
+	t.Parallel()
+	c := newControlled(t, nil)
+	link := &stateFailingHost{scriptedHost: c.host}
+	c.submit(t, estopBoard)
+	options := sliceOptions(2)
+	options.Policies = []string{policy}
+	options.Control, options.InterruptLog = c.port, c.log
+	if err := NewSession(c.run, link, options).Run(t.Context()); !errors.Is(err, errHostGone) {
+		t.Fatalf("Run = %v, want the failed state record reported", err)
+	}
+	if got := effectorsOf(c); !slices.Equal(got, []string{"stop_fan", "stop_led"}) {
+		t.Fatalf("effector calls = %v, want both devices stopped: a host that cannot be told must not leave a second device running", got)
+	}
+}
+
+func TestAnApprovedCommandWaitingForItsStartTimeAndPurgedByAHoldLeavesALogThatStillReplays(t *testing.T) {
+	t.Parallel()
+	c := newControlled(t, nil)
+	c.host.afterSync = func(h *scriptedHost, syncs int) {
+		switch syncs {
+		case 1:
+			h.reply("DCMD", laterFan("c-later", sliceEnd(5)))
+		case 2:
+			c.submit(t, `{"op":"approve","command_id":"c-later"}`)
+		case 3:
+			c.submit(t, holdBoard)
+		}
+	}
+	c.submit(t, approveFan)
+	c.play(t, 6)
+	if !slices.Contains(c.log.events(), "purge") || len(effectorsOf(c)) != 0 {
+		t.Fatalf("log %v effectors %v, want the approved command purged by the hold and never run", c.log.events(), effectorsOf(c))
+	}
+	if err := domain.ReplayInterrupts(c.log.records); err != nil {
+		t.Fatalf("ReplayInterrupts = %v, want a purge of an approved command to be evidence the rules explain", err)
+	}
+}

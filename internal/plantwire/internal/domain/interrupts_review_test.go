@@ -33,7 +33,7 @@ func TestTheSafeStopExemptionIsDecidedByTheMachineAndNotByAFlagInTheLoggedInput(
 	}
 }
 
-func TestACommandIdThatIsAlreadyWaitingIsRefusedAsADuplicateAndNeverForwardsAnotherPayload(t *testing.T) {
+func TestACommandIdThatIsAlreadyWaitingIsRefusedAsADuplicateWhenItsContentDiffersAndNeverForwardsAnotherPayload(t *testing.T) {
 	t.Parallel()
 	g := plantGate()
 	apply(t, g, approveModeLine(ScopeAll, "", true))
@@ -41,13 +41,25 @@ func TestACommandIdThatIsAlreadyWaitingIsRefusedAsADuplicateAndNeverForwardsAnot
 	if got := verdictFor(judge(g, "c-1", "pump-2")); got != "refuse:duplicate" {
 		t.Fatalf("a second command under the waiting id = %s, want a duplicate", got)
 	}
-	repeat := dcmdOf("c-1", "pump-1")
-	if got := verdictFor(g.Judge(repeat, ClockWorld, nowNS)); got != "refuse:duplicate" {
-		t.Fatalf("the same id again = %s, want a duplicate: an id names one waiting command", got)
-	}
 	approved := apply(t, g, `{"op":"approve","command_id":"c-1"}`)
 	if len(approved.Forward) != 1 || approved.Forward[0].Device != "pump-1" {
 		t.Fatalf("forward = %+v, want the command that waited under c-1", approved.Forward)
+	}
+}
+
+func TestARetryOfAWaitingCommandWithTheSameIdAndContentIsAnsweredQueuedAndForwardsOnce(t *testing.T) {
+	t.Parallel()
+	g := plantGate()
+	apply(t, g, approveModeLine(ScopeAll, "", true))
+	judge(g, "c-1", "pump-1")
+	if got := verdictFor(judge(g, "c-1", "pump-1")); got != VerdictQueue {
+		t.Fatalf("the same command again = %s, want queue: a host that retries is told the command still waits, not that it is a duplicate", got)
+	}
+	if pending := g.View()["pending"].([]any); len(pending) != 1 {
+		t.Fatalf("pending = %v, want the retry to add nothing to what waits", pending)
+	}
+	if approved := apply(t, g, `{"op":"approve","command_id":"c-1"}`); len(approved.Forward) != 1 {
+		t.Fatalf("forward = %+v, want the command forwarded once", approved.Forward)
 	}
 }
 
@@ -92,7 +104,7 @@ func TestArgumentsTooLargeToShowAreLeftOutAndSaidSo(t *testing.T) {
 	}
 }
 
-func TestAnEmergencyStopIsNeverRefusedForCapacityAndMakesRoomByDroppingWhatItCovers(t *testing.T) {
+func TestAnEmergencyStopIsNeverRefusedForCapacityAndNeverDropsAnApprovalScopeItCovers(t *testing.T) {
 	t.Parallel()
 	var devices []InterruptDevice
 	for i := range maxInterruptScopes + 2 {
@@ -112,8 +124,11 @@ func TestAnEmergencyStopIsNeverRefusedForCapacityAndMakesRoomByDroppingWhatItCov
 	}
 	state := g.View()
 	holds, approves := state["holds"].([]any), state["approve"].([]any)
-	if len(holds) != 1 || holds[0].(map[string]any)["latched"] != true || len(holds)+len(approves) != maxInterruptScopes {
-		t.Fatalf("state = %v, want the latch kept and just enough covered approval scopes dropped to stay at %d", state, maxInterruptScopes)
+	if len(holds) != 1 || holds[0].(map[string]any)["latched"] != true || len(approves) != maxInterruptScopes {
+		t.Fatalf("state = %v, want the latch added and all %d approval scopes kept: a silently dropped scope is a restriction lost", state, maxInterruptScopes)
+	}
+	if reply := apply(t, g, scopeLine(OpHold, ScopeDevice, devices[maxInterruptScopes+1].Device)).Reply; reply["reason"] != ReasonTooManyScopes {
+		t.Fatalf("a hold after the stop = %v, want the latch not to count against the bound of ordinary scopes", reply)
 	}
 }
 
@@ -161,6 +176,22 @@ func TestAnEffectNoStopOrderedAndAPurgeNoCommandPassedAreNotEvidence(t *testing.
 		err := ReplayInterrupts([]map[string]any{parsedRecord(t, record)})
 		if !errors.Is(err, ErrInterruptReplay) || !strings.Contains(err.Error(), "record 0") {
 			t.Errorf("%s: ReplayInterrupts = %v, want ErrInterruptReplay naming record 0", name, err)
+		}
+	}
+}
+
+func TestAHoldOrStopDoesNotCoverAQueuedDeclaredSafeStopButCoversEveryOtherQueuedCommand(t *testing.T) {
+	t.Parallel()
+	g := plantGate()
+	hold := controlOf(t, scopeLine(OpHold, ScopeAll, ""))
+	stop := Command{Device: "pump-1", Name: "halt", Args: map[string]any{}}
+	if g.Covers(hold, stop) {
+		t.Fatal("a hold covers the declared safe stop of pump-1, want it exempt as it is when judged")
+	}
+	for name, c := range map[string]Command{"another command": {Device: "pump-1", Name: "start", Args: map[string]any{}},
+		"the stop with arguments": {Device: "pump-1", Name: "halt", Args: map[string]any{"mode": "x"}}} {
+		if !g.Covers(hold, c) {
+			t.Errorf("%s: a hold does not cover it, want it purged", name)
 		}
 	}
 }

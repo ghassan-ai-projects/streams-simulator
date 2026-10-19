@@ -24,11 +24,12 @@ type relayInterrupts struct {
 	issued map[string]string
 	order  []string
 	boots  map[string]string
+	known  map[string]InterruptDevice
 	epoch  int64
 }
 
 func (r *Relay) EnableInterrupts() {
-	r.ints = &relayInterrupts{gate: NewInterruptGate(), kinds: map[string]string{}, issued: map[string]string{}, boots: map[string]string{}}
+	r.ints = &relayInterrupts{gate: NewInterruptGate(), kinds: map[string]string{}, issued: map[string]string{}, boots: map[string]string{}, known: map[string]InterruptDevice{}}
 }
 
 func (r *Relay) InterruptView() map[string]any {
@@ -74,14 +75,14 @@ func (r *Relay) stopBoot(device string) string {
 
 func (r *Relay) leaveHost(m *Moves) {
 	r.flushApprovals(m)
-	if r.ints != nil {
-		r.ints.epoch = exactInt(r.host.state["authority_epoch"])
+	if epoch := exactInt(r.host.state["authority_epoch"]); r.ints != nil && epoch > 0 {
+		r.ints.epoch = epoch
 	}
 }
 
 func (r *Relay) hostEpoch() int64 {
-	if r.host.state != nil {
-		return exactInt(r.host.state["authority_epoch"])
+	if epoch := exactInt(r.host.state["authority_epoch"]); epoch > 0 {
+		return epoch
 	}
 	return r.ints.epoch
 }
@@ -234,14 +235,11 @@ func safeStopOf(kinds []any, kind string) string {
 }
 
 func (r *Relay) interruptInventory() []InterruptDevice {
-	var devices []InterruptDevice
-	if r.gateway.admitted {
-		devices = r.boardDevices(r.birth.Message, ClockWall)
-	}
+	devices := r.boardDevices(r.birth.Message, ClockWall)
 	if r.sim != nil {
 		devices = append(devices, r.boardDevices(r.sim.message, ClockWorld)...)
 	}
-	return devices
+	return r.ints.remembered(devices)
 }
 
 func (r *Relay) boardDevices(birth Message, clock string) []InterruptDevice {

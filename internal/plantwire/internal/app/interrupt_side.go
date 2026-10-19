@@ -48,7 +48,7 @@ func (s *Session) purgeQueued(request domain.InterruptEntry) error {
 	var failed error
 	kept := s.queued[:0:0]
 	for _, c := range s.queued {
-		if s.ints.gate.Covers(request, c.Device) {
+		if s.ints.gate.Covers(request, c) {
 			failed = errors.Join(failed, s.refuseQueued(c))
 		} else {
 			kept = append(kept, c)
@@ -98,19 +98,20 @@ func (s *Session) forwardApproved(commands []domain.Inbound) error {
 
 func (s *Session) performStops(orders []domain.StopOrder) error {
 	for _, order := range orders {
-		if err := s.performStop(order); err != nil {
-			return err
-		}
+		s.performStop(order)
 	}
-	return nil
+	var failed error
+	for _, order := range orders {
+		failed = errors.Join(failed, s.send(s.devices.state(order.Device)...))
+	}
+	return failed
 }
 
-func (s *Session) performStop(order domain.StopOrder) error {
+func (s *Session) performStop(order domain.StopOrder) {
 	s.safeStops++
 	id := fmt.Sprintf("node-stop-%d", s.safeStops)
 	answer := s.invoke(domain.Command{Device: order.Device, Name: order.Command, Args: map[string]any{}}, id)
 	s.recordInterrupts([]domain.InterruptEntry{domain.EffectEntry(id, order.Device, stopOutcome(answer), domain.ClockWorld, s.now())})
-	return s.send(s.devices.state(order.Device)...)
 }
 
 func stopOutcome(answer domain.Answer) string {

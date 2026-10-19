@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -16,13 +17,14 @@ type ControlCall struct {
 }
 
 type ControlPort struct {
-	calls chan ControlCall
-	mu    sync.Mutex
-	view  map[string]any
+	mu     sync.Mutex
+	urgent []ControlCall
+	queue  []ControlCall
+	view   map[string]any
 }
 
 func NewControlPort() *ControlPort {
-	return &ControlPort{calls: make(chan ControlCall, controlBacklog), view: domain.EmptyInterruptView()}
+	return &ControlPort{view: domain.EmptyInterruptView()}
 }
 
 func (p *ControlPort) Handle(ctx context.Context, line []byte) []byte {
@@ -51,12 +53,24 @@ func (p *ControlPort) submit(ctx context.Context, request domain.InterruptEntry)
 
 func (p *ControlPort) enqueue(ctx context.Context, request domain.InterruptEntry) (ControlCall, bool) {
 	call := ControlCall{Entry: request, Reply: make(chan []byte, 1), Ctx: ctx}
-	select {
-	case p.calls <- call:
-		return call, true
-	case <-ctx.Done():
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.dropAbandoned()
+	list := &p.queue
+	if request.Op() == domain.OpEStop {
+		list = &p.urgent
+	}
+	if len(*list) >= controlBacklog {
 		return call, false
 	}
+	*list = append(*list, call)
+	return call, true
+}
+
+func (p *ControlPort) dropAbandoned() {
+	live := func(call ControlCall) bool { return call.Ctx.Err() == nil }
+	p.urgent = slices.DeleteFunc(p.urgent, func(call ControlCall) bool { return !live(call) })
+	p.queue = slices.DeleteFunc(p.queue, func(call ControlCall) bool { return !live(call) })
 }
 
 func (p *ControlPort) busy() []byte {
@@ -67,16 +81,22 @@ func (p *ControlPort) take() (ControlCall, bool) {
 	if p == nil {
 		return ControlCall{}, false
 	}
-	for {
-		select {
-		case call := <-p.calls:
-			if call.Ctx.Err() == nil {
-				return call, true
-			}
-		default:
-			return ControlCall{}, false
-		}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.dropAbandoned()
+	if call, ok := popFirst(&p.urgent); ok {
+		return call, true
 	}
+	return popFirst(&p.queue)
+}
+
+func popFirst(list *[]ControlCall) (ControlCall, bool) {
+	if len(*list) == 0 {
+		return ControlCall{}, false
+	}
+	call := (*list)[0]
+	*list = (*list)[1:]
+	return call, true
 }
 
 func (p *ControlPort) Publish(view map[string]any) {

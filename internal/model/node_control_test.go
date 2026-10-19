@@ -74,3 +74,18 @@ func TestAnInterruptLogRecordIsValidatedAgainstItsContract(t *testing.T) {
 		}
 	}
 }
+
+func TestAnAppliedEmergencyStopReplyMustSayWhichDevicesWereUnreachable(t *testing.T) {
+	t.Parallel()
+	const state = `"state":{"holds":[],"approve":[],"pending":[],"devices":[]},"clock":"world","node_ns":5`
+	reply := func(extra string) []byte {
+		return []byte(`{"event":"reply","op":"estop","result":"applied","stopped":["fan-01"],"skipped":[]` + extra + `,` + state + `}`)
+	}
+	if err := ValidateInterruptRecord(reply(`,"unreachable":[]`)); err != nil {
+		t.Fatalf("a reply listing no unreachable device = %v, want it accepted", err)
+	}
+	invalid, ok := AsValidationError(ValidateInterruptRecord(reply(``)))
+	if !ok || invalid.Contract != ContractInterruptLog || len(invalid.Issues) == 0 {
+		t.Fatalf("a stop reply without unreachable = %v, want a violation of %s: a stop that is silent about devices it could not stop reads as complete", invalid, ContractInterruptLog)
+	}
+}

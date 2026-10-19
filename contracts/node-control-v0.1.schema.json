@@ -64,7 +64,10 @@
         "skipped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare no safe_stop command."},
         "unreachable": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare a safe_stop command but could not be ordered to stop (a hardware device not yet born, a simulated node that is gone). The hold is latched on them all the same; they are never listed in stopped."},
         "state": {"$ref": "#/$defs/state"}
-      }
+      },
+      "allOf": [
+        {"if": {"properties": {"op": {"const": "estop"}, "result": {"const": "applied"}}, "required": ["op", "result"]}, "then": {"required": ["unreachable"]}}
+      ]
     },
     "state": {
       "type": "object",

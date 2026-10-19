@@ -119,3 +119,38 @@ func cloneRecords(records []map[string]any) []map[string]any {
 	}
 	return copied
 }
+
+func approvedThenRestrictedLog(t *testing.T, restrict string) []map[string]any {
+	t.Helper()
+	g := NewInterruptGate()
+	var log []InterruptEntry
+	take := func(o GateOutcome) { log = append(log, o.Entries...) }
+	take(g.SetInventory(plantDevices, ClockWorld, nowNS))
+	take(apply(t, g, approveModeLine(ScopeDevice, "pump-1", true)))
+	take(judge(g, "c-1", "pump-1"))
+	take(apply(t, g, `{"op":"approve","command_id":"c-1"}`))
+	if restrict != "" {
+		take(apply(t, g, restrict))
+	}
+	log = append(log, PurgeEntry("c-1", "pump-1", ReasonLocalControl, ClockWorld, nowNS))
+	records := make([]map[string]any, len(log))
+	for i, entry := range log {
+		records[i] = parsedRecord(t, entry)
+	}
+	return records
+}
+
+func TestTheRefusalOfAnApprovedCommandThatWaitedForItsStartTimeIsEvidenceOnceALaterHoldCoversIt(t *testing.T) {
+	t.Parallel()
+	if err := ReplayInterrupts(approvedThenRestrictedLog(t, scopeLine(OpHold, ScopeDevice, "pump-1"))); err != nil {
+		t.Fatalf("ReplayInterrupts = %v, want the purge of a command the approval forwarded to replay", err)
+	}
+}
+
+func TestThePurgeOfAnApprovedCommandWithNoRestrictionAfterItsApprovalIsRefused(t *testing.T) {
+	t.Parallel()
+	err := ReplayInterrupts(approvedThenRestrictedLog(t, ""))
+	if !errors.Is(err, ErrInterruptReplay) || !strings.Contains(err.Error(), "covers") {
+		t.Fatalf("ReplayInterrupts = %v, want a purge that nothing since the approval explains refused", err)
+	}
+}

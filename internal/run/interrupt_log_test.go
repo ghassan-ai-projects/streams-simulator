@@ -114,3 +114,21 @@ func TestAnInterruptLogThatIsRejectedIsSetAsideUnderAnotherNameAndTheFolderHolds
 		t.Fatalf("RejectInterruptLog of nothing = %v, want an error naming %s", err, model.FileInterruptLog)
 	}
 }
+
+func TestASecondRejectedInterruptLogDoesNotOverwriteTheFirstSetAside(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	for _, content := range []string{"first\n", "second\n"} {
+		if err := os.WriteFile(filepath.Join(dir, model.FileInterruptLog), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := run.RejectInterruptLog(dir); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for name, want := range map[string]string{model.FileInterruptLogRejected: "first\n", "interrupts.rejected.1.jsonl": "second\n"} {
+		if raw, err := os.ReadFile(filepath.Join(dir, name)); err != nil || string(raw) != want {
+			t.Errorf("%s = %q, %v, want %q: an earlier rejected log must survive a later one", name, raw, err, want)
+		}
+	}
+}

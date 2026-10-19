@@ -20,7 +20,8 @@ var (
 	ErrTwinNoJournal     = errors.New("plantwire: the run folder holds no journal.jsonl, where the commands the host sent are recorded")
 	ErrTwinJournalDigest = errors.New("plantwire: the journal differs from the digest run.json recorded")
 
-	ErrTwinNoInterruptLog = errors.New("plantwire: run.json records an interrupt log digest but the run folder holds no interrupts.jsonl")
+	ErrTwinInterruptLogRejected = errors.New("plantwire: the run folder holds an interrupt log the session set aside as unreplayable, so the commands the node refused or stopped are unknown")
+	ErrTwinNoInterruptLog       = errors.New("plantwire: run.json records an interrupt log digest but the run folder holds no interrupts.jsonl")
 )
 
 type TwinReportOptions struct {
@@ -197,7 +198,18 @@ func readTwinJournal(dir string, art *model.RunArtifact) ([]byte, string, error)
 	return raw, digest, nil
 }
 
+func refuseRejectedLog(dir string) error {
+	present, err := files.RunFilePresent(dir, model.FileInterruptLogRejected)
+	if err == nil && present {
+		return fmt.Errorf("%w: %s", ErrTwinInterruptLogRejected, model.FileInterruptLogRejected)
+	}
+	return err
+}
+
 func readTwinInterrupts(dir string, art *model.RunArtifact) ([]map[string]any, string, error) {
+	if err := refuseRejectedLog(dir); err != nil {
+		return nil, "", err
+	}
 	records, digest, err := verifiedInterruptLog(dir)
 	if !errors.Is(err, run.ErrInterruptLogMissing) {
 		return records, digest, err

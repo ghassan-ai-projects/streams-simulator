@@ -40,6 +40,7 @@
     {"if": {"properties": {"event": {"const": "control"}}}, "then": {"required": ["op"]}},
     {"if": {"properties": {"event": {"const": "command"}}}, "then": {"required": ["command_id", "key", "content", "device", "name", "deadline_ns", "args", "args_truncated"]}},
     {"if": {"properties": {"event": {"const": "reply"}}}, "then": {"required": ["op", "result", "state"]}},
+    {"if": {"properties": {"event": {"const": "reply"}, "op": {"const": "estop"}, "result": {"const": "applied"}}, "required": ["event", "op", "result"]}, "then": {"required": ["unreachable"]}},
     {"if": {"properties": {"event": {"const": "verdict"}}}, "then": {"required": ["command_id", "verdict"]}},
     {"if": {"properties": {"event": {"const": "resolve"}}}, "then": {"required": ["command_id", "resolution", "waiting"]}},
     {"if": {"properties": {"event": {"const": "stop"}}}, "then": {"required": ["device", "command"]}},

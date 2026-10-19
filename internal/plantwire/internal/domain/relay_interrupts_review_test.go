@@ -96,13 +96,15 @@ func TestAGatewayThatIsLostAndReadmittedIsNotTrustedWithBootsFromBefore(t *testi
 	t.Parallel()
 	g := interruptRig(t)
 	g.relay.GatewayLost()
-	if reply, _ := estopOf(t, g, "P1"); reply["reason"] != ReasonUnknownDevice {
-		t.Fatalf("reply = %v, want a device of a gateway that is gone refused as unknown", reply)
+	reply, moves := estopOf(t, g, "P1")
+	if unreachable := reply["unreachable"].([]any); reply["result"] != ResultApplied || !slices.Equal(unreachable, []any{"P1"}) || len(moves.Down) != 0 {
+		t.Fatalf("reply %v down %v, want a device of a gateway that is gone reported unreachable, never vanished or refused as unknown", reply, typesOf(moves.Down))
 	}
+	control(t, g.relay, scopeLine(OpRelease, ScopeDevice, "P1"))
 	g.relay.GatewayAttached()
 	g.gateway = NewTransmitter("gw-2")
 	g.gw(stoppableBirth(t))
-	reply, moves := estopOf(t, g, "P1")
+	reply, moves = estopOf(t, g, "P1")
 	if unreachable := reply["unreachable"].([]any); !slices.Equal(unreachable, []any{"P1"}) || len(moves.Down) != 0 {
 		t.Fatalf("reply %v down %v, want P1 unreachable until the readmitted gateway announces it again", reply, typesOf(moves.Down))
 	}
@@ -125,5 +127,85 @@ func TestAStopTheGatewayAnsweredIsNamedByTheInterruptLogForTheTwinReport(t *test
 	}
 	if err := ReplayInterrupts(records); err != nil {
 		t.Fatalf("ReplayInterrupts = %v, want the relay's own log to replay", err)
+	}
+}
+
+func TestAnEmergencyStopNamesADeviceThatWentOfflineAsUnreachableForEveryScopeThatCoversItAndStopsTheRest(t *testing.T) {
+	t.Parallel()
+	for name, line := range map[string]string{"all": scopeLine(OpEStop, ScopeAll, ""), "its board": scopeLine(OpEStop, ScopeBoard, "b-1"),
+		"itself": scopeLine(OpEStop, ScopeDevice, "P1")} {
+		g := interruptMixedRig(t)
+		g.relay.GatewayLost()
+		reply, moves := control(t, g.relay, line)
+		unreachable, stopped := reply["unreachable"].([]any), reply["stopped"].([]any)
+		if !slices.Equal(unreachable, []any{"P1"}) {
+			t.Errorf("%s: reply %v, want the offline gateway device P1 in unreachable and in no other list", name, reply)
+		}
+		if name == "all" && (!slices.Equal(stopped, []any{"S1"}) || len(moves.Down)+len(moves.ToSim) == 0) {
+			t.Errorf("%s: reply %v, want the simulated device still stopped", name, reply)
+		}
+	}
+}
+
+func TestAHoldScopedToADeviceThatWentOfflineIsAcceptedAndListedInTheState(t *testing.T) {
+	t.Parallel()
+	g := interruptRig(t)
+	g.relay.GatewayLost()
+	reply, _ := control(t, g.relay, scopeLine(OpHold, ScopeDevice, "P1"))
+	holds := g.relay.InterruptView()["holds"].([]any)
+	if reply["result"] != ResultApplied || len(holds) != 1 || holds[0].(map[string]any)["id"] != "P1" {
+		t.Fatalf("reply %v holds %v, want a hold on an announced device accepted although it is offline", reply, holds)
+	}
+	if reply, _ := control(t, g.relay, scopeLine(OpHold, ScopeDevice, "ghost")); reply["reason"] != ReasonUnknownDevice {
+		t.Fatalf("reply = %v, want a device nobody announced still refused as unknown", reply)
+	}
+}
+
+func TestADeviceAnEarlierBirthAnnouncedStaysInTheInventoryAfterALaterBirthLeavesItOut(t *testing.T) {
+	t.Parallel()
+	g := interruptRig(t)
+	control(t, g.relay, scopeLine(OpHold, ScopeDevice, "V1"))
+	g.relay.GatewayLost()
+	g.relay.GatewayAttached()
+	g.gateway = NewTransmitter("gw-2")
+	g.gw(deviceOnlyBirth(t))
+	reply, _ := estopOf(t, g, "V1")
+	if reply["result"] != ResultApplied {
+		t.Fatalf("reply = %v, want V1, announced earlier in this session, still known after a birth without it", reply)
+	}
+}
+
+func estopEpochAfter(t *testing.T, g *relayRig) any {
+	t.Helper()
+	_, moves := estopOf(t, g, "P1")
+	if len(moves.Down) != 1 {
+		t.Fatalf("down %v, want one stop for P1", typesOf(moves.Down))
+	}
+	return moves.Down[0]["authority_epoch"]
+}
+
+func TestAHostThatReturnsWithoutAnEpochNeverMakesTheStopCarryEpochZero(t *testing.T) {
+	t.Parallel()
+	g := interruptRig(t)
+	g.relay.HostLost()
+	g.relay.HostAttached()
+	g.newHostSession("relay-h2")
+	g.hostSends(hostState(0, 0))
+	if epoch := estopEpochAfter(t, g); epoch != int64(7) {
+		t.Fatalf("authority_epoch = %v, want the last epoch a host announced (7) while the new host has announced none", epoch)
+	}
+}
+
+func TestALostHostThatNeverAnnouncedAnEpochDoesNotEraseTheEpochAnEarlierHostGave(t *testing.T) {
+	t.Parallel()
+	g := interruptRig(t)
+	g.relay.HostLost()
+	g.relay.HostAttached()
+	g.newHostSession("relay-h2")
+	g.hostSends(hostState(0, 0))
+	g.relay.HostLost()
+	g.gw(stoppableBirth(t))
+	if epoch := estopEpochAfter(t, g); epoch != int64(7) {
+		t.Fatalf("authority_epoch = %v, want 7 kept: losing a host that announced epoch 0 must not overwrite it", epoch)
 	}
 }

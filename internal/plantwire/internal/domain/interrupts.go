@@ -53,17 +53,6 @@ func (s Scope) covers(d InterruptDevice) bool {
 	return s.Kind == ScopeDevice && d.Device == s.ID
 }
 
-func (s Scope) containsScope(inner Scope, devices []InterruptDevice) bool {
-	if s.Kind == ScopeAll {
-		return true
-	}
-	if inner.Kind == ScopeAll {
-		return false
-	}
-	return slices.ContainsFunc(devices, func(d InterruptDevice) bool { return inner.covers(d) }) &&
-		!slices.ContainsFunc(devices, func(d InterruptDevice) bool { return inner.covers(d) && !s.covers(d) })
-}
-
 type InterruptDevice struct {
 	Device, Board, Clock, SafeStop string
 	Unreachable                    bool

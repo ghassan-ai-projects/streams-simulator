@@ -149,8 +149,29 @@ func checkRecordedDigest(dir, digest string, recorded func(*model.RunArtifact) s
 	return nil
 }
 
+const maxRejectedLogs = 100
+
+var ErrTooManyRejectedLogs = errors.New("run: too many rejected interrupt logs are already set aside")
+
 func RejectInterruptLog(dir string) error {
-	return durable.RenameEvidenceLog(dir, model.FileInterruptLog, model.FileInterruptLogRejected)
+	for n := range maxRejectedLogs {
+		name := rejectedLogName(n)
+		present, err := durable.EvidenceLogExists(dir, name)
+		if err != nil {
+			return err
+		}
+		if !present {
+			return durable.RenameEvidenceLog(dir, model.FileInterruptLog, name)
+		}
+	}
+	return fmt.Errorf("%w: %d in %s", ErrTooManyRejectedLogs, maxRejectedLogs, dir)
+}
+
+func rejectedLogName(n int) string {
+	if n == 0 {
+		return model.FileInterruptLogRejected
+	}
+	return fmt.Sprintf("interrupts.rejected.%d.jsonl", n)
 }
 
 func (r *Run) SetFieldTrace(digest string) {
