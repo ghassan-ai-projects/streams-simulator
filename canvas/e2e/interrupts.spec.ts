@@ -32,8 +32,8 @@ function controlsOf(page: Page): Locator {
 
 async function startedSession(page: Page, lab: { readonly binary: string }): Promise<Locator> {
   const open = openScriptedBench(lab.binary, [
-    { id: "ref-a", afterS: 200, device: "fan-01", command: "set_pwm_lease", args: lease },
-    { id: "ref-b", afterS: 240, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "ref-a", afterS: 160, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "ref-b", afterS: 190, device: "fan-01", command: "set_pwm_lease", args: lease },
   ]);
   bench = open;
   const panel = await openSessionPanel(page);

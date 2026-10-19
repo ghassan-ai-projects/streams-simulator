@@ -72,7 +72,7 @@ export function openScriptedBench(binary: string, steps: readonly ScriptedComman
     args: step.args,
   }));
   writeFileSync(script, JSON.stringify(issued));
-  return openHost(binary, dir, ["--delay-ms", "250", "--policy", scriptPolicy, "--script", script]);
+  return openHost(binary, dir, ["--delay-ms", "100", "--policy", scriptPolicy, "--script", script]);
 }
 
 export async function planOneRealBoard(panel: Locator, open: Bench, device: string): Promise<void> {
