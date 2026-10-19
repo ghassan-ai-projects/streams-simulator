@@ -1,4 +1,4 @@
-// Package files is the file-system edge of the plantwire module: it reads kind files and lists kind directories.
+// Package files is the file-system edge of the plantwire module: it reads kind files and run-folder files and lists kind directories.
 package files
 
 import (

@@ -416,6 +416,31 @@ the first `NBIRTH`) and the recorded receipts, results and deaths are skipped an
 one, must record the digest of the trace (`field_trace_digest`); a trace that differs from it is refused before anything is
 played. The document is `{records, skipped, barriers, commands_refused, field_trace_digest, session_id}`.
 
+### `plantwire twin-report`
+
+Compares the twin with the board: where the domain that implements a board's kinds and the readings the board reported part
+ways.
+
+```text
+streamsim plantwire twin-report <run-dir> --domain <id> --kinds-dir <dir> [--domains-dir domains] [--tolerance device.metric=value] [--span-fraction 0.05]
+```
+
+The run folder must hold a field trace (a hardware or mixed session recorded by `plantwire connect` or `relay`) and the observer
+`journal.jsonl`, where the commands the host sent are recorded. The command replays the twin in a fresh, noise-free world
+driven by the commands the board **accepted** (the gateway's `DRECEIPT accepted`, no reported failure, and no interrupt refused
+or held them; a command refused or never forwarded is listed with its reason and never applied), and compares the twin's
+prediction at every recorded board reading with that reading, per device and per metric. A reading is judged only when its
+quality is `good`, it is not historical and numeric, the twin has the device and the metric, a tolerance exists, and it is not
+earlier than the first applied command; any other reading is `not_compared` with its reason, never agreement or divergence.
+The tolerance is declared with `--tolerance` (the selector is a device id, tried first, or a kind name; an unknown selector or
+a negative value is refused) or, failing that, `span_fraction` times the span of the metric's `eu_range` in its kind file
+(0.05 unless `--span-fraction` says otherwise); with neither the metric is `cannot_judge`. The document is
+[`twin-report-v0.1`](../../contracts/twin-report-v0.1.schema.json): the verdict (`agrees`, `diverges`, `cannot_judge`), a
+summary, the commands with their status, per device and metric the tolerance, a summary, the reasons for readings not compared
+and the series of the twin's predictions (at most 2000 points, truncation explicit), and each named divergence with its
+interval, its worst point and the commands in force there. The report is a pure function of the run folder, the domain, the
+kind files and the options, and exits 0 whatever the verdict. It measures the twin, not a consumer.
+
 ### `run`
 
 Runs one world and writes an artifact when `--out` is supplied. The run is defined either by a

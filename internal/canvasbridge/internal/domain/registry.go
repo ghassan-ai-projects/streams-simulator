@@ -27,6 +27,7 @@ type Action struct {
 	CLIArgs   []CLIArg   `json:"-"`
 	Withheld  []string   `json:"-"`
 	Catalog   bool       `json:"-"`
+	Domains   bool       `json:"-"`
 	Library   bool       `json:"-"`
 	Kinds     bool       `json:"-"`
 	Etag      bool       `json:"-"`
@@ -60,7 +61,7 @@ var registry = []Action{
 	mcp("truth.reveal", "sim.truth.reveal", false, "run_id"),
 	mcp("truth.status", "sim.truth.seal_status", false, "run_id"),
 	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint,
-	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliScenario,
+	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliTwinReport, cliScenario,
 	cliSessionCheck, cliSessionStart, cliSessionStatus, cliSessionStop, cliSessionControl,
 }
 

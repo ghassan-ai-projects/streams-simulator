@@ -113,10 +113,7 @@ func (b *Bridge) absolute(parts []domain.ArgvPart) []string {
 }
 
 func (b *Bridge) flags(action domain.Action) []string {
-	var flags []string
-	if action.Catalog {
-		flags = append(flags, "--domains-dir", filepath.Join(b.settings.WorkspaceDir, "domains"), "--adapters-dir", b.settings.AdaptersDir)
-	}
+	flags := b.domainFlags(action)
 	if action.Library {
 		flags = append(flags, b.libraryFlags()...)
 	}
@@ -124,6 +121,17 @@ func (b *Bridge) flags(action domain.Action) []string {
 		flags = append(flags, b.kindsFlag(action)...)
 	}
 	return flags
+}
+
+func (b *Bridge) domainFlags(action domain.Action) []string {
+	dir := filepath.Join(b.settings.WorkspaceDir, "domains")
+	switch {
+	case action.Catalog:
+		return []string{"--domains-dir", dir, "--adapters-dir", b.settings.AdaptersDir}
+	case action.Domains:
+		return []string{"--domains-dir", dir}
+	}
+	return nil
 }
 
 func (b *Bridge) libraryFlags() []string {

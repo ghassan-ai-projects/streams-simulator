@@ -21,6 +21,7 @@ var contractCodes = map[Contract]string{
 	ContractSessionPlan:     "plantwire_failed",
 	ContractNodeControl:     "plantwire_failed",
 	ContractInterruptLog:    "plantwire_failed",
+	ContractTwinReport:      "plantwire_failed",
 }
 
 func (c Contract) FailureCode() (string, bool) {

@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Twin versus board (R12, binary).** `streamsim plantwire twin-report <run-dir> --domain <id> --kinds-dir <dir>` replays the
+  domain that implements a board's kinds in a fresh noise-free world, driven by the commands the board accepted (not those
+  refused, held, queued or never forwarded), and reports per device and metric where the twin's prediction and the board's
+  recorded readings part ways beyond declared tolerances (`--tolerance device.metric=value`, else a fraction of the metric's
+  `eu_range` span, else the metric is `cannot_judge`). New contract `twin-report-v0.1`; the bridge gains the action
+  `run.twin_report`, which returns the report unchanged. Gate edits: the CLI files `plantwire_twin.go` and
+  `plantwire_twin_options.go` are registered in `cliAppFiles`.
+
 - **Interrupt controls on the canvas (R11b).** The bridge starts each connected session with a control socket in an
   owner-only directory it owns, reports `controls` in `session.status`, and the new action `session.control` sends one
   `node-control-v0.1` request line to it and returns the node's reply unchanged (its own failures: `no_session`,

@@ -108,6 +108,9 @@
     },
     {
       "$ref": "#/$defs/plantwire_connect_check"
+    },
+    {
+      "$ref": "#/$defs/plantwire_twin_report"
     }
   ],
   "$defs": {
@@ -1073,6 +1076,38 @@
         "out": {"type": "string"},
         "stopped": {"type": "boolean", "description": "True when an interrupt ended the session."},
         "relay": {"$ref": "#/$defs/plantwire_relay", "description": "Present when a gateway socket was given."}
+      }
+    },
+    "plantwire_twin_report": {
+      "type": "object",
+      "description": "plantwire twin-report: the twin-versus-board report; its full shape is the twin-report-v0.1 contract, which the command validates before printing it.",
+      "required": [
+        "schema_version",
+        "verdict",
+        "summary",
+        "metrics",
+        "divergences"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        },
+        "verdict": {
+          "enum": [
+            "agrees",
+            "diverges",
+            "cannot_judge"
+          ]
+        },
+        "summary": {
+          "type": "object"
+        },
+        "metrics": {
+          "type": "array"
+        },
+        "divergences": {
+          "type": "array"
+        }
       }
     },
     "plantwire_replay": {

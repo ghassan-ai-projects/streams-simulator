@@ -1,0 +1,195 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"path/filepath"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	simdomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/files"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+)
+
+var (
+	ErrTwinNoJournal     = errors.New("plantwire: the run folder holds no journal.jsonl, where the commands the host sent are recorded")
+	ErrTwinJournalDigest = errors.New("plantwire: the journal differs from the digest run.json recorded")
+)
+
+type TwinReportOptions struct {
+	Run, DomainsDir, Domain string
+	KindsDirs, Tolerances   []string
+	SpanFraction            float64
+}
+
+type twinFolder struct {
+	trace      []map[string]any
+	journal    []byte
+	interrupts []map[string]any
+	evidence   domain.TwinEvidence
+}
+
+func TwinReport(ctx context.Context, options TwinReportOptions) (domain.TwinReport, error) {
+	declared, parsed := domain.ParseTolerances(options.Tolerances)
+	if err := errors.Join(ctx.Err(), options.valid(), parsed); err != nil {
+		return domain.TwinReport{}, fmt.Errorf("plantwire twin-report: %w", err)
+	}
+	report, err := buildTwinReport(options, declared)
+	if err != nil {
+		return domain.TwinReport{}, fmt.Errorf("plantwire twin-report: %w", err)
+	}
+	return report, validateTwinReport(report)
+}
+
+func (o TwinReportOptions) valid() error {
+	if o.Run == "" || o.DomainsDir == "" || o.Domain == "" || len(o.KindsDirs) == 0 {
+		return fmt.Errorf("%w: a twin report needs a run folder, a domains directory, a domain and a kinds directory", ErrBadOptions)
+	}
+	return nil
+}
+
+func buildTwinReport(options TwinReportOptions, declared map[string]float64) (domain.TwinReport, error) {
+	folder, err := readTwinFolder(options.Run)
+	if err != nil {
+		return domain.TwinReport{}, err
+	}
+	input, spec, err := twinInput(options, declared, folder)
+	if err != nil {
+		return domain.TwinReport{}, err
+	}
+	twin, err := newTwinWorld(spec, input.Trace.StartNS, input.Trace.Devices)
+	if err != nil {
+		return domain.TwinReport{}, err
+	}
+	return domain.EvaluateTwin(input, twin)
+}
+
+func twinInput(options TwinReportOptions, declared map[string]float64, folder twinFolder) (domain.TwinInput, *simdomain.Compiled, error) {
+	board := domain.ReadBoardTrace(folder.trace)
+	if len(board.Devices) == 0 {
+		return domain.TwinInput{}, nil, domain.ErrTwinNoDevices
+	}
+	spec, kinds, info, err := twinDomain(options, board)
+	if err != nil {
+		return domain.TwinInput{}, nil, err
+	}
+	commands, err := twinCommands(folder, board)
+	return domain.TwinInput{Trace: board, Commands: commands, Kinds: kinds, Declared: declared, SpanFraction: options.SpanFraction,
+		Run: folder.evidence, Twin: info}, spec, err
+}
+
+func twinDomain(options TwinReportOptions, board domain.BoardTrace) (*simdomain.Compiled, domain.KindFiles, domain.TwinInfo, error) {
+	spec, err := loadTwinDomain(options)
+	if err != nil {
+		return nil, nil, domain.TwinInfo{}, err
+	}
+	kinds, checked, err := twinKinds(spec, board, options.KindsDirs)
+	info := domain.TwinInfo{Domain: spec.Spec.ID, DomainDigest: spec.Digest, Kinds: twinKindDigests(checked), StartNS: board.StartNS}
+	return spec, kinds, info, err
+}
+
+func loadTwinDomain(options TwinReportOptions) (*simdomain.Compiled, error) {
+	catalog, err := simdomain.NewCatalogFromDir(options.DomainsDir)
+	if err != nil {
+		return nil, fmt.Errorf("read the domains directory: %w", err)
+	}
+	spec, err := catalog.Describe(options.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("describe the twin domain: %w", err)
+	}
+	return spec, nil
+}
+
+func twinKinds(spec *simdomain.Compiled, board domain.BoardTrace, dirs []string) (domain.KindFiles, []model.ImplementsChecked, error) {
+	kinds, err := readKindFiles(nil, dirs)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := domain.TwinImplements(spec.Spec, board.Devices); err != nil {
+		return nil, nil, err
+	}
+	checked, err := domain.CheckImplements(spec.Spec, kinds)
+	return kinds, checked, err
+}
+
+func twinKindDigests(checked []model.ImplementsChecked) []domain.TwinKind {
+	digests := make([]domain.TwinKind, len(checked))
+	for i, entry := range checked {
+		digests[i] = domain.TwinKind{Kind: entry.Kind, KindDigest: entry.KindDigest}
+	}
+	return digests
+}
+
+func twinCommands(folder twinFolder, board domain.BoardTrace) ([]domain.TwinCommand, error) {
+	sent, err := domain.ReadHostCommands(folder.journal)
+	if err != nil {
+		return nil, err
+	}
+	return domain.ClassifyCommands(sent, board, domain.InterruptBlocks(folder.interrupts)), nil
+}
+
+func validateTwinReport(report domain.TwinReport) error {
+	raw, err := json.Marshal(report)
+	if err == nil {
+		err = model.ValidateTwinReport(raw)
+	}
+	if err != nil {
+		return fmt.Errorf("plantwire twin-report: the report breaks its contract: %w", err)
+	}
+	return nil
+}
+
+func readTwinFolder(dir string) (twinFolder, error) {
+	trace, traceDigest, err := run.ReadFieldTrace(dir)
+	if err != nil {
+		return twinFolder{}, fmt.Errorf("read the field trace: %w", err)
+	}
+	journal, journalDigest, err := readTwinJournal(dir)
+	if err != nil {
+		return twinFolder{}, err
+	}
+	interrupts, interruptDigest, err := readTwinInterrupts(dir)
+	evidence := domain.TwinEvidence{FieldTraceDigest: traceDigest, JournalDigest: journalDigest, InterruptLogDigest: interruptDigest}
+	return twinFolder{trace: trace, journal: journal, interrupts: interrupts, evidence: evidence}, err
+}
+
+func readTwinJournal(dir string) ([]byte, string, error) {
+	raw, present, err := files.ReadRunFile(dir, model.FileObserverJournal)
+	if err != nil {
+		return nil, "", err
+	}
+	if !present {
+		return nil, "", fmt.Errorf("%w: %s", ErrTwinNoJournal, dir)
+	}
+	digest := canonical.DigestBytes(raw)
+	return raw, digest, checkJournalDigest(dir, digest)
+}
+
+func checkJournalDigest(dir, digest string) error {
+	art, err := run.LoadArtifactForVerification(filepath.Join(dir, model.FileRunArtifact))
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return nil
+	case err != nil:
+		return fmt.Errorf("read the run artifact: %w", err)
+	case art.JournalFileDigest != "" && art.JournalFileDigest != digest:
+		return fmt.Errorf("%w: recorded %s, the file digests to %s", ErrTwinJournalDigest, art.JournalFileDigest, digest)
+	}
+	return nil
+}
+
+func readTwinInterrupts(dir string) ([]map[string]any, string, error) {
+	records, digest, err := run.ReadInterruptLog(dir)
+	if errors.Is(err, run.ErrInterruptLogMissing) {
+		return nil, "", nil
+	}
+	if err != nil {
+		err = fmt.Errorf("read the interrupt log: %w", err)
+	}
+	return records, digest, err
+}

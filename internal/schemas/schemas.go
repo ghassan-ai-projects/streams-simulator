@@ -88,3 +88,8 @@ func NodeControl() []byte { return nodeControl }
 var interruptLog []byte
 
 func InterruptLog() []byte { return interruptLog }
+
+//go:embed twin-report-v0.1.schema.json
+var twinReport []byte
+
+func TwinReport() []byte { return twinReport }

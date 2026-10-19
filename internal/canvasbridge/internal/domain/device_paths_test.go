@@ -179,7 +179,7 @@ func TestOnlyDomainValidateComposeAndKindCaptureCarryTheWorkspaceKindsFolder(t *
 	t.Parallel()
 	for _, action := range Actions() {
 		// a session plan is checked against the kind files its real instances must be announced with
-		want := map[string]bool{"domain.validate": true, "domain.compose": true, "kind.capture": true, "session.check": true, "session.start": true}[action.Name]
+		want := map[string]bool{"domain.validate": true, "domain.compose": true, "kind.capture": true, "session.check": true, "session.start": true, "run.twin_report": true}[action.Name]
 		if action.Kinds != want {
 			t.Errorf("%s: Kinds = %v, want %v", action.Name, action.Kinds, want)
 		}

@@ -92,6 +92,16 @@ again) and `control_unreadable` (the answer was not one JSON document). The repl
 `$defs/reply`; the bridge does not look inside it. `runs/<id>/interrupts.jsonl` is an observer file like `field-trace.jsonl`:
 readable while the run is open.
 
+**Run actions.** `run.twin_report` (R12) runs `streamsim plantwire twin-report runs/<run> --domain <id> --domains-dir <workspace>/domains
+--kinds-dir <workspace>/kinds [--tolerance <selector.metric=value[,...]>] [--span-fraction <f>]` and returns the report
+(`twin-report-v0.1`) unchanged, whatever its verdict: a `diverges` or `cannot_judge` report is a result, not an error. Arguments:
+`{run, domain, tolerance?, span_fraction?}` (`run` a run id of `runs/`, `domain` the id of the twin domain in `domains/`,
+`tolerance` one text of comma-separated `selector.metric=value` entries, `span_fraction` a number). The bridge validates
+nothing about the report and decides nothing about the tolerances: the binary owns every rule. A run without a field trace, a
+twin that implements none of the board's kinds, an unknown tolerance selector or a journal that differs from its recorded digest
+is the binary's failure document (`plantwire_failed`, `domain_not_found` or `file_not_found`). The kinds folder is always passed,
+even before it exists (a missing folder is the binary's `file_not_found`).
+
 **Dry-run actions** (point-in-time answers from the binary; none writes a file):
 
 | Action | Arguments | Runs | Returns |

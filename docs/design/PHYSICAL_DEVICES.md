@@ -864,3 +864,87 @@ the binary says, with no rule of its own and no parsing of message text.
   the newest snapshot belongs to (a board that has not announced) are not offered in the select. (e) Deferred (D-88): a
   canvas-connected session has no policy allow-list, so every command to a simulated device is refused `policy_not_allowed`.
   (f) Deferred (D-89): the relay drops a schema-invalid host record without a reason in the evidence.
+
+## R12 as-built (binary)
+
+The twin-versus-board report of section 3, built in the binary; the Inspect overlay is R12b. The canvas computes nothing:
+matching, tolerance, divergence and which commands count are the binary's.
+
+- **Ownership.** No new package. The pure rules are in the `plantwire` domain layer (`twin_*.go`): reading the board's trace,
+  classifying the host's commands, tolerances, the evaluation and the report. The module already owns the field trace's
+  interpretation (`PlanReplay`), the interrupt records and the kind files, and `TwinModel`, an interface the domain declares and
+  the app supplies, is the one thing the rules need from a world. The app layer (`twin_report.go`, `twin_world.go`) reads the run
+  folder, loads the twin domain and its kind files, builds the world and calls the rules; `plantwire.TwinReport` only delegates;
+  the CLI (`plantwire twin-report`) parses flags and makes that one call; the bridge action `run.twin_report` runs the command.
+  The `world` facade is the independent noise-free oracle the truth module already uses (`Noiseless`, `EmitDisabled`,
+  `ForceEffectorOK`, readings without a clock): the twin's prediction is `World.Reading`, the noise-free observation of the
+  channel the metric names. A domain of the catalog is the twin (`--domain`); `internal/domain` loads it, so no adapter is needed.
+- **Input.** A run folder with `field-trace.jsonl` (checked against `run.json` when there is one, `run.ReadFieldTrace`; a run
+  without one is refused with `ErrFieldTraceMissing`), the observer `journal.jsonl` (required: the host's `DCMD` records are
+  there; checked against `journal_file_digest` of `run.json` when it records one) and `interrupts.jsonl` when the session had a
+  control socket (digest checked, `run.ReadInterruptLog`). The twin domain must implement at least one kind of the board's devices
+  (`ErrTwinKinds`), and every implemented kind is checked against its kind file as everywhere (`CheckImplements`: drift and a
+  missing file are refused). A device of the board binds to the twin entity whose wire id equals the device id and whose kind
+  implements the device's kind; a metric binds to the channel of the same name.
+- **Which commands count.** The commands are the host's `DCMD` records in the journal (first occurrence of an id) to devices
+  the field trace announces, in the order sent. A command is **applied** to the twin only when the gateway accepted it: the field
+  trace holds a `DRECEIPT accepted` for its id (the latest receipt of the id), its `DRESULT` did not report `failed`, and the
+  interrupt log, when there is one, did not refuse it (`verdict refuse`, `resolve refuse`) or leave it waiting (`verdict queue`
+  never resolved). Every other command is listed with `status: not_applied` and a `reason`: `interrupt_refused`,
+  `interrupt_unresolved`, `never_forwarded` (no receipt of the gateway: a relay refusal, a hold, a command never sent on),
+  `refused_by_board`, `not_accepted` (a `queued` receipt only), `board_reported_failure`; `detail` holds the node's or the
+  board's reason. A command the twin's world refuses (an unknown effector, bad arguments, an interlock) is `twin_refused` with
+  the world's words in `detail`. Commands to devices a mixed session simulates are not part of the board and are not listed.
+  A command takes effect at `at_ns`: the latest board event time recorded in the field trace before the gateway's receipt
+  (D-90). The twin starts at the earliest reading time of the trace (a birth's time is not used: a gateway may stamp births 0) with its
+  domain's initial state; a trace whose readings span more than 7 days is refused (`ErrTwinSpan`), because the world integrates
+  from its start to every reading and a bogus clock must not hang the report.
+- **Which readings are compared.** Each `DDATA` sample of a device, named through the device's latest `DBIRTH` (a sample whose
+  alias no birth named is only counted: `summary.unattributed_readings`), is judged in this order and is `not_compared` with the
+  first reason that holds: `historical`, `quality_not_good`, `not_numeric`, `no_twin_entity`, `no_twin_channel`,
+  `no_tolerance_declared`, `before_first_command` (earlier than the first applied command: the twin has no commanded input yet;
+  a run with no applied command therefore cannot be judged), `twin_not_finite`. Otherwise the twin and the board value are
+  compared: `|board - twin| <= tolerance` is `within`, anything else is `diverged`. Commands and readings are processed in time
+  order, a command first at equal times, so a lease renewal reaches the twin before the reading it precedes.
+- **Tolerance.** Absolute, per metric, never invented: `--tolerance selector.metric=value` where the selector is the device id
+  (tried first) or the kind name (value finite and at least 0; a key that names no device or kind metric of the board is
+  refused, `ErrTwinTolerance`). Without a declared value the default is **`span_fraction` times (`eu_range.max` minus
+  `eu_range.min`)** of the metric in its kind file, `span_fraction` being 0.05 unless `--span-fraction` says otherwise (in
+  (0, 1]); the report states the rule (`tolerance_rule`) and each metric states its `tolerance.value` and `source` (`declared`,
+  `default_span`, `none`). With neither, the value is `null`, every reading is `no_tolerance_declared` and the metric is
+  `cannot_judge`. For the thermal bench: temperature `eu_range` 0 to 50 gives 2.5 degrees, humidity 20 to 90 gives 3.5 percent.
+- **Report** (`twin-report-v0.1`): `{schema_version, verdict, reason?, summary, run, twin, tolerance_rule, commands, metrics,
+  divergences}`. `verdict` is `diverges` when any compared reading is beyond its tolerance, `agrees` when readings were compared
+  and none diverged, otherwise `cannot_judge` with `reason` `no_commands_applied` or `no_readings_compared`. `metrics` is sorted by
+  device and metric; each has `tolerance`, `verdict`, `summary: {compared, within, diverged, not_compared}`,
+  `not_compared_reasons: [{reason, count}]` (sorted) and `series: {points: [{at_ns, board, twin}], total, truncated}`: the
+  twin's prediction at each compared reading, at most 2000 points, the first 2000 when `truncated`. `divergences` is one entry per
+  stretch of consecutive diverged readings of one metric (readings that were not compared do not end a stretch; a reading within
+  tolerance does): `{name: "device.metric#n", device, metric, first_ns, last_ns, readings, tolerance, worst_error, worst_at_ns,
+  board_value, twin_value, commands}` where `commands` are the ids in force at the worst reading (for each device and command,
+  the latest applied one at or before that time, ordered by time). Example:
+
+  ```json
+  {"schema_version": "0.1", "verdict": "diverges",
+   "summary": {"devices": 1, "metrics": 1, "compared": 3, "within": 2, "diverged": 1, "not_compared": 1, "unattributed_readings": 0,
+               "metrics_cannot_judge": 0, "divergences": 1, "commands_applied": 1, "commands_not_applied": 0},
+   "metrics": [{"device": "zone-01", "kind": "thermal_sensor", "metric": "temperature", "unit": "Cel",
+                "tolerance": {"value": 2.5, "source": "default_span"}, "verdict": "diverges",
+                "summary": {"compared": 3, "within": 2, "diverged": 1, "not_compared": 1},
+                "not_compared_reasons": [{"reason": "before_first_command", "count": 1}],
+                "series": {"points": [{"at_ns": 1, "board": 34, "twin": 33.9}], "total": 3, "truncated": false}}],
+   "divergences": [{"name": "zone-01.temperature#1", "device": "zone-01", "metric": "temperature", "first_ns": 9, "last_ns": 9,
+                    "readings": 1, "tolerance": 2.5, "worst_error": 6.1, "worst_at_ns": 9, "board_value": 40, "twin_value": 33.9,
+                    "commands": ["cmd-1"]}]}
+  ```
+
+  (abbreviated: `run`, `twin`, `tolerance_rule` and `commands` are also present.)
+- **Determinism.** The report is a pure function of the run folder, the domain, the kind files and the options: no wall clock,
+  no random number, every list sorted or in the file's order, floating point values as Go prints them. The app validates the
+  document against the embedded contract before printing it. The analytic cross-check still guards the twin: the thermal
+  bench's first-order lag is checked against its closed form by the world's own tests and by the report's test of a known
+  command history.
+- **Deviations.** (a) The command-line form is `--tolerance selector.metric=value` where the selector is a device id or a kind
+  name, resolved by exact match, so ids that contain a dot work; there is no separate options document and no `--json` flag
+  (stdout is always one JSON document). (b) The report needs `--domain` (the brief named only the directories). (c) A command's time
+  is placed by sequence in the field trace, not by a clock (D-90, D-91). (d) The bridge action passes the kinds folder always.

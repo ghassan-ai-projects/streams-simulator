@@ -70,3 +70,7 @@ func CaptureFile(path string, kindsDirs []string) (Capture, error) {
 func CaptureStream(reader io.Reader, kindsDirs []string) (Capture, error) {
 	return app.CaptureStream(reader, kindsDirs)
 }
+
+func TwinReport(ctx context.Context, options TwinReportOptions) (TwinReportDocument, error) {
+	return app.TwinReport(ctx, options)
+}

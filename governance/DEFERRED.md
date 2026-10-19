@@ -362,3 +362,14 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no
 > reason in the evidence; then the drop is journalled with its reason (the record type and the failing field) and the stats keep
 > the count.
+> D-90 (the twin report places a command by sequence, not by a clock): the time a command takes effect on the twin is the latest
+> board event time recorded before the gateway's receipt for it (`at_ns`), so it is exact only to one reading interval of the
+> board, and the twin starts from the initial state its domain declares at the earliest reading time in the field trace, not from the
+> board's state then. A board that was already warm at the first reading shows as a divergence until the first applied command
+> and the report does not judge those readings (`before_first_command`). Trigger to fix: a bench whose twin needs the board's
+> own state at the start; then the options take an initial state per device, or the first good readings seed the twin.
+> D-91 (the twin report knows no command history before the recording and no effects of simulated devices): only the host's
+> commands to devices of the board that appear in the run's observer journal are applied; commands to simulated devices of a
+> mixed session are ignored, a device of the board that no twin entity matches (same wire id, kind implemented) is
+> `no_twin_entity`, and a board that changed its boot or rebooted mid-session is not told apart. Trigger to fix: a mixed
+> session whose twin must include the simulated peers' effects.

@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/twin-report-v0.1.schema.json",
+  "title": "twin-report-v0.1",
+  "description": "The twin-versus-board report that streamsim plantwire twin-report prints: the domain that implements a board's kinds (the twin) replayed in a fresh noise-free world driven by the commands the host sent to the board and the board accepted, compared per device and per metric with the readings the board reported in the run's field trace. A pure function of the run folder, the domain, the kind files and the declared tolerances. It measures the twin, not a consumer: a hardware device has no sealed truth, and the board's readings are evidence, not truth. Times are the board's own event times in nanoseconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "verdict", "summary", "run", "twin", "tolerance_rule", "commands", "metrics", "divergences"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "verdict": {"enum": ["agrees", "diverges", "cannot_judge"], "description": "diverges when any compared reading is beyond its tolerance; agrees when readings were compared and none diverged; cannot_judge when no reading could be compared."},
+    "reason": {"enum": ["no_commands_applied", "no_readings_compared"], "description": "Present only with cannot_judge: no command the board accepted was applied to the twin, or no reading could be compared."},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["devices", "metrics", "compared", "within", "diverged", "not_compared", "unattributed_readings", "metrics_cannot_judge", "divergences", "commands_applied", "commands_not_applied"],
+      "properties": {
+        "devices": {"type": "integer", "minimum": 0},
+        "metrics": {"type": "integer", "minimum": 0},
+        "compared": {"type": "integer", "minimum": 0},
+        "within": {"type": "integer", "minimum": 0},
+        "diverged": {"type": "integer", "minimum": 0},
+        "not_compared": {"type": "integer", "minimum": 0},
+        "unattributed_readings": {"type": "integer", "minimum": 0, "description": "Readings whose alias no DBIRTH of the device named; they belong to no metric and are counted here only."},
+        "metrics_cannot_judge": {"type": "integer", "minimum": 0},
+        "divergences": {"type": "integer", "minimum": 0},
+        "commands_applied": {"type": "integer", "minimum": 0},
+        "commands_not_applied": {"type": "integer", "minimum": 0}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field_trace_digest", "journal_digest"],
+      "description": "The evidence files the report was computed from, by digest. The field trace was checked against run.json when there is one.",
+      "properties": {
+        "field_trace_digest": {"$ref": "#/$defs/digest"},
+        "journal_digest": {"$ref": "#/$defs/digest"},
+        "interrupt_log_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "twin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "domain_digest", "kinds", "start_ns"],
+      "properties": {
+        "domain": {"type": "string", "minLength": 1},
+        "domain_digest": {"$ref": "#/$defs/digest"},
+        "kinds": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "kind_digest"],
+            "properties": {"kind": {"$ref": "#/$defs/wire_id"}, "kind_digest": {"$ref": "#/$defs/digest"}}
+          }
+        },
+        "start_ns": {"type": "integer", "description": "Where the twin's world starts: the earliest reading time in the field trace (births are not read for it). The twin starts from the initial state its domain declares."}
+      }
+    },
+    "tolerance_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "span_fraction", "description"],
+      "properties": {
+        "default": {"const": "span_fraction"},
+        "span_fraction": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "description": {"type": "string", "minLength": 1}
+      }
+    },
+    "commands": {
+      "type": "array",
+      "description": "Every command the host sent to a device of the board, in the order the host sent it, with whether it was applied to the twin. A command counts only when the gateway accepted it, it did not report failure and no interrupt refused or held it.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command_id", "device", "command", "status"],
+        "properties": {
+          "command_id": {"$ref": "#/$defs/wire_id"},
+          "device": {"$ref": "#/$defs/wire_id"},
+          "command": {"$ref": "#/$defs/wire_id"},
+          "at_ns": {"type": "integer", "description": "The latest board event time recorded before the gateway's receipt: the time the command took effect on the twin."},
+          "status": {"enum": ["applied", "not_applied", "twin_refused"]},
+          "reason": {"enum": ["interrupt_refused", "interrupt_unresolved", "never_forwarded", "refused_by_board", "not_accepted", "board_reported_failure"]},
+          "detail": {"type": "string", "maxLength": 256}
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["device", "kind", "metric", "tolerance", "verdict", "summary", "not_compared_reasons", "series"],
+        "properties": {
+          "device": {"$ref": "#/$defs/wire_id"},
+          "kind": {"type": "string"},
+          "metric": {"type": "string", "minLength": 1},
+          "unit": {"type": "string", "maxLength": 32},
+          "tolerance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "source"],
+            "properties": {
+              "value": {"type": ["number", "null"], "minimum": 0, "description": "The absolute tolerance; null with source none, when no tolerance was declared and the kind file gives no eu_range."},
+              "source": {"enum": ["declared", "default_span", "none"]}
+            }
+          },
+          "verdict": {"enum": ["agrees", "diverges", "cannot_judge"]},
+          "summary": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["compared", "within", "diverged", "not_compared"],
+            "properties": {
+              "compared": {"type": "integer", "minimum": 0},
+              "within": {"type": "integer", "minimum": 0},
+              "diverged": {"type": "integer", "minimum": 0},
+              "not_compared": {"type": "integer", "minimum": 0}
+            }
+          },
+          "not_compared_reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["reason", "count"],
+              "properties": {
+                "reason": {"enum": ["quality_not_good", "historical", "not_numeric", "no_twin_entity", "no_twin_channel", "no_tolerance_declared", "before_first_command", "twin_not_finite"]},
+                "count": {"type": "integer", "minimum": 1}
+              }
+            }
+          },
+          "series": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["points", "total", "truncated"],
+            "description": "The twin's prediction at each compared reading time, with the board's value, at most 2000 points; truncated says the later points were left out.",
+            "properties": {
+              "points": {
+                "type": "array",
+                "maxItems": 2000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["at_ns", "board", "twin"],
+                  "properties": {"at_ns": {"type": "integer"}, "board": {"type": "number"}, "twin": {"type": "number"}}
+                }
+              },
+              "total": {"type": "integer", "minimum": 0},
+              "truncated": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "divergences": {
+      "type": "array",
+      "description": "Each stretch of consecutive compared readings of one metric beyond its tolerance, by device, metric and first time.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "device", "metric", "first_ns", "last_ns", "readings", "tolerance", "worst_error", "worst_at_ns", "board_value", "twin_value", "commands"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1, "description": "device.metric#n, n counting the divergences of that metric."},
+          "device": {"$ref": "#/$defs/wire_id"},
+          "metric": {"type": "string", "minLength": 1},
+          "first_ns": {"type": "integer"},
+          "last_ns": {"type": "integer"},
+          "readings": {"type": "integer", "minimum": 1},
+          "tolerance": {"type": "number", "minimum": 0},
+          "worst_error": {"type": "number", "minimum": 0},
+          "worst_at_ns": {"type": "integer"},
+          "board_value": {"type": "number"},
+          "twin_value": {"type": "number"},
+          "commands": {
+            "type": "array",
+            "description": "The commands in force at the worst reading: for each device and command, the latest applied one at or before that time.",
+            "items": {"$ref": "#/$defs/wire_id"}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "wire_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"}
+  }
+}

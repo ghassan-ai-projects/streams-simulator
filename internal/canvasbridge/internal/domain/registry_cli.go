@@ -74,6 +74,9 @@ var (
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}
 	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"},
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}}}
+	cliTwinReport = Action{Name: "run.twin_report", Kind: KindCLI, Command: []string{"plantwire", "twin-report"}, Domains: true, Kinds: true, KindsHome: true,
+		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}, {Key: "domain", Flag: "--domain", Shape: ShapeText, Required: true},
+			{Key: "tolerance", Flag: "--tolerance", Shape: ShapeText}, {Key: "span_fraction", Flag: "--span-fraction", Shape: ShapeNum}}}
 	cliScenario = Action{Name: "scenario.export", Kind: KindCLI, Command: []string{"scenario", "from-run"}, Catalog: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassScenario, Required: true}}}
