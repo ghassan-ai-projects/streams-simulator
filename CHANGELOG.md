@@ -12,7 +12,7 @@ This project has not established a formal release stream yet. Until it does, cha
   as default" (only after a fresh passing check) saves the binary's sorted list. The list in effect stays shown while the
   session runs and in the saved run; a command refused `policy_not_allowed` shows the host's digest (shortened, with the full
   digest for assistive technology) with "Copy policy digest" and "Use this digest", which adds it to the next plan's draft and
-  never to the running session. "Set up another run" keeps the list of the last plan. The e2e proves for the first time that an
+  never to the running session. "Set up another run" keeps the list of the last plan, noted as kept, with the run kind. After a check, focus moves to the result; the start footer says which digests it trusts. The e2e proves for the first time that an
   approved command executes on a simulated device.
 
 - **Policy allow-list (D-88), P1: contract and binary.** The session plan gains optional `policies` (1 to 8 policy digests): the

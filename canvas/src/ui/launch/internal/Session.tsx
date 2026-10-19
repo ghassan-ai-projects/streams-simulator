@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { ConnectState, LaunchStore } from "../../../app/launch";
 import type { SessionDraft } from "../../../model/launch";
-import { firstSessionDraft } from "../../../model/launch";
+import { keepForNextRun } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { useStore } from "../../primitives";
 import { SessionForm } from "./SessionForm";
@@ -15,7 +15,7 @@ interface SessionProps {
 }
 
 interface OwnProps extends Omit<SessionProps, "plant"> {
-  readonly state: Exclude<ConnectState, { phase: "idle" }>;
+  readonly state: ConnectState;
   readonly form: ReactNode;
   readonly forget: () => void;
 }
@@ -48,6 +48,7 @@ function OwnSession({ state, launch, onFinished, form, forget }: OwnProps) {
           }}
         />
       );
+    case "idle":
     case "checking":
     case "checked":
     case "refused":
@@ -67,7 +68,7 @@ function useDraft(launch: LaunchStore, plant: string) {
     launch.connect.keepDraft(plant, next);
   };
   const forget = () => {
-    change({ ...firstSessionDraft, policies: draft.policies, policiesFrom: draft.policiesFrom });
+    change(keepForNextRun(draft));
   };
   return { draft, change, forget };
 }
@@ -88,12 +89,10 @@ export function Session({ launch, plant, onFinished }: SessionProps) {
       connect={launch.connect}
     />
   );
-  if (mine === null) {
-    return state.phase === "live" || state.phase === "starting" ? <SessionElsewhere domain={state.domain} /> : form;
+  if (mine === null && (state.phase === "live" || state.phase === "starting")) {
+    return <SessionElsewhere domain={state.domain} />;
   }
-  return mine.phase === "idle" ? (
-    form
-  ) : (
-    <OwnSession state={mine} launch={launch} onFinished={onFinished} form={form} forget={forget} />
+  return (
+    <OwnSession state={mine ?? { phase: "idle" }} launch={launch} onFinished={onFinished} form={form} forget={forget} />
   );
 }

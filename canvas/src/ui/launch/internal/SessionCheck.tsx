@@ -1,11 +1,14 @@
 import { TriangleAlert } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { BindingNote, PlanIssue, PlannedInstance, SessionCheck } from "../../../model/launch";
 import {
   checkWords,
+  isPolicyIssue,
   issueDetail,
   issueWords,
   plannedWords,
+  refusedFieldWords,
   refusedPlanWords,
   staleCheckWords,
 } from "../../../model/launch";
@@ -73,14 +76,16 @@ interface IssueListProps {
   readonly label: string;
   readonly issues: readonly PlanIssue[];
   readonly raw?: string;
+  readonly marked?: readonly PlanIssue[];
 }
 
-export function IssueList({ label, issues, raw = "" }: IssueListProps) {
+export function IssueList({ label, issues, raw = "", marked = [] }: IssueListProps) {
+  const listed = issues.filter((issue) => !marked.includes(issue));
   return (
     <>
-      {issues.length > 0 && (
+      {listed.length > 0 && (
         <ul className={styles.issues} aria-label={label}>
-          {issues.map((issue, index) => (
+          {listed.map((issue, index) => (
             <li key={`${String(index)}:${issue.pointer}`} className={launch.problem}>
               <TriangleAlert size={13} aria-hidden="true" />
               {issueWords(issue)}
@@ -93,20 +98,53 @@ export function IssueList({ label, issues, raw = "" }: IssueListProps) {
   );
 }
 
-function Refused({ state }: { readonly state: Extract<ConnectState, { phase: "refused" }> }) {
-  if (state.stale) return <p className={panel.hint}>{staleCheckWords}</p>;
-  return (
-    <div className={launch.failure} role="alert" tabIndex={-1}>
-      <p>{refusedPlanWords}</p>
-      <IssueList label="Problems in the plan" issues={state.issues} raw={failureLine(state.diagnostic)} />
-    </div>
-  );
-}
-
 interface CheckResultProps {
   readonly state: ConnectState;
   readonly connect: ConnectSession;
   readonly domain: string;
+}
+
+type CheckedState = Extract<ConnectState, { phase: "checked" }>;
+
+function Refused({ state }: { readonly state: Extract<ConnectState, { phase: "refused" }> }) {
+  if (state.stale) return <p className={panel.hint}>{staleCheckWords}</p>;
+  const onField = state.issues.filter(isPolicyIssue);
+  const onlyField = onField.length > 0 && onField.length === state.issues.length;
+  return (
+    <div className={launch.failure} role="alert" tabIndex={-1}>
+      <p>{onlyField ? refusedFieldWords : refusedPlanWords}</p>
+      <IssueList
+        label="Problems in the plan"
+        issues={state.issues}
+        raw={failureLine(state.diagnostic)}
+        marked={onField}
+      />
+    </div>
+  );
+}
+
+interface CheckedProps {
+  readonly state: CheckedState;
+  readonly connect: ConnectSession;
+  readonly domain: string;
+}
+
+function Checked({ state, connect, domain }: CheckedProps) {
+  const result = useRef<HTMLElement>(null);
+  const fresh = state.stale ? null : state;
+  useEffect(() => {
+    if (fresh !== null) result.current?.focus();
+  }, [fresh]);
+  return (
+    <>
+      {state.stale && <p className={panel.hint}>{staleCheckWords}</p>}
+      <section ref={result} className={styles.checked} aria-label="Plan check result" tabIndex={-1}>
+        <Planned check={state.check} role="status" />
+        <PolicyInEffect policies={state.check.policies} />
+        {!state.stale && <SaveDefault connect={connect} domain={domain} />}
+      </section>
+    </>
+  );
 }
 
 export function CheckResult({ state, connect, domain }: CheckResultProps) {
@@ -119,12 +157,5 @@ export function CheckResult({ state, connect, domain }: CheckResultProps) {
   }
   if (state.phase === "refused") return <Refused state={state} />;
   if (state.phase !== "checked") return null;
-  return (
-    <>
-      {state.stale && <p className={panel.hint}>{staleCheckWords}</p>}
-      <Planned check={state.check} role="status" />
-      <PolicyInEffect policies={state.check.policies} />
-      {!state.stale && <SaveDefault connect={connect} domain={domain} />}
-    </>
-  );
+  return <Checked state={state} connect={connect} domain={domain} />;
 }

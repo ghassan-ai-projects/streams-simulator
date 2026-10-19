@@ -56,6 +56,9 @@ describe("a command refused for its policy", () => {
     const copy = within(table).getAllByRole("button", { name: "Copy policy digest" })[0];
     expect(copy).toHaveAccessibleDescription(expect.stringContaining(digest));
     expect(screen.getByText("Allowed policies: 1")).toBeInTheDocument();
+    const trusted = screen.getByRole("list", { name: "Digests trusted by this session" });
+    expect(within(trusted).getByText("sha256:cccccccc…cccccccc")).toHaveAttribute("title", other);
+    expect(trusted).toHaveTextContent(other);
     expect((await axe.run(table)).violations).toEqual([]);
   });
 
@@ -70,6 +73,7 @@ describe("a command refused for its policy", () => {
     expect(within(table).queryByRole("button", { name: "Copy policy digest" })).not.toBeInTheDocument();
     expect(within(table).queryByText(/Host's policy/)).not.toBeInTheDocument();
     expect(screen.getByText("Allowed policies: not recorded.")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Digests trusted by this session" })).not.toBeInTheDocument();
   });
 
   it("copies the full digest only when asked, and says so for that command", async () => {

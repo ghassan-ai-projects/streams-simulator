@@ -3,6 +3,7 @@ import { useRef } from "react";
 import type { PolicyDefaultState } from "../../../app/launch";
 import type { PlanIssue, PolicyNote, SessionDraft } from "../../../model/launch";
 import {
+  keptWords,
   policyHint,
   policyNotes,
   policyNoteWords,
@@ -23,6 +24,7 @@ interface PolicyFieldProps {
 
 function sourceNote(draft: SessionDraft, defaults: PolicyDefaultState): string {
   if (draft.policiesFrom === "default" && draft.policies !== "") return prefilledWords;
+  if (draft.policiesFrom === "previous" && draft.policies !== "") return keptWords(draft.policies);
   return defaults.file === "unreadable" ? unreadableDefaultWords : "";
 }
 
@@ -36,16 +38,16 @@ function describedBy(note: string, notes: readonly PolicyNote[]): string {
 function PolicyNotes({ note, notes }: { readonly note: string; readonly notes: readonly PolicyNote[] }) {
   return (
     <>
-      <small id="session-policies-hint" className={panel.hint}>
+      <small id="session-policies-hint" className={cx(panel.hint, styles.fine)}>
         {policyHint}
       </small>
       {note !== "" && (
-        <small id="session-policies-note" className={panel.hint}>
+        <small id="session-policies-note" className={cx(panel.hint, styles.fine)}>
           {note}
         </small>
       )}
       {notes.length > 0 && (
-        <small id="session-policies-issue" className={cx(launch.problem, styles.policyIssues)}>
+        <small id="session-policies-issue" className={cx(launch.problem, styles.policyIssues, styles.fine)}>
           <TriangleAlert size={13} aria-hidden="true" />
           {notes.map((item) => policyNoteWords(item)).join(" ")}
         </small>
@@ -64,7 +66,7 @@ export function PolicyField({ draft, change, issues, defaults }: PolicyFieldProp
       <textarea
         id="session-policies"
         ref={field}
-        rows={3}
+        rows={4}
         spellCheck={false}
         className={cx(shared.sunkenField, styles.policies)}
         value={draft.policies}

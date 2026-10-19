@@ -6,5 +6,6 @@ export type {
   LaunchStore,
   PolicyDefaultState,
   Proposal,
+  RunKind,
   RunWatch,
 } from "./contract";

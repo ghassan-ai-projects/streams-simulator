@@ -75,6 +75,10 @@
   border-color: var(--status-alarm);
 }
 
+.fine {
+  font-size: var(--text-sm);
+}
+
 .policyIssues {
   align-items: flex-start;
 }
@@ -86,7 +90,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font: var(--text-xs) var(--font-mono);
+  font: var(--text-sm) var(--font-mono);
   color: var(--text-primary);
 }
 
@@ -94,4 +98,36 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+.saveStatus {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.checked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.checked:focus-visible {
+  outline: 2px solid var(--focus-ring);
+}
+
+.trust {
+  margin: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.trustLink {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }

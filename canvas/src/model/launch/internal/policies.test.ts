@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   filledFromDefault,
+  isPolicyIssue,
+  keepForNextRun,
+  keptFromRecord,
+  keptWords,
   policyHint,
   policyListWords,
   policyNotes,
   policyNoteWords,
   prefilledWords,
   recordedPolicyWords,
+  refusedFieldWords,
   saveDefaultHint,
   saveDefaultWords,
+  trustWords,
   unreadableDefaultWords,
   withPolicyListed,
   withPolicyText,
@@ -88,5 +94,43 @@ describe("the allowed policy digests of a session plan", () => {
     expect(prefilledWords).toBe("Pre-filled from the workspace default.");
     expect(unreadableDefaultWords).toBe("The workspace default could not be read.");
     expect(saveDefaultHint).toContain("A running session never changes.");
+  });
+
+  it("knows which issues the field shows, and says to fix the field", () => {
+    expect(isPolicyIssue({ pointer: "/policies", message: "m" })).toBe(true);
+    expect(isPolicyIssue({ pointer: "/policies/3", message: "m" })).toBe(true);
+    expect(isPolicyIssue({ pointer: "/host_socket", message: "m" })).toBe(false);
+    expect(isPolicyIssue({ pointer: "/policies/x", message: "m" })).toBe(false);
+    expect(refusedFieldWords).toBe("streamsim refused the plan: fix the marked field and check it again.");
+  });
+
+  it("keeps the list for the next run, with where it came from, and clears everything else", () => {
+    const typed = { ...firstSessionDraft, hostSocket: "/tmp/h.sock", policies: `${a}\n${b}`, seed: "9" };
+    const next = keepForNextRun(typed);
+    expect(next).toEqual({ ...firstSessionDraft, policies: `${a}\n${b}`, policiesFrom: "previous" });
+    expect(keptWords(next.policies)).toBe("Kept from the previous run: 2 digests.");
+    expect(keptWords(a)).toBe("Kept from the previous run: 1 digest.");
+    expect(keepForNextRun({ ...typed, policies: " \n" }).policiesFrom).toBe("operator");
+    expect(keptFromRecord([b, a])).toMatchObject({ policies: `${b}\n${a}`, policiesFrom: "previous", hostSocket: "" });
+    expect(keptFromRecord([])).toEqual(firstSessionDraft);
+  });
+
+  it("says what a start would trust and where the list came from, naming at most three digests", () => {
+    const draft = (policies: string, from: "operator" | "default" | "previous") => ({
+      ...firstSessionDraft,
+      policies,
+      policiesFrom: from,
+    });
+    const short = (hex: string) => `sha256:${hex.repeat(8)}…${hex.repeat(8)}`;
+    expect(trustWords(draft("", "operator"))).toBe("");
+    expect(trustWords(draft(" \n", "default"))).toBe("");
+    expect(trustWords(draft(a, "default"))).toBe(`Trusting 1 policy digest from the workspace default: ${short("a")}`);
+    expect(trustWords(draft(`${a}\n${b}`, "operator"))).toBe(
+      `Trusting 2 policy digests you entered: ${short("a")}, ${short("b")}`,
+    );
+    expect(trustWords(draft(a, "previous"))).toContain("kept from the previous run");
+    const many = ["1", "2", "3", "4", "5"].map((hex) => `sha256:${hex.repeat(64)}`).join("\n");
+    expect(trustWords(draft(many, "operator"))).toMatch(/^Trusting 5 policy digests you entered: .*, and 2 more$/);
+    expect(trustWords(draft("nope", "operator"))).toBe("Trusting 1 policy digest you entered: nope");
   });
 });

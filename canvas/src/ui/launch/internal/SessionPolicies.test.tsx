@@ -1,26 +1,11 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
+import { keptWords } from "../../../model/launch";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { failure, success } from "../../../test/outcome";
+import { a, b, checkThePlan, checkedWith, field, file } from "../../../test/policyHarness";
 import { check, fill, renderSession, sessionBridge } from "../../../test/sessionHarness";
-
-const a = `sha256:${"a".repeat(64)}`;
-const b = `sha256:${"b".repeat(64)}`;
-const file = "settings/default.policies.json";
-const field = () => screen.getByLabelText("Allowed policy digests");
-
-function checkedWith(policies: readonly string[]) {
-  const fake = sessionBridge();
-  fake.persistWrites();
-  fake.actions.set("session.check", success({ ...check, policies }));
-  return fake;
-}
-
-async function checkThePlan() {
-  fireEvent.click(screen.getByRole("button", { name: "Check the plan" }));
-  await screen.findByRole("region", { name: "Allowed policies in effect" });
-}
 
 describe("the allowed policy digests of a session plan", () => {
   it("offers an empty field with what it means, and sends the typed lines in the plan", async () => {
@@ -175,6 +160,6 @@ describe("the list in effect and the workspace default", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Set up another run" }));
     expect(screen.getByLabelText("Host socket")).toHaveValue("");
     expect(field()).toHaveValue(a);
-    expect(screen.getByText("Pre-filled from the workspace default.")).toBeInTheDocument();
+    expect(screen.getByText(keptWords(a))).toBeInTheDocument();
   });
 });

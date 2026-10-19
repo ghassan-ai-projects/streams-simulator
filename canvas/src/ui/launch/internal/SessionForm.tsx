@@ -2,13 +2,14 @@ import type { SyntheticEvent } from "react";
 import { useEffect, useRef } from "react";
 import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { PlanIssue, SessionDraft } from "../../../model/launch";
-import { sessionStartWords } from "../../../model/launch";
+import { sessionStartWords, trustWords } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { cx, holdEnter, panel, shared, useStore } from "../../primitives";
 import { RealRows } from "./RealRows";
 import { CheckResult } from "./SessionCheck";
 import { SessionFields } from "./SessionFields";
 import launch from "./LaunchPanel.module.css";
+import styles from "./Session.module.css";
 
 interface SessionFormProps {
   readonly plant: Plant;
@@ -33,12 +34,39 @@ function useFocusOnRefusal(state: ConnectState) {
   return form;
 }
 
-function SessionFooter({ checking, onCheck }: { readonly checking: boolean; readonly onCheck: () => void }) {
+function Trust({ words }: { readonly words: string }) {
+  if (words === "") return null;
+  return (
+    <>
+      <p id="session-trust" className={styles.trust}>
+        {words}
+      </p>
+      <button
+        type="button"
+        className={styles.trustLink}
+        onClick={() => {
+          document.getElementById("session-policies")?.focus();
+        }}
+      >
+        Show the allowed policy digests
+      </button>
+    </>
+  );
+}
+
+interface FooterProps {
+  readonly checking: boolean;
+  readonly trust: string;
+  readonly onCheck: () => void;
+}
+
+function SessionFooter({ checking, trust, onCheck }: FooterProps) {
   return (
     <div className={launch.footer}>
       <p id="session-summary" className={launch.summary}>
         {sessionStartWords}
       </p>
+      <Trust words={trust} />
       <button
         type="button"
         className={cx(shared.secondary, panel.secondary)}
@@ -49,7 +77,11 @@ function SessionFooter({ checking, onCheck }: { readonly checking: boolean; read
       >
         Check the plan
       </button>
-      <button type="submit" className={cx(shared.primary, panel.primary)} aria-describedby="session-summary">
+      <button
+        type="submit"
+        className={cx(shared.primary, panel.primary)}
+        aria-describedby={trust === "" ? "session-summary" : "session-summary session-trust"}
+      >
         Start the session
       </button>
     </div>
@@ -81,6 +113,7 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
       </div>
       <SessionFooter
         checking={checking}
+        trust={trustWords(draft)}
         onCheck={() => {
           void connect.check(plant.id, draft);
         }}

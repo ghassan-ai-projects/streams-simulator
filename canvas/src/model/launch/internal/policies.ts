@@ -1,6 +1,12 @@
-import { counted } from "../../shared/words";
-import type { PlanIssue, SessionDraft } from "./session";
-import { policyLines } from "./session";
+import { counted, shortDigest } from "../../shared/words";
+import type { PlanIssue, PolicySource, SessionDraft } from "./session";
+import { firstSessionDraft, policyLines } from "./session";
+
+export function isPolicyIssue(issue: PlanIssue): boolean {
+  return onPolicy.test(issue.pointer);
+}
+
+export const refusedFieldWords = "streamsim refused the plan: fix the marked field and check it again.";
 
 export interface PolicyNote {
   readonly digest: number | null;
@@ -68,8 +74,8 @@ export const prefilledWords = "Pre-filled from the workspace default.";
 export const unreadableDefaultWords = "The workspace default could not be read.";
 
 export const saveDefaultHint =
-  "Saves the list streamsim accepted, sorted as it will enforce it, as the workspace default for new session forms. " +
-  "An empty list clears the default. A running session never changes.";
+  "Saves the list streamsim accepted, sorted, as the default for new session forms. An empty list clears it. " +
+  "A running session never changes.";
 
 type DefaultSave = "saving" | "saved" | "conflict" | "failed";
 
@@ -81,4 +87,33 @@ export function saveDefaultWords(save: DefaultSave, problem: string, saved: read
   return saved.length === 0
     ? "The workspace default is now empty."
     : `Saved ${counted(saved.length, "policy digest")} as the workspace default.`;
+}
+
+export function keptWords(policies: string): string {
+  return `Kept from the previous run: ${counted(policyLines(policies).length, "digest")}.`;
+}
+
+export function keepForNextRun(draft: SessionDraft): SessionDraft {
+  const kept = policyLines(draft.policies).length > 0;
+  return { ...firstSessionDraft, policies: draft.policies, policiesFrom: kept ? "previous" : "operator" };
+}
+
+export function keptFromRecord(policies: readonly string[]): SessionDraft {
+  return keepForNextRun({ ...firstSessionDraft, policies: policies.join("\n") });
+}
+
+const trustOrigins: Readonly<Record<PolicySource, string>> = {
+  default: "from the workspace default",
+  operator: "you entered",
+  previous: "kept from the previous run",
+};
+
+const trustShown = 3;
+
+export function trustWords(draft: SessionDraft): string {
+  const lines = policyLines(draft.policies);
+  if (lines.length === 0) return "";
+  const shown = lines.slice(0, trustShown).map(shortDigest);
+  if (lines.length > trustShown) shown.push(`and ${String(lines.length - trustShown)} more`);
+  return `Trusting ${counted(lines.length, "policy digest")} ${trustOrigins[draft.policiesFrom]}: ${shown.join(", ")}`;
 }

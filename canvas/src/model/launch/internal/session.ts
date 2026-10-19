@@ -5,7 +5,7 @@ export interface RealRow {
   readonly device: string;
 }
 
-type PolicySource = "operator" | "default";
+export type PolicySource = "operator" | "default" | "previous";
 
 export interface SessionDraft {
   readonly seed: string;

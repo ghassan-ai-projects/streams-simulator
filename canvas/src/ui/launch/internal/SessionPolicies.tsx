@@ -27,12 +27,18 @@ export function PolicyInEffect({ policies }: { readonly policies: readonly strin
 
 function SaveStatus({ defaults }: { readonly defaults: PolicyDefaultState }) {
   const { save, problem, policies } = defaults;
-  if (save === "idle") return null;
   const refused = save === "conflict" || save === "failed";
   return (
-    <p role={refused ? "alert" : "status"} className={refused ? launch.problem : panel.hint}>
-      {saveDefaultWords(save, problem, policies)}
-    </p>
+    <>
+      <p role="status" className={styles.saveStatus}>
+        {save === "saving" || save === "saved" ? saveDefaultWords(save, problem, policies) : ""}
+      </p>
+      {refused && (
+        <p role="alert" className={launch.problem}>
+          {saveDefaultWords(save, problem, policies)}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -52,10 +58,10 @@ export function SaveDefault({ connect, domain }: { readonly connect: ConnectSess
       >
         Save as default
       </button>
-      <small id="session-default-hint" className={panel.hint}>
+      <SaveStatus defaults={defaults} />
+      <small id="session-default-hint" className={cx(panel.hint, styles.fine)}>
         {saveDefaultHint}
       </small>
-      <SaveStatus defaults={defaults} />
     </div>
   );
 }

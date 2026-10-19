@@ -26,6 +26,11 @@ export class PolicyDefault extends Observable<PolicyDefaultState> {
     return this.read();
   }
 
+  forgetSave(): void {
+    const { save } = this.snapshot();
+    if (save !== "idle" && save !== "saving") this.set({ ...this.snapshot(), save: "idle", problem: "" });
+  }
+
   async save(policies: readonly string[]): Promise<void> {
     if (this.snapshot().save === "saving") return;
     this.set({ ...this.snapshot(), save: "saving", problem: "" });

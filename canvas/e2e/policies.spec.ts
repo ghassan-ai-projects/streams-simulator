@@ -86,7 +86,9 @@ test("a command refused for its policy shows the host's digest, copies it on req
   await panel.getByRole("button", { name: "Set up another run" }).click();
   await panel.getByRole("radio", { name: /^Connected session/ }).check();
   await expect(panel.getByLabel("Allowed policy digests", { exact: true })).toHaveValue(scriptPolicy);
+  await expect(panel.getByText("Kept from the previous run: 1 digest.")).toBeVisible();
   await expect(panel.getByLabel("Host socket", { exact: true })).toHaveValue("");
+  await expect(panel.getByRole("radio", { name: /^Connected session/ })).toBeChecked();
 });
 
 test("Save as default writes the binary's sorted list after a passing check, and a new form after a reload is pre-filled and says so", async ({
@@ -94,14 +96,23 @@ test("Save as default writes the binary's sorted list after a passing check, and
   lab,
 }) => {
   addThermalBench(lab);
+  await page.setViewportSize({ width: 1280, height: 800 });
   const panel = await openSessionPanel(page);
   await panel.getByLabel("Host socket", { exact: true }).fill("/tmp/ssc-default/h.sock");
   await listPolicies(panel, [second, first]);
   await expect(panel.getByRole("button", { name: "Save as default" })).toHaveCount(0);
+  await expect(panel.getByText(/^Trusting 2 policy digests you entered: /)).toBeVisible();
   await panel.getByRole("button", { name: "Check the plan" }).click();
-  await expect(panel.getByRole("region", { name: "Allowed policies in effect" })).toContainText("Allowed policies: 2");
-  await panel.getByRole("button", { name: "Save as default" }).click();
-  await expect(panel.getByText("Saved 2 policy digests as the workspace default.")).toBeVisible();
+  const result = panel.getByRole("region", { name: "Plan check result" });
+  await expect(result.getByRole("region", { name: "Allowed policies in effect" })).toContainText("Allowed policies: 2");
+  await expect(result).toBeFocused();
+  await expect(result).toBeInViewport();
+  const save = panel.getByRole("button", { name: "Save as default" });
+  await expect(save).toBeInViewport({ ratio: 1 });
+  await save.click();
+  const saved = panel.getByText("Saved 2 policy digests as the workspace default.");
+  await expect(saved).toBeVisible();
+  await expect(saved).toBeInViewport({ ratio: 1 });
   const file = join(lab.workspace, "settings", "default.policies.json");
   expect(JSON.parse(readFileSync(file, "utf8")) as unknown).toEqual({ policies: [first, second] });
   expect(statSync(file).mode % 0o1000).toBe(0o600);
@@ -115,7 +126,15 @@ test("Save as default writes the binary's sorted list after a passing check, and
   const field = fresh.getByLabel("Allowed policy digests", { exact: true });
   await expect(field).toHaveValue(`${first}\n${second}`);
   await expect(fresh.getByText("Pre-filled from the workspace default.")).toBeVisible();
+  const trusting = fresh.getByText(/^Trusting 2 policy digests from the workspace default: /);
+  await expect(trusting).toContainText("sha256:aaaaaaaa…aaaaaaaa, sha256:cccccccc…cccccccc");
+  await expect(fresh.getByRole("button", { name: "Start the session" })).toHaveAccessibleDescription(
+    /Trusting 2 policy digests/,
+  );
+  await fresh.getByRole("button", { name: "Show the allowed policy digests" }).click();
+  await expect(field).toBeFocused();
   await field.fill(first);
+  await expect(fresh.getByText(/^Trusting 1 policy digest you entered: /)).toBeVisible();
   await expect(fresh.getByText("Pre-filled from the workspace default.")).toBeHidden();
   await fresh.getByRole("button", { name: "Clear the list" }).click();
   await expect(field).toHaveValue("");

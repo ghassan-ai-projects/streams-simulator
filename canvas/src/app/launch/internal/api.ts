@@ -11,8 +11,13 @@ export type { LaunchState } from "./launchState";
 export type { PolicyDefaultState } from "./policyDefault";
 export type { Proposal } from "./proposalSlot";
 
+export type RunKind = "complete" | "session";
+
 export interface ConnectSession extends Store<ConnectState> {
   readonly defaults: Store<PolicyDefaultState>;
+  kindFor(domain: string): RunKind;
+  chooseKind(domain: string, kind: RunKind): void;
+  setUpNext(domain: string, policies: readonly string[]): void;
   draftFor(domain: string): SessionDraft;
   keepDraft(domain: string, draft: SessionDraft): void;
   prefill(domain: string): Promise<SessionDraft | null>;

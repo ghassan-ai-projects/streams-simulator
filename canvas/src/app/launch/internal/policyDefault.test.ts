@@ -163,4 +163,48 @@ describe("saving the default", () => {
     await first;
     expect(bridge.writes).toHaveLength(1);
   });
+
+  it("forgets the result of a save when the draft changes or a new check starts, so it never outlives its list", async () => {
+    const { connect } = await checked([a]);
+    await connect.saveDefault("mini");
+    expect(connect.defaults.snapshot().save).toBe("saved");
+    connect.keepDraft("mini", { ...firstSessionDraft, policies: b });
+    expect(connect.defaults.snapshot()).toMatchObject({ save: "idle", problem: "" });
+    await connect.check("mini", firstSessionDraft);
+    await connect.saveDefault("mini");
+    expect(connect.defaults.snapshot().save).toBe("saved");
+    await connect.check("mini", firstSessionDraft);
+    expect(connect.defaults.snapshot().save).toBe("idle");
+  });
+
+  it("keeps the saving state while a save is in flight when the draft changes", async () => {
+    const { bridge, connect } = await checked([a]);
+    const gate = bridge.holdWrite(1);
+    const saving = connect.saveDefault("mini");
+    connect.keepDraft("mini", { ...firstSessionDraft, policies: b });
+    expect(connect.defaults.snapshot().save).toBe("saving");
+    gate[0]?.resolve(success({ path: file, etag: "w1" }));
+    await saving;
+  });
+});
+
+describe("the mode and the draft kept for the next run", () => {
+  it("remembers the run kind chosen for each plant, to completion until one is chosen", () => {
+    const { connect } = rig();
+    expect(connect.kindFor("mini")).toBe("complete");
+    connect.chooseKind("mini", "session");
+    expect(connect.kindFor("mini")).toBe("session");
+    expect(connect.kindFor("other")).toBe("complete");
+  });
+
+  it("sets up the next session with the recorded list and no sockets, in the session mode", () => {
+    const { connect } = rig();
+    connect.setUpNext("mini", [a, b]);
+    expect(connect.draftFor("mini")).toMatchObject({
+      hostSocket: "",
+      policies: `${a}\n${b}`,
+      policiesFrom: "previous",
+    });
+    expect(connect.kindFor("mini")).toBe("session");
+  });
 });

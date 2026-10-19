@@ -5,5 +5,6 @@ export type {
   LaunchStore,
   PolicyDefaultState,
   Proposal,
+  RunKind,
   RunWatch,
 } from "./internal/api";

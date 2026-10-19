@@ -1302,3 +1302,26 @@ form and the commands-table digest.
   saved run's command log holds an `effector.invoke` and still verifies. `policies.spec.ts`: a session with no list shows the refusal
   with the digest, Copy puts the full digest on the clipboard, "Use this digest" fills the next plan; Save as default writes the
   sorted list and a reloaded panel is pre-filled and says so; the binary's refusals sit on the field by digest.
+- **Chrome review fixes.** Found in the Chrome review of P2 at 1280 px and fixed in the canvas:
+  - *A check shows its result.* `Session` rendered the form under two different parents, so the Run panel scroller was mounted
+    again at every check and its scroll position was lost; the form is now always rendered by `OwnSession`, so the scroller stays
+    mounted. A passing check moves focus to the labelled "Plan check result" region (Instances, the list in effect, Save as
+    default), which the browser scrolls into view; a refusal still focuses the first marked field.
+  - *The save result sits next to its button* (a `role="status"` line directly under "Save as default", the hint below it; a
+    conflict or failure is a `role="alert"`). The result is forgotten when the field is edited (`keepDraft`) or a new check starts
+    (`PolicyDefault.forgetSave`), so it never outlives its list.
+  - *Starting says what it trusts.* Above "Check the plan" and "Start the session" the footer reads "Trusting N policy digests
+    from the workspace default | you entered | kept from the previous run: ..." (first three digests shortened, then "and N
+    more"; display only) with "Show the allowed policy digests", which focuses the field; the Start button is described by it.
+    It shows only while the field holds a digest.
+  - *The refusal banner.* When every issue of a refused plan is on the policies field the banner says "fix the marked field", the
+    visible list leaves those issues out (the developer details keep them).
+  - *The saved run lists its digests.* The review shows the shortened digests of the session record (title and screen-reader text
+    carry the full digest).
+  - *Set up another run, from the plant panel and from the review.* Both clear sockets and board rows and keep the policies
+    text, noted "Kept from the previous run: N digests." (`PolicySource` `previous`). The run kind is kept per plant in
+    `ConnectSession` (`kindFor`, `chooseKind`), so the panel opens on "Connected session" while a connected draft is kept; the
+    review's button for a connected run calls `ConnectSession.setUpNext(domain, recorded list)` instead of proposing a
+    to-completion rerun.
+  - *Type.* Hints, notes and the digests are 12 px; the textarea has four rows. A 71-character digest still wraps inside the
+    336 px panel (D-110).

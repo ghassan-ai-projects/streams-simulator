@@ -447,3 +447,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > D-108 (outcome wording of a partial emergency stop): the outcome line opens "was applied" even when a stop could not be sent, and the unreachable sentence uses a plural for one device ("fan-01: they may still be energised"). Lead with the failure and agree number. Found in the final M5 browser spot check.
 >
 > D-109 (transient plant clip after the bar resizes): for 0.5 to 1 s after the Interrupts bar grows or shrinks, the frame node sits partly outside the pane before the refit; gone by 2 s. Refit in the same frame as the resize. Found in the final M5 browser spot check.
+> D-110 (a policy digest wraps mid-token in the form): the Connect session panel is 336 px wide, a `sha256:` digest is 71
+> characters, so the textarea and the trust line break a digest inside the token and the footer names only the first three
+> digests ("and N more"). The full list is in the field. Trigger to fix: a wider panel or a request to see all digests at Start;
+> then show the list in a scrollable, selectable block above Start. Found in the Chrome review of P2.

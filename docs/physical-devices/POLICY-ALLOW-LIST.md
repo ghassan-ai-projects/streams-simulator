@@ -315,7 +315,8 @@ The bridge and canvas half is built as §6 and §7 say; see "Policy allow-list P
   edited one, and the note shows while the field is the default's.
 - The workspace default state is `connect.defaults`; "Save as default" is also guarded in the store (a fresh passing check of the
   same plant), not only hidden in the form.
-- "Set up another run" keeps the list and its source, so a digest added with "Use this digest" survives to the next plan.
+- "Set up another run" keeps the list, noted "Kept from the previous run: N digests.", so a digest added with "Use this digest" survives to the next plan; the review's button does the same for a connected run (the recorded list), and the run kind is kept per plant.
+- Chrome review fixes (see PHYSICAL_DEVICES "Chrome review fixes"): a check's result takes focus and stays visible, the save result sits beside its button and never outlives its list, the footer says what Start trusts, the refusal banner does not repeat the field's issues, and the saved run lists its digests.
 - The review decodes `plan.policies` strictly; a `session` record whose `policies` is not a list of strings is dropped.
 - Copy is a `Clipboard` port reached through the review session (`copyText`); the table also shows the full digest to select
   when the browser refuses to copy.

@@ -1,7 +1,14 @@
 import type { SessionCheck, SessionDraft } from "../../../model/launch";
-import { filledFromDefault, firstSessionDraft, sessionPlanText, withPolicyListed } from "../../../model/launch";
+import {
+  filledFromDefault,
+  firstSessionDraft,
+  keptFromRecord,
+  sessionPlanText,
+  withPolicyListed,
+} from "../../../model/launch";
 import { Observable } from "../../shared";
 import type { ConnectFailure, ConnectGateway, ConnectStatus, Outcome, Scheduler } from "../../ports";
+import type { RunKind } from "./api";
 import type { ConnectState, LiveSession } from "./connectState";
 import { isBusy, markedStale, refusedState, stateOf } from "./connectState";
 import { PolicyDefault } from "./policyDefault";
@@ -13,6 +20,7 @@ export class ConnectStore extends Observable<ConnectState> {
   private unfollow: (() => void) | null = null;
   private unpoll: (() => void) | null = null;
   private readonly drafts = new Map<string, SessionDraft>();
+  private readonly kinds = new Map<string, RunKind>();
   readonly defaults: PolicyDefault;
 
   constructor(
@@ -27,8 +35,22 @@ export class ConnectStore extends Observable<ConnectState> {
     return this.drafts.get(domain) ?? firstSessionDraft;
   }
 
+  kindFor(domain: string): RunKind {
+    return this.kinds.get(domain) ?? "complete";
+  }
+
+  chooseKind(domain: string, kind: RunKind): void {
+    this.kinds.set(domain, kind);
+  }
+
+  setUpNext(domain: string, policies: readonly string[]): void {
+    this.drafts.set(domain, keptFromRecord(policies));
+    this.kinds.set(domain, "session");
+  }
+
   keepDraft(domain: string, draft: SessionDraft): void {
     this.drafts.set(domain, draft);
+    this.defaults.forgetSave();
     const state = this.snapshot();
     const next = markedStale(state, domain);
     if (next !== state) this.set(next);
@@ -56,6 +78,7 @@ export class ConnectStore extends Observable<ConnectState> {
 
   async check(domain: string, draft: SessionDraft): Promise<SessionCheck | null> {
     if (isBusy(this.snapshot())) return null;
+    this.defaults.forgetSave();
     this.set({ phase: "checking", domain });
     const outcome = await this.gateway.checkSession(sessionPlanText(domain, draft));
     this.set(
