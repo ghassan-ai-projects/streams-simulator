@@ -18,17 +18,21 @@ interface Shown {
   readonly tone: string | undefined;
 }
 
+function notSentWords(controls: ControlState): string {
+  if (controls.blocked === null) return "";
+  return ` ${outcomeLine(controls.blocked, { kind: "not-sent" }, "none").text}`;
+}
+
 function sendingLine(controls: ControlState, newest: ActionRequest): Shown {
-  const blocked =
-    controls.blocked === null ? "" : ` ${outcomeLine(controls.blocked, { kind: "not-sent" }, "none").text}`;
-  return { text: `${requestWords(newest)}: sent, waiting for the node's answer…${blocked}`, tone: "ok" };
+  const text = `${requestWords(newest)}: sent, waiting for the node's answer…${notSentWords(controls)}`;
+  return { text, tone: "ok" };
 }
 
 function settledLine(controls: ControlState): Shown {
   if (controls.last === null) return { text: "", tone: undefined };
   const line = outcomeLine(controls.last.request, controls.last.result, controls.last.check);
   const waiting = controls.sending.length > 0 ? " Another control is still waiting for the node." : "";
-  return { text: `${line.text}${waiting}`, tone: line.tone };
+  return { text: `${line.text}${waiting}${notSentWords(controls)}`, tone: line.tone };
 }
 
 function shownOf(controls: ControlState): Shown {

@@ -406,11 +406,13 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > on the last boot the gateway announced), and controls are taken on the next tick, so a stop waits at most one such write and
 > one tick (about 2.25 s), not 30 s. Per-link writers would remove the wait. A stop addressed to a boot the device has left
 > is refused by the gateway `wrong_boot`, and the node does not retry on the new boot.
+> The 2 s write deadline applies to every relay link, the gateway's too: a gateway that stalls a write for 2 s is dropped and
+> redialled like a stalled host.
 > D-100 (a safe stop that needs arguments, a rejected log): only the declared safe-stop command **without arguments** is exempt
 > from a hold or an approval mode and only it is ordered by an emergency stop; a safe stop whose effector requires arguments
 > is held like any command. A log that does not replay (or could not be written) is renamed `interrupts.rejected.jsonl`,
-> the run records no `interrupt_log_digest`, and `plantwire connect` fails with `ErrInterruptLogRejected`; nothing reads the
-> renamed file. Trigger to fix: a domain whose safe stop takes arguments; then the declared arguments join the inventory.
+> the run records no `interrupt_log_digest`, and `plantwire connect` fails with `ErrInterruptLogRejected`; only the twin
+> report looks for the renamed file, to refuse a report that would ignore the stops. Trigger to fix: a domain whose safe stop takes arguments; then the declared arguments join the inventory.
 > D-101 (the canvas asks for twin files that may not exist): the device list reads `twins/<stem>.twin.json` for every kind
 > (`DeviceDesk.twinStatus`, `loadTwin`) and the browser logs a 404 for each kind without a twin choices file. The workspace
 > listing names domains, compositions, scenarios, kinds and components, not twin choices files, so the canvas cannot know which
@@ -426,3 +428,16 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > Interrupts bar use the long words (`Held · latched by emergency stop`, `Approving each command`) from one table. Unifying
 > them needs the graph module to import the review module's words or the words to move to a shared model. Trigger to fix: a
 > third place that words a hold.
+> D-104 (an emergency stop of a node with nothing to stop reads as applied): when no device in scope declares a safe stop, or the
+> inventory is still empty (a relay before the gateway's birth), the stop is `applied` with empty `stopped` and `unreachable`.
+> A device that was announced and is offline is now listed `unreachable` (the relay remembers every device announced in the
+> session), but "applied" with three empty lists is still shown as a clean stop. Trigger to fix: a bench operator reading it as
+> "everything stopped"; then the reply carries the count of devices it covered.
+> D-105 (a device never born has no known kind): the relay learns a device's kind, and so its safe stop, from its `DBIRTH`. A
+> device named in the gateway's `NBIRTH` boards that never sent a `DBIRTH` is in the inventory with no safe stop, so an emergency
+> stop lists it `skipped` and not `unreachable`. Trigger to fix: a board whose devices are announced only by name; then the node
+> birth carries the kind of each member.
+> D-106 (a node of the world serves controls at the barrier): a control submitted to a node of the world waits for the next
+> barrier, so an emergency stop waits for the slice in progress (the relay serves controls every tick). The port orders an
+> emergency stop ahead of every other waiting control and gives it a place when ordinary requests fill the backlog. Trigger to
+> fix: slices long enough for a stop to wait too long on a bench; then the world serves controls between steps.

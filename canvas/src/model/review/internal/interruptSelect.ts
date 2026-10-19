@@ -51,6 +51,16 @@ export function newestInterrupts(
   return olderThanReply(seen, newest.interrupts) ? seen.state : newest.interrupts;
 }
 
+export function withShownInterrupts(
+  live: SessionLive | null,
+  newest: SessionLive | null,
+  shown: InterruptState | null,
+): SessionLive | null {
+  if (live === null || live.interrupts === shown) return live;
+  if (live.key !== newest?.key) return live;
+  return { ...live, interrupts: shown };
+}
+
 export function interruptOf(live: SessionLive | null, instance: string): CoveredDevice | null {
   const device = deviceOf(live, instance);
   if (device === null) return null;

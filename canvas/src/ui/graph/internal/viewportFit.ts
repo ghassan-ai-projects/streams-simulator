@@ -70,7 +70,11 @@ export function useFitted(fitKey: string, minZoom: number, anchor: string | null
     if (key === fitKey && (viewport === null || !sameViewport(viewport, flow.getViewport()))) return;
     const fitted = fittedViewport(flow, { width, height }, minZoom, anchor);
     last.current = { key: fitKey, viewport: fitted };
-    void flow.setViewport(fitted);
+    void flow.setViewport(fitted).then(() => {
+      if (last.current.key === fitKey && last.current.viewport === fitted) {
+        last.current = { key: fitKey, viewport: flow.getViewport() };
+      }
+    });
   }, [flow, ready, width, height, fitKey, minZoom, anchor]);
 }
 

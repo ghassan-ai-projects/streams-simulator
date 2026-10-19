@@ -1,7 +1,9 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
-import { addThermalBench, openScriptedBench, startGateway } from "./support/session";
+import { addThermalBench, openScriptedBench, planOneRealBoard, startGateway } from "./support/session";
+import { guard } from "./support/audit";
+import { nodesOutsideCanvas } from "./support/fitAudit";
 import { boxOf, controlsOf, lease, runOfSession, startedSession } from "./support/interruptBench";
 
 test.setTimeout(240_000);
@@ -61,16 +63,32 @@ test("the interrupt bar stays inside a 1280 by 800 window in one row, and the pl
   const waiting = controls.getByRole("listitem").filter({ hasText: "ref-a" }).getByText("set_pwm_lease on fan-01");
   await expect.poll(() => waiting.evaluate((line) => line.scrollWidth <= line.clientWidth)).toBe(true);
 
-  await controls.getByRole("button", { name: "Emergency stop", exact: true }).click();
-  await expect(controls.getByText(/The scope stays held until it is released\./)).toBeVisible();
-  await insideTheWindow(controls);
-  await plantInView(page);
-  await controls.getByRole("button", { name: "Approve each command", exact: true }).click();
+  const stop = controls.getByRole("button", { name: "Emergency stop", exact: true });
+  const hold = controls.getByRole("button", { name: "Hold", exact: true });
+  const stopBefore = boxOf(await stop.boundingBox());
+  await hold.click();
+  await expect(hold).toHaveAttribute("aria-pressed", "true");
   await expect(controls.getByRole("button", { name: "Approve each command", exact: true })).toHaveAttribute(
     "aria-pressed",
-    "false",
+    "true",
   );
+  await oneRow(controls);
+  const stopHeld = boxOf(await stop.boundingBox());
+  expect(Math.abs(stopHeld.y - stopBefore.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(stopHeld.x - stopBefore.x)).toBeLessThanOrEqual(1);
+  await plantInView(page);
+  await expect.poll(async () => guard(await page.evaluate(nodesOutsideCanvas, 1))).toEqual([]);
   await controls.getByRole("button", { name: "Release", exact: true }).click();
+  await expect(hold).toHaveAttribute("aria-pressed", "false");
+
+  await stop.click();
+  await expect(controls.getByText(/The scope stays held until it is released\./)).toBeVisible();
+  await insideTheWindow(controls);
+  await oneRow(controls);
+  await plantInView(page);
+  await controls.getByRole("button", { name: "Release", exact: true }).click();
+  await expect(hold).toHaveAttribute("aria-pressed", "false");
+  await controls.getByRole("button", { name: "Approve each command", exact: true }).click();
   await expect(controls.getByText("No holds or approval modes are set.")).toBeVisible();
   await plantInView(page);
 });
@@ -91,6 +109,28 @@ test("a running session opened by its address, or after a reload, shows its plan
   );
   await expect(page.getByText("Opening the plant this run used…")).toBeHidden();
   await expect(controlsOf(page)).toBeVisible();
+});
+
+test("a second tab on the same running session shows its plant while the first stays open", async ({ page, lab }) => {
+  addThermalBench(lab);
+  const started = await startedSession(page, lab);
+  benches.push(started.bench);
+  const run = runOfSession(await started.panel.getByText(/^Connected session · run c-[0-9a-f]{8}$/).textContent());
+  await page.goto(`/#/review?world=${run}`);
+  await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: /^zone-01/ })).toBeVisible(
+    {
+      timeout: 30_000,
+    },
+  );
+  const second = await page.context().newPage();
+  await second.goto(`/#/review?world=${run}`);
+  await expect(
+    second.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: /^zone-01/ }),
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(second.getByText("Opening the plant this run used…")).toBeHidden();
+  await expect(controlsOf(second)).toBeVisible();
 });
 
 async function holdFanAndStop(panel: Locator, controls: Locator): Promise<string> {
@@ -123,8 +163,8 @@ test("a second session starts with none of the first session's holds, scope or o
     { id: "ref-c", afterS: 300, device: "fan-01", command: "set_pwm_lease", args: lease },
   ]);
   benches.push(next);
-  await panel.getByLabel("Host socket", { exact: true }).fill(next.host);
-  await panel.getByLabel("Gateway socket", { exact: true }).fill(next.gateway);
+  await expect(panel.getByLabel("Host socket", { exact: true })).toHaveValue("");
+  await planOneRealBoard(panel, next, "zone-01");
   await panel.getByRole("button", { name: "Start the session" }).click();
   const status = panel.getByText(/^Connected session · run c-[0-9a-f]{8}$/);
   await expect(status).toBeVisible();

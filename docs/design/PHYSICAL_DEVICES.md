@@ -1033,9 +1033,8 @@ The M5 review found these in R11a and R12a; every item has a regression test tha
   its name is the inventory's declared safe-stop command of that device, it has no arguments and they were not left out as
   too large. The inventory (`safe_stop` per device) is the one source for the node of the world (the effector flagged safe_stop)
   and the relay (the kind's command flagged `safe_stop`); a host `halt` with `{"mode":"run"}` is held.
-- **Emergency stop.** It is not refused for capacity: it adds one latch, and when the total of scopes passes 64 the rules drop,
-  in sorted order, approval scopes and then plain holds the latch covers (nothing latched is ever dropped; with nothing to drop the
-  total stays above 64). The inventory entry of a device gains `unreachable` (the relay: no boot ever known, its `DDEATH` seen, the gateway not admitted, or the world gone; see "Stop boots" below); the
+- **Emergency stop.** It is not refused for capacity: it adds one latch, and the latch does not count against the 64 scopes
+  and nothing is dropped (see "M5 re-review fixes (Go)"). The inventory entry of a device gains `unreachable` (the relay: no boot ever known, its `DDEATH` seen, the gateway not admitted, or the world gone; see "Stop boots" below); the
   reply gains `unreachable` beside `stopped` and `skipped`: a device that declares a safe stop and could not be ordered is listed
   there and never in `stopped`, and no `stop` is recorded for it. A node of the world performs the stops first and answers the
   host second, joining both errors, so a failed answer no longer skips the stops.
@@ -1091,6 +1090,36 @@ Exact shapes (new members only):
 Twin report: `commands[].origin` (`"node"`, absent for the host), `run.evidence_bound` (boolean, always present), and the `reason`
 values `node_stop_not_applied` and `node_stop_unconfirmed`.
 
+## M5 re-review fixes (Go)
+
+A second review of the fixes above. Every item has a regression test that fails on the old code. Contract change:
+`node-control-v0.1` reply and `interrupt-log-v0.1` require `unreachable` on an applied `estop` reply (embedded copies equal).
+Shapes of records are otherwise unchanged.
+
+- **Purge of an approved command (H1).** A command a hold, approval or stop released and a node of the world then queued for
+  its `not_before_ns` can be purged by a later restriction. Replay now accepts a `purge` for a command id that a `pass` verdict
+  or a `resolve` with `forward` (an approval) preceded, on the device it was sent to, when a hold, stop or approval mode that
+  covers the device was applied after that point; any other purge is refused.
+- **The stop epoch (H2).** The relay's stop carries the last authority epoch a host announced; an epoch of 0, announced by a host
+  that returned without one or kept when it is lost, never replaces it.
+- **Retry (M1).** A `DCMD` whose id is waiting for approval with the same content and idempotency key is answered `queued` again
+  and adds nothing; other content under that id is `duplicate`.
+- **Stops (M2).** A node of the world invokes every safe stop of an emergency stop first, then tells the host the state of each
+  device, joining the errors; a failed send no longer leaves a device running.
+- **Scopes (M3).** Nothing is dropped any more. The bound of 64 counts approval scopes and plain holds; the latch of an emergency
+  stop has its own place and is never refused for capacity.
+- **Control port (M5).** An emergency stop is queued in a list of its own that is served first and has its own bound (16), and a
+  request whose caller gave up is dropped from the backlog.
+- **Twin report (M6).** A run folder that holds `interrupts.rejected.jsonl` is refused with `ErrTwinInterruptLogRejected`: the
+  commands the node stopped or refused are unknown.
+- **Offline devices (H3).** The relay lists in the inventory every device announced in the session by a gateway `NBIRTH` board
+  (kept after the gateway is lost, and after a later birth leaves it out) and by the simulated node, with `unreachable` computed
+  per device. An emergency stop of `all`, its board or itself names an offline device in `unreachable`, and a hold or approval
+  mode scoped to it is accepted. The canvas shows the same lists and needs no change.
+- **Smaller.** A hold or stop does not purge a queued declared safe-stop command. `interrupts.rejected.jsonl` is never
+  overwritten: a second one is `interrupts.rejected.1.jsonl`, up to 100 (`ErrTooManyRejectedLogs`). `content_digest` on `approve`
+  and `deny` stays optional; sending it is how an operator is safe against a reused id. The stall test allows 4 s.
+
 ## M5 review fixes (canvas)
 
 The real-browser, code-quality and adversarial reviews of the canvas side of R11b and R12b. The binary keeps every rule; the
@@ -1107,8 +1136,9 @@ e2e at 1280 x 800 checks.
   waits and after a stop latches.
 - **The emergency stop is never dropped (H2).** `ControlStore` keeps the controls in flight as a list with an order number. An
   emergency stop is always sent, also while another control waits for the node; any other control pressed while one is in
-  flight is not sent, `send` returns `"not-sent"`, the bar says "not sent: another control is still waiting", and the buttons
-  are disabled meanwhile. Focus moves to the waiting heading only when a decision was sent. The stop is enabled whenever the
+  flight is not sent, `send` returns `"not-sent"` and the bar says "not sent: another control is still waiting" (the note stays
+  until the next control is sent). The Hold, Release and Approve each command buttons stay enabled and give that answer; only
+  Approve and Deny of a waiting command are disabled while a control is in flight. Focus moves to the waiting heading only when a decision was sent. The stop is enabled whenever the
   control socket is offered, without waiting for the node's first state. The newest outcome (by order) stays: a stop's outcome
   is not replaced by an older control's, and while an older control is still waiting the stop's outcome is shown with a note.
 - **The plant of a running session opens by address (H3).** `showRunPlant` takes the run's domain state and its connection;
@@ -1167,3 +1197,26 @@ e2e at 1280 x 800 checks.
   snapshot-versus-answer guard is by content: D-102. (c) The plant node tags keep their short words: D-103. (d) The e2e pins the
   overlay of the stand-in session to "The board reported no reading of duty_permille to compare." (the stand-in announces a fan
   with one metric and sends no reading).
+
+### M5 second pass (canvas)
+
+- **One stream per run per tab.** A run the workspace lists as running is shown from the shared live review store
+  (`ReviewRoute`), so the plant screen, the live view and a reload all hold the one run-events stream; the review store opens no
+  second one. The connect store stops following the run journal as soon as it has the binding. A tab then holds `/api/events`
+  and one run stream, so two tabs stay inside the browser's six connections per host. `FakeBridge.openFollows` counts open
+  streams in the tests; `interrupts-layout.spec.ts` opens the same running run in a second page.
+- **One row in every state.** The bar is a non-wrapping row: the scope select shrinks first (80 to 150 px), "Approve each command"
+  reads "Approve each" with " command" as hidden text (the accessible name is unchanged), and the check mark of a pressed toggle
+  is always laid out (hidden when off), so applying a hold moves nothing. The e2e checks Hold on plus Approve on at 1280 x 800:
+  one row, the stop's position unchanged.
+- **Refit.** `useFitted` recorded the viewport it asked for; when React Flow clamped it the canvas took the difference for a
+  manual move and never refitted on a resize. It now records the viewport that was applied, so a pane that changes height is
+  refitted while the user has not moved the view. A manual zoom or pan, or the Fit button, is not refitted over; a resize after
+  the Fit button is not refitted until the fit key changes (not changed here).
+- **One interrupt source.** Node tags, the inspector line and the bar read the same state: `withShownInterrupts` puts the state
+  `newestInterrupts` selects into the newest snapshot (`useShownLive`); a snapshot at an earlier cursor keeps its own.
+- **Another run.** "Set up another run" also empties the plan draft (sockets and boards).
+- **Details.** The refusal reason `duplicate` reads "A command with different content already uses this command id or key". The
+  waiting-commands list is not a tab stop (its buttons are). The "First: …" line under the timeline wraps and a timeline chip's
+  title carries its full text. An applied emergency stop reply without `unreachable` is refused by the decoder (the contract
+  requires it).

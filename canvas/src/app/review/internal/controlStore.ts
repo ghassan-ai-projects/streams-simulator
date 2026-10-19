@@ -135,15 +135,15 @@ export class ControlStore extends Observable<ControlState> implements ControlSes
   private settle(flight: Flight, outcome: Outcome<ControlReply, ControlFailure>): void {
     const state = this.snapshot();
     if (state.run !== flight.run) return;
-    const sending = without(state.sending, flight.order);
-    const blocked = sending.length === 0 ? null : state.blocked;
+    const rest = { ...state, sending: without(state.sending, flight.order) };
     if (!outcome.ok) {
-      this.failed({ ...state, sending, blocked }, flight, outcome.failure);
+      this.failed(rest, flight, outcome.failure);
       return;
     }
     const busy = outcome.value.reason === "node_busy";
     const result: ControlResult = { kind: "reply", reply: outcome.value };
-    const next = this.adopted({ ...state, sending, blocked }, outcome.value);
+    this.generation += 1;
+    const next = this.adopted(rest, outcome.value);
     this.set(this.withLast(next, flight, result, busy ? "pending" : "none"));
     if (busy) void this.recheck(flight);
   }
@@ -160,7 +160,6 @@ export class ControlStore extends Observable<ControlState> implements ControlSes
   }
 
   private adopted(state: ControlState, reply: ControlReply): ControlState {
-    this.generation += 1;
     const shown = newestInterrupts(this.source.newest(), state.seen, state.run);
     const older = [shown, ...(state.seen?.older ?? [])].flatMap((entry) => (entry === null ? [] : [entry]));
     const seen: SeenState = {

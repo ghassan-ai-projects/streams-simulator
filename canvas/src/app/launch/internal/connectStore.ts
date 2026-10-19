@@ -85,7 +85,9 @@ export class ConnectStore extends Observable<ConnectState> {
     this.unfollow = this.gateway.followSession(run, {
       entry: (entry) => {
         const live = this.snapshot();
-        if (entry.kind === "binding" && live.phase === "live") this.set({ ...live, binding: entry.binding });
+        if (entry.kind !== "binding" || live.phase !== "live") return;
+        this.set({ ...live, binding: entry.binding });
+        this.stopFollowing();
       },
       closed: () => {
         this.lostJournal("The run journal stopped streaming; following it again.");
@@ -96,9 +98,13 @@ export class ConnectStore extends Observable<ConnectState> {
     });
   }
 
-  private lostJournal(note: string): void {
+  private stopFollowing(): void {
     this.unfollow?.();
     this.unfollow = null;
+  }
+
+  private lostJournal(note: string): void {
+    this.stopFollowing();
     const live = this.snapshot();
     if (live.phase === "live") this.set({ ...live, note });
   }
@@ -127,7 +133,7 @@ export class ConnectStore extends Observable<ConnectState> {
     if (outcome.ok && now.phase === "live") this.refreshLive(now, outcome.value);
     this.poll();
     const live = this.snapshot();
-    if (live.phase === "live" && this.unfollow === null) this.followJournal(live.run);
+    if (live.phase === "live" && live.binding === null && this.unfollow === null) this.followJournal(live.run);
   }
 
   private refreshLive(now: LiveSession, status: ConnectStatus): void {

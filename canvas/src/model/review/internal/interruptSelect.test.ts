@@ -7,6 +7,7 @@ import {
   newestInterrupts,
   scopeChoices,
   scopeStatus,
+  withShownInterrupts,
 } from "./interruptSelect";
 import { allDevices } from "./interruptScope";
 import type { InterruptState } from "./interrupts";
@@ -54,6 +55,18 @@ describe("which interrupt state is current", () => {
     expect(interruptOf(liveOf({ interrupts: null }), "fan-01")).toBeNull();
     expect(interruptOf(liveOf({ interrupts: emptyState }), "fan-01")).toBeNull();
     expect(interruptOf(null, "fan-01")).toBeNull();
+  });
+});
+
+describe("the state shown for the snapshot at the cursor", () => {
+  it("replaces the state of the newest snapshot by the one shown, and leaves an older snapshot alone", () => {
+    const newest = liveOf({ key: "b", interrupts: emptyState });
+    const older = liveOf({ key: "a", interrupts: emptyState });
+    expect(withShownInterrupts(newest, newest, busyState)?.interrupts).toBe(busyState);
+    expect(withShownInterrupts(older, newest, busyState)).toBe(older);
+    expect(withShownInterrupts(newest, newest, emptyState)).toBe(newest);
+    expect(withShownInterrupts(null, newest, busyState)).toBeNull();
+    expect(withShownInterrupts(newest, null, busyState)).toBe(newest);
   });
 });
 

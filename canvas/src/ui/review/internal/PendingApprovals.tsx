@@ -95,7 +95,7 @@ export function PendingApprovals({ controls, pending, world, now, enabled }: Pen
         {said}
       </p>
       {pending.length > 0 && (
-        <ul className={styles.list} tabIndex={0} aria-label="Waiting commands">
+        <ul className={styles.list} aria-label="Waiting commands">
           {pending.map((item) => (
             <WaitingRow
               key={item.commandId}

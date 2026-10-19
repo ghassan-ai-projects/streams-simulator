@@ -10,7 +10,7 @@
 
 .row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
@@ -28,12 +28,15 @@
 
 .field {
   display: inline-flex;
+  flex: 0 1 150px;
   align-items: center;
+  min-width: 80px;
 }
 
 .select {
   height: 28px;
-  max-width: 150px;
+  width: 100%;
+  min-width: 0;
   padding: 0 var(--space-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
@@ -44,7 +47,8 @@
 
 .group {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex: none;
+  flex-wrap: nowrap;
   gap: var(--space-1);
 }
 
@@ -62,6 +66,10 @@
   border-color: var(--status-warn);
   background: var(--status-warn-bg);
   color: var(--text-primary);
+}
+
+.toggle svg[data-pressed="false"] {
+  visibility: hidden;
 }
 
 .bar .estop {

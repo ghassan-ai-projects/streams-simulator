@@ -83,7 +83,9 @@ describe("controls on a live session", () => {
     expect(store.snapshot().blocked).toMatchObject({ op: "approve" });
     gate.resolve(success(controlReplyWire()));
     expect(await first).toBe("sent");
-    expect(store.snapshot()).toMatchObject({ sending: [], blocked: null });
+    expect(store.snapshot()).toMatchObject({ sending: [], blocked: { op: "approve" } });
+    await store.hold(board);
+    expect(store.snapshot().blocked).toBeNull();
   });
 
   it("never drops an emergency stop, even while another control waits for the node", async () => {

@@ -69,5 +69,6 @@ export function interruptWire(fields: Record<string, unknown>, atNs = 10e9) {
 }
 
 export function controlReplyWire(overrides: Record<string, unknown> = {}) {
-  return { result: "applied", op: "hold", state: interruptsWire(), ...overrides };
+  const reply = { result: "applied", op: "hold", state: interruptsWire(), ...overrides };
+  return reply.op === "estop" && reply.result === "applied" ? { unreachable: [], ...reply } : reply;
 }

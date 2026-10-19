@@ -157,24 +157,33 @@ export function interruptRecord(row: Record<string, unknown>): InterruptRecord |
   };
 }
 
+function replyLists(value: Record<string, unknown>): Pick<ControlReply, "stopped" | "skipped" | "unreachable"> | null {
+  const stopped = names(value.stopped);
+  const skipped = names(value.skipped);
+  const unreachable = names(value.unreachable);
+  if (stopped === null || skipped === null || unreachable === null) return null;
+  return { stopped, skipped, unreachable };
+}
+
+function estopLacksUnreachable(value: Record<string, unknown>, op: ControlOp | null, result: string): boolean {
+  return op === "estop" && result === "applied" && !Array.isArray(value.unreachable);
+}
+
 export function controlReply(value: unknown): ControlReply | null {
   if (!isRecord(value)) return null;
   const result = pick(value.result, results);
   const op = optional(value.op, controlOps);
   const state = interruptState(value.state);
-  const lists = [names(value.stopped), names(value.skipped), names(value.unreachable)] as const;
   const given = optionalTexts(value, ["reason", "command_id"] as const);
-  if (result === null || op === null || state === null || given === null) return null;
-  const [stopped, skipped, unreachable] = lists;
-  if (stopped === null || skipped === null || unreachable === null) return null;
+  const lists = replyLists(value);
+  if (result === null || op === null || state === null || given === null || lists === null) return null;
+  if (estopLacksUnreachable(value, op.value, result)) return null;
   return {
     result,
     op: op.value,
     reason: given.reason,
     commandId: given.command_id,
-    stopped,
-    skipped,
-    unreachable,
+    ...lists,
     state,
   };
 }

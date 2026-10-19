@@ -48,12 +48,12 @@ export function ScopeField({ choices, picked, onPick }: ScopeFieldProps) {
 type PartProps = Omit<ButtonsProps, "noteId">;
 
 function On({ pressed }: { readonly pressed: boolean }) {
-  return pressed ? (
-    <span className={styles.mark} aria-hidden="true">
+  return (
+    <span className={styles.mark} style={pressed ? undefined : { visibility: "hidden" }} aria-hidden="true">
       <Check size={14} />
       On
     </span>
-  ) : null;
+  );
 }
 
 function HoldButton({ controls, scope, status, enabled }: PartProps) {
@@ -102,7 +102,7 @@ function ApproveButton({ controls, scope, status, enabled }: PartProps) {
       }}
     >
       <ClipboardCheck size={14} aria-hidden="true" />
-      Approve each command
+      Approve each <span className="sr-only">command</span>
       <On pressed={approving} />
     </button>
   );

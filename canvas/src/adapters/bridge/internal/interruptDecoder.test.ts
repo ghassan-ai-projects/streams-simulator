@@ -183,7 +183,14 @@ describe("the interrupt state in a live snapshot", () => {
 describe("the node's answer to a control", () => {
   it("reads a reply, its stops and its state", () => {
     expect(
-      controlReply({ result: "applied", op: "estop", stopped: ["fan"], skipped: ["led"], state: interruptsWire() }),
+      controlReply({
+        result: "applied",
+        op: "estop",
+        stopped: ["fan"],
+        skipped: ["led"],
+        unreachable: [],
+        state: interruptsWire(),
+      }),
     ).toMatchObject({ result: "applied", op: "estop", stopped: ["fan"], skipped: ["led"], reason: "", commandId: "" });
     expect(controlReply({ result: "refused", reason: "node_busy", op: "hold", state: interruptsWire() })).toMatchObject(
       {
@@ -200,6 +207,13 @@ describe("the node's answer to a control", () => {
     expect(controlReply({ result: "applied", op: "hold", state: interruptsWire() })).toMatchObject({
       unreachable: [],
     });
+  });
+
+  it("refuses an applied emergency stop that does not say which devices it could not reach", () => {
+    expect(controlReply({ result: "applied", op: "estop", stopped: ["fan"], state: interruptsWire() })).toBeNull();
+    expect(
+      controlReply({ result: "refused", reason: "unknown_board", op: "estop", state: interruptsWire() }),
+    ).not.toBeNull();
   });
 
   it("reads a refusal that names no request, and keeps a reason it has no words for", () => {

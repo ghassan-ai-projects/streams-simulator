@@ -232,6 +232,25 @@ describe("the interrupt controls on the live screen", () => {
     expect(await screen.findByText(/Safe stop sent to fan\./)).toBeInTheDocument();
   });
 
+  it("keeps the note that a control was not sent visible after the control in flight has answered", async () => {
+    const { bridge, review } = mount();
+    const gate = deferred<Canned<unknown>>();
+    bridge.handlers.set("session.control", () => gate.promise);
+    fireEvent.click(screen.getByRole("button", { name: "Hold" }));
+    await act(async () => {
+      await review.controls.release({ kind: "all", id: "" });
+    });
+    expect(
+      screen.getByText(/Release of all devices: not sent: another control is still waiting\./),
+    ).toBeInTheDocument();
+    gate.resolve(success(controlReplyWire()));
+    expect(
+      await screen.findByText(
+        /Hold on all devices was applied\..*Release of all devices: not sent: another control is still waiting\./,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("says which devices an emergency stop could not reach", async () => {
     const { bridge } = mount();
     bridge.actions.set("session.control", success(controlReplyWire({ op: "estop", unreachable: ["pump"] })));
@@ -244,7 +263,7 @@ describe("the interrupt controls on the live screen", () => {
     mount();
     const approve = screen.getByRole("button", { name: "Approve each command" });
     expect(within(approve).getByText("On")).toBeInTheDocument();
-    expect(within(screen.getByRole("button", { name: "Hold" })).queryByText("On")).toBeNull();
+    expect(within(screen.getByRole("button", { name: "Hold" })).getByText("On")).not.toBeVisible();
     fireEvent.change(screen.getByLabelText("Scope"), { target: { value: "board:uno-07" } });
     expect(within(screen.getByRole("button", { name: "Hold" })).getByText("On")).toBeInTheDocument();
   });

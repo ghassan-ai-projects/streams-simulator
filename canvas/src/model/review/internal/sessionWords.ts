@@ -43,7 +43,7 @@ const reasonWords: ReadonlyMap<string, string> = new Map(
     too_many_scopes: "Too many holds and approval scopes are set; release one first",
     node_busy: "The node was busy and may still apply this later",
     malformed: "The node could not read the request",
-    duplicate: "Another command with the same key but different content",
+    duplicate: "A command with different content already uses this command id or key",
   }),
 );
 

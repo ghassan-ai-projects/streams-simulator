@@ -5,6 +5,7 @@ import { readyReport } from "../../../app/review";
 import type { PlantView } from "../../../model/graph";
 import type { NodeLive } from "../../graph";
 import { effectorAt, faultedAt, hallLiveOf } from "../../../model/review";
+import { useShownLive } from "./useShownLive";
 
 export function useLive(
   review: ReviewSession,
@@ -14,6 +15,7 @@ export function useLive(
 ): (id: string) => NodeLive {
   const report = readyReport(state);
   const { positionNs, origins } = state;
+  const sessionLive = useShownLive(review, state);
   const faulted = useMemo(() => faultedAt(report, positionNs), [report, positionNs]);
   const effectors = useMemo(() => effectorAt(report, positionNs), [report, positionNs]);
   return useCallback(
@@ -27,10 +29,10 @@ export function useLive(
           effectors,
           origins,
           positionNs,
-          sessionLive: state.live,
+          sessionLive,
         },
         id,
       ),
-    [review, positionNs, plant, view, faulted, effectors, origins, state.live],
+    [review, positionNs, plant, view, faulted, effectors, origins, sessionLive],
   );
 }

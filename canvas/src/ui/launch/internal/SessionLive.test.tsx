@@ -53,7 +53,8 @@ describe("a running connected session in the run panel", () => {
     expect(await screen.findByText("The session was stopped and saved as run c-1.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Set up another run" }));
     expect(screen.queryByText("The session was stopped and saved as run c-1.")).toBeNull();
-    expect(screen.getByLabelText("Host socket")).toBeInTheDocument();
+    expect(screen.getByLabelText("Host socket")).toHaveValue("");
+    expect(screen.queryByLabelText("Real board 1 instance")).toBeNull();
     expect(screen.getByRole("button", { name: "Start the session" })).toBeInTheDocument();
     expect(onFinished).not.toHaveBeenCalled();
   });

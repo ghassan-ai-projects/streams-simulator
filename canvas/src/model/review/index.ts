@@ -49,6 +49,7 @@ export {
   newestInterrupts,
   scopeChoices,
   scopeStatus,
+  withShownInterrupts,
 } from "./internal/interruptSelect";
 export { allDevices, scopeLabel } from "./internal/interruptScope";
 export {

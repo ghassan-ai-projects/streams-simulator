@@ -5,7 +5,7 @@ import { stubFlowDom } from "../../../test/dom";
 import { interruptsWire, liveWire } from "../../../test/liveFixture";
 import { success } from "../../../test/outcome";
 import { reportWith } from "../../../test/runFixture";
-import { miniWorkspace, planHash, reviewBridge } from "../../../test/screenFixture";
+import { miniWorkspace, planHash, reviewBridge, reviewHash } from "../../../test/screenFixture";
 
 beforeEach(() => {
   stubFlowDom();
@@ -99,6 +99,23 @@ describe("a running connected session across screens", () => {
     const outline = await screen.findByRole("navigation", { name: "Outline" });
     expect(await within(outline).findByRole("button", { name: /^CH-1/ })).toBeInTheDocument();
     expect(screen.getByText("Live · following newest record", { exact: true })).toBeInTheDocument();
+  });
+
+  it("follows a running session once, however many screens show it, so a second tab keeps connections free", async () => {
+    const bridge = liveBridge();
+    bridge.actions.set("session.status", success({ run: "c-9", state: "running", domain: "mini", controls: true }));
+    const app = mountApp(bridge, reviewHash("c-9"));
+    await screen.findByRole("region", { name: "Run c-9" });
+    const session = { type: "session", seq: 1, stream: "observer", at_ns: 0, mode: "connected" };
+    const binding = { type: "binding", seq: 0, stream: "observer", at_ns: 0, outcome: "matched", issues: [] };
+    act(() => {
+      bridge.streamFollow(0, [binding], null);
+      bridge.stream("c-9", [{ ...session, plan: { domain: "mini", instances: [] } }, boardSnapshot(10e9)], "caught_up");
+      app.timers.advance(250);
+    });
+    await within(await screen.findByRole("navigation", { name: "Outline" })).findByRole("button", { name: /^CH-1/ });
+    expect(bridge.openFollows("c-9")).toBe(1);
+    expect(app.stores.review.snapshot().worldId).toBeNull();
   });
 
   it("keeps the interrupt controls and the hold of a board on the plant screen and on the live view", async () => {
