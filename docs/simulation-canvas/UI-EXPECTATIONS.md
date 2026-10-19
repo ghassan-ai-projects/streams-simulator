@@ -164,6 +164,7 @@ How to read the tables:
 | V-13 | An Evaluate run says whether the truth is revealed, and the report agrees with the run panel. | ✗ KPI TRUTH shown while the run panel says the truth stays sealed | |
 | V-14 | Readout nodes show their full kind and have even heights. | ✗ "AC-1 compressor l…"; tall M-1 and M-2 with empty bottoms | |
 | V-15 | Header and playback controls carry text or visible tooltips. | ✗ « ‹ › » and bell are icon-only; bell purpose unclear | |
+| V-16 | A saved connected session with a field trace offers "Twin vs board" in the Report tab, on user action only: the verdict by word and shape, counts, the tolerance rule and each metric's tolerance with its source, which commands reached the twin and why the others did not, and where the twin and the board part ways (choosing one moves the cursor to its start). In Inspect, a real board shows the twin's prediction (dashed, legend "Twin prediction") over its compared readings, divergences shaded, with an empty state that says why when nothing can be drawn. | ✅ R12b; a diverging chart is covered by component tests, the e2e shows the honest "Cannot judge" of the stand-in (D-92, D-93) | |
 
 ## 7. Pairing
 

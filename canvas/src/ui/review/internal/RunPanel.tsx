@@ -4,7 +4,7 @@ import type { ReviewState, ReviewSession } from "../../../app/review";
 import { startNsOf } from "../../../app/review";
 import { originWords } from "../../../model/graph";
 import { runClock } from "../../../model/review";
-import type { InstanceOrigin } from "../../../model/review";
+import type { InstanceOrigin, Report } from "../../../model/review";
 import { OriginMark } from "../../graph";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
@@ -12,6 +12,8 @@ import { InterruptLine } from "./InterruptLine";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
 import { SessionEvidence } from "./SessionEvidence";
+import { TwinInspect } from "./TwinInspect";
+import { TwinPanel } from "./TwinPanel";
 import parts from "./ReportParts.module.css";
 import styles from "./RunPanel.module.css";
 
@@ -56,6 +58,7 @@ function Inspect(props: RunPanelProps) {
         <InterruptLine state={props.state} entity={entity} />
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
+      <TwinInspect review={props.review} state={props.state} entity={entity} startNs={startOf(props)} />
       {props.state.report.phase === "ready" && (
         <ReportPanel
           report={props.state.report.value}
@@ -110,40 +113,58 @@ export function RunPanel(props: RunPanelProps) {
         {tab === "inspect" ? (
           <Inspect {...props} />
         ) : (
-          <ReportBody state={state} unit={props.unit} startNs={startOf(props)} />
+          <ReportBody review={review} state={state} unit={props.unit} startNs={startOf(props)} />
         )}
       </div>
     </aside>
   );
 }
 
+function ReadyReport({
+  review,
+  state,
+  report,
+  unit,
+  startNs,
+}: {
+  readonly review: ReviewSession;
+  readonly state: ReviewState;
+  readonly report: Report;
+  readonly unit: (entity: string, name: string) => string;
+  readonly startNs: number;
+}) {
+  const { picked, positionNs } = state;
+  const shown = picked !== null && picked.atNs === positionNs ? picked : null;
+  return (
+    <>
+      {state.connection === "saved" && <SessionEvidence state={state} startNs={startNs} />}
+      <TwinPanel review={review} state={state} startNs={startNs} />
+      <ReportPanel
+        report={report}
+        unit={unit}
+        entity={null}
+        picked={shown}
+        verify={state.verified}
+        connection={state.connection}
+      />
+    </>
+  );
+}
+
 function ReportBody({
+  review,
   state,
   unit,
   startNs,
 }: {
+  readonly review: ReviewSession;
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
   readonly startNs: number;
 }) {
   if (state.connection === "running") return <SessionEvidence state={state} startNs={startNs} />;
-  if (state.report.phase === "ready") {
-    const { picked, positionNs } = state;
-    const shown = picked !== null && picked.atNs === positionNs ? picked : null;
-    return (
-      <>
-        {state.connection === "saved" && <SessionEvidence state={state} startNs={startNs} />}
-        <ReportPanel
-          report={state.report.value}
-          unit={unit}
-          entity={null}
-          picked={shown}
-          verify={state.verified}
-          connection={state.connection}
-        />
-      </>
-    );
-  }
+  if (state.report.phase === "ready")
+    return <ReadyReport review={review} state={state} report={state.report.value} unit={unit} startNs={startNs} />;
   if (state.report.phase === "loading")
     return (
       <p className={parts.muted} role="status">

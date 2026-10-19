@@ -8,6 +8,7 @@ import type {
   PlantFailure,
   ReviewFailure,
   SessionFailure,
+  TwinFailure,
   WorkspaceFailure,
 } from "../../../app/ports";
 import type { FailureMapper, RequestFailure, WireProblem } from "./http";
@@ -100,6 +101,12 @@ const controlKinds: Readonly<Record<string, ControlFailure["kind"]>> = {
 export function controlFailure(error: RequestFailure): ControlFailure {
   if (error.kind !== "http") return unreached(error);
   const kind = controlKinds[error.problem.code] ?? (error.problem.status >= 500 ? "unavailable" : "unreadable");
+  return { kind, diagnostic: diagnostic(error.problem) };
+}
+
+export function twinFailure(error: RequestFailure): TwinFailure {
+  if (error.kind !== "http") return unreached(error);
+  const kind = error.problem.status >= 500 ? "unavailable" : "refused";
   return { kind, diagnostic: diagnostic(error.problem) };
 }
 

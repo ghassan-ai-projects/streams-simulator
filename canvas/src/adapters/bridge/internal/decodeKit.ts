@@ -19,3 +19,13 @@ export function names(value: unknown): readonly string[] | null {
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) return null;
   return value as string[];
 }
+
+export interface Given<T> {
+  readonly value: T;
+}
+
+export function optional<T extends string>(value: unknown, choices: readonly T[]): Given<T | null> | null {
+  if (value === undefined) return { value: null };
+  const found = pick(value, choices);
+  return found === null ? null : { value: found };
+}

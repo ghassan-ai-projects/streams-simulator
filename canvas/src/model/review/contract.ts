@@ -21,3 +21,16 @@ export type {
 } from "./internal/interrupts";
 export type { ControlResult, NodeNow, StateCheck } from "./internal/interruptWords";
 export type { ActiveScope, ScopeChoice, ScopeStatus, SeenState } from "./internal/interruptSelect";
+export type {
+  TwinCommand,
+  TwinDivergence,
+  TwinMetric,
+  TwinReport,
+  TwinRequest,
+  TwinSeries,
+  TwinSummary,
+  TwinTolerance,
+  TwinVerdict,
+} from "./internal/twin";
+export type { TwinChart } from "./internal/twinChart";
+export type { TwinCoverage } from "./internal/twinSelect";

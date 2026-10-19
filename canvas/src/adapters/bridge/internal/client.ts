@@ -5,6 +5,7 @@ import { connectGateway } from "./connect";
 import { controlSession } from "./control";
 import { devicesGateway } from "./devices";
 import { followRun } from "./follow";
+import { requestTwinReport } from "./twinReportGateway";
 import type { FailureMapper, Transport, WireProblem } from "./http";
 import { action, getFile, post, putFile, request } from "./http";
 import {
@@ -132,6 +133,7 @@ function reviewGateway(transport: Transport): BridgeAdapters["review"] {
     runDomain: (runId) => getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure),
     follow: (runId, follower) => followRun(transport, runId, follower),
     control: (request) => controlSession(transport, request),
+    twinReport: (request) => requestTwinReport(transport, request),
   };
 }
 

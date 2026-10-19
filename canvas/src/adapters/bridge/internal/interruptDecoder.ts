@@ -10,7 +10,8 @@ import type {
   PendingApproval,
 } from "../../../model/review";
 import { isRecord, number, text } from "../../../model/shared/json";
-import { names, pick, rows } from "./decodeKit";
+import type { Given } from "./decodeKit";
+import { names, optional, pick, rows } from "./decodeKit";
 
 const scopeKinds = ["all", "board", "device"] as const;
 const clocks = ["world", "wall"] as const;
@@ -31,16 +32,6 @@ const interruptEvents: readonly InterruptEvent[] = [
   "stop",
   "effect",
 ];
-
-interface Given<T> {
-  readonly value: T;
-}
-
-function optional<T extends string>(value: unknown, choices: readonly T[]): Given<T | null> | null {
-  if (value === undefined) return { value: null };
-  const found = pick(value, choices);
-  return found === null ? null : { value: found };
-}
 
 function scopeOf(row: Record<string, unknown>): ControlScope | null {
   const kind = pick(row.kind, scopeKinds);

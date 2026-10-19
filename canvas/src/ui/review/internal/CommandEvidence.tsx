@@ -57,22 +57,24 @@ export function CommandEvidence({
   readonly startNs: number;
 }) {
   return (
-    <table className={cells.table}>
-      <caption>Command evidence</caption>
-      <thead>
-        <tr>
-          {["Command", "Sent at", "Acceptance", "Board report", "Effect evidence"].map((label) => (
-            <th key={label} scope="col">
-              {label}
-            </th>
+    <div className={cells.scroll} tabIndex={0}>
+      <table className={cells.table}>
+        <caption>Command evidence</caption>
+        <thead>
+          <tr>
+            {["Command", "Sent at", "Acceptance", "Board report", "Effect evidence"].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {commands.map((command) => (
+            <CommandRow key={command.commandId} command={command} startNs={startNs} />
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {commands.map((command) => (
-          <CommandRow key={command.commandId} command={command} startNs={startNs} />
-        ))}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   );
 }

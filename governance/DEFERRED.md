@@ -373,3 +373,14 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > mixed session are ignored, a device of the board that no twin entity matches (same wire id, kind implemented) is
 > `no_twin_entity`, and a board that changed its boot or rebooted mid-session is not told apart. Trigger to fix: a mixed
 > session whose twin must include the simulated peers' effects.
+> D-92 (the Inspect twin overlay draws the report's series, in the board's own time base): a real board has no trend chart in
+> Inspect (a readings table at the cursor), so the overlay draws the board's compared readings and the twin's prediction from the
+> report's `series.points` (at most 2000, the first ones when truncated), not the whole recorded trend, and it only has points
+> where a reading was compared (none before the first applied command, none for a reading that was not good). The report's times
+> are the board's own event times; the canvas treats them as run times (`runClock`, `seek`), which holds when the gateway stamps
+> its events on the run clock and not otherwise. Trigger to fix: a board trend in Inspect (V-5), or a gateway whose clock is not
+> the run clock; then the binary reports the offset or maps the times and the canvas draws the board's full trace.
+> D-93 (the canvas offers no span fraction and no per-metric tolerance form): `run.twin_report` takes `span_fraction`, and the
+> tolerance field is free text in the binary's `device.metric=value, kind.metric=value` form, checked by the binary only. Trigger to
+> fix: a user who needs another default share or gets a refusal often; then the binary lists the metrics that can be given a
+> tolerance and the canvas offers a field per metric.

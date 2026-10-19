@@ -75,21 +75,24 @@ export function openScriptedBench(binary: string, steps: readonly ScriptedComman
   return openHost(binary, dir, ["--delay-ms", "250", "--policy", scriptPolicy, "--script", script]);
 }
 
-export async function planOneRealBoard(panel: Locator, open: Bench, device: string): Promise<void> {
+export async function planOneRealBoard(
+  panel: Locator,
+  open: Bench,
+  device: string,
+  instance = "zone-01",
+): Promise<void> {
   await panel.getByLabel("Host socket", { exact: true }).fill(open.host);
   await panel.getByLabel("Gateway socket", { exact: true }).fill(open.gateway);
   await panel.getByRole("button", { name: "Add a real board" }).click();
   await expect(panel.getByLabel("Real board 1 instance", { exact: true })).toBeFocused();
-  await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption("zone-01");
+  await panel.getByLabel("Real board 1 instance", { exact: true }).selectOption(instance);
   await panel.getByLabel("Real board 1 board", { exact: true }).fill("uno-07");
   await panel.getByLabel("Real board 1 device", { exact: true }).fill(device);
 }
 
-export function startGateway(bench: Bench, device: string): void {
+export function startGateway(bench: Bench, device: string, kind = "thermal_sensor"): void {
   const args = ["--standin-gateway", "--socket", bench.gateway, "--kinds-dir", thermalBoard, "--board", "uno-07"];
-  bench.children.push(
-    spawn(env("CANVAS_STANDIN"), [...args, "--device", `${device}:thermal_sensor:61`], { stdio: "ignore" }),
-  );
+  bench.children.push(spawn(env("CANVAS_STANDIN"), [...args, "--device", `${device}:${kind}:61`], { stdio: "ignore" }));
 }
 
 export function runIdOf(words: string | null): string {

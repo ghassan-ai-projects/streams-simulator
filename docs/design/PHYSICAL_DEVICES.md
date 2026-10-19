@@ -948,3 +948,65 @@ matching, tolerance, divergence and which commands count are the binary's.
   name, resolved by exact match, so ids that contain a dot work; there is no separate options document and no `--json` flag
   (stdout is always one JSON document). (b) The report needs `--domain` (the brief named only the directories). (c) A command's time
   is placed by sequence in the field trace, not by a clock (D-90, D-91). (d) The bridge action passes the kinds folder always.
+
+## R12b as-built (canvas)
+
+The twin-versus-board report and the Inspect overlay on the canvas. The binary keeps every rule (which commands count,
+tolerance, divergence, prediction); the canvas asks for the report, decodes it strictly and shows it. It parses no message
+text and computes no judgement.
+
+- **Request.** The bridge action `run.twin_report` (registered in the canvas `rules.actionNames`, the only gate edit) is
+  called as `{run, domain, tolerance?}` by the new `ReviewGateway.twinReport`. `domain` is the domain the session recorded
+  (`state.sessionDomain`, from the `session` record); `tolerance` is the text the user typed, passed unchanged, and left out
+  only when it is blank. The binary validates it and its refusal is shown as the binary reports it (`message` and code). A
+  report that diverges or cannot judge is a result, not an error. The request is made only by the "Compare with twin" button,
+  never on open.
+- **When it is offered.** `twinOffer` (model): only for a saved session (`connection` saved, never while running and never for
+  a plain run, which show nothing), and only when the run report lists a `field_trace` check (the binary lists it only when
+  `run.json` records a field trace digest) and the session record names a domain. Otherwise the section says why in one
+  line ("This run recorded no field trace, so it has no real board to compare.").
+- **Decoder.** `twinReportDecoder.ts` (adapters) reads `twin-report-v0.1` strictly: another schema version, an unknown verdict,
+  reason, command status, not-applied reason, not-compared reason or tolerance source, a count that is not a finite number, a
+  `not_applied` command with no reason, a metric or divergence with a missing name, or a malformed point drops the whole report
+  as unreadable (the store shows "unreadable" as a failure). Digests, `kinds` and `start_ns` are not read: the canvas shows
+  none of them. Extra members are ignored, as in the other decoders.
+- **Words.** One table per set in `twinWords.ts`: verdicts (Agrees, Diverges, Cannot judge, each with a line), the reasons a
+  report cannot judge, command statuses, not-applied reasons, not-compared reasons, tolerance sources, and the line shown when
+  there is no divergence. A test checks that each table has a word for exactly the values the decoder accepts.
+- **Store.** `ReviewSession.twin` (`TwinStore`, `app/review`): idle, loading, ready or failed, each with the request that made
+  it. A press while the same run is loading sends nothing; an answer that arrives after another run was asked for is dropped.
+  `twinFor(state, run)` shows nothing of another run's answer.
+- **Twin vs board (Report tab, saved sessions).** A section with the tolerance field ("Tolerances (optional)", described by
+  its format), the "Compare with twin" button (`aria-disabled` while comparing, status line "Comparing the board with the
+  twin…"), and then the result: the verdict as a chip by word and shape (check circle, warning triangle, question circle; the
+  colour is secondary), the verdict's line, the reason for "Cannot judge", eight counts, the tolerance rule with the binary's
+  description, the twin domain and the tolerances as typed. Focus moves to the result heading, or to the refusal (an alert).
+  Three more sections follow a result: "Twin commands" (every command with its status and, for a command not applied, the
+  binary's reason in words and its detail), "Where the twin and the board part ways" (each divergence by the binary's name
+  `device.metric#n`, its interval, worst error with the board and twin value and the commands in force; the name is a button
+  that moves the review cursor to the first reading, `review.seek`) and "Twin metrics and tolerances" (each metric with its
+  verdict, its tolerance with the source and the readings it could not compare, with counts).
+- **Inspect overlay.** For a real board selected in a saved session that offers the comparison, a "Twin prediction · <board>"
+  section. Before a comparison it says so and has a button to the Report tab; while comparing or after a refusal it says that.
+  After a result it draws one chart per metric of that board: the board's compared readings as a solid line with circle
+  markers and the twin's prediction as a dashed line with square markers, divergence stretches shaded with a dashed outline,
+  the playback cursor, start and end run times, three value ticks, a legend (Board reading, Twin prediction, Where they part
+  ways) and the metric line (readings compared, beyond tolerance, tolerance and its source). A metric with no compared reading
+  shows the binary's reasons in words; a board the report does not cover says so; a series cut at 2000 points says so.
+- **Time.** The report's times are the board's own event times in nanoseconds. The canvas shows them with the same
+  `runClock` the rest of the review uses, against the run's start, and seeks to them as run times. The chart's coordinates
+  (`twinChart.ts`, model) are presentation only.
+- **Tokens and CSS.** No new tokens: ok, alarm, accent, text and border tokens in both themes. One new module stylesheet,
+  `Twin.module.css` (under the default cap, no `position`, no `z-index`, no `!important`). Desktop only, nothing clipped at
+  1280 px (the e2e checks the inspector's width).
+- **Test.** `e2e/twin-report.spec.ts` runs the real binary: a scripted host issues two `set_pwm_lease` commands to `fan-01`,
+  the real board of the session (the stand-in gateway announces a fan), the session is stopped and saved, the review is
+  opened, a bad tolerance is refused with the binary's words, and "Compare with twin" gives the honest report of this stand-in:
+  **Cannot judge**, because the stand-in gateway sends no reading and refuses every command (`not_ready`), so both commands are
+  listed as not applied and nothing can be compared. A diverging or agreeing report is therefore covered by unit and component
+  tests with documents shaped by the contract, not by the e2e; the chart and legend appear only when the board reported
+  readings. The e2e checks axe and the inspector's width at 1280.
+- **Deviations.** (a) The "real trend" of the brief does not exist in Inspect (a real board shows a readings table at the
+  cursor), so the overlay draws both series from the report: the board's compared readings and the twin's prediction at the
+  same times (at most 2000 points, the first ones). D-92. (b) No span-fraction field: the action accepts `span_fraction`, the
+  canvas does not offer it. D-93. (c) Choosing a divergence moves the cursor only; it does not select the board.

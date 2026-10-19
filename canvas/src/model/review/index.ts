@@ -23,6 +23,17 @@ export type {
   SessionLive,
   SessionReading,
   StateCheck,
+  TwinChart,
+  TwinCommand,
+  TwinCoverage,
+  TwinDivergence,
+  TwinMetric,
+  TwinReport,
+  TwinRequest,
+  TwinSeries,
+  TwinSummary,
+  TwinTolerance,
+  TwinVerdict,
 } from "./contract";
 export { interruptMarks } from "./internal/interruptMarks";
 export {
@@ -44,6 +55,33 @@ export {
   waitingWords,
 } from "./internal/interruptWords";
 export { deviceOf, originOf, readingWords } from "./internal/sessionLive";
+export {
+  commandStatuses,
+  notAppliedReasons,
+  notComparedReasons,
+  toleranceSources,
+  twinJudgeReasons,
+  twinVerdicts,
+} from "./internal/twin";
+export { chartFrame, chartOf } from "./internal/twinChart";
+export {
+  coverageOf,
+  divergenceLine,
+  inForceWords,
+  metricLine,
+  ruleWords,
+  truncationNote,
+  twinOffer,
+  unitOfMetric,
+} from "./internal/twinSelect";
+export {
+  commandStatusWords,
+  judgeReasonWords,
+  noDivergenceWords,
+  notAppliedWords,
+  notComparedWords,
+  verdictWords,
+} from "./internal/twinWords";
 export {
   acceptanceDetail,
   acceptanceWords,

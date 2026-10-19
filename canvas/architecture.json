@@ -629,6 +629,7 @@
       "kind.validate",
       "run.end",
       "run.report",
+      "run.twin_report",
       "run.verify",
       "scenario.export",
       "session.check",

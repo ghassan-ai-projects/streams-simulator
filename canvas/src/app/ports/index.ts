@@ -23,7 +23,7 @@ export type {
   SessionCheck,
 } from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";
-export type { ControlFailure, ReviewFailure, ReviewGateway, RunFollower } from "./review";
+export type { ControlFailure, ReviewFailure, ReviewGateway, RunFollower, TwinFailure } from "./review";
 export type { SessionFailure, SessionGateway } from "./session";
 export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
 export type { Clock, Scheduler } from "./clock";
