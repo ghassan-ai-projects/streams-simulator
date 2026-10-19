@@ -441,3 +441,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > barrier, so an emergency stop waits for the slice in progress (the relay serves controls every tick). The port orders an
 > emergency stop ahead of every other waiting control and gives it a place when ordinary requests fill the backlog. Trigger to
 > fix: slices long enough for a stop to wait too long on a bench; then the world serves controls between steps.
+
+> D-107 (per-device mark for a stop that could not be sent): after an emergency stop, a device the node could not order to stop (listed `unreachable`) shows the same Latched badge on the plant as a stopped device; only the outcome text names it. Give it its own badge (shape and words) from the reply's `unreachable` list. Found in the final M5 browser spot check.
+>
+> D-108 (outcome wording of a partial emergency stop): the outcome line opens "was applied" even when a stop could not be sent, and the unreachable sentence uses a plural for one device ("fan-01: they may still be energised"). Lead with the failure and agree number. Found in the final M5 browser spot check.
+>
+> D-109 (transient plant clip after the bar resizes): for 0.5 to 1 s after the Interrupts bar grows or shrinks, the frame node sits partly outside the pane before the refit; gone by 2 s. Refit in the same frame as the resize. Found in the final M5 browser spot check.
