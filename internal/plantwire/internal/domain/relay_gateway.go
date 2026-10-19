@@ -88,6 +88,7 @@ func (r *Relay) refuseGateway(m *Moves, in Inbound, refusal, reason string) {
 }
 
 func (r *Relay) takeBirth(in Inbound) {
+	r.forgetBoots(r.gatewayDevices)
 	r.birth, r.gatewayDevices = in, devicesOf(in.Boards)
 	r.host.table, r.host.gatewaySyncs = seqTable{}, syncLedger{}
 	r.gateway.admitted, r.gateway.answered, r.gateway.asked = true, false, false
@@ -116,8 +117,15 @@ func (r *Relay) admittedRecord(m *Moves, in Inbound) {
 		r.rebirth(m, in)
 	case r.ownAnswer(m, in):
 	default:
-		r.forwardOrEnd(m, in)
+		r.carried(m, in)
 	}
+}
+
+func (r *Relay) carried(m *Moves, in Inbound) {
+	if !r.strayDevice(in) && !r.forgedFromGateway(in) {
+		r.noteStopBoot(in)
+	}
+	r.forwardOrEnd(m, in)
 }
 
 func (r *Relay) forwardOrEnd(m *Moves, in Inbound) {
@@ -186,7 +194,6 @@ func (r *Relay) track(in Inbound, seq uint64) {
 	switch in.Type {
 	case "DBIRTH":
 		r.gateway.born[in.Device] = in.BootID
-		r.noteKind(in)
 	case "DDEATH":
 		delete(r.gateway.born, in.Device)
 	case "NSYNC":
@@ -200,6 +207,7 @@ func (r *Relay) gatewayEnded(m *Moves) {
 }
 
 func (r *Relay) clearGateway() {
+	r.forgetBoots(r.gatewayDevices)
 	r.gateway = gatewaySide{born: map[string]string{}}
 	r.gatewayDevices = nil
 	r.host.gatewaySyncs = syncLedger{}

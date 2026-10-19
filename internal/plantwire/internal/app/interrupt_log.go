@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -15,9 +16,12 @@ type InterruptLog interface {
 	Flush() error
 }
 
+var ErrInterruptLogRejected = errors.New("plantwire: the interrupt log is not evidence and was set aside")
+
 type interruptFile struct {
 	file   *run.InterruptLog
 	failed bool
+	cause  error
 }
 
 func openInterruptFile(dir string) (*interruptFile, error) {
@@ -33,8 +37,7 @@ func (f *interruptFile) Add(record map[string]any) error {
 		return nil
 	}
 	if err := f.file.Add(record); err != nil {
-		slog.Warn("plantwire: the interrupt log could not take a record, it is left out of the run", "error", err)
-		f.failed = true
+		f.failed, f.cause = true, err
 	}
 	return nil
 }
@@ -54,17 +57,20 @@ func (f *interruptFile) finish(dir string) error {
 		return nil
 	}
 	if err := f.file.Close(); err != nil {
-		f.failed = true
-		return fmt.Errorf("plantwire: close the interrupt log: %w", err)
+		f.failed, f.cause = true, err
+	} else if !f.failed {
+		f.check(dir)
 	}
-	f.check(dir)
-	return nil
+	if !f.failed {
+		return nil
+	}
+	slog.Warn("plantwire: the interrupt log is set aside and left out of the run", "error", f.cause)
+	return errors.Join(fmt.Errorf("%w: %w", ErrInterruptLogRejected, f.cause), run.RejectInterruptLog(dir))
 }
 
 func (f *interruptFile) check(dir string) {
-	if _, err := VerifyInterruptLog(dir); err != nil && !f.failed {
-		slog.Warn("plantwire: the interrupt log does not replay, it is left out of the run", "error", err)
-		f.failed = true
+	if _, err := VerifyInterruptLog(dir); err != nil {
+		f.failed, f.cause = true, err
 	}
 }
 
@@ -95,14 +101,22 @@ type InterruptReplay struct {
 }
 
 func VerifyInterruptLog(dir string) (InterruptReplay, error) {
+	records, digest, err := verifiedInterruptLog(dir)
+	if err != nil {
+		return InterruptReplay{}, err
+	}
+	return InterruptReplay{Records: len(records), Digest: digest}, nil
+}
+
+func verifiedInterruptLog(dir string) ([]map[string]any, string, error) {
 	records, digest, err := run.ReadInterruptLog(dir)
 	if err == nil {
 		err = checkedAndReplayed(records)
 	}
 	if err != nil {
-		return InterruptReplay{}, fmt.Errorf("plantwire interrupts: %w", err)
+		return nil, "", fmt.Errorf("plantwire interrupts: %w", err)
 	}
-	return InterruptReplay{Records: len(records), Digest: digest}, nil
+	return records, digest, nil
 }
 
 func checkedAndReplayed(records []map[string]any) error {

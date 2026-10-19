@@ -59,7 +59,7 @@
     "interrupt": {
       "description": "Observer, session. One record of the node's interrupt log (interrupt-log-v0.1) as the node wrote it: an operator control, a node decision about a command or a control, a stop. node_ns is on the clock named by clock. Outside the stream digest; the same records are in interrupts.jsonl.",
       "required": ["event", "node_ns", "clock"],
-      "properties": {"event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect"]}, "node_ns": {"type": "integer", "minimum": 0}, "clock": {"enum": ["world", "wall"]}}
+      "properties": {"event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect", "purge"]}, "node_ns": {"type": "integer", "minimum": 0}, "clock": {"enum": ["world", "wall"]}}
     },
     "live_device": {
       "type": "object", "required": ["device", "board", "instance", "environment", "boot_id", "health", "reboots", "readings"],

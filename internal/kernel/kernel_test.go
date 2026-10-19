@@ -116,3 +116,22 @@ func TestTheKernelOpensARegularFileAndNamesTheLinkItRefuses(t *testing.T) {
 		t.Fatal("the kernel names no symbolic link error")
 	}
 }
+
+func TestRenameMovesAFileAndNamesTheSourceWhenItIsNotThere(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	from, to := filepath.Join(dir, "a.jsonl"), filepath.Join(dir, "b.jsonl")
+	if err := os.WriteFile(from, []byte("1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Rename(from, to); err != nil {
+		t.Fatal(err)
+	}
+	if raw, err := os.ReadFile(to); err != nil || string(raw) != "1\n" {
+		t.Fatalf("moved file = %q, %v, want its content", raw, err)
+	}
+	var pathErr *fs.PathError
+	if err := Rename(from, to); !errors.Is(err, fs.ErrNotExist) || !errors.As(err, &pathErr) || pathErr.Op != "rename" || pathErr.Path != from {
+		t.Fatalf("Rename of an absent file = %v, want a rename error naming %s", err, from)
+	}
+}

@@ -16,6 +16,7 @@ const (
 	EventResolve   = "resolve"
 	EventStop      = "stop"
 	EventEffect    = "effect"
+	EventPurge     = "purge"
 )
 
 const (
@@ -112,6 +113,10 @@ func (e InterruptEntry) at(clock string, nodeNS int64) InterruptEntry {
 
 func EffectEntry(commandID, device, outcome, clock string, nodeNS int64) InterruptEntry {
 	return newEntry(EventEffect, "command_id", commandID, "device", device, "outcome", outcome).at(clock, nodeNS)
+}
+
+func PurgeEntry(commandID, device, reason, clock string, nodeNS int64) InterruptEntry {
+	return newEntry(EventPurge, "command_id", commandID, "device", device, "reason", reason).at(clock, nodeNS)
 }
 
 func ChangesInterrupts(entries []InterruptEntry) bool {

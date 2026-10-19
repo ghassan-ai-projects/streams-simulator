@@ -377,7 +377,10 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   (`node-control-v0.1`: `{"op": "hold" | "release" | "approve_mode" | "approve" | "deny" | "estop" | "state", "scope":
   {"kind": "all" | "board" | "device", "id"}, "enabled", "command_id"}`), one answer per line (`{"result": "applied" | "refused",
   "reason"?, "op", "command_id"?, "stopped"?, "skipped"?, "state": {"holds", "approve", "pending", "devices"}}`); a request the
-  node cannot take within 10 s is answered `refused` with the reason `node_busy`. Controls are applied at a barrier (a node of
+  node cannot take within 10 s is answered `refused` with the reason `node_busy`. `approve` and `deny` may carry the
+  `content_digest` of the waiting command (shown in the state's `pending` entry with its `args`) and are refused `unknown_command`
+  when it differs; a command id that is already waiting is refused `duplicate`; an emergency stop lists the devices it could not
+  order in `unreachable`. A control line is at most 4096 bytes and a connection idle for 60 s is closed. Controls are applied at a barrier (a node of
   the world) or on a 250 ms tick (a relay), never in between. The run then holds `interrupts.jsonl` ([the interrupt
   log](artifacts.md#the-interrupt-log)). Without the flag nothing changes.
 - Every device born to the host is journalled with its origin (observer `origin` records: instance, device, board,
@@ -439,7 +442,11 @@ a negative value is refused) or, failing that, `span_fraction` times the span of
 summary, the commands with their status, per device and metric the tolerance, a summary, the reasons for readings not compared
 and the series of the twin's predictions (at most 2000 points, truncation explicit), and each named divergence with its
 interval, its worst point and the commands in force there. The report is a pure function of the run folder, the domain, the
-kind files and the options, and exits 0 whatever the verdict. It measures the twin, not a consumer.
+kind files and the options, and exits 0 whatever the verdict. It measures the twin, not a consumer. A safe stop the node itself
+ordered on an operator's emergency stop is applied to the twin like a host command and listed with `origin: node`; when the
+board never answered it, or the twin cannot apply it, the verdict is `cannot_judge` (`node_stop_unconfirmed`,
+`node_stop_not_applied`) rather than a divergence. The interrupt log is replayed before it is used; `run.evidence_bound`
+says whether a `run.json` covers the files.
 
 ### `run`
 

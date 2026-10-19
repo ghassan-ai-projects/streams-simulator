@@ -20,6 +20,7 @@ const (
 	maxPendingApprovals = 64
 	maxWaitingRepeats   = 8
 	maxInterruptDevices = 4096
+	maxLoggedArgsBytes  = 2048
 )
 
 type Scope struct {
@@ -52,12 +53,24 @@ func (s Scope) covers(d InterruptDevice) bool {
 	return s.Kind == ScopeDevice && d.Device == s.ID
 }
 
+func (s Scope) containsScope(inner Scope, devices []InterruptDevice) bool {
+	if s.Kind == ScopeAll {
+		return true
+	}
+	if inner.Kind == ScopeAll {
+		return false
+	}
+	return slices.ContainsFunc(devices, func(d InterruptDevice) bool { return inner.covers(d) }) &&
+		!slices.ContainsFunc(devices, func(d InterruptDevice) bool { return inner.covers(d) && !s.covers(d) })
+}
+
 type InterruptDevice struct {
 	Device, Board, Clock, SafeStop string
+	Unreachable                    bool
 }
 
 func (d InterruptDevice) Fields() map[string]any {
-	return map[string]any{"device": d.Device, "board": d.Board, "clock": d.Clock, "safe_stop": d.SafeStop}
+	return map[string]any{"device": d.Device, "board": d.Board, "clock": d.Clock, "safe_stop": d.SafeStop, "unreachable": d.Unreachable}
 }
 
 func inventoryOf(entry InterruptEntry) []InterruptDevice {
@@ -66,7 +79,7 @@ func inventoryOf(entry InterruptEntry) []InterruptDevice {
 	for _, item := range listed[:min(len(listed), maxInterruptDevices)] {
 		fields, _ := item.(map[string]any)
 		devices = append(devices, InterruptDevice{Device: text(fields, "device"), Board: text(fields, "board"),
-			Clock: text(fields, "clock"), SafeStop: text(fields, "safe_stop")})
+			Clock: text(fields, "clock"), SafeStop: text(fields, "safe_stop"), Unreachable: fields["unreachable"] == true})
 	}
 	slices.SortFunc(devices, func(a, b InterruptDevice) int { return cmp.Compare(a.Device, b.Device) })
 	return devices
@@ -76,6 +89,8 @@ type pendingApproval struct {
 	id, key, content, device, name, clock string
 	deadlineNS, queuedNS                  int64
 	waiting                               []string
+	args                                  map[string]any
+	truncated                             bool
 }
 
 type Interrupts struct {

@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -103,5 +104,33 @@ func TestAControlSocketIsReadyOnlyWhileTheNodeListens(t *testing.T) {
 	}
 	if ControlReady(filepath.Dir(path)) {
 		t.Fatal("a directory is not a socket")
+	}
+}
+
+func TestAControlSocketNeverGetsAPathTooLongForAUnixSocketAndFallsBackToAShortBase(t *testing.T) {
+	t.Parallel()
+	long := filepath.Join(t.TempDir(), strings.Repeat("d", 100))
+	if err := os.MkdirAll(long, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	short := filepath.Dir(testsupport.SocketPath(t))
+	path, remove, err := makeControlSocket(long, short)
+	if err != nil || len(path) > maxSocketPath || !strings.HasPrefix(path, short) {
+		t.Fatalf("makeControlSocket = %q, %v, want a path of at most %d bytes under the short base", path, err, maxSocketPath)
+	}
+	remove()
+	if left, readErr := os.ReadDir(long); readErr != nil || len(left) != 0 {
+		t.Fatalf("the long base holds %v (%v), want the directory made there removed again", left, readErr)
+	}
+}
+
+func TestAControlSocketWithNoShortEnoughBaseIsRefusedSoTheSessionStartsWithoutControls(t *testing.T) {
+	t.Parallel()
+	long := filepath.Join(t.TempDir(), strings.Repeat("d", 100))
+	if err := os.MkdirAll(long, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := makeControlSocket(long); !errors.Is(err, ErrControlPathTooLong) {
+		t.Fatalf("makeControlSocket = %v, want ErrControlPathTooLong", err)
 	}
 }

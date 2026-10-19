@@ -19,14 +19,40 @@ const (
 	controlSocket = "node.sock"
 )
 
-var ErrControlSilent = errors.New("canvasbridge: the node did not answer its control in time")
+const maxSocketPath = 103
+
+var (
+	ErrControlSilent      = errors.New("canvasbridge: the node did not answer its control in time")
+	ErrControlPathTooLong = errors.New("canvasbridge: no private directory is short enough for a unix socket path")
+)
 
 func NewControlSocket() (string, func(), error) {
-	dir, err := os.MkdirTemp("", controlFolder)
+	return makeControlSocket(os.TempDir(), "/tmp")
+}
+
+func makeControlSocket(bases ...string) (string, func(), error) {
+	var failed error
+	for _, base := range bases {
+		path, remove, err := controlSocketIn(base)
+		if err == nil {
+			return path, remove, nil
+		}
+		failed = errors.Join(failed, err)
+	}
+	return "", nil, failed
+}
+
+func controlSocketIn(base string) (string, func(), error) {
+	dir, err := os.MkdirTemp(base, controlFolder)
 	if err != nil {
 		return "", nil, fmt.Errorf("canvasbridge: a private directory for the control socket: %w", err)
 	}
-	return dir + string(os.PathSeparator) + controlSocket, func() { _ = os.RemoveAll(dir) }, nil
+	path := dir + string(os.PathSeparator) + controlSocket
+	if len(path) > maxSocketPath {
+		_ = os.RemoveAll(dir)
+		return "", nil, fmt.Errorf("%w: %d bytes under %s, at most %d", ErrControlPathTooLong, len(path), base, maxSocketPath)
+	}
+	return path, func() { _ = os.RemoveAll(dir) }, nil
 }
 
 func ControlReady(path string) bool {

@@ -26,9 +26,16 @@ func (m *Interrupts) pendingList() []any {
 	list := []any{}
 	for _, p := range m.pending {
 		list = append(list, map[string]any{"command_id": p.id, "device": p.device, "command": p.name, "deadline_ns": p.deadlineNS,
-			"queued_at_ns": p.queuedNS, "clock": p.clock})
+			"queued_at_ns": p.queuedNS, "clock": p.clock, "content_digest": p.content, "args": argsOf(p.args), "args_truncated": p.truncated})
 	}
 	return list
+}
+
+func argsOf(args map[string]any) map[string]any {
+	if args == nil {
+		return map[string]any{}
+	}
+	return args
 }
 
 func (m *Interrupts) affected() []any {

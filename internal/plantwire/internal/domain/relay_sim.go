@@ -26,6 +26,7 @@ func (r *Relay) simRecord(m *Moves, in Inbound) {
 		r.simBirth(in)
 	case in.Type == "NDEATH":
 		r.simEnded(m)
+		r.forgetBoots(r.sim.devices)
 	case !r.host.shaken || !r.host.birthed || (in.Device != "" && !r.sim.devices[in.Device]):
 		r.stats.Dropped++
 	default:
@@ -87,9 +88,10 @@ func (r *Relay) trackSim(in Inbound, seq uint64) {
 	switch in.Type {
 	case "DBIRTH":
 		r.sim.born[in.Device] = in.BootID
-		r.noteKind(in)
+		r.noteStopBoot(in)
 	case "DDEATH":
 		delete(r.sim.born, in.Device)
+		r.noteStopBoot(in)
 	case "NSYNC":
 		r.host.simSyncs.add(seq)
 		r.noteWorldTime(in)

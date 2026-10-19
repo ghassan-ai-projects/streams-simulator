@@ -131,15 +131,26 @@ func writeFieldTrace(t *testing.T, dir string, records []map[string]any) string 
 	if err != nil {
 		t.Fatal(err)
 	}
+	return writeEvidence(t, trace, records)
+}
+
+type evidenceLog interface {
+	Add(map[string]any) error
+	Close() error
+	Digest() string
+}
+
+func writeEvidence(t *testing.T, log evidenceLog, records []map[string]any) string {
+	t.Helper()
 	for _, record := range records {
-		if err := trace.Add(record); err != nil {
+		if err := log.Add(record); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := trace.Close(); err != nil {
+	if err := log.Close(); err != nil {
 		t.Fatal(err)
 	}
-	return trace.Digest()
+	return log.Digest()
 }
 
 func writeHostJournal(t *testing.T, dir string, host []map[string]any) {
@@ -156,25 +167,18 @@ func writeHostJournal(t *testing.T, dir string, host []map[string]any) {
 	}
 }
 
-func writeInterrupts(t *testing.T, dir string, records []map[string]any) {
+func writeInterrupts(t *testing.T, dir string, records []map[string]any) string {
 	t.Helper()
 	log, err := run.NewInterruptLog(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, record := range records {
-		if err := log.Add(record); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := log.Close(); err != nil {
-		t.Fatal(err)
-	}
+	return writeEvidence(t, log, records)
 }
 
 // twinArtifactFolder adds a run.json that records the field trace's digest, as a
 // finished run does; its journal.jsonl is the observer journal of that run.
-func twinArtifactFolder(t *testing.T, field []map[string]any, recordTrace bool) string {
+func twinArtifactFolder(t *testing.T, field []map[string]any, recordTrace bool, interrupts ...map[string]any) string {
 	t.Helper()
 	dir := t.TempDir()
 	spec, err := simdomain.Load(testsupport.Domain("aquaculture-pond"))
@@ -193,6 +197,9 @@ func twinArtifactFolder(t *testing.T, field []map[string]any, recordTrace bool) 
 	digest := writeFieldTrace(t, dir, field)
 	if recordTrace {
 		r.SetFieldTrace(digest)
+	}
+	if len(interrupts) > 0 {
+		r.SetInterruptLog(writeInterrupts(t, dir, interrupts))
 	}
 	if _, err := r.End(dir); err != nil {
 		t.Fatal(err)

@@ -55,7 +55,7 @@ func dcmdOf(id, device string) Inbound {
 }
 
 func judge(g *InterruptGate, id, device string) GateOutcome {
-	return g.Judge(dcmdOf(id, device), false, ClockWorld, nowNS)
+	return g.Judge(dcmdOf(id, device), ClockWorld, nowNS)
 }
 
 func apply(t *testing.T, g *InterruptGate, line string) GateOutcome {
@@ -217,12 +217,19 @@ func TestOnlyReleasingTheScopeClearsALatchAndAnotherHoldDoesNot(t *testing.T) {
 	}
 }
 
-func TestASafeStopIsNeverHeldNorQueued(t *testing.T) {
+func haltOf(id string, args map[string]any) Inbound {
+	in := dcmdOf(id, "pump-1")
+	in.Command, in.Args = "halt", args
+	in.IdempotencyKey = CommandOf(in.Message).Content()
+	return in
+}
+
+func TestTheDeclaredSafeStopWithoutArgumentsIsNeverHeldNorQueued(t *testing.T) {
 	t.Parallel()
 	g := plantGate()
 	apply(t, g, scopeLine(OpHold, ScopeAll, ""))
 	apply(t, g, approveModeLine(ScopeAll, "", true))
-	outcome := g.Judge(dcmdOf("c-stop", "pump-1"), true, ClockWorld, nowNS)
+	outcome := g.Judge(haltOf("c-stop", map[string]any{}), ClockWorld, nowNS)
 	if !outcome.Proceed || len(outcome.Refused)+len(outcome.Queued) != 0 {
 		t.Fatalf("outcome = %+v, want the safe stop to pass a hold and an approval mode", outcome)
 	}

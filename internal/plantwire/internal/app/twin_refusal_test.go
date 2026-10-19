@@ -260,7 +260,7 @@ func TestAJournalThatDiffersFromItsArtifactIsRefused(t *testing.T) {
 func TestAnInterruptLogTheArtifactDoesNotRecordIsRefused(t *testing.T) {
 	t.Parallel()
 	dir := twinArtifactFolder(t, twinBirths(), true)
-	writeInterrupts(t, dir, []map[string]any{{"event": domain.EventVerdict, "command_id": "c-1", "verdict": domain.VerdictPass}})
+	writeInterrupts(t, dir, heldFanLog(t, "c-1"))
 	if _, err := TwinReport(t.Context(), twinOptions(t, dir)); !errors.Is(err, run.ErrInterruptLogUncovered) {
 		t.Fatalf("TwinReport = %v, want run.ErrInterruptLogUncovered", err)
 	}

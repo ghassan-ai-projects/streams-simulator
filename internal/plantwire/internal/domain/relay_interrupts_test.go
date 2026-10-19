@@ -173,11 +173,15 @@ func TestAHostsSafeStopIsNeverHeldByTheRelay(t *testing.T) {
 	g := interruptRig(t)
 	control(t, g.relay, scopeLine(OpHold, ScopeAll, ""))
 	control(t, g.relay, approveModeLine(ScopeAll, "", true))
-	moves := g.hostEdited(commandFor("P1", "c-stop"), func(record map[string]any) { record["command"] = "halt" })
+	moves := g.hostEdited(commandFor("P1", "c-stop"), func(record map[string]any) { record["command"], record["args"] = "halt", map[string]any{} })
 	if !slices.Equal(typesOf(moves.Down), []string{"DCMD"}) || len(moves.Up) != 0 {
 		t.Fatalf("down %v up %v, want the host's own safe stop carried through a hold", typesOf(moves.Down), typesOf(moves.Up))
 	}
 	receiptOf(t, g.hostSends(commandFor("P1", "c-start")).Up, "refused", ReasonLocalControl)
+	withArgs := g.hostEdited(commandFor("P1", "c-run"), func(record map[string]any) {
+		record["command"], record["args"] = "halt", map[string]any{"mode": "run"}
+	})
+	receiptOf(t, withArgs.Up, "refused", ReasonLocalControl)
 }
 
 func TestWhenTheHostIsLostWhatWaitsForApprovalIsRefusedAsTheSessionEnding(t *testing.T) {

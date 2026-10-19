@@ -51,11 +51,28 @@ func (g *InterruptGate) SetInventory(devices []InterruptDevice, clock string, no
 	return g.run(newEntry(EventInventory, "devices", listed).at(clock, nodeNS), nil)
 }
 
-func (g *InterruptGate) Judge(in Inbound, safeStop bool, clock string, nodeNS int64) GateOutcome {
+func (g *InterruptGate) Judge(in Inbound, clock string, nodeNS int64) GateOutcome {
 	c := CommandOf(in.Message)
+	args, truncated := boundedArgs(c.Args)
 	input := newEntry(EventCommand, "command_id", c.ID, "key", c.Key, "content", c.Content(), "device", c.Device, "name", c.Name,
-		"deadline_ns", c.DeadlineNS, "safe_stop", safeStop).at(clock, nodeNS)
+		"deadline_ns", c.DeadlineNS, "args", args, "args_truncated", truncated).at(clock, nodeNS)
 	return g.run(input, &in)
+}
+
+func boundedArgs(args map[string]any) (map[string]any, bool) {
+	if len(args) == 0 {
+		return map[string]any{}, false
+	}
+	raw, err := canonical.Marshal(args)
+	if err != nil || len(raw) > maxLoggedArgsBytes {
+		return map[string]any{}, true
+	}
+	return args, false
+}
+
+func (g *InterruptGate) Covers(request InterruptEntry, device string) bool {
+	restricts := request.Op() == OpHold || request.Op() == OpEStop || (request.Op() == OpApproveMode && request["enabled"] == true)
+	return restricts && scopeOf(request["scope"]).covers(g.machine.deviceNamed(device))
 }
 
 func (g *InterruptGate) Control(request InterruptEntry, clock string, nodeNS int64) GateOutcome {

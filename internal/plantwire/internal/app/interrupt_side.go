@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -13,7 +14,7 @@ type interruptSide struct {
 }
 
 func (s *Session) judged(in domain.Inbound, c domain.Command) error {
-	outcome := s.ints.gate.Judge(in, s.safeStop(c), domain.ClockWorld, s.now())
+	outcome := s.ints.gate.Judge(in, domain.ClockWorld, s.now())
 	if err := s.applyGate(outcome); err != nil || !outcome.Proceed {
 		return err
 	}
@@ -36,16 +37,39 @@ func (s *Session) interruptsAtBarrier() error {
 func (s *Session) control(call ControlCall) error {
 	outcome := s.ints.gate.Control(call.Entry, domain.ClockWorld, s.now())
 	err := s.applyGate(outcome)
+	if outcome.Reply["result"] == domain.ResultApplied {
+		err = errors.Join(err, s.purgeQueued(call.Entry))
+	}
 	call.Reply <- domain.ControlReply(outcome.Reply)
 	return err
 }
 
+func (s *Session) purgeQueued(request domain.InterruptEntry) error {
+	var failed error
+	kept := s.queued[:0:0]
+	for _, c := range s.queued {
+		if s.ints.gate.Covers(request, c.Device) {
+			failed = errors.Join(failed, s.refuseQueued(c))
+		} else {
+			kept = append(kept, c)
+		}
+	}
+	s.queued = kept
+	return failed
+}
+
+func (s *Session) refuseQueued(c domain.Command) error {
+	var failed error
+	for _, id := range s.ledger.Release(c) {
+		s.recordInterrupts([]domain.InterruptEntry{domain.PurgeEntry(id, c.Device, domain.ReasonLocalControl, domain.ClockWorld, s.now())})
+		failed = errors.Join(failed, s.send(domain.Receipt(id, "refused", domain.ReasonLocalControl, "none")))
+	}
+	return failed
+}
+
 func (s *Session) applyGate(o domain.GateOutcome) error {
 	s.recordInterrupts(o.Entries)
-	if err := s.answerGate(o); err != nil {
-		return err
-	}
-	return s.performStops(o.Stops)
+	return errors.Join(s.performStops(o.Stops), s.answerGate(o))
 }
 
 func (s *Session) answerGate(o domain.GateOutcome) error {

@@ -39,7 +39,7 @@ func (r *Relay) loseHost(m *Moves) {
 	m.CloseHost = true
 	r.lastUp = saturatingInt64(r.host.out.LastSeq())
 	last := r.host.state
-	r.flushApprovals(m)
+	r.leaveHost(m)
 	r.host = hostSide{}
 	m.Notes = append(m.Notes, connectionNote("host", "offline"))
 	r.forgetGatewayBirths()

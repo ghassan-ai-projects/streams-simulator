@@ -175,6 +175,9 @@ func (s *Session) journalWire(direction string, record map[string]any) {
 }
 
 func (s *Session) close() error {
+	if s.ints != nil {
+		s.recordInterrupts(s.ints.gate.Flush(domain.ClockWorld, s.now()).Entries)
+	}
 	return s.send(domain.NodeDeath(s.bdSeq, "shutdown"))
 }
 

@@ -7,7 +7,7 @@
   "additionalProperties": false,
   "required": ["event", "node_ns", "clock"],
   "properties": {
-    "event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect"]},
+    "event": {"enum": ["inventory", "control", "command", "clock", "flush", "reply", "verdict", "resolve", "stop", "effect", "purge"]},
     "node_ns": {"type": "integer", "minimum": 0},
     "clock": {"enum": ["world", "wall"]},
     "devices": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/inventory_device"}},
@@ -21,7 +21,10 @@
     "name": {"$ref": "#/$defs/wire_id"},
     "command": {"$ref": "#/$defs/wire_id"},
     "deadline_ns": {"type": "integer", "minimum": 0},
-    "safe_stop": {"type": "boolean"},
+    "args": {"type": "object"},
+    "args_truncated": {"type": "boolean"},
+    "content_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "unreachable": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}},
     "result": {"enum": ["applied", "refused"]},
     "verdict": {"enum": ["pass", "refuse", "queue"]},
     "resolution": {"enum": ["forward", "refuse"]},
@@ -35,12 +38,13 @@
   "allOf": [
     {"if": {"properties": {"event": {"const": "inventory"}}}, "then": {"required": ["devices"]}},
     {"if": {"properties": {"event": {"const": "control"}}}, "then": {"required": ["op"]}},
-    {"if": {"properties": {"event": {"const": "command"}}}, "then": {"required": ["command_id", "key", "content", "device", "name", "deadline_ns", "safe_stop"]}},
+    {"if": {"properties": {"event": {"const": "command"}}}, "then": {"required": ["command_id", "key", "content", "device", "name", "deadline_ns", "args", "args_truncated"]}},
     {"if": {"properties": {"event": {"const": "reply"}}}, "then": {"required": ["op", "result", "state"]}},
     {"if": {"properties": {"event": {"const": "verdict"}}}, "then": {"required": ["command_id", "verdict"]}},
     {"if": {"properties": {"event": {"const": "resolve"}}}, "then": {"required": ["command_id", "resolution", "waiting"]}},
     {"if": {"properties": {"event": {"const": "stop"}}}, "then": {"required": ["device", "command"]}},
-    {"if": {"properties": {"event": {"const": "effect"}}}, "then": {"required": ["command_id", "device", "outcome"]}}
+    {"if": {"properties": {"event": {"const": "effect"}}}, "then": {"required": ["command_id", "device", "outcome"]}},
+    {"if": {"properties": {"event": {"const": "purge"}}}, "then": {"required": ["command_id", "device", "reason"]}}
   ],
   "$defs": {
     "wire_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
@@ -53,8 +57,9 @@
     "inventory_device": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["device", "board", "clock", "safe_stop"],
+      "required": ["device", "board", "clock", "safe_stop", "unreachable"],
       "properties": {
+        "unreachable": {"type": "boolean"},
         "device": {"$ref": "#/$defs/wire_id"}, "board": {"type": "string", "maxLength": 128},
         "clock": {"enum": ["world", "wall"]}, "safe_stop": {"type": "string", "maxLength": 128}
       }

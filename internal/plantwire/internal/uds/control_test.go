@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -33,7 +34,7 @@ func (h *echoHandler) seen() []string {
 	return append([]string(nil), h.lines...)
 }
 
-func listenControl(t *testing.T) (string, *ControlServer, *echoHandler) {
+func openControl(t *testing.T) (string, *ControlServer, *echoHandler) {
 	t.Helper()
 	path, handler := testsupport.SocketPath(t), &echoHandler{}
 	server, err := ListenControl(t.Context(), path, handler)
@@ -46,7 +47,7 @@ func listenControl(t *testing.T) (string, *ControlServer, *echoHandler) {
 
 func TestTheControlSocketIsOwnerOnlyAnswersEachRequestLineWithOneLineAndIsRemovedOnClose(t *testing.T) {
 	t.Parallel()
-	path, server, handler := listenControl(t)
+	path, server, handler := openControl(t)
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
 		t.Fatalf("socket = %v, %v, want mode 0600", info, err)
 	}
@@ -81,7 +82,7 @@ func requireClosed(t *testing.T, err error, what string) {
 
 func TestTheControlSocketRefusesAPathThatIsInUse(t *testing.T) {
 	t.Parallel()
-	path, _, handler := listenControl(t)
+	path, _, handler := openControl(t)
 	if _, err := ListenControl(t.Context(), path, handler); !errors.Is(err, ErrSocketInUse) {
 		t.Fatalf("ListenControl on a live socket = %v, want ErrSocketInUse", err)
 	}
@@ -89,7 +90,7 @@ func TestTheControlSocketRefusesAPathThatIsInUse(t *testing.T) {
 
 func TestTheControlSocketTakesNoMoreConnectionsThanItsBoundAndAnOverlongLineEndsOnlyItsOwn(t *testing.T) {
 	t.Parallel()
-	path, _, _ := listenControl(t)
+	path, _, _ := openControl(t)
 	held := make([]net.Conn, 0, maxControlConns)
 	for range maxControlConns {
 		conn := dialHost(t, path)
@@ -115,5 +116,35 @@ func TestTheControlSocketTakesNoMoreConnectionsThanItsBoundAndAnOverlongLineEnds
 	}
 	if line, err := bufio.NewReader(held[1]).ReadString('\n'); err != nil || line != `{"echo":"still"}`+"\n" {
 		t.Fatalf("another connection = %q, %v, want it unaffected", line, err)
+	}
+}
+
+func TestTheControlSocketTakesALineOfExactlyTheBridgesLongestRequest(t *testing.T) {
+	t.Parallel()
+	path, _, _ := openControl(t)
+	conn := dialHost(t, path)
+	line := `{"op":"state"}` + strings.Repeat(" ", maxControlLine-len(`{"op":"state"}`))
+	if _, err := conn.Write([]byte(line + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	reply, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil || reply != `{"echo":"`+line+`"}`+"\n" {
+		t.Fatalf("reply to a line of %d bytes = %q, %v, want it handled: the bridge sends up to that", len(line), reply, err)
+	}
+}
+
+func TestAControlConnectionThatSaysNothingIsClosedAfterItsIdleTime(t *testing.T) {
+	t.Parallel()
+	path, handler := testsupport.SocketPath(t), &echoHandler{}
+	server, err := listenControl(t.Context(), path, handler, 50*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Close() })
+	conn := dialHost(t, path)
+	_, err = bufio.NewReader(conn).ReadString('\n')
+	requireClosed(t, err, "an idle connection")
+	if len(handler.seen()) != 0 {
+		t.Fatalf("handled %v, want nothing: the connection never spoke", handler.seen())
 	}
 }

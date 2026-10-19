@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -75,29 +74,12 @@ func TestAStopForADeviceThatWasNeverBornIsRecordedAsNotBorn(t *testing.T) {
 
 func TestAStopForASimulatedDeviceAfterTheSimulatorIsLostIsRecordedAsLost(t *testing.T) {
 	t.Parallel()
-	r := &Relay{sim: &simSide{devices: map[string]bool{"S1": true}, born: map[string]string{"S1": "sim-boot"}, lost: true}}
-	r.EnableInterrupts()
+	g := interruptMixedRig(t)
+	g.relay.SimLost()
 	var moves Moves
-	r.issueStop(&moves, StopOrder{Device: "S1", Command: "halt"})
+	g.relay.issueStop(&moves, StopOrder{Device: "S1", Command: "halt"})
 	if len(moves.Interrupt) != 1 || moves.Interrupt[0]["outcome"] != stopSimulatorGone || len(moves.ToSim) != 0 {
 		t.Fatalf("moves = %+v, want one effect that the simulator is gone and nothing sent to it", moves)
-	}
-}
-
-func TestTheIssuedStopTableStartsAgainWhenItIsFull(t *testing.T) {
-	t.Parallel()
-	r := &Relay{}
-	r.EnableInterrupts()
-	for i := range maxIssuedStops {
-		r.ints.issued[fmt.Sprintf("filled-%d", i)] = "d"
-	}
-	before := len(r.ints.issued)
-	record := r.stopRecord(StopOrder{Device: "P1", Command: "halt"}, OriginGateway, "boot-1")
-	if before != maxIssuedStops || len(r.ints.issued) != 1 || r.ints.orders != 1 {
-		t.Fatalf("issued = %d (before %d) orders = %d, want the full table cleared to the one new stop", len(r.ints.issued), before, r.ints.orders)
-	}
-	if record.Fields["command_id"] != stopIDPrefix+"1" || r.ints.issued[stopIDPrefix+"1"] != "P1" {
-		t.Fatalf("record = %v, want the first stop id issued for P1", record.Fields["command_id"])
 	}
 }
 

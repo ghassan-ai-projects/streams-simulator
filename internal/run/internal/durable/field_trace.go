@@ -48,6 +48,13 @@ func (f *FieldTraceFile) Close() error {
 	return nil
 }
 
+func RenameEvidenceLog(dir, from, to string) error {
+	if err := kernel.Rename(filepath.Join(dir, from), filepath.Join(dir, to)); err != nil {
+		return fmt.Errorf("run: set aside %s: %w", from, err)
+	}
+	return nil
+}
+
 func ReadEvidenceLog(dir, file, noun string, limit int64) (raw []byte, present bool, err error) {
 	raw, err = kernel.ReadRegular(filepath.Join(dir, file), limit)
 	if errors.Is(err, fs.ErrNotExist) {

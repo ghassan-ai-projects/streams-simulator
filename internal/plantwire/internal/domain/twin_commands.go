@@ -20,9 +20,11 @@ const (
 	NotAppliedBoardFailed         = "board_reported_failure"
 )
 
+const OriginNode = "node"
+
 type HostCommand struct {
-	ID, Device, Name string
-	Args             map[string]any
+	ID, Device, Name, Origin string
+	Args                     map[string]any
 }
 
 type TwinCommand struct {
@@ -30,6 +32,7 @@ type TwinCommand struct {
 	Device string         `json:"device"`
 	Name   string         `json:"command"`
 	AtNS   int64          `json:"at_ns,omitempty"`
+	Origin string         `json:"origin,omitempty"`
 	Status string         `json:"status"`
 	Reason string         `json:"reason,omitempty"`
 	Detail string         `json:"detail,omitempty"`
@@ -92,6 +95,27 @@ func hostWireRecord(line []byte) (map[string]any, error) {
 	return record, nil
 }
 
+func NodeStops(log []map[string]any) []HostCommand {
+	var found []HostCommand
+	declared, seen := map[string]string{}, map[string]bool{}
+	for _, record := range log {
+		found = appendNodeStop(found, InterruptEntry(record), declared, seen)
+	}
+	return found
+}
+
+func appendNodeStop(found []HostCommand, entry InterruptEntry, declared map[string]string, seen map[string]bool) []HostCommand {
+	device, id := entry.Text("device"), entry.Text("command_id")
+	switch {
+	case entry.Event() == EventStop:
+		declared[device] = entry.Text("command")
+	case entry.Event() == EventEffect && id != "none" && !seen[id]:
+		seen[id] = true
+		return append(found, HostCommand{ID: id, Device: device, Name: declared[device], Origin: OriginNode, Args: map[string]any{}})
+	}
+	return found
+}
+
 func InterruptBlocks(log []map[string]any) map[string]InterruptBlock {
 	blocks := map[string]InterruptBlock{}
 	for _, record := range log {
@@ -101,6 +125,8 @@ func InterruptBlocks(log []map[string]any) map[string]InterruptBlock {
 			blockVerdict(blocks, entry)
 		case EventResolve:
 			blockResolution(blocks, entry)
+		case EventPurge:
+			blocks[entry.Text("command_id")] = InterruptBlock{Reason: entry.Text("reason")}
 		}
 	}
 	return blocks
@@ -142,7 +168,7 @@ func ClassifyCommands(commands []HostCommand, board BoardTrace, blocks map[strin
 func classifyCommand(command HostCommand, board BoardTrace, blocks map[string]InterruptBlock) TwinCommand {
 	receipt := board.Receipts[command.ID]
 	block, blocked := blocks[command.ID]
-	view := TwinCommand{ID: command.ID, Device: command.Device, Name: command.Name, Args: command.Args, Status: CommandNotApplied}
+	view := TwinCommand{ID: command.ID, Device: command.Device, Name: command.Name, Args: command.Args, Origin: command.Origin, Status: CommandNotApplied}
 	view.AtNS = max(receipt.AtNS, board.StartNS)
 	view.Reason, view.Detail = notAppliedReason(block, blocked, receipt)
 	if view.Reason == "" {

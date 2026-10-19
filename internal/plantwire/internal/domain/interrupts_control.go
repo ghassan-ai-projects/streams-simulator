@@ -43,7 +43,7 @@ func (m *Interrupts) scopeFault(in InterruptEntry, scope Scope) string {
 		return ""
 	case !m.known(scope):
 		return unknownReason(scope)
-	case m.addsScope(op, scope) && len(m.holds)+len(m.approves) >= maxInterruptScopes:
+	case op != OpEStop && m.addsScope(op, scope) && len(m.holds)+len(m.approves) >= maxInterruptScopes:
 		return ReasonTooManyScopes
 	}
 	return ""
@@ -81,23 +81,52 @@ func (m *Interrupts) hold(in InterruptEntry, scope Scope, latch bool) []Interrup
 	if !latch {
 		return append(out, m.reply(in, ResultApplied, ""))
 	}
-	stops, stopped, skipped := m.stops(in, scope)
-	return append(append(stops, out...), m.reply(in, ResultApplied, "", "stopped", anys(stopped), "skipped", anys(skipped)))
+	m.evictBeyondCap(scope)
+	plan := m.stops(in, scope)
+	return append(append(plan.entries, out...), m.reply(in, ResultApplied, "", "stopped", anys(plan.stopped), "skipped", anys(plan.skipped),
+		"unreachable", anys(plan.unreachable)))
 }
 
-func (m *Interrupts) stops(in InterruptEntry, scope Scope) (entries []InterruptEntry, stopped, skipped []string) {
+type stopPlan struct {
+	entries                       []InterruptEntry
+	stopped, skipped, unreachable []string
+}
+
+func (m *Interrupts) stops(in InterruptEntry, scope Scope) stopPlan {
+	var plan stopPlan
 	for _, d := range m.devices {
-		if !scope.covers(d) {
-			continue
+		if scope.covers(d) {
+			plan.take(d, in)
 		}
-		if d.SafeStop == "" {
-			skipped = append(skipped, d.Device)
-			continue
-		}
-		stopped = append(stopped, d.Device)
-		entries = append(entries, newEntry(EventStop, "device", d.Device, "command", d.SafeStop).at(in.Text("clock"), in.Int("node_ns")))
 	}
-	return entries, stopped, skipped
+	return plan
+}
+
+func (p *stopPlan) take(d InterruptDevice, in InterruptEntry) {
+	switch {
+	case d.SafeStop == "":
+		p.skipped = append(p.skipped, d.Device)
+	case d.Unreachable:
+		p.unreachable = append(p.unreachable, d.Device)
+	default:
+		p.stopped = append(p.stopped, d.Device)
+		p.entries = append(p.entries, newEntry(EventStop, "device", d.Device, "command", d.SafeStop).at(in.Text("clock"), in.Int("node_ns")))
+	}
+}
+
+func (m *Interrupts) overCap() bool { return len(m.holds)+len(m.approves) > maxInterruptScopes }
+
+func (m *Interrupts) evictBeyondCap(latch Scope) {
+	for _, scope := range sortedScopes(m.approves) {
+		if m.overCap() && latch.containsScope(scope, m.devices) {
+			delete(m.approves, scope)
+		}
+	}
+	for _, scope := range sortedScopes(m.holds) {
+		if m.overCap() && scope != latch && !m.holds[scope] && latch.containsScope(scope, m.devices) {
+			delete(m.holds, scope)
+		}
+	}
 }
 
 func (m *Interrupts) clear(in InterruptEntry, scope Scope) []InterruptEntry {
@@ -116,12 +145,17 @@ func (m *Interrupts) approveMode(in InterruptEntry, scope Scope) []InterruptEntr
 
 func (m *Interrupts) decide(in InterruptEntry) []InterruptEntry {
 	index := m.pendingIndex(in.Text("command_id"))
-	if index < 0 {
+	if index < 0 || m.pendingContentDiffers(m.pending[index], in) {
 		return []InterruptEntry{m.reply(in, ResultRefused, ReasonUnknownCommand)}
 	}
 	p := m.pending[index]
 	m.pending = slices.Delete(m.pending, index, index+1)
 	return []InterruptEntry{m.resolution(in, p), m.reply(in, ResultApplied, "")}
+}
+
+func (m *Interrupts) pendingContentDiffers(p *pendingApproval, in InterruptEntry) bool {
+	digest := in.Text("content_digest")
+	return digest != "" && digest != p.content
 }
 
 func (m *Interrupts) resolution(in InterruptEntry, p *pendingApproval) InterruptEntry {

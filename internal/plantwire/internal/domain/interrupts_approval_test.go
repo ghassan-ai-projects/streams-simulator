@@ -51,7 +51,7 @@ func TestACommandAlreadyPastItsDeadlineIsRefusedAsExpiredWithoutWaiting(t *testi
 	t.Parallel()
 	g := plantGate()
 	apply(t, g, approveModeLine(ScopeAll, "", true))
-	outcome := g.Judge(dcmdOf("c-1", "pump-1"), false, ClockWorld, deadlineNS+1)
+	outcome := g.Judge(dcmdOf("c-1", "pump-1"), ClockWorld, deadlineNS+1)
 	if got := verdictFor(outcome); got != "refuse:expired" || len(g.View()["pending"].([]any)) != 0 {
 		t.Fatalf("verdict %s pending %v, want expired and nothing waiting", got, g.View()["pending"])
 	}
@@ -91,12 +91,12 @@ func TestARepeatOfAWaitingCommandWaitsToAndOtherContentUnderItsKeyIsADuplicate(t
 	apply(t, g, approveModeLine(ScopeAll, "", true))
 	judge(g, "c-1", "pump-1")
 	again := dcmdOf("c-2", "pump-1")
-	if got := verdictFor(g.Judge(again, false, ClockWorld, nowNS)); got != VerdictQueue {
+	if got := verdictFor(g.Judge(again, ClockWorld, nowNS)); got != VerdictQueue {
 		t.Fatalf("a repeat = %s, want it queued", got)
 	}
 	other := dcmdOf("c-3", "pump-2")
 	other.IdempotencyKey = again.IdempotencyKey
-	if got := verdictFor(g.Judge(other, false, ClockWorld, nowNS)); got != "refuse:duplicate" {
+	if got := verdictFor(g.Judge(other, ClockWorld, nowNS)); got != "refuse:duplicate" {
 		t.Fatalf("other content under the key = %s, want a duplicate", got)
 	}
 	approved := apply(t, g, `{"op":"approve","command_id":"c-1"}`)
@@ -113,14 +113,14 @@ func TestThePendingQueueAndTheRepeatsOfOneCommandAreBounded(t *testing.T) {
 		message := dcmdOf(fmt.Sprintf("c-%03d", i), "pump-1")
 		message.Args = map[string]any{"speed": i}
 		message.IdempotencyKey = CommandOf(message.Message).Content()
-		if got := verdictFor(g.Judge(message, false, ClockWorld, nowNS)); got != VerdictQueue {
+		if got := verdictFor(g.Judge(message, ClockWorld, nowNS)); got != VerdictQueue {
 			t.Fatalf("command %d = %s, want it queued", i, got)
 		}
 	}
 	full := dcmdOf("c-full", "pump-1")
 	full.Args = map[string]any{"speed": 99}
 	full.IdempotencyKey = CommandOf(full.Message).Content()
-	if got := verdictFor(g.Judge(full, false, ClockWorld, nowNS)); got != "refuse:not_ready" {
+	if got := verdictFor(g.Judge(full, ClockWorld, nowNS)); got != "refuse:not_ready" {
 		t.Fatalf("the command over the bound = %s, want not_ready", got)
 	}
 	first := dcmdOf("c-000", "pump-1")
@@ -128,12 +128,12 @@ func TestThePendingQueueAndTheRepeatsOfOneCommandAreBounded(t *testing.T) {
 	first.IdempotencyKey = CommandOf(first.Message).Content()
 	for i := range maxWaitingRepeats {
 		first.CommandID = fmt.Sprintf("r-%d", i)
-		if got := verdictFor(g.Judge(first, false, ClockWorld, nowNS)); got != VerdictQueue {
+		if got := verdictFor(g.Judge(first, ClockWorld, nowNS)); got != VerdictQueue {
 			t.Fatalf("repeat %d = %s, want it queued", i, got)
 		}
 	}
 	first.CommandID = "r-over"
-	if got := verdictFor(g.Judge(first, false, ClockWorld, nowNS)); got != "refuse:not_ready" {
+	if got := verdictFor(g.Judge(first, ClockWorld, nowNS)); got != "refuse:not_ready" {
 		t.Fatalf("the repeat over the bound = %s, want not_ready", got)
 	}
 }

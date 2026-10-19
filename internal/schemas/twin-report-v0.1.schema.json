@@ -9,7 +9,7 @@
   "properties": {
     "schema_version": {"const": "0.1"},
     "verdict": {"enum": ["agrees", "diverges", "cannot_judge"], "description": "diverges when any compared reading is beyond its tolerance; agrees when readings were compared and none diverged; cannot_judge when no reading could be compared."},
-    "reason": {"enum": ["no_commands_applied", "no_readings_compared"], "description": "Present only with cannot_judge: no command the board accepted was applied to the twin, or no reading could be compared."},
+    "reason": {"enum": ["no_commands_applied", "no_readings_compared", "node_stop_not_applied", "node_stop_unconfirmed"], "description": "Present only with cannot_judge: no command the board accepted was applied to the twin, no reading could be compared, a safe stop the node ordered could not be applied to the twin (node_stop_not_applied), or the board never confirmed a safe stop the node ordered, so whether it stopped is unknown (node_stop_unconfirmed). The two node_stop reasons take precedence over diverges: a twin and a board that disagree about a stop are not comparable."},
     "summary": {
       "type": "object",
       "additionalProperties": false,
@@ -31,9 +31,10 @@
     "run": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["field_trace_digest", "journal_digest"],
-      "description": "The evidence files the report was computed from, by digest. The field trace was checked against run.json when there is one.",
+      "required": ["field_trace_digest", "journal_digest", "evidence_bound"],
+      "description": "The evidence files the report was computed from, by digest. The field trace and the journal were checked against run.json when there is one; the interrupt log, when there is one, was checked against run.json and its rules replayed before it was used.",
       "properties": {
+        "evidence_bound": {"type": "boolean", "description": "True when run.json exists and records the digests the evidence was checked against. False when the folder holds no run.json (a hardware-only relay writes none): the files are then evidence of nothing but themselves and a later edit would not be noticed."},
         "field_trace_digest": {"$ref": "#/$defs/digest"},
         "journal_digest": {"$ref": "#/$defs/digest"},
         "interrupt_log_digest": {"$ref": "#/$defs/digest"}
@@ -71,7 +72,7 @@
     },
     "commands": {
       "type": "array",
-      "description": "Every command the host sent to a device of the board, in the order the host sent it, with whether it was applied to the twin. A command counts only when the gateway accepted it, it did not report failure and no interrupt refused or held it.",
+      "description": "Every command the host sent to a device of the board, in the order the host sent it, followed by the safe stops the node itself ordered (origin node), with whether each was applied to the twin. A command counts only when the gateway accepted it, it did not report failure and no interrupt refused or held it.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -80,6 +81,7 @@
           "command_id": {"$ref": "#/$defs/wire_id"},
           "device": {"$ref": "#/$defs/wire_id"},
           "command": {"$ref": "#/$defs/wire_id"},
+          "origin": {"enum": ["host", "node"], "description": "Who issued the command. Absent means host. node: a safe stop the node ordered itself on an operator's emergency stop (interrupt log), applied to the twin from the gateway's receipt so the twin and the board agree about the stop."},
           "at_ns": {"type": "integer", "description": "The latest board event time recorded before the gateway's receipt: the time the command took effect on the twin."},
           "status": {"enum": ["applied", "not_applied", "twin_refused"]},
           "reason": {"enum": ["interrupt_refused", "interrupt_unresolved", "never_forwarded", "refused_by_board", "not_accepted", "board_reported_failure"]},

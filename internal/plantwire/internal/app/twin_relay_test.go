@@ -147,6 +147,9 @@ func TestAReportOfARealMixedRunPassesItsDigestChecksAndListsOnlyTheBoardsCommand
 	if err != nil || report.Run.JournalDigest != art.JournalFileDigest || report.Run.FieldTraceDigest != art.FieldTraceDigest {
 		t.Fatalf("report evidence %+v (%v), artifact %s and %s, want the digests run.json recorded", report.Run, err, art.JournalFileDigest, art.FieldTraceDigest)
 	}
+	if !report.Run.EvidenceBound {
+		t.Fatalf("report evidence %+v, want it bound to the run.json whose digests it matched", report.Run)
+	}
 	if len(report.Commands) != 1 || report.Commands[0].ID != "hw-cmd" || report.Commands[0].Status != domain.CommandTwinRefused {
 		t.Fatalf("commands = %+v, want only the hardware board's hw-cmd, which the twin has no entity for", report.Commands)
 	}

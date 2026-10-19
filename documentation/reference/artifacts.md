@@ -47,7 +47,8 @@ stop ordered), plus the **effects** of the node's own stops, which are evidence 
 through the rules reproduces the decisions exactly; `replay`, `verify` and `report` compare the file with the digest like every
 other evidence file (`matches: false`, `reason: file_differs` or `file_missing`, `file: interrupts.jsonl`; `report` lists an
 `interrupt_log` check), and a session checks at its end that its own log replays and leaves the digest out of `run.json` if it
-does not. The same records are in the observer journal as `interrupt` session records, outside the stream digest. A run without a
+does not. The same records are in the observer journal as `interrupt` session records, outside the stream digest. A log that
+does not replay is renamed `interrupts.rejected.jsonl` and `plantwire connect` fails with it. A run without a
 control socket has neither the member nor the file. What the world did because of an approval or an emergency stop is in the
 command log like any command, so the world replays as before.
 

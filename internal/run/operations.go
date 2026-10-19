@@ -41,6 +41,10 @@ func ReadInterruptLog(dir string) ([]map[string]any, string, error) {
 	return layer.ReadInterruptLog(dir)
 }
 
+func RejectInterruptLog(dir string) error {
+	return layer.RejectInterruptLog(dir)
+}
+
 func (r *Run) SetInterruptLog(digest string) {
 	r.run.SetInterruptLog(digest)
 }

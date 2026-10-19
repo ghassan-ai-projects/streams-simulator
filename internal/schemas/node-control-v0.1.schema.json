@@ -13,16 +13,17 @@
     },
     "scope": {"$ref": "#/$defs/scope"},
     "enabled": {"type": "boolean", "description": "Required by approve_mode: true sets the approval mode on the scope, false clears it."},
-    "command_id": {"$ref": "#/$defs/wire_id", "description": "Required by approve and deny: the id of a queued command."}
+    "command_id": {"$ref": "#/$defs/wire_id", "description": "Required by approve and deny: the id of a queued command."},
+    "content_digest": {"$ref": "#/$defs/digest", "description": "Optional with approve and deny: the content_digest the operator saw in the pending entry. The request is refused unknown_command when the waiting command's content differs, so an operator approves what was shown and nothing else."}
   },
   "allOf": [
     {
       "if": {"properties": {"op": {"enum": ["hold", "release", "estop"]}}},
-      "then": {"required": ["scope"], "not": {"anyOf": [{"required": ["enabled"]}, {"required": ["command_id"]}]}}
+      "then": {"required": ["scope"], "not": {"anyOf": [{"required": ["enabled"]}, {"required": ["command_id"]}, {"required": ["content_digest"]}]}}
     },
     {
       "if": {"properties": {"op": {"const": "approve_mode"}}},
-      "then": {"required": ["scope", "enabled"], "not": {"required": ["command_id"]}}
+      "then": {"required": ["scope", "enabled"], "not": {"anyOf": [{"required": ["command_id"]}, {"required": ["content_digest"]}]}}
     },
     {
       "if": {"properties": {"op": {"enum": ["approve", "deny"]}}},
@@ -30,11 +31,12 @@
     },
     {
       "if": {"properties": {"op": {"const": "state"}}},
-      "then": {"not": {"anyOf": [{"required": ["scope"]}, {"required": ["enabled"]}, {"required": ["command_id"]}]}}
+      "then": {"not": {"anyOf": [{"required": ["scope"]}, {"required": ["enabled"]}, {"required": ["command_id"]}, {"required": ["content_digest"]}]}}
     }
   ],
   "$defs": {
     "wire_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "scope": {
       "type": "object",
       "additionalProperties": false,
@@ -60,6 +62,7 @@
         "command_id": {"$ref": "#/$defs/wire_id"},
         "stopped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices whose safe stop the node performed or sent."},
         "skipped": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare no safe_stop command."},
+        "unreachable": {"type": "array", "maxItems": 4096, "items": {"$ref": "#/$defs/wire_id"}, "description": "estop: the devices in scope that declare a safe_stop command but could not be ordered to stop (a hardware device not yet born, a simulated node that is gone). The hold is latched on them all the same; they are never listed in stopped."},
         "state": {"$ref": "#/$defs/state"}
       }
     },
@@ -89,10 +92,13 @@
     "pending": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command_id", "device", "command", "deadline_ns", "queued_at_ns", "clock"],
+      "required": ["command_id", "device", "command", "deadline_ns", "queued_at_ns", "clock", "content_digest", "args", "args_truncated"],
       "properties": {
         "command_id": {"$ref": "#/$defs/wire_id"}, "device": {"$ref": "#/$defs/wire_id"}, "command": {"$ref": "#/$defs/wire_id"},
-        "deadline_ns": {"type": "integer"}, "queued_at_ns": {"type": "integer"}, "clock": {"enum": ["world", "wall"]}
+        "deadline_ns": {"type": "integer"}, "queued_at_ns": {"type": "integer"}, "clock": {"enum": ["world", "wall"]},
+        "content_digest": {"$ref": "#/$defs/digest", "description": "The digest of what is waiting (device, command, args, expected boot): echo it in approve or deny to approve exactly this."},
+        "args": {"type": "object", "description": "The command's arguments, so the operator sees what an approval would do. At most 2048 bytes of canonical JSON; larger arguments are left out ({}) and args_truncated is true."},
+        "args_truncated": {"type": "boolean"}
       }
     },
     "affected": {

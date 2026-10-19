@@ -1,16 +1,27 @@
 package files
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
+const MaxRunFileBytes = 64 << 20
+
 func ReadRunFile(dir, name string) (raw []byte, present bool, err error) {
-	raw, present, err = kernel.ReadIfPresent(filepath.Join(dir, name))
+	return ReadRunFileUpTo(dir, name, MaxRunFileBytes)
+}
+
+func ReadRunFileUpTo(dir, name string, limit int64) (raw []byte, present bool, err error) {
+	raw, err = kernel.ReadRegular(filepath.Join(dir, name), limit)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false, nil
+	}
 	if err != nil {
 		return nil, false, fmt.Errorf("plantwire: read %s: %w", name, err)
 	}
-	return raw, present, nil
+	return raw, true, nil
 }

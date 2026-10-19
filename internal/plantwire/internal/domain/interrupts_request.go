@@ -29,8 +29,10 @@ func controlEntry(doc map[string]any) InterruptEntry {
 	if enabled, ok := doc["enabled"].(bool); ok {
 		entry["enabled"] = enabled
 	}
-	if id := text(doc, "command_id"); id != "" {
-		entry["command_id"] = id
+	for _, key := range []string{"command_id", "content_digest"} {
+		if value := text(doc, key); value != "" {
+			entry[key] = value
+		}
 	}
 	return entry
 }

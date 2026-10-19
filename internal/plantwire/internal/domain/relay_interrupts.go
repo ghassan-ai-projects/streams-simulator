@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"fmt"
+	"maps"
 	"slices"
+	"strings"
 )
 
 const (
@@ -21,10 +22,13 @@ type relayInterrupts struct {
 	kinds  map[string]string
 	orders int
 	issued map[string]string
+	order  []string
+	boots  map[string]string
+	epoch  int64
 }
 
 func (r *Relay) EnableInterrupts() {
-	r.ints = &relayInterrupts{gate: NewInterruptGate(), kinds: map[string]string{}, issued: map[string]string{}}
+	r.ints = &relayInterrupts{gate: NewInterruptGate(), kinds: map[string]string{}, issued: map[string]string{}, boots: map[string]string{}}
 }
 
 func (r *Relay) InterruptView() map[string]any {
@@ -40,10 +44,46 @@ func (r *Relay) SetWall(wallNS int64) {
 	}
 }
 
-func (r *Relay) noteKind(in Inbound) {
-	if r.ints != nil {
-		r.ints.kinds[in.Device] = in.Kind
+func (r *Relay) noteStopBoot(in Inbound) {
+	if r.ints == nil {
+		return
 	}
+	switch in.Type {
+	case "DBIRTH":
+		r.ints.boots[in.Device], r.ints.kinds[in.Device] = in.BootID, in.Kind
+	case "DDEATH":
+		delete(r.ints.boots, in.Device)
+	}
+}
+
+func (r *Relay) forgetBoots(devices map[string]bool) {
+	if r.ints == nil {
+		return
+	}
+	for _, device := range slices.Sorted(maps.Keys(devices)) {
+		delete(r.ints.boots, device)
+	}
+}
+
+func (r *Relay) stopBoot(device string) string {
+	if r.ints == nil || r.OriginOf(device) == OriginUnknown {
+		return ""
+	}
+	return r.ints.boots[device]
+}
+
+func (r *Relay) leaveHost(m *Moves) {
+	r.flushApprovals(m)
+	if r.ints != nil {
+		r.ints.epoch = exactInt(r.host.state["authority_epoch"])
+	}
+}
+
+func (r *Relay) hostEpoch() int64 {
+	if r.host.state != nil {
+		return exactInt(r.host.state["authority_epoch"])
+	}
+	return r.ints.epoch
 }
 
 func (r *Relay) noteWorldTime(in Inbound) {
@@ -75,9 +115,13 @@ func (r *Relay) Control(request InterruptEntry) (map[string]any, Moves) {
 }
 
 func (r *Relay) gatedCommand(m *Moves, in Inbound) {
+	if strings.HasPrefix(in.CommandID, stopIDPrefix) {
+		r.refuseCommand(m, in, ReasonMalformed)
+		return
+	}
 	r.syncInterruptInventory(m)
 	clock, now := r.ints.clockOf(r.OriginOf(in.Device))
-	outcome := r.ints.gate.Judge(in, r.declaresSafeStop(in), clock, now)
+	outcome := r.ints.gate.Judge(in, clock, now)
 	r.applyGate(m, outcome)
 	if outcome.Proceed {
 		r.onward(m, in)
@@ -174,18 +218,6 @@ func answerText(in Inbound) string {
 	return in.Status
 }
 
-func (r *Relay) declaresSafeStop(in Inbound) bool {
-	kind := r.ints.kinds[in.Device]
-	return kind != "" && slices.ContainsFunc(r.kindLists(), func(list []any) bool { return safeStopOf(list, kind) == in.Command })
-}
-
-func (r *Relay) kindLists() [][]any {
-	if r.sim == nil {
-		return [][]any{r.birth.Kinds}
-	}
-	return [][]any{r.birth.Kinds, r.sim.message.Kinds}
-}
-
 func safeStopOf(kinds []any, kind string) string {
 	for _, entry := range kinds {
 		fields, _ := entry.(map[string]any)
@@ -217,57 +249,12 @@ func (r *Relay) boardDevices(birth Message, clock string) []InterruptDevice {
 	for _, board := range birth.Boards {
 		for _, member := range board.Members {
 			devices = append(devices, InterruptDevice{Device: member, Board: board.Board, Clock: clock,
-				SafeStop: safeStopOf(birth.Kinds, r.ints.kinds[member])})
+				SafeStop: safeStopOf(birth.Kinds, r.ints.kinds[member]), Unreachable: r.unreachable(member)})
 		}
 	}
 	return devices
 }
 
-func (r *Relay) issueStops(m *Moves, orders []StopOrder) {
-	for _, order := range orders {
-		r.issueStop(m, order)
-	}
-}
-
-func (r *Relay) issueStop(m *Moves, order StopOrder) {
-	origin, boot := r.OriginOf(order.Device), r.bootOf(order.Device)
-	switch {
-	case boot == "":
-		m.Interrupt = append(m.Interrupt, r.stopFailure(order, stopNotBorn))
-	case origin == OriginSimulated && r.sim.lost:
-		m.Interrupt = append(m.Interrupt, r.stopFailure(order, stopSimulatorGone))
-	case origin == OriginGateway:
-		r.transmitDown(m, r.stopRecord(order, origin, boot))
-	default:
-		r.sendSim(m, r.stopRecord(order, origin, boot))
-	}
-}
-
-func (r *Relay) bootOf(device string) string {
-	if boot, born := r.gateway.born[device]; born && r.gatewayDevices[device] {
-		return boot
-	}
-	if r.sim != nil && r.sim.devices[device] {
-		return r.sim.born[device]
-	}
-	return ""
-}
-
-func (r *Relay) stopFailure(order StopOrder, why string) InterruptEntry {
-	return EffectEntry("none", order.Device, why, ClockWall, r.ints.wallNS)
-}
-
-func (r *Relay) stopRecord(order StopOrder, origin Origin, boot string) Record {
-	_, now := r.ints.clockOf(origin)
-	if len(r.ints.issued) >= maxIssuedStops {
-		clear(r.ints.issued)
-	}
-	r.ints.orders++
-	id := fmt.Sprintf("%s%d", stopIDPrefix, r.ints.orders)
-	r.ints.issued[id] = order.Device
-	command := Command{Device: order.Device, Name: order.Command, Args: map[string]any{}, Boot: boot}
-	return Record{Type: "DCMD", Lane: LaneControl, Fields: map[string]any{"command_id": id, "idempotency_key": command.Content(),
-		"device": order.Device, "command": order.Command, "args": map[string]any{}, "expected_boot_id": boot, "deadline_ns": now + stopDeadlineNS,
-		"not_before_ns": int64(0), "authority_epoch": exactInt(r.host.state["authority_epoch"]), "policy_digest": stopPolicy,
-		"fallback_on_lease_loss": "safe_off"}}
+func (r *Relay) unreachable(device string) bool {
+	return r.stopBoot(device) == "" || (r.OriginOf(device) == OriginSimulated && r.sim.lost)
 }

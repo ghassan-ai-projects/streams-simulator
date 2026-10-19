@@ -4,6 +4,9 @@ func (e *evaluator) report() TwinReport {
 	metrics, divergences := e.collect()
 	summary := e.summarize(metrics, divergences)
 	verdict, reason := judgement(summary)
+	if stop := e.nodeStopReason(); stop != "" {
+		verdict, reason = VerdictCannotJudge, stop
+	}
 	twin := e.input.Twin
 	twin.Kinds = append([]TwinKind{}, twin.Kinds...)
 	return TwinReport{SchemaVersion: TwinReportVersion, Verdict: verdict, Reason: reason, Summary: summary, Run: e.input.Run, Twin: twin,
@@ -50,6 +53,19 @@ func (e *evaluator) countCommands() (applied, notApplied int) {
 		}
 	}
 	return applied, notApplied
+}
+
+func (e *evaluator) nodeStopReason() string {
+	for _, command := range e.commands {
+		switch {
+		case command.Origin != OriginNode:
+		case command.Status == CommandTwinRefused:
+			return ReasonNodeStopNotApplied
+		case command.Status == CommandNotApplied && (command.Reason == NotAppliedNeverForwarded || command.Reason == NotAppliedNotAccepted):
+			return ReasonNodeStopUnconfirmed
+		}
+	}
+	return ""
 }
 
 func judgement(summary TwinSummary) (verdict, reason string) {

@@ -3,6 +3,7 @@ package run_test
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -87,5 +88,29 @@ func TestAnInterruptLogNextToAnArtifactThatDoesNotCoverItIsRefused(t *testing.T)
 	}
 	if _, _, err := run.ReadInterruptLog(dir); !errors.Is(err, run.ErrInterruptLogUncovered) {
 		t.Fatalf("ReadInterruptLog = %v, want ErrInterruptLogUncovered: run.json records no digest for this file", err)
+	}
+}
+
+func TestAnInterruptLogThatIsRejectedIsSetAsideUnderAnotherNameAndTheFolderHoldsNoLog(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	log, err := run.NewInterruptLog(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := errors.Join(log.Add(interruptRecords()[0]), log.Close()); err != nil {
+		t.Fatal(err)
+	}
+	if err := run.RejectInterruptLog(dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := run.ReadInterruptLog(dir); !errors.Is(err, run.ErrInterruptLogMissing) {
+		t.Fatalf("ReadInterruptLog = %v, want ErrInterruptLogMissing", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, model.FileInterruptLogRejected)); err != nil {
+		t.Fatalf("Stat of the set-aside log = %v, want it kept", err)
+	}
+	if err := run.RejectInterruptLog(dir); !errors.Is(err, fs.ErrNotExist) || !strings.Contains(err.Error(), "run: set aside "+model.FileInterruptLog) {
+		t.Fatalf("RejectInterruptLog of nothing = %v, want an error naming %s", err, model.FileInterruptLog)
 	}
 }

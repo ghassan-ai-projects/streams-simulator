@@ -21,14 +21,25 @@ func (m *Interrupts) Step(in InterruptEntry) []InterruptEntry {
 func (m *Interrupts) command(in InterruptEntry) []InterruptEntry {
 	device := m.deviceNamed(in.Text("device"))
 	switch {
-	case in["safe_stop"] == true:
+	case isDeclaredSafeStop(device, in):
 		return verdictOf(in, VerdictPass, "")
+	case m.idWaiting(in.Text("command_id")):
+		return verdictOf(in, VerdictRefuse, reasonDuplicate)
 	case m.holdCovers(device):
 		return verdictOf(in, VerdictRefuse, ReasonLocalControl)
 	case m.approveCovers(device):
 		return m.queue(in)
 	}
 	return verdictOf(in, VerdictPass, "")
+}
+
+func isDeclaredSafeStop(d InterruptDevice, in InterruptEntry) bool {
+	args, _ := in["args"].(map[string]any)
+	return d.SafeStop != "" && in.Text("name") == d.SafeStop && len(args) == 0 && in["args_truncated"] != true
+}
+
+func (m *Interrupts) idWaiting(id string) bool {
+	return slices.ContainsFunc(m.pending, func(p *pendingApproval) bool { return p.id == id || slices.Contains(p.waiting, id) })
 }
 
 func verdictOf(in InterruptEntry, verdict, reason string) []InterruptEntry {
@@ -54,8 +65,10 @@ func (m *Interrupts) queue(in InterruptEntry) []InterruptEntry {
 }
 
 func pendingOf(in InterruptEntry) *pendingApproval {
+	args, _ := in["args"].(map[string]any)
 	return &pendingApproval{id: in.Text("command_id"), key: in.Text("key"), content: in.Text("content"), device: in.Text("device"),
-		name: in.Text("name"), clock: in.Text("clock"), deadlineNS: in.Int("deadline_ns"), queuedNS: in.Int("node_ns")}
+		name: in.Text("name"), clock: in.Text("clock"), deadlineNS: in.Int("deadline_ns"), queuedNS: in.Int("node_ns"),
+		args: args, truncated: in["args_truncated"] == true}
 }
 
 func (m *Interrupts) repeat(in InterruptEntry, p *pendingApproval) []InterruptEntry {

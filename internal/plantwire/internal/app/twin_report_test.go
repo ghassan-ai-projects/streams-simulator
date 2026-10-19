@@ -126,8 +126,7 @@ func TestARefusedReceiptAndAnUnforwardedCommandAreNotApplied(t *testing.T) {
 func TestAnInterruptRefusalExcludesACommandTheBoardAccepted(t *testing.T) {
 	t.Parallel()
 	field, host := twinRecords(t, noOffset, []twinLease{{ID: "c-1", AtNS: twinLeaseAt, Status: "accepted"}})
-	refusal := map[string]any{"event": domain.EventVerdict, "command_id": "c-1", "verdict": domain.VerdictRefuse, "reason": "local_control"}
-	report := twinJudge(t, writeTwinFolder(t, field, host, refusal))
+	report := twinJudge(t, writeTwinFolder(t, field, host, heldFanLog(t, "c-1")...))
 	if len(report.Commands) != 1 || report.Commands[0].Reason != domain.NotAppliedInterruptRefused || report.Commands[0].Detail != "local_control" {
 		t.Fatalf("commands = %+v, want c-1 refused by the interrupt for local_control", report.Commands)
 	}

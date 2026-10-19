@@ -149,6 +149,10 @@ func checkRecordedDigest(dir, digest string, recorded func(*model.RunArtifact) s
 	return nil
 }
 
+func RejectInterruptLog(dir string) error {
+	return durable.RenameEvidenceLog(dir, model.FileInterruptLog, model.FileInterruptLogRejected)
+}
+
 func (r *Run) SetFieldTrace(digest string) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()

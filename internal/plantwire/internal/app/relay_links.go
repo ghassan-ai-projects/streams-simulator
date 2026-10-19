@@ -14,7 +14,7 @@ func (l *relayLoop) ensureHost(ctx context.Context) error {
 	if !l.relay.WantsHost() {
 		return nil
 	}
-	link, err := uds.Dial(context.WithoutCancel(ctx), l.options.HostSocket, relayWait)
+	link, err := uds.Dial(context.WithoutCancel(ctx), l.options.HostSocket, relayWrite)
 	switch {
 	case errors.Is(err, uds.ErrSocketNotPrivate):
 		return errors.Join(l.apply(l.relay.HostUnreachable()), err)
@@ -29,8 +29,9 @@ func (l *relayLoop) apply(moves domain.Moves) error {
 	l.rec.noted(moves.Notes)
 	l.interrupted(moves.Interrupt)
 	traced := l.record(moves.Trace)
-	upErr, downErr := l.sendUp(moves.Up), l.sendDown(moves.Down)
+	downErr := l.sendDown(moves.Down)
 	l.sim.deliver(moves.ToSim)
+	upErr := l.sendUp(moves.Up)
 	if moves.CloseHost {
 		l.closeHost()
 	}

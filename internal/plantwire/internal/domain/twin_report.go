@@ -12,6 +12,9 @@ const (
 	ReasonNoCommands = "no_commands_applied"
 	ReasonNoReadings = "no_readings_compared"
 
+	ReasonNodeStopNotApplied  = "node_stop_not_applied"
+	ReasonNodeStopUnconfirmed = "node_stop_unconfirmed"
+
 	DefaultSpanFraction = 0.05
 	MaxSeriesPoints     = 2000
 	maxDetailBytes      = 200
@@ -74,6 +77,7 @@ type TwinEvidence struct {
 	FieldTraceDigest   string `json:"field_trace_digest"`
 	JournalDigest      string `json:"journal_digest"`
 	InterruptLogDigest string `json:"interrupt_log_digest,omitempty"`
+	EvidenceBound      bool   `json:"evidence_bound"`
 }
 
 type TwinKind struct {

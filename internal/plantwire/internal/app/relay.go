@@ -20,8 +20,8 @@ type RelayOptions struct {
 }
 
 const (
-	relayTick = 250 * time.Millisecond
-	relayWait = 30 * time.Second
+	relayTick  = 250 * time.Millisecond
+	relayWrite = 2 * time.Second
 )
 
 func Relay(ctx context.Context, options RelayOptions) (domain.RelayStats, error) {
@@ -94,7 +94,7 @@ func (l *relayLoop) open(ctx context.Context) error {
 }
 
 func (l *relayLoop) listen(ctx context.Context) error {
-	gateways, err := uds.ListenGateways(ctx, l.options.GatewaySocket, relayWait)
+	gateways, err := uds.ListenGateways(ctx, l.options.GatewaySocket, relayWrite)
 	if err != nil {
 		l.sim.discard()
 		return errors.Join(err, l.rec.close())

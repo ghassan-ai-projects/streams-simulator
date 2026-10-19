@@ -4,6 +4,22 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **M5 review fixes in the binary.** A node of the world refuses, as `local_control`, every command it had queued for a future
+  start time when a hold, an emergency stop or approval mode covers its device, so a stopped device is not restarted by a command
+  accepted before the stop. A command id that is already waiting for approval is refused `duplicate`, and a pending entry now
+  shows the command's `args` (bounded, `args_truncated`) and `content_digest`; `approve` and `deny` may carry `content_digest`
+  and are refused `unknown_command` when it differs. An emergency stop is never refused for capacity, names the devices it could
+  not order in `unreachable`, and is performed even when answering the host fails. The safe-stop exemption is decided by the
+  rules from the inventory (the declared stop without arguments) and no longer from a logged flag. The relay refuses host
+  command ids starting `node-stop-`, gives each stop its own idempotency key, sends the stop to the gateway before records for
+  the host and drops a host that stalls a write for 2 s (was 30 s) and still sends an emergency stop to the gateway afterwards, on the last boot each device announced. A log that does not replay is renamed
+  `interrupts.rejected.jsonl` and `plantwire connect` fails. `twin-report` applies the node's own safe stops to the twin
+  (`origin: node`, `cannot_judge` with `node_stop_unconfirmed` or `node_stop_not_applied` when it cannot), replays the rules of
+  the interrupt log before using it, refuses a missing log that `run.json` records, states `evidence_bound`, and reads
+  `journal.jsonl` only if it is a regular file of at most 64 MiB. The control socket accepts the bridge's longest line and
+  closes an idle connection after 60 s; the bridge picks a socket path short enough for the platform or starts without controls.
+  Contracts changed: `node-control-v0.1`, `interrupt-log-v0.1` (events `purge`; `args`, `args_truncated`, inventory
+  `unreachable`; no `safe_stop` input), `twin-report-v0.1`, `run-journal-v0.1`. No gate was loosened.
 - **Twin versus board (R12, binary).** `streamsim plantwire twin-report <run-dir> --domain <id> --kinds-dir <dir>` replays the
   domain that implements a board's kinds in a fresh noise-free world, driven by the commands the board accepted (not those
   refused, held, queued or never forwarded), and reports per device and metric where the twin's prediction and the board's

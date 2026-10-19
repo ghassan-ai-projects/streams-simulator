@@ -19,6 +19,8 @@ import (
 var (
 	ErrTwinNoJournal     = errors.New("plantwire: the run folder holds no journal.jsonl, where the commands the host sent are recorded")
 	ErrTwinJournalDigest = errors.New("plantwire: the journal differs from the digest run.json recorded")
+
+	ErrTwinNoInterruptLog = errors.New("plantwire: run.json records an interrupt log digest but the run folder holds no interrupts.jsonl")
 )
 
 type TwinReportOptions struct {
@@ -130,6 +132,7 @@ func twinCommands(folder twinFolder, board domain.BoardTrace) ([]domain.TwinComm
 	if err != nil {
 		return nil, err
 	}
+	sent = append(sent, domain.NodeStops(folder.interrupts)...)
 	return domain.ClassifyCommands(sent, board, domain.InterruptBlocks(folder.interrupts)), nil
 }
 
@@ -145,20 +148,41 @@ func validateTwinReport(report domain.TwinReport) error {
 }
 
 func readTwinFolder(dir string) (twinFolder, error) {
+	art, err := twinArtifact(dir)
+	if err != nil {
+		return twinFolder{}, err
+	}
+	folder, err := readTwinFiles(dir, art)
+	folder.evidence.EvidenceBound = art != nil && art.JournalFileDigest != ""
+	return folder, err
+}
+
+func readTwinFiles(dir string, art *model.RunArtifact) (twinFolder, error) {
 	trace, traceDigest, err := run.ReadFieldTrace(dir)
 	if err != nil {
 		return twinFolder{}, fmt.Errorf("read the field trace: %w", err)
 	}
-	journal, journalDigest, err := readTwinJournal(dir)
+	journal, journalDigest, err := readTwinJournal(dir, art)
 	if err != nil {
 		return twinFolder{}, err
 	}
-	interrupts, interruptDigest, err := readTwinInterrupts(dir)
+	interrupts, interruptDigest, err := readTwinInterrupts(dir, art)
 	evidence := domain.TwinEvidence{FieldTraceDigest: traceDigest, JournalDigest: journalDigest, InterruptLogDigest: interruptDigest}
 	return twinFolder{trace: trace, journal: journal, interrupts: interrupts, evidence: evidence}, err
 }
 
-func readTwinJournal(dir string) ([]byte, string, error) {
+func twinArtifact(dir string) (*model.RunArtifact, error) {
+	art, err := run.LoadArtifactForVerification(filepath.Join(dir, model.FileRunArtifact))
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return nil, nil
+	case err != nil:
+		return nil, fmt.Errorf("read the run artifact: %w", err)
+	}
+	return art, nil
+}
+
+func readTwinJournal(dir string, art *model.RunArtifact) ([]byte, string, error) {
 	raw, present, err := files.ReadRunFile(dir, model.FileObserverJournal)
 	if err != nil {
 		return nil, "", err
@@ -167,29 +191,19 @@ func readTwinJournal(dir string) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("%w: %s", ErrTwinNoJournal, dir)
 	}
 	digest := canonical.DigestBytes(raw)
-	return raw, digest, checkJournalDigest(dir, digest)
+	if art != nil && art.JournalFileDigest != "" && art.JournalFileDigest != digest {
+		return nil, "", fmt.Errorf("%w: recorded %s, the file digests to %s", ErrTwinJournalDigest, art.JournalFileDigest, digest)
+	}
+	return raw, digest, nil
 }
 
-func checkJournalDigest(dir, digest string) error {
-	art, err := run.LoadArtifactForVerification(filepath.Join(dir, model.FileRunArtifact))
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		return nil
-	case err != nil:
-		return fmt.Errorf("read the run artifact: %w", err)
-	case art.JournalFileDigest != "" && art.JournalFileDigest != digest:
-		return fmt.Errorf("%w: recorded %s, the file digests to %s", ErrTwinJournalDigest, art.JournalFileDigest, digest)
+func readTwinInterrupts(dir string, art *model.RunArtifact) ([]map[string]any, string, error) {
+	records, digest, err := verifiedInterruptLog(dir)
+	if !errors.Is(err, run.ErrInterruptLogMissing) {
+		return records, digest, err
 	}
-	return nil
-}
-
-func readTwinInterrupts(dir string) ([]map[string]any, string, error) {
-	records, digest, err := run.ReadInterruptLog(dir)
-	if errors.Is(err, run.ErrInterruptLogMissing) {
-		return nil, "", nil
+	if art != nil && art.InterruptLogDigest != "" {
+		return nil, "", fmt.Errorf("%w: run.json records %s", ErrTwinNoInterruptLog, art.InterruptLogDigest)
 	}
-	if err != nil {
-		err = fmt.Errorf("read the interrupt log: %w", err)
-	}
-	return records, digest, err
+	return nil, "", nil
 }
