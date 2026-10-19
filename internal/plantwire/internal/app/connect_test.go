@@ -34,7 +34,7 @@ func connectOptions(t *testing.T, plan, out string) ConnectOptions {
 	t.Helper()
 	domains := mixedOptions(t, out).Simulated.DomainsDir
 	return ConnectOptions{Plan: strings.NewReader(plan), Source: "plan.json", DomainsDir: domains, AdaptersDir: testsupport.AdaptersDir(),
-		KindsDirs: []string{testsupport.ThermalBoardKindsDir()}, Policies: []string{mixedPolicy}, Out: out, SliceNS: 60e9, BarrierCap: 30 * time.Second}
+		KindsDirs: []string{testsupport.ThermalBoardKindsDir()}, Out: out, SliceNS: 60e9, BarrierCap: 30 * time.Second}
 }
 
 func TestACheckSaysWhichInstanceIsARealBoardAndWhichIsSimulated(t *testing.T) {

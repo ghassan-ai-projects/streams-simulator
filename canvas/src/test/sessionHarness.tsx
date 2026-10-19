@@ -14,6 +14,7 @@ export const check = {
     { instance: "CH-1", origin: "real", kind: "chiller", board: "uno-07", device: "ch-1" },
     { instance: "CT-1", origin: "simulated", kind: "tower" },
   ],
+  policies: [],
 };
 
 export function sessionBridge(): FakeBridge {

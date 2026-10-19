@@ -55,6 +55,8 @@ type LiveCommand struct {
 	EffectEvidence string `json:"effect_evidence"`
 	SentAtNS       int64  `json:"sent_at_ns"`
 	UpdatedAtNS    int64  `json:"updated_at_ns"`
+	PolicyDigest   string `json:"policy_digest,omitempty"`
+	policy         string
 }
 
 type LiveMark struct {

@@ -11,3 +11,4 @@ export type {
   SessionCheck,
   SessionDraft,
 } from "./internal/session";
+export type { PolicyNote } from "./internal/policies";

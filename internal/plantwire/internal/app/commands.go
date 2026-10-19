@@ -1,10 +1,6 @@
 package app
 
-import (
-	"slices"
-
-	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
-)
+import "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 
 const (
 	maxQueued  = 1024
@@ -112,7 +108,7 @@ func (s *Session) authorize(c domain.Command) string {
 	switch {
 	case c.Epoch != s.epoch:
 		return "stale_epoch"
-	case !slices.Contains(s.options.Policies, c.Policy):
+	case !s.allowed.Allows(c.Policy):
 		return "policy_not_allowed"
 	}
 	return ""

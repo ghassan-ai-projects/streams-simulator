@@ -41,7 +41,10 @@ type Options struct {
 	InterruptLog InterruptLog
 }
 
-var ErrBadOptions = errors.New("plantwire: invalid node options")
+var (
+	ErrBadOptions = errors.New("plantwire: invalid node options")
+	ErrHostPolicy = errors.New("plantwire: a host that issues commands carries a policy digest")
+)
 
 func validate(o Options) error {
 	switch {
@@ -54,7 +57,19 @@ func validate(o Options) error {
 	case domain.WireID(o.SessionID) != o.SessionID:
 		return fmt.Errorf("%w: session %q is no wire id", ErrBadOptions, o.SessionID)
 	}
+	return policyOptions(o.Policies)
+}
+
+func policyOptions(digests []string) error {
+	if _, issues := domain.NewAllowList(digests, "/policy"); len(issues) > 0 {
+		return fmt.Errorf("%w: %s", ErrBadOptions, issues[0].Message)
+	}
 	return nil
+}
+
+func allowListOf(digests []string) domain.AllowList {
+	allowed, _ := domain.NewAllowList(digests, "/policy")
+	return allowed
 }
 
 var (
@@ -81,10 +96,11 @@ type Session struct {
 	live        *domain.Live
 	liveChanged bool
 	ints        *interruptSide
+	allowed     domain.AllowList
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
-	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
+	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}, allowed: allowListOf(options.Policies)}
 	if options.JournalOrigins && !options.NoWireJournal {
 		s.live = domain.NewLive(false, s.devices.instances(), options.Bound)
 	}
@@ -186,6 +202,9 @@ func isType(kind string) func(domain.Message) bool {
 }
 
 func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.Duration, options Options) error {
+	if err := policyOptions(options.Policies); err != nil {
+		return fmt.Errorf("plantwire: %w", err)
+	}
 	if _, err := CheckImplements(r.Domain().Spec, options.KindsDirs); err != nil {
 		return fmt.Errorf("plantwire: %w", model.WithSource(err, r.Domain().Spec.ID))
 	}
@@ -206,7 +225,20 @@ func serveSession(ctx context.Context, r *run.Run, socketPath string, barrierCap
 	return nil
 }
 
+func CheckHost(options host.Options) error {
+	if len(options.Script) == 0 {
+		return nil
+	}
+	if _, issues := domain.NewAllowList([]string{options.Policy}, "/policy"); len(issues) > 0 {
+		return fmt.Errorf("%w: %s", ErrHostPolicy, issues[0].Message)
+	}
+	return nil
+}
+
 func ServeHost(ctx context.Context, socketPath string, delay time.Duration, options host.Options) (host.Report, error) {
+	if err := CheckHost(options); err != nil {
+		return host.Report{}, fmt.Errorf("plantwire: host: %w", err)
+	}
 	if err := domain.CheckEnvironment(options.Environment); err != nil {
 		return host.Report{}, fmt.Errorf("plantwire: host: %w", err)
 	}

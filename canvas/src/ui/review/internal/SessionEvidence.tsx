@@ -1,7 +1,9 @@
 import { Cable, CircleCheck, CircleSlash, CircleX } from "lucide-react";
-import type { ReviewState } from "../../../app/review";
+import type { ConnectSession } from "../../../app/launch";
+import type { ReviewSession, ReviewState } from "../../../app/review";
 import type { SessionDevice, SessionLive } from "../../../model/review";
-import { deviceLine, linkWords, runClock } from "../../../model/review";
+import { deviceLine, linkWords, recordedPolicyWords, runClock } from "../../../model/review";
+import { shortDigest } from "../../../model/shared/words";
 import { CommandEvidence } from "./CommandEvidence";
 import { Section } from "./ReportParts";
 import parts from "./ReportParts.module.css";
@@ -65,30 +67,56 @@ function ConnectionHealth({ state, startNs }: { readonly state: ReviewState; rea
   );
 }
 
-function Commands({ state, startNs }: { readonly state: ReviewState; readonly startNs: number }) {
+function TrustedDigests({ policies }: { readonly policies: readonly string[] | null }) {
+  if (policies === null || policies.length === 0) return null;
+  return (
+    <ul className={styles.digests} aria-label="Digests trusted by this session">
+      {policies.map((digest) => (
+        <li key={digest}>
+          <code aria-hidden="true" title={digest}>
+            {shortDigest(digest)}
+          </code>
+          <span className="sr-only">{digest}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface EvidenceProps {
+  readonly review: ReviewSession;
+  readonly connect: ConnectSession;
+  readonly state: ReviewState;
+  readonly startNs: number;
+}
+
+function Commands({ review, connect, state, startNs }: EvidenceProps) {
   const commands = state.live?.commands ?? [];
+  const policy = { review, connect, domain: state.sessionDomain };
   return (
     <Section title="Commands">
       {state.live?.commandsTruncated === true && (
         <p role="note">Showing the latest commands only. Earlier command records remain in the saved journal.</p>
       )}
+      <p className={parts.muted}>{recordedPolicyWords(state.sessionPolicies)}</p>
+      <TrustedDigests policies={state.sessionPolicies} />
       <p className={parts.muted}>
         Acceptance and the board&apos;s report do not prove an effect. Host observations are separate evidence.
       </p>
       {commands.length === 0 ? (
         <p className={parts.muted}>No commands recorded at this time.</p>
       ) : (
-        <CommandEvidence commands={commands} startNs={startNs} />
+        <CommandEvidence commands={commands} startNs={startNs} policy={policy} />
       )}
     </Section>
   );
 }
 
-export function SessionEvidence({ state, startNs }: { readonly state: ReviewState; readonly startNs: number }) {
+export function SessionEvidence({ review, connect, state, startNs }: EvidenceProps) {
   return (
     <>
       <ConnectionHealth state={state} startNs={startNs} />
-      <Commands state={state} startNs={startNs} />
+      <Commands review={review} connect={connect} state={state} startNs={startNs} />
       {state.connection === "running" && (
         <p className={parts.muted}>Recording live. File verification and replay are available after Stop and save.</p>
       )}

@@ -39,6 +39,7 @@ export interface SessionCommand {
   readonly report: "pending" | "succeeded" | "failed" | "unknown";
   readonly effect: "unknown" | "observed";
   readonly effectEvidence: string;
+  readonly policyDigest: string;
 }
 
 export interface LiveMark {

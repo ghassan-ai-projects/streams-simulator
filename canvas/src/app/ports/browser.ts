@@ -13,3 +13,7 @@ export interface Location {
   write(hash: string, replace?: boolean): void;
   subscribe(listener: () => void): () => void;
 }
+
+export interface Clipboard {
+  copy(text: string): Promise<boolean>;
+}

@@ -26,7 +26,6 @@ type ConnectOptions struct {
 	DomainsDir    string
 	AdaptersDir   string
 	KindsDirs     []string
-	Policies      []string
 	Out           string
 	SliceNS       int64
 	ControlSocket string
@@ -39,6 +38,7 @@ type ConnectCheck struct {
 	Environment       string                    `json:"environment"`
 	Instances         []domain.PlannedInstance  `json:"instances"`
 	ImplementsChecked []model.ImplementsChecked `json:"implements_checked"`
+	Policies          []string                  `json:"policies"`
 }
 
 type ConnectResult struct {
@@ -65,7 +65,7 @@ func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
 
 func (p *connectPlan) result() ConnectCheck {
 	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Instances: p.plan.Instances,
-		ImplementsChecked: p.checked}
+		ImplementsChecked: p.checked, Policies: p.plan.Policies.Digests()}
 }
 
 func planConnect(options ConnectOptions) (connectPlan, error) {

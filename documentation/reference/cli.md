@@ -277,7 +277,7 @@ unique wire-safe name, default `ref-<n>` by position) becomes the command's `com
 device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
 arrives after its result. The host sends each verification decision once in its next `HSYNC` as `command_evidence`
 (`observed` with the value, or `not_observed` when the window passed), only for a good, live sample of the same boot. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
-must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists. The commands that skip freshness, epoch and policy checks are the
+must send its birth within 10 s; after a refusal the host closes the connection. The host carries its `--policy` digest (`sha256:` and 64 lower-case hexadecimal digits) in every command it issues; it signs nothing, and a host with a `--script` and no well-formed `--policy` is a usage error (the reserved all-zero stop digest is refused too). The node accepts a command only when the command's digest is on the node's `--policy` list (at most 8 distinct digests; a malformed, repeated or reserved digest is refused as bad options before the node connects). The commands that skip freshness, epoch and policy checks are the
 safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
 (`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
@@ -346,22 +346,34 @@ gateway, and every other instance is simulated.
 
 ```text
 streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [--domains-dir <dir>] [--adapters-dir <dir>]
-                            [--kinds-dir <dir>]... [--policy <digest>]... [--slice-s 1] [--barrier-cap-ms 30000]
+                            [--kinds-dir <dir>]... [--slice-s 1] [--barrier-cap-ms 30000]
                             [--control-socket <path>]
 ```
 
 ```json
 {"schema_version": "0.1", "domain": "arduino-thermal", "seed": 1, "host_socket": "/abs/host.sock",
- "gateway_socket": "/abs/gateway.sock", "real": [{"instance": "zone-01", "board": "uno-07", "device": "zone-01"}]}
+ "gateway_socket": "/abs/gateway.sock", "real": [{"instance": "zone-01", "board": "uno-07", "device": "zone-01"}],
+ "policies": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}
 ```
 
+- `policies` (optional, 1 to 8 digests) — the policy digests the session's simulated devices accept in a command's
+  `policy_digest`. The plan is the only source of the list for a connected session; `plantwire connect` has no `--policy`
+  option. Absent, none is accepted and every command to a simulated device except a safe stop is refused
+  `policy_not_allowed`. A digest is `sha256:` and 64 lower-case hexadecimal digits; a repeat (`policy_listed_twice`, at the
+  second occurrence) and the reserved all-zero digest of the relay's own stops (`policy_reserved`) are refused. Real boards
+  are checked by the gateway's own list. The list is recorded in the `session` record of the journal, not in the run's
+  identity.
+
 - `--check` — reads the plan against its domain and kind files and starts nothing. The document is
-  `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked}`: each
+  `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked, policies}`
+  (`policies` is the list in effect, sorted, `[]` when the plan names none): each
   instance is `real` (with the board and device the gateway must announce and the digest of the kind file it must announce
   them with) or `simulated`. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
   into the plan: `unknown_instance`, `no_kind_file` (only an instance whose kind implements a kind file can be a real board),
   `instance_bound_twice`, `device_bound_twice`, `gateway_required`, `same_socket` (compared after cleaning the paths),
-  `socket_not_absolute`, `socket_parent_component` (a `..` component) and `socket_control_character`. The sockets are used
+  `socket_not_absolute`, `socket_parent_component` (a `..` component), `socket_control_character`,
+  `policy_listed_twice` and `policy_reserved`; a list that is empty, longer than 8 or holds a malformed digest breaks the
+  plan's schema (`minItems`, `maxItems`, `pattern`). The sockets are used
   as cleaned paths.
 - Without `--check`, `--out` is required. With no `gateway_socket` the world is a plant wire node to the host; with one it is
   the mixed relay (`plantwire relay --domain`) and the gateway is checked against the plan at its handshake: the bound board

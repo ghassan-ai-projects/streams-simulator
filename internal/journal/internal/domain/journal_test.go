@@ -32,7 +32,7 @@ func sampleJournal(t *testing.T) *Journal {
 	j.ConsumerReported(120, true)
 	j.Wire(120, "node", map[string]any{"type": "NSYNC", "seq": 3, "through_seq": 2})
 	j.Pacing(120, 3, 15, false)
-	j.Session(120, map[string]any{"mode": "connected", "plan": map[string]any{"domain": "d", "environment": "simulated", "instances": []any{}, "implements_checked": []any{}}})
+	j.Session(120, map[string]any{"mode": "connected", "plan": map[string]any{"domain": "d", "environment": "simulated", "instances": []any{}, "implements_checked": []any{}, "policies": []any{policyFixture}}})
 	j.Live(120, liveFixture())
 	j.Unblinded(130, ReasonRevealed)
 	return j

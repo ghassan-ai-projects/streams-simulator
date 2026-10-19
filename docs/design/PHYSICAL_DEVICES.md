@@ -526,8 +526,10 @@ Rules:
 - **Read-only first.** A hardware board announces its kind's commands, but Agentic Stream's commissioned inventory denies them
   until M5.
 - **Transport.** v1 is Unix socket only, owner-only (SPEC §2): gateway, simulator and Agentic Stream run on the bench machine.
-- **Device-side safety.** Expiry, lease, `boot_id`, idempotency, policy digest and safe stop remain device-wire-v1 duties in the
-  firmware; neither the gateway nor the simulator stands in for them.
+- **Device-side safety.** Expiry, lease, `boot_id`, idempotency and safe stop remain device-wire-v1 duties in the firmware;
+  neither the gateway nor the simulator stands in for them. The policy digest is not one of them: the gateway checks it for a
+  real board (SPEC §13, `policy_not_allowed`, from its own list) and the simulator for a simulated device (the session plan's
+  `policies`); device-wire-v1 has no policy reject code and the firmware does not refuse on it.
 - **Thermal experiment.** Every milestone keeps the emulated joined run and the physical Arduino bench green.
 
 ## 6. Reference devices
@@ -1220,3 +1222,106 @@ e2e at 1280 x 800 checks.
   waiting-commands list is not a tab stop (its buttons are). The "First: …" line under the timeline wraps and a timeline chip's
   title carries its full text. An applied emergency stop reply without `unreachable` is refused by the decoder (the contract
   requires it).
+
+## Policy allow-list P1 as-built (binary)
+
+Design: [POLICY-ALLOW-LIST](../physical-devices/POLICY-ALLOW-LIST.md) (D-88). P1 is the contract and the binary; the bridge
+file class and the canvas form are P2.
+
+- **The plan carries the list.** `session-plan-v0.1` gains optional `policies`: 1 to 8 strings of `sha256:` and 64 lower-case
+  hex digits (`minItems`, `maxItems`, `pattern` at `/policies/<i>`). The `plantwire` domain rule `NewAllowList(digests, pointer)`
+  (`internal/plantwire/internal/domain/policies.go`) is the one place the list is judged: `policy_malformed`,
+  `too_many_policies`, `policy_listed_twice` (at the second occurrence), `policy_reserved` (the relay's all-zero stop digest);
+  a list with an issue allows nothing. `CheckPlan` joins its issues (pointer `/policies`) with the binding issues; the flag
+  sources (`plantwire node --policy`, `plantwire relay --domain ... --policy`) go through the same rule as `ErrBadOptions`,
+  at `Serve` for a node and at the simulated node's start for a mixed relay, before anything connects.
+- **Enforcement.** `Session` holds the built list (`allowed`); `authorize` keeps the epoch check and then asks
+  `allowed.Allows(c.Policy)`. A queued, approved or waiting command is checked again at execution, as before. A safe stop skips
+  the check, as before. The connected session takes `p.plan.Policies.Digests()` for its node (node mode and the simulated side
+  of a mixed relay); `ConnectOptions.Policies` and `plantwire connect --policy` are gone.
+- **Echo and record.** `plantwire connect --check` returns `policies`: the list in effect, sorted, `[]` when the plan names
+  none (never null). The `session` journal record's `plan` is the same document, so it records the sorted list
+  (`run-journal-v0.1` `session.plan.policies`, required, at most 8). The list is a recorded session input, not part of the
+  run's identity: `run.json`, the trace digest and the command log are unchanged, and a connected session replays as before. A
+  command the list let through is in the command log as any command is; one it refused never reached the world.
+- **The refused digest.** `live_command.policy_digest` (optional, pattern `sha256:` and 64 hex) is present only when the receipt
+  is `refused` with reason `policy_not_allowed`. `Live.sent` keeps the command's digest in an unexported field and
+  `Live.receipt` copies it when the refusal arrives, if it is well formed. This holds for a simulated device (refused by the
+  node) and a real board (refused by the gateway). The plant wire contract is untouched (`DRECEIPT` gains nothing).
+- **The reference host.** `plantwire host` with a `--script` and no well-formed `--policy` (the reserved all-zero digest
+  included) is a usage error before it listens (`plantwire.CheckHost`, the same `NewAllowList` rule; `ServeHost` applies it
+  too). The `--policy` help text says the host "carries" the digest; it signs nothing.
+- **Gate edits.** None. New files carry no I/O and need no register entry.
+- **Deviations from the note.** None in behaviour. `Serve` checks the node's flag list before it dials, so `node --policy nope`
+  fails as bad options without a host.
+
+## Policy allow-list P2 as-built (bridge and canvas)
+
+Design: [POLICY-ALLOW-LIST](../physical-devices/POLICY-ALLOW-LIST.md) (D-88, closed). P2 is the bridge file class, the canvas
+form and the commands-table digest.
+
+- **The default file.** `settings/default.policies.json`, `{"policies": [...]}`, is the one file of `settings/`
+  (`FileClass` `policies`, `domain.ParsePath` accepts exactly that name; any other name in `settings/` and the file in `domains/`,
+  `kinds/` or `components/` are `bad_path`). It goes through the existing `GET /api/file` and `PUT /api/file`: `etag` is
+  `domain.Version`, a stale or missing etag on an existing file is `conflict`, the write is atomic and owner-only, the cap is the
+  generic 8 MiB, an absent file reads `404 not_found`. The bridge checks path and size only: the canvas saves what the binary
+  echoed, and the binary validates digests when the plan is checked. The file is not in the workspace listing or the change feed,
+  and no action argument resolves to it. `session.check` and `session.start` need no bridge logic: the plan travels unchanged and
+  the check document and the `session` record carry `policies`.
+- **Form and default.** The Connect session panel has "Allowed policy digests" (a textarea, one digest per line, empty means
+  none; the canvas deduplicates, sorts and checks nothing). `ConnectGateway` gains `readPolicyDefault` and `savePolicyDefault`
+  (the bridge adapter implements them with the file routes; an absent file is `absent`, a file that does not decode as exactly
+  `{"policies": [strings]}` is `unreadable` and pre-fills nothing). `ConnectSession.prefill(domain)` runs when the panel opens:
+  it re-reads the default, learns the etag, and fills a draft the plant has never held (marked `policiesFrom: "default"`, shown
+  with "Pre-filled from the workspace default."); typing marks it the operator's and removes the note; "Clear the list" empties it.
+  A draft that exists is never overwritten, also when the read finishes after the operator typed. Deviation from the note:
+  `draftFor` stays synchronous and the fill is the async `prefill`, because the default is read through the bridge.
+- **Save as default.** The button exists only after a passing check of the current draft that is not stale; the store checks the
+  same (`saveDefault(domain)` returns on any other state) and saves the check document's `policies` (the binary's sorted list),
+  never the typed text, with the etag of the last read (read again first when that read failed; an unreadable default is
+  overwritten only by this explicit action). An empty list is saved as `{"policies": []}`. A `conflict` reports that the default
+  changed elsewhere, saves nothing, and re-reads the file so a second press saves from the new version. The result is
+  `connect.defaults` (`PolicyDefaultState`), a store beside the connect state.
+- **List in effect.** The check result and the running session show "Allowed policies: none. Commands to simulated devices are
+  refused, except safe stops." or "Allowed policies: N" with each digest shortened (first and last 8 hex digits, the full digest
+  for assistive technology) from the binary's check document. The review decodes `plan.policies` of the `session` record into
+  `ReviewState.sessionPolicies` (strict: not a list of strings drops the record; absent reads "Allowed policies: not recorded.").
+- **The commands table.** `live` command entries are decoded with an optional `policy_digest`, strict: it must be a well-formed
+  digest and appear only on a `refused` command with reason `policy_not_allowed`, otherwise the record is dropped as unreadable.
+  The detail reads "Policy not allowed by this session" for a simulated device and "Policy not allowed by the gateway" for a real
+  board. A "Policy" row under the stages shows "Host's policy sha256:bbbbbbbb…bbbbbbbb" with "Copy policy digest" (a new
+  `Clipboard` port, `copyText` on the review session, `browserClipboard`) and "Use this digest". Copy says "Copied the policy
+  digest of <command id>." or, if the browser refuses, "Could not copy; select the digest instead." and shows the full digest.
+  "Use this digest" is shown when the session record names its plant; it appends the digest to that plant's draft
+  (`ConnectSession.addPolicy`, once per digest, marked the operator's) and says the running session keeps its list.
+- **Set up another run.** Keeps the list (and its source) of the last draft; the sockets and the real boards are cleared as before.
+  Deviation from the note: without it a digest added from a refusal would be lost before the next plan could use it.
+- **Gate edits.** None. No new module, stylesheet or I/O edge; `architecture.json` allow-lists are unchanged (callers are
+  regenerated).
+- **E2E.** `interrupts.spec.ts` lists the scripted policy: the approved `ref-a` is `Accepted` and `Board reports success`, and the
+  saved run's command log holds an `effector.invoke` and still verifies. `policies.spec.ts`: a session with no list shows the refusal
+  with the digest, Copy puts the full digest on the clipboard, "Use this digest" fills the next plan; Save as default writes the
+  sorted list and a reloaded panel is pre-filled and says so; the binary's refusals sit on the field by digest.
+- **Chrome review fixes.** Found in the Chrome review of P2 at 1280 px and fixed in the canvas:
+  - *A check shows its result.* `Session` rendered the form under two different parents, so the Run panel scroller was mounted
+    again at every check and its scroll position was lost; the form is now always rendered by `OwnSession`, so the scroller stays
+    mounted. A passing check moves focus to the labelled "Plan check result" region (Instances, the list in effect, Save as
+    default), which the browser scrolls into view; a refusal still focuses the first marked field.
+  - *The save result sits next to its button* (a `role="status"` line directly under "Save as default", the hint below it; a
+    conflict or failure is a `role="alert"`). The result is forgotten when the field is edited (`keepDraft`) or a new check starts
+    (`PolicyDefault.forgetSave`), so it never outlives its list.
+  - *Starting says what it trusts.* Above "Check the plan" and "Start the session" the footer reads "Trusting N policy digests
+    from the workspace default | you entered | kept from the previous run: ..." (first three digests shortened, then "and N
+    more"; display only) with "Show the allowed policy digests", which focuses the field; the Start button is described by it.
+    It shows only while the field holds a digest.
+  - *The refusal banner.* When every issue of a refused plan is on the policies field the banner says "fix the marked field", the
+    visible list leaves those issues out (the developer details keep them).
+  - *The saved run lists its digests.* The review shows the shortened digests of the session record (title and screen-reader text
+    carry the full digest).
+  - *Set up another run, from the plant panel and from the review.* Both clear sockets and board rows and keep the policies
+    text, noted "Kept from the previous run: N digests." (`PolicySource` `previous`). The run kind is kept per plant in
+    `ConnectSession` (`kindFor`, `chooseKind`), so the panel opens on "Connected session" while a connected draft is kept; the
+    review's button for a connected run calls `ConnectSession.setUpNext(domain, recorded list)` instead of proposing a
+    to-completion rerun.
+  - *Type.* Hints, notes and the digests are 12 px; the textarea has four rows. A 71-character digest still wraps inside the
+    336 px panel (D-110).

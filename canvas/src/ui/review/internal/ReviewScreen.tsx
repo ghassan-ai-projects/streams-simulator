@@ -61,7 +61,7 @@ export function ReviewScreen(props: ReviewScreenProps) {
           connect={launch.connect}
           now={() => launch.nowMs()}
         />
-        <RunPanel review={review} state={state} plant={plant} unit={unit} />
+        <RunPanel review={review} connect={launch.connect} state={state} plant={plant} unit={unit} />
       </div>
     </ReactFlowProvider>
   );

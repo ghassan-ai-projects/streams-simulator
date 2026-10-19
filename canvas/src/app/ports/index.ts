@@ -20,6 +20,8 @@ export type {
   LaunchFailure,
   LaunchGateway,
   PlannedInstance,
+  PolicyDefaultFailure,
+  PolicyDefaultFile,
   SessionCheck,
 } from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";
@@ -27,7 +29,7 @@ export type { ControlFailure, ReviewFailure, ReviewGateway, RunFollower, TwinFai
 export type { SessionFailure, SessionGateway } from "./session";
 export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
 export type { Clock, Scheduler } from "./clock";
-export type { Location, PreferenceStore, SystemTheme } from "./browser";
+export type { Clipboard, Location, PreferenceStore, SystemTheme } from "./browser";
 export { failure, success } from "./shared";
 export type { ComposeSummary, Diagnostic, DomainDocument, FileContent, Outcome, PlantSource } from "./shared";
 

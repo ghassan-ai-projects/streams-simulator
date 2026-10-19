@@ -55,6 +55,8 @@ var (
 	ErrNoReplayBirth     = domain.ErrNoReplayBirth
 	ErrNotObserver       = domain.ErrNotObserver
 	ErrPlanRefused       = app.ErrPlanRefused
+	ErrHostPolicy        = app.ErrHostPolicy
+	ErrHostInput         = app.ErrHostInput
 	ErrHostLost          = app.ErrHostLost
 	ErrHostGap           = app.ErrHostGap
 	ErrSocketNotPrivate  = uds.ErrSocketNotPrivate

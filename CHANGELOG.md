@@ -4,6 +4,26 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Policy allow-list (D-88), P2: bridge and canvas.** The workspace may hold `settings/default.policies.json`
+  (`{"policies": [...]}`), the one file of `settings/`: the bridge reads and writes it through the file routes with the etag,
+  atomic owner-only write and size rules of every workspace file, checks its path and size only, never lists it and never
+  passes it to an action. The Connect session panel gains "Allowed policy digests" (one per line): a new draft is pre-filled
+  from the workspace default with a visible note, "Check the plan" shows the list in effect as the binary echoed it, and "Save
+  as default" (only after a fresh passing check) saves the binary's sorted list. The list in effect stays shown while the
+  session runs and in the saved run; a command refused `policy_not_allowed` shows the host's digest (shortened, with the full
+  digest for assistive technology) with "Copy policy digest" and "Use this digest", which adds it to the next plan's draft and
+  never to the running session. "Set up another run" keeps the list of the last plan, noted as kept, with the run kind. After a check, focus moves to the result; the start footer says which digests it trusts. The e2e proves for the first time that an
+  approved command executes on a simulated device.
+
+- **Policy allow-list (D-88), P1: contract and binary.** The session plan gains optional `policies` (1 to 8 policy digests): the
+  digests a connected session's simulated devices accept in a command's `policy_digest`. `plantwire connect` loses `--policy`
+  (the plan is the only source); `plantwire node --policy` and `plantwire relay --domain ... --policy` keep it and refuse a
+  malformed, repeated or reserved digest, or more than 8, as bad options. `plantwire connect --check` echoes the sorted list in
+  `policies`, the `session` journal record carries it, and a command refused `policy_not_allowed` carries the refused digest on
+  its `live` command entry (`policy_digest`). `plantwire host --script` without a well-formed `--policy` is a usage error. The
+  list is a recorded session input, not part of a run's identity. Contracts changed: `session-plan-v0.1`, `cli-output-v0.1`
+  (`plantwire_connect_check.policies`), `run-journal-v0.1`. The plant wire contract is unchanged. No gate was loosened.
+
 - **M5 re-review fixes in the binary.** An emergency stop of the relay names a gateway device that went offline (or that an
   earlier birth announced) as `unreachable`, and a hold scoped to it is accepted, instead of the device vanishing from the
   inventory; the stop keeps the last host epoch and never carries epoch 0. A retry of a waiting command with the same content is

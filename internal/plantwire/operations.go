@@ -7,7 +7,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/app"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
@@ -17,6 +16,10 @@ func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.D
 
 func Host(ctx context.Context, socketPath string, delay time.Duration, options HostOptions) (HostReport, error) {
 	return app.ServeHost(ctx, socketPath, delay, options)
+}
+
+func LoadHost(options HostOptions, scriptPath, inventoryPath string) (HostOptions, error) {
+	return app.LoadHost(options, scriptPath, inventoryPath)
 }
 
 func Relay(ctx context.Context, options RelayOptions) (RelayStats, error) {
@@ -33,14 +36,6 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 
 func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
 	return app.CheckConnect(options)
-}
-
-func ParseScript(raw []byte) ([]Scripted, error) {
-	return host.ParseScript(raw)
-}
-
-func ParseInventory(raw []byte) (map[string]string, error) {
-	return host.ParseInventory(raw)
 }
 
 func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, error) {

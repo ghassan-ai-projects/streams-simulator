@@ -351,12 +351,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > D-87 (an undecodable interrupt record is told as an unreadable snapshot): the live bar's note names a snapshot when the
 > dropped record was an `interrupt` record, and the canvas keeps no separate count of dropped interrupt records. Trigger to
 > fix: a binary version that adds an interrupt event; then the decoder gets its own entry and note.
-> D-88 (a canvas-connected session has no policy allow-list): `plantwire connect` takes `--policy` only from the command line,
-> and the session plan and `session.start` never supply it, so every host command to a simulated device is refused
-> `policy_not_allowed`; a hardware device passes through to the gateway, which keeps its own policy. The R11b e2e shows this
-> (approved `ref-a` is refused at the node's normal checks). Trigger to fix: a canvas session that must command a simulated
-> device; the fix needs a design decision: an operator-supplied allow-list in the session plan, validated by the binary, and a
-> UI field for it.
+> D-88 (a canvas-connected session has no policy allow-list): **closed** by P1 (binary) and P2 (bridge and canvas). The session
+> plan carries `policies` (1 to 8 policy digests, validated by the binary), the Connect session form has an "Allowed policy
+> digests" field, the workspace default `settings/default.policies.json` pre-fills a new draft only, a command refused
+> `policy_not_allowed` shows the host's digest with Copy and "Use this digest", and the first end-to-end proof that an approved
+> command executes on a simulated device is in `canvas/e2e/interrupts.spec.ts`. See `docs/design/PHYSICAL_DEVICES.md` "Policy
+> allow-list P1 as-built" and "P2 as-built".
 > D-89 (the relay drops a schema-invalid host record without a reason): `Relay.hostRecord` (`relay_host.go`) counts a host record
 > that fails its schema, or whose type is not a host record type, in `stats.Dropped` and writes no receipt and no evidence for
 > it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no
@@ -447,3 +447,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > D-108 (outcome wording of a partial emergency stop): the outcome line opens "was applied" even when a stop could not be sent, and the unreachable sentence uses a plural for one device ("fan-01: they may still be energised"). Lead with the failure and agree number. Found in the final M5 browser spot check.
 >
 > D-109 (transient plant clip after the bar resizes): for 0.5 to 1 s after the Interrupts bar grows or shrinks, the frame node sits partly outside the pane before the refit; gone by 2 s. Refit in the same frame as the resize. Found in the final M5 browser spot check.
+> D-110 (a policy digest wraps mid-token in the form): the Connect session panel is 336 px wide, a `sha256:` digest is 71
+> characters, so the textarea and the trust line break a digest inside the token and the footer names only the first three
+> digests ("and N more"). The full list is in the field. Trigger to fix: a wider panel or a request to see all digests at Start;
+> then show the list in a scrollable, selectable block above Start. Found in the Chrome review of P2.

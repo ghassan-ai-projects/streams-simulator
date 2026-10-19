@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -50,5 +51,55 @@ func TestASessionPlanTheSchemaAdmitsButNoPlanCanHoldIsAViolationOfItsContract(t 
 	invalid, ok := AsValidationError(err)
 	if !ok || invalid.Contract != ContractSessionPlan || invalid.Issues[0].Keyword != "json" || errors.Unwrap(err) == nil {
 		t.Fatalf("a seed beyond uint64 = %v, want a session-plan violation keyed json", err)
+	}
+}
+
+func policiesPlan(policies string) []byte {
+	return []byte(`{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","policies":` + policies + `}`)
+}
+
+func policyDigests(count int) string {
+	digests := make([]string, count)
+	for i := range digests {
+		digests[i] = `"sha256:` + strings.Repeat(string("abcdef0123456789"[i]), 64) + `"`
+	}
+	return "[" + strings.Join(digests, ",") + "]"
+}
+
+func TestASessionPlanDecodesOneToEightPolicyDigestsInTheOperatorsOrder(t *testing.T) {
+	t.Parallel()
+	for _, count := range []int{1, 8} {
+		plan, err := DecodeSessionPlan(policiesPlan(policyDigests(count)))
+		if err != nil || len(plan.Policies) != count || plan.Policies[0] != "sha256:"+strings.Repeat("a", 64) {
+			t.Fatalf("%d policies = %+v, %v, want them all in the order written", count, plan, err)
+		}
+	}
+	absent, err := DecodeSessionPlan([]byte(`{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h"}`))
+	if err != nil || absent.Policies != nil {
+		t.Fatalf("a plan without policies = %+v, %v, want none", absent, err)
+	}
+}
+
+func TestASessionPlanWithABrokenPolicyListIsRefusedAtTheListOrTheEntry(t *testing.T) {
+	t.Parallel()
+	upper := `["sha256:` + strings.Repeat("A", 64) + `"]`
+	cases := []struct{ name, policies, pointer, keyword string }{
+		{name: "an empty list", policies: `[]`, pointer: "/policies", keyword: "minItems"},
+		{name: "nine digests", policies: policyDigests(9), pointer: "/policies", keyword: "maxItems"},
+		{name: "an upper-case digest", policies: upper, pointer: "/policies/0", keyword: "pattern"},
+		{name: "a short digest", policies: `["sha256:00"]`, pointer: "/policies/0", keyword: "pattern"},
+		{name: "a digest with no algorithm", policies: `["` + strings.Repeat("b", 64) + `"]`, pointer: "/policies/0", keyword: "pattern"},
+		{name: "a second entry that is a number", policies: `["sha256:` + strings.Repeat("b", 64) + `", 7]`, pointer: "/policies/1", keyword: "type"},
+		{name: "a list that is a string", policies: `"sha256:` + strings.Repeat("b", 64) + `"`, pointer: "/policies", keyword: "type"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := DecodeSessionPlan(policiesPlan(tc.policies))
+			invalid, ok := AsValidationError(err)
+			if !ok || invalid.Contract != ContractSessionPlan || len(invalid.Issues) == 0 || invalid.Issues[0].Pointer != tc.pointer || invalid.Issues[0].Keyword != tc.keyword {
+				t.Fatalf("DecodeSessionPlan = %v, want a session-plan violation %s at %s", err, tc.keyword, tc.pointer)
+			}
+		})
 	}
 }

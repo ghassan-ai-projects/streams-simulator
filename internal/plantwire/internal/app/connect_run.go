@@ -77,6 +77,9 @@ func sessionNote(check ConnectCheck) map[string]any {
 	if check.ImplementsChecked == nil {
 		check.ImplementsChecked = []model.ImplementsChecked{}
 	}
+	if check.Policies == nil {
+		check.Policies = []string{}
+	}
 	return map[string]any{"mode": "connected", "plan": check}
 }
 
@@ -141,7 +144,7 @@ func (p *connectPlan) relayOptions(o ConnectOptions, port *ControlPort) RelayOpt
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
 	return Options{Environment: domain.EnvironmentSimulated, ProtocolMax: domain.Version, SessionID: session, SliceNS: o.SliceNS,
-		UntilNS: model.DefaultStartTimeNS + openEndedNS, Policies: o.Policies, KindsDirs: o.KindsDirs, Bound: p.plan.Bound}
+		UntilNS: model.DefaultStartTimeNS + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound}
 }
 
 func joined(served, ended error) error {

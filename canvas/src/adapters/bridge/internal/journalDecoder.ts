@@ -1,5 +1,6 @@
 import type { JournalEntry } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
+import { names } from "./decodeKit";
 import { issueList } from "./http";
 import { interruptRecord } from "./interruptDecoder";
 import { liveSnapshot } from "./liveDecoder";
@@ -68,7 +69,12 @@ function validEvent(entry: Record<string, unknown>): boolean {
 }
 
 function validSession(entry: Record<string, unknown>): boolean {
-  return entry.mode === "connected" && Array.isArray(record(entry.plan).instances);
+  const plan = record(entry.plan);
+  return entry.mode === "connected" && Array.isArray(plan.instances) && names(plan.policies) !== null;
+}
+
+function recordedPolicies(value: unknown): readonly string[] | null {
+  return value === undefined ? null : names(value);
 }
 
 function openedRecord(entry: Record<string, unknown>): boolean {
@@ -86,6 +92,7 @@ function projectEntry(entry: Record<string, unknown>): JournalEntry {
       simulated: instances
         .filter((instance) => instance.origin === "simulated")
         .map((instance) => text(instance.instance)),
+      policies: recordedPolicies(record(entry.plan).policies),
     };
   }
   if (entry.type === "observation") return observation(entry, atNs);

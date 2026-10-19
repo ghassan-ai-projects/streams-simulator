@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
@@ -104,5 +106,63 @@ func TestTheControlSocketFlagTakesAPathAndAConnectCheckStartsNothingForIt(t *tes
 	}
 	if _, err := os.Stat(args[len(args)-1]); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("Stat of the control socket = %v, want a check to create none", err)
+	}
+}
+
+func policyPlan(policies ...string) string {
+	return `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock","policies":["` + strings.Join(policies, `","`) + `"]}`
+}
+
+func TestAConnectCheckEchoesThePlansPolicyListSortedAndEmptyWhenThePlanHasNone(t *testing.T) {
+	t.Parallel()
+	low, high := "sha256:"+strings.Repeat("a", 64), "sha256:"+strings.Repeat("c", 64)
+	cases := map[string]struct {
+		plan string
+		want []any
+	}{
+		"a list in any order": {policyPlan(high, low), []any{low, high}},
+		"no list":             {`{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock"}`, []any{}},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			doc := invokeWithInput(t, tc.plan, checkArgs(thermalDomains(t))...).mustSucceed(t).document(t, "plantwire_connect_check")
+			if !reflect.DeepEqual(doc["policies"], tc.want) {
+				t.Fatalf("policies = %#v, want %#v", doc["policies"], tc.want)
+			}
+		})
+	}
+}
+
+func TestAConnectPlanWithABrokenPolicyListIsRefusedAtTheEntryOrTheList(t *testing.T) {
+	t.Parallel()
+	digest := func(char string) string { return "sha256:" + strings.Repeat(char, 64) }
+	nine := make([]string, 9)
+	for i := range nine {
+		nine[i] = digest(string("abcdef012"[i]))
+	}
+	cases := []struct {
+		name, plan, pointer, keyword string
+	}{
+		{"a repeat", policyPlan(digest("a"), digest("a")), "/policies/1", "policy_listed_twice"},
+		{"the reserved stop digest", policyPlan(digest("0")), "/policies/0", "policy_reserved"},
+		{"a digest in upper case", policyPlan(strings.ToUpper(digest("a"))), "/policies/0", "pattern"},
+		{"nine digests", policyPlan(nine...), "/policies", "maxItems"},
+		{"an empty digest", policyPlan(), "/policies/0", "pattern"},
+		{"an empty list", `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock","policies":[]}`, "/policies", "minItems"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := invokeWithInput(t, tc.plan, checkArgs(thermalDomains(t))...)
+			body := got.failure(t)
+			issues, _ := body["issues"].([]any)
+			if got.code != 1 || len(issues) == 0 {
+				t.Fatalf("exit %d with %v, want a refusal with its issue", got.code, body)
+			}
+			if first, _ := issues[0].(map[string]any); first["pointer"] != tc.pointer || first["keyword"] != tc.keyword {
+				t.Fatalf("first issue = %v, want %s at %s", first, tc.keyword, tc.pointer)
+			}
+		})
 	}
 }

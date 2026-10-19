@@ -5,10 +5,14 @@ export interface RealRow {
   readonly device: string;
 }
 
+export type PolicySource = "operator" | "default" | "previous";
+
 export interface SessionDraft {
   readonly seed: string;
   readonly hostSocket: string;
   readonly gatewaySocket: string;
+  readonly policies: string;
+  readonly policiesFrom: PolicySource;
   readonly real: readonly RealRow[];
   readonly nextKey: number;
 }
@@ -38,6 +42,7 @@ export interface SessionCheck {
   readonly domain: string;
   readonly mixed: boolean;
   readonly instances: readonly PlannedInstance[];
+  readonly policies: readonly string[];
 }
 
 export interface BindingNote {
@@ -47,19 +52,36 @@ export interface BindingNote {
   readonly issues: readonly PlanIssue[];
 }
 
-export const firstSessionDraft: SessionDraft = { seed: "1", hostSocket: "", gatewaySocket: "", real: [], nextKey: 0 };
+export const firstSessionDraft: SessionDraft = {
+  seed: "1",
+  hostSocket: "",
+  gatewaySocket: "",
+  policies: "",
+  policiesFrom: "operator",
+  real: [],
+  nextKey: 0,
+};
 
 const sessionPlanVersion = "0.1";
 const seedSlot = "__seed__";
 
+export function policyLines(text: string): readonly string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
 function planOf(domain: string, draft: SessionDraft): Record<string, unknown> {
   const gateway = draft.gatewaySocket.trim();
+  const policies = policyLines(draft.policies);
   return {
     schema_version: sessionPlanVersion,
     domain,
     seed: seedSlot,
     host_socket: draft.hostSocket.trim(),
     ...(gateway === "" ? {} : { gateway_socket: gateway }),
+    ...(policies.length === 0 ? {} : { policies }),
     ...(draft.real.length === 0
       ? {}
       : { real: draft.real.map(({ instance, board, device }) => ({ instance, board, device })) }),

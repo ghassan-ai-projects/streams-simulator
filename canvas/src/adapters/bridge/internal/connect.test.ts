@@ -28,6 +28,7 @@ const check = {
     { instance: "fan-01", origin: "simulated", kind: "fan" },
   ],
   implements_checked: [],
+  policies: [`sha256:${"b".repeat(64)}`, `sha256:${"a".repeat(64)}`],
 };
 
 describe("connect gateway", () => {
@@ -40,6 +41,7 @@ describe("connect gateway", () => {
       value: {
         domain: "arduino-thermal",
         mixed: true,
+        policies: [`sha256:${"b".repeat(64)}`, `sha256:${"a".repeat(64)}`],
         instances: [
           { instance: "zone-01", role: "real", kind: "thermal_sensor", board: "uno-07", device: "zone-01" },
           { instance: "fan-01", role: "simulated", kind: "fan", board: "", device: "" },
@@ -53,6 +55,9 @@ describe("connect gateway", () => {
     [{ instances: "all" }],
     [{ ...check, instances: [{ instance: "zone-01", origin: "hardware" }] }],
     [{ ...check, instances: [{ instance: "zone-01" }] }],
+    [{ ...check, policies: undefined }],
+    [{ ...check, policies: "sha256:" }],
+    [{ ...check, policies: [3] }],
   ])("refuses a check shaped %j, never reading an unknown origin as simulated", async (bad) => {
     const outcome = await bridgeAdapter(answering(200, { result: bad })).launch.checkSession("{}");
     expect(outcome).toMatchObject({ ok: false, failure: { kind: "unreadable" } });

@@ -43,6 +43,7 @@ const command: SessionCommand = {
   report: "pending",
   effect: "unknown",
   effectEvidence: "",
+  policyDigest: "",
 };
 
 describe("session readings", () => {
