@@ -384,3 +384,45 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > tolerance field is free text in the binary's `device.metric=value, kind.metric=value` form, checked by the binary only. Trigger to
 > fix: a user who needs another default share or gets a refusal often; then the binary lists the metrics that can be given a
 > tolerance and the canvas offers a field per metric.
+> D-94 (a command already at the gateway cannot be cancelled by the node): when a hold or an emergency stop covers a hardware
+> device, the relay refuses what the host sends from then on, but a command it already forwarded (one the gateway queued for
+> its `not_before_ns`, one in flight) is the gateway's now and still runs; the node can refuse or stop, not recall. A node of
+> the world does purge its own waiting commands (refused `local_control`, `purge` records). Trigger to fix: a gateway that
+> exposes a way to cancel a queued command; then the relay asks for it as part of the stop.
+> D-95 (the twin report can agree on little): `agrees` also holds with a tolerance as wide as the metric's whole `eu_range`
+> (nothing can diverge) and with one reading compared out of thousands. Trigger to fix: a bench where an `agrees` was read as
+> proof; then the report carries a coverage figure (compared over all readings) and calls a vacuous tolerance `partial`.
+> D-96 (a command's time is steerable by the board): the report places a command at the latest board event time recorded
+> before the gateway's receipt, so a board that stamps its own events can move where a command lands on the twin's clock.
+> Trigger to fix: a board that cannot be trusted with its clock; then the relay stamps the field trace with its own receive time.
+> D-97 (a session that ends with commands waiting sends them no receipt): a node of the world logs the end of the session
+> (`flush`, each waiting command `resolve`d `session_ending`) but sends nothing, because the contract has the host count commands
+> still queued at a session's end as refused `session_ending`. Trigger to fix: a host that cannot do that; then the node sends
+> the terminal receipt before `NDEATH`.
+> D-98 (an answer of `node_busy` may still apply): a control the node had taken when the 10 s allowance ended is applied and
+> answered into a reply nobody reads; the bridge's `control_timeout` means "read the state", not "it did not happen".
+> D-99 (an emergency stop of a relay can still wait one bounded host write): the relay is one loop. The stop to the gateway is
+> sent before the relay's records for the host, a stalled host is dropped after a 2 s write (and the stop is then still sent,
+> on the last boot the gateway announced), and controls are taken on the next tick, so a stop waits at most one such write and
+> one tick (about 2.25 s), not 30 s. Per-link writers would remove the wait. A stop addressed to a boot the device has left
+> is refused by the gateway `wrong_boot`, and the node does not retry on the new boot.
+> D-100 (a safe stop that needs arguments, a rejected log): only the declared safe-stop command **without arguments** is exempt
+> from a hold or an approval mode and only it is ordered by an emergency stop; a safe stop whose effector requires arguments
+> is held like any command. A log that does not replay (or could not be written) is renamed `interrupts.rejected.jsonl`,
+> the run records no `interrupt_log_digest`, and `plantwire connect` fails with `ErrInterruptLogRejected`; nothing reads the
+> renamed file. Trigger to fix: a domain whose safe stop takes arguments; then the declared arguments join the inventory.
+> D-101 (the canvas asks for twin files that may not exist): the device list reads `twins/<stem>.twin.json` for every kind
+> (`DeviceDesk.twinStatus`, `loadTwin`) and the browser logs a 404 for each kind without a twin choices file. The workspace
+> listing names domains, compositions, scenarios, kinds and components, not twin choices files, so the canvas cannot know which
+> exist. Bridge change needed (not made in the canvas round): list `twins` in `workspace.list`; then the desk reads only those.
+> Trigger to fix: a workspace with several kinds and no twins that is opened with the console in view.
+> D-102 (the canvas orders an answer against snapshots by their content, not by a time): a control reply carries no time and a
+> snapshot's time is the run clock, so a snapshot generated before a control but delivered after its reply is told by equality
+> with a state the reply superseded (`SeenState.older`, at most four) and ignored until a snapshot with another state arrives. A
+> node-side change that returns the state to a superseded one stays hidden until the next change or the next control. Trigger to
+> fix: a reply or snapshot that carries a sequence number the canvas can compare; then the guard is that comparison.
+> D-103 (node tags on the plant keep their short words): the "Held", "Latched" and "Approving" tags on a plant node are three
+> short words in `ui/graph` with the full words as the tag's title and the node's accessible name; the review panel and the
+> Interrupts bar use the long words (`Held · latched by emergency stop`, `Approving each command`) from one table. Unifying
+> them needs the graph module to import the review module's words or the words to move to a shared model. Trigger to fix: a
+> third place that words a hold.

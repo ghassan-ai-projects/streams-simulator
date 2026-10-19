@@ -1,4 +1,5 @@
 import type {
+  CommandOrigin,
   CommandStatus,
   NotAppliedReason,
   NotComparedReason,
@@ -34,7 +35,16 @@ export const judgeReasonWords: Readonly<Record<TwinJudgeReason, string>> = {
   no_commands_applied:
     "No command the board accepted was applied to the twin, so it has no commanded input to predict from.",
   no_readings_compared: "No reading of the board could be compared with the twin.",
+  node_stop_not_applied:
+    "A safe stop the node ordered could not be applied to the twin, so the twin and the board are not comparable.",
+  node_stop_unconfirmed:
+    "The board never confirmed a safe stop the node ordered, so whether it stopped is unknown and the twin cannot be compared.",
 };
+
+export const originWords: Readonly<Record<CommandOrigin, string>> = { host: "Host command", node: "Node safe stop" };
+
+export const unboundEvidenceWords =
+  "Evidence is not bound to a run.json: the files were checked against nothing but themselves.";
 
 export const commandStatusWords: Readonly<Record<CommandStatus, string>> = {
   applied: "Applied to the twin",

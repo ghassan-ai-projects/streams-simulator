@@ -1,5 +1,5 @@
 import type { ReviewSession, ReviewState, TwinState } from "../../../app/review";
-import { readyReport, twinFor } from "../../../app/review";
+import { twinFor } from "../../../app/review";
 import type { TwinCoverage, TwinReport } from "../../../model/review";
 import { coverageOf, isRealBoard, twinOffer } from "../../../model/review";
 import { shared, useStore } from "../../primitives";
@@ -86,7 +86,7 @@ function Waiting({ review, shown }: { readonly review: ReviewSession; readonly s
 export function TwinInspect({ review, state, entity, startNs }: InspectProps) {
   const stored = useStore(review.twin);
   const shown = twinFor(stored, state.worldId);
-  const offer = twinOffer(readyReport(state), state.connection, state.sessionDomain);
+  const offer = twinOffer(state.connection, state.sessionDomain);
   if (offer.kind !== "offered" || !isRealBoard(state.origins, entity)) return null;
   const device = state.origins.get(entity)?.device ?? entity;
   return (

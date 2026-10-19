@@ -29,3 +29,22 @@ export function optional<T extends string>(value: unknown, choices: readonly T[]
   const found = pick(value, choices);
   return found === null ? null : { value: found };
 }
+
+export function optionalTexts<K extends string>(
+  row: Record<string, unknown>,
+  keys: readonly K[],
+): Record<K, string> | null {
+  if (keys.some((key) => row[key] !== undefined && typeof row[key] !== "string")) return null;
+  return Object.fromEntries(keys.map((key) => [key, typeof row[key] === "string" ? row[key] : ""])) as Record<
+    K,
+    string
+  >;
+}
+
+export function requiredTexts<K extends string>(
+  row: Record<string, unknown>,
+  keys: readonly K[],
+): Record<K, string> | null {
+  const found = optionalTexts(row, keys);
+  return found !== null && keys.every((key) => found[key] !== "") ? found : null;
+}

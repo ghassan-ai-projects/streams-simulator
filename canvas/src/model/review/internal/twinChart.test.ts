@@ -31,6 +31,19 @@ describe("the geometry of the twin chart", () => {
     expect(chart.yTicks.map((tick) => tick.label)).toEqual(["30", "25", "20"]);
   });
 
+  it("draws the stretches it is given only, so a truncated series shows no sliver for a stretch it did not draw", () => {
+    const drawn = chartOf(
+      withPoints([
+        { atNs: 100e9, board: 1, twin: 1 },
+        { atNs: 200e9, board: 2, twin: 2 },
+      ]),
+      [],
+      0,
+      0,
+    );
+    expect(drawn.shades).toEqual([]);
+  });
+
   it("gives a stretch of one reading a visible width", () => {
     const one = [{ ...firstOf(divergences), firstNs: 300e9, lastNs: 300e9 }];
     expect(chartOf(metric, one, 0, 0).shades[0]?.width).toBe(3);

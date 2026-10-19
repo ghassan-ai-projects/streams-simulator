@@ -7,7 +7,7 @@ import type { ReviewState } from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export type { ReviewPlant } from "./reviewPlant";
-export type { ControlSession } from "./controlStore";
+export type { ControlSession, ControlState } from "./controlStore";
 export type { TwinState } from "./twinStore";
 
 export interface ReviewSession extends Store<ReviewState> {

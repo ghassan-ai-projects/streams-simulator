@@ -89,7 +89,13 @@ export function SessionLive({ state, connect }: { readonly state: Running; reado
   );
 }
 
-export function SessionEnded({ run, onOpen }: { readonly run: string; readonly onOpen: () => void }) {
+interface EndedProps {
+  readonly run: string;
+  readonly onOpen: () => void;
+  readonly onAnother: () => void;
+}
+
+export function SessionEnded({ run, onOpen, onAnother }: EndedProps) {
   const status = useFocusOnMount<HTMLParagraphElement>();
   return (
     <div className={panel.body}>
@@ -98,6 +104,9 @@ export function SessionEnded({ run, onOpen }: { readonly run: string; readonly o
       </p>
       <button type="button" className={cx(shared.primary, panel.primary)} onClick={onOpen}>
         Open the review
+      </button>
+      <button type="button" className={cx(shared.secondary, panel.secondary)} onClick={onAnother}>
+        Set up another run
       </button>
     </div>
   );

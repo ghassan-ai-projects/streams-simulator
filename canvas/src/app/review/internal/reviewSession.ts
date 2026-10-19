@@ -6,11 +6,6 @@ import { ControlStore } from "./controlStore";
 import { ReviewStore } from "./reviewStore";
 import type { TwinSession } from "./twinStore";
 import { TwinStore } from "./twinStore";
-import type { ReviewState } from "./reviewState";
-
-function newestKey(state: ReviewState): string {
-  return state.liveHistory?.entries.at(-1)?.key ?? "";
-}
 
 class ControlledReview extends ReviewStore implements ReviewSession {
   readonly controls: ControlSession;
@@ -18,7 +13,13 @@ class ControlledReview extends ReviewStore implements ReviewSession {
 
   constructor(gateway: ReviewGateway, clock: Clock, scheduler: Scheduler) {
     super(gateway, clock, scheduler, createOperationIdentity());
-    this.controls = new ControlStore(gateway, () => newestKey(this.snapshot()));
+    this.controls = new ControlStore(gateway, {
+      run: () => this.snapshot().worldId,
+      newest: () => this.snapshot().liveHistory?.entries.at(-1) ?? null,
+    });
+    this.subscribe(() => {
+      this.controls.bind(this.snapshot().worldId);
+    });
     this.twin = new TwinStore(gateway);
   }
 }

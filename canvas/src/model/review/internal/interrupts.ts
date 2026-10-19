@@ -7,13 +7,19 @@ export interface ControlScope {
 
 export type ControlOp = "hold" | "release" | "approve_mode" | "approve" | "deny" | "estop" | "state";
 
-export type ControlRequest =
+export type ActionRequest =
   | { readonly op: "hold" | "release" | "estop"; readonly scope: ControlScope }
   | { readonly op: "approve_mode"; readonly scope: ControlScope; readonly enabled: boolean }
-  | { readonly op: "approve" | "deny"; readonly commandId: string }
-  | { readonly op: "state" };
+  | { readonly op: "approve" | "deny"; readonly commandId: string; readonly contentDigest: string };
 
-export type ControlFailureKind = "no-session" | "no-controls" | "gone" | "timeout" | "unavailable" | "unreadable";
+export type ControlRequest = ActionRequest | { readonly op: "state" };
+
+export type WordedRequest =
+  | Exclude<ActionRequest, { readonly op: "approve" | "deny" }>
+  | { readonly op: "approve" | "deny"; readonly commandId: string };
+
+export type ControlFailureKind =
+  "no-session" | "no-controls" | "gone" | "timeout" | "unavailable" | "unreadable" | "rejected";
 
 export type InterruptMode = "hold" | "approve";
 type NodeClock = "world" | "wall";
@@ -23,6 +29,11 @@ export interface InterruptHold {
   readonly latched: boolean;
 }
 
+export interface ArgPair {
+  readonly name: string;
+  readonly value: string;
+}
+
 export interface PendingApproval {
   readonly commandId: string;
   readonly device: string;
@@ -30,7 +41,12 @@ export interface PendingApproval {
   readonly deadlineNs: number;
   readonly queuedAtNs: number;
   readonly clock: NodeClock;
+  readonly contentDigest: string;
+  readonly args: readonly ArgPair[];
+  readonly argsTruncated: boolean;
 }
+
+export type Waiting = Pick<PendingApproval, "commandId" | "contentDigest">;
 
 export interface CoveredDevice {
   readonly device: string;
@@ -53,11 +69,22 @@ export interface ControlReply {
   readonly commandId: string;
   readonly stopped: readonly string[];
   readonly skipped: readonly string[];
+  readonly unreachable: readonly string[];
   readonly state: InterruptState;
 }
 
 export type InterruptEvent =
-  "inventory" | "control" | "command" | "clock" | "flush" | "reply" | "verdict" | "resolve" | "stop" | "effect";
+  | "inventory"
+  | "control"
+  | "command"
+  | "clock"
+  | "flush"
+  | "reply"
+  | "verdict"
+  | "resolve"
+  | "stop"
+  | "effect"
+  | "purge";
 
 export interface InterruptRecord {
   readonly event: InterruptEvent;

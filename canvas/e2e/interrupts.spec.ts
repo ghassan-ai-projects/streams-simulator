@@ -5,14 +5,8 @@ import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
-import {
-  addThermalBench,
-  openScriptedBench,
-  openSessionPanel,
-  planOneRealBoard,
-  runIdOf,
-  startGateway,
-} from "./support/session";
+import { addThermalBench, runIdOf } from "./support/session";
+import { boxOf, controlsOf, startedSession } from "./support/interruptBench";
 import { repository } from "./support/workspace";
 
 test.setTimeout(180_000);
@@ -23,27 +17,6 @@ test.afterEach(() => {
   bench?.close();
   bench = null;
 });
-
-const lease = { duty_permille: 300, lease_ms: 5000 };
-
-function controlsOf(page: Page): Locator {
-  return page.getByRole("region", { name: "Interrupts", exact: true });
-}
-
-async function startedSession(page: Page, lab: { readonly binary: string }): Promise<Locator> {
-  const open = openScriptedBench(lab.binary, [
-    { id: "ref-a", afterS: 160, device: "fan-01", command: "set_pwm_lease", args: lease },
-    { id: "ref-b", afterS: 190, device: "fan-01", command: "set_pwm_lease", args: lease },
-  ]);
-  bench = open;
-  const panel = await openSessionPanel(page);
-  await planOneRealBoard(panel, open, "zone-01");
-  await panel.getByRole("button", { name: "Start the session" }).click();
-  await expect(panel.getByText(/^Connected session · run c-[0-9a-f]{8}$/)).toBeVisible();
-  startGateway(open, "zone-01");
-  await expect(panel.getByText(/announced every real board/)).toBeVisible({ timeout: 30_000 });
-  return panel;
-}
 
 async function holdAndReleaseOnThePlant(page: Page): Promise<void> {
   const controls = controlsOf(page);
@@ -57,7 +30,7 @@ async function holdAndReleaseOnThePlant(page: Page): Promise<void> {
   await expect(active.getByText("Device fan-01: Held", { exact: true })).toBeVisible();
   await expect(page.getByRole("group", { name: /^fan-01,.*Held/ })).toBeVisible();
   await controls.getByRole("button", { name: "Release", exact: true }).click();
-  await expect(controls.getByText("Release of device fan-01 was applied.")).toBeVisible();
+  await expect(controls.getByText("Released device fan-01.")).toBeVisible();
   await expect(controls.getByText("No holds or approval modes are set.")).toBeVisible();
 }
 
@@ -69,7 +42,7 @@ async function approveAndDeny(page: Page, controls: Locator): Promise<void> {
   await expect(each).toHaveAttribute("aria-pressed", "true");
   const approve = controls.getByRole("button", { name: "Approve ref-a", exact: true });
   await expect(approve).toBeVisible({ timeout: 90_000 });
-  await expect(controls.getByText(/^ref-a · expires in .*\(run time\)$/)).toBeVisible();
+  await expect(controls.getByText(/^ref-a · expires in about .*\(run time\)$/)).toBeVisible();
   await approve.click();
   const waiting = controls.getByRole("group", { name: "Commands waiting for approval" });
   await expect(waiting.getByRole("heading")).toBeFocused();
@@ -96,17 +69,6 @@ async function emergencyStopAndRelease(page: Page, controls: Locator): Promise<v
   await expect(controls.getByText("No holds or approval modes are set.")).toBeVisible();
 }
 
-interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
-function boxOf(box: Box | null): Box {
-  return box ?? { x: 0, y: 0, width: 0, height: 0 };
-}
-
 async function fitsAt1280(page: Page, controls: Locator): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect.poll(() => controls.evaluate((region) => region.scrollWidth <= region.clientWidth)).toBe(true);
@@ -124,7 +86,9 @@ test("the interrupt controls hold, approve and stop the node of a live session, 
   lab,
 }) => {
   addThermalBench(lab);
-  const panel = await startedSession(page, lab);
+  const started = await startedSession(page, lab);
+  bench = started.bench;
+  const { panel } = started;
   await holdAndReleaseOnThePlant(page);
   await page.getByRole("button", { name: "Open live view", exact: true }).click();
   await expect(page.getByText("Live · following newest record", { exact: true })).toBeVisible();

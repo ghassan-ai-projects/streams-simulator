@@ -39,6 +39,11 @@ function Notes({ state, startNs }: Pick<LiveControlsProps, "state" | "startNs">)
           {`A live snapshot could not be read at ${runClock(state.liveUnreadableNs, startNs)}; the view is not current.`}
         </span>
       )}
+      {state.interruptUnreadableNs !== null && (
+        <span className={styles.alert} role="alert">
+          {`An interrupt record could not be read at ${runClock(state.interruptUnreadableNs, startNs)}; a timeline mark or the interrupt state may be missing.`}
+        </span>
+      )}
       {trimmed !== null && (
         <span className={styles.note}>{`History trimmed before ${runClock(trimmed, startNs)}`}</span>
       )}

@@ -5,8 +5,11 @@ export type { ChipPlace } from "./internal/timeLayout";
 export type { EventMark, MarkKind, TimedBinding } from "./internal/timeline";
 export type { Rerun } from "./internal/reportViews";
 export type { InstanceOrigin } from "../graph";
+export type { Connection } from "./internal/origins";
 export type { LiveMark, SessionCommand, SessionDevice, SessionLive, SessionReading } from "./internal/sessionLive";
 export type {
+  ActionRequest,
+  ArgPair,
   ControlFailureKind,
   ControlOp,
   ControlReply,
@@ -15,11 +18,13 @@ export type {
   CoveredDevice,
   InterruptEvent,
   InterruptHold,
+  InterruptMode,
   InterruptRecord,
   InterruptState,
   PendingApproval,
+  Waiting,
 } from "./internal/interrupts";
-export type { ControlResult, NodeNow, StateCheck } from "./internal/interruptWords";
+export type { BadgeKind, ControlResult, NodeNow, StateCheck } from "./internal/interruptWords";
 export type { ActiveScope, ScopeChoice, ScopeStatus, SeenState } from "./internal/interruptSelect";
 export type {
   TwinCommand,

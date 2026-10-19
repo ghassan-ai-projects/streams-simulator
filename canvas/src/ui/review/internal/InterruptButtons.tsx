@@ -1,14 +1,19 @@
-import { ClipboardCheck, Hand, OctagonX } from "lucide-react";
+import { Check, ClipboardCheck, Hand, OctagonX } from "lucide-react";
 import type { ControlSession } from "../../../app/review";
 import type { ControlScope, ScopeChoice, ScopeStatus } from "../../../model/review";
 import { cx, shared } from "../../primitives";
 import styles from "./Interrupts.module.css";
 
+export interface Enabled {
+  readonly actions: boolean;
+  readonly stop: boolean;
+}
+
 interface ButtonsProps {
   readonly controls: ControlSession;
   readonly scope: ControlScope;
   readonly status: ScopeStatus;
-  readonly ready: boolean;
+  readonly enabled: Enabled;
   readonly noteId: string;
 }
 
@@ -21,7 +26,7 @@ interface ScopeFieldProps {
 export function ScopeField({ choices, picked, onPick }: ScopeFieldProps) {
   return (
     <label className={styles.field}>
-      Scope
+      <span className="sr-only">Scope</span>
       <select
         aria-label="Scope"
         className={styles.select}
@@ -42,29 +47,39 @@ export function ScopeField({ choices, picked, onPick }: ScopeFieldProps) {
 
 type PartProps = Omit<ButtonsProps, "noteId">;
 
-function HoldButton({ controls, scope, status, ready }: PartProps) {
+function On({ pressed }: { readonly pressed: boolean }) {
+  return pressed ? (
+    <span className={styles.mark} aria-hidden="true">
+      <Check size={14} />
+      On
+    </span>
+  ) : null;
+}
+
+function HoldButton({ controls, scope, status, enabled }: PartProps) {
   return (
     <button
       type="button"
       className={cx(shared.secondary, styles.toggle)}
       aria-pressed={status.held}
-      disabled={!ready}
+      disabled={!enabled.actions}
       onClick={() => {
         void controls.hold(scope);
       }}
     >
       <Hand size={14} aria-hidden="true" />
       Hold
+      <On pressed={status.held} />
     </button>
   );
 }
 
-function ReleaseButton({ controls, scope, ready }: PartProps) {
+function ReleaseButton({ controls, scope, enabled }: PartProps) {
   return (
     <button
       type="button"
       className={shared.secondary}
-      disabled={!ready}
+      disabled={!enabled.actions}
       onClick={() => {
         void controls.release(scope);
       }}
@@ -74,30 +89,31 @@ function ReleaseButton({ controls, scope, ready }: PartProps) {
   );
 }
 
-function ApproveButton({ controls, scope, status, ready }: PartProps) {
+function ApproveButton({ controls, scope, status, enabled }: PartProps) {
   const approving = status.approving;
   return (
     <button
       type="button"
       className={cx(shared.secondary, styles.toggle)}
       aria-pressed={approving}
-      disabled={!ready}
+      disabled={!enabled.actions}
       onClick={() => {
         void (approving ? controls.stopApproving(scope) : controls.approveEach(scope));
       }}
     >
       <ClipboardCheck size={14} aria-hidden="true" />
       Approve each command
+      <On pressed={approving} />
     </button>
   );
 }
 
-function StopButton({ controls, scope, ready, noteId }: ButtonsProps) {
+function StopButton({ controls, scope, enabled, noteId }: ButtonsProps) {
   return (
     <button
       type="button"
       className={cx(shared.secondary, styles.estop)}
-      disabled={!ready}
+      disabled={!enabled.stop}
       aria-describedby={noteId}
       onClick={() => {
         void controls.emergencyStop(scope);

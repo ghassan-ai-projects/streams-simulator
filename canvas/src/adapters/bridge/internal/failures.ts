@@ -90,18 +90,19 @@ export function connectFailure(error: RequestFailure): ConnectFailure {
   return serverFault(error.problem, display);
 }
 
-const controlKinds: Readonly<Record<string, ControlFailure["kind"]>> = {
-  no_session: "no-session",
-  control_unavailable: "no-controls",
-  control_gone: "gone",
-  control_timeout: "timeout",
-  control_unreadable: "unreadable",
-};
+const controlKinds: ReadonlyMap<string, ControlFailure["kind"]> = new Map<string, ControlFailure["kind"]>([
+  ["no_session", "no-session"],
+  ["control_unavailable", "no-controls"],
+  ["control_gone", "gone"],
+  ["control_timeout", "timeout"],
+  ["control_unreadable", "unreadable"],
+]);
 
 export function controlFailure(error: RequestFailure): ControlFailure {
   if (error.kind !== "http") return unreached(error);
-  const kind = controlKinds[error.problem.code] ?? (error.problem.status >= 500 ? "unavailable" : "unreadable");
-  return { kind, diagnostic: diagnostic(error.problem) };
+  const { problem } = error;
+  const fallback = problem.status >= 500 ? "unavailable" : "rejected";
+  return { kind: controlKinds.get(problem.code) ?? fallback, diagnostic: diagnostic(problem) };
 }
 
 export function twinFailure(error: RequestFailure): TwinFailure {

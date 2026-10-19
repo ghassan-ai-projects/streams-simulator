@@ -46,4 +46,12 @@ describe("live controls", () => {
     );
     expect(screen.getByText("History trimmed before 00:01:00")).toBeInTheDocument();
   });
+
+  it("says an interrupt record could not be read in its own words, not as an unreadable snapshot", () => {
+    const state = reviewState({ connection: "running", following: true, interruptUnreadableNs: 75e9 });
+    render(<LiveControls review={review()} state={state} startNs={0} now={() => 45_000} />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("An interrupt record could not be read at 00:01:15");
+    expect(alert).not.toHaveTextContent("live snapshot");
+  });
 });

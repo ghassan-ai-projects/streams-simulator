@@ -27,6 +27,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     liveHistory: null,
     liveMarks: [],
     liveUnreadableNs: null,
+    interruptUnreadableNs: null,
     lastLiveAtMs: null,
     caughtUp: true,
     ...overrides,

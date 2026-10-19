@@ -1,6 +1,10 @@
 export { noteLinesByEntity } from "./internal/noteLines";
 export type {
+  ActionRequest,
   ActiveScope,
+  ArgPair,
+  BadgeKind,
+  Connection,
   ControlFailureKind,
   ControlOp,
   ControlReply,
@@ -10,6 +14,7 @@ export type {
   CoveredDevice,
   InterruptEvent,
   InterruptHold,
+  InterruptMode,
   InterruptRecord,
   InterruptState,
   LiveMark,
@@ -34,28 +39,32 @@ export type {
   TwinSummary,
   TwinTolerance,
   TwinVerdict,
+  Waiting,
 } from "./contract";
 export { interruptMarks } from "./internal/interruptMarks";
 export {
   activeScopes,
-  allDevices,
-  chosenScope,
+  chosenChoice,
   interruptOf,
   newestInterrupts,
   scopeChoices,
   scopeStatus,
 } from "./internal/interruptSelect";
+export { allDevices, scopeLabel } from "./internal/interruptScope";
 export {
+  argsWords,
+  arrivalWords,
+  badgeKind,
   deadlineWords,
   modeLine,
   outcomeLine,
   pendingTitle,
   requestWords,
-  scopeKey,
   waitingWords,
 } from "./internal/interruptWords";
 export { deviceOf, originOf, readingWords } from "./internal/sessionLive";
 export {
+  commandOrigins,
   commandStatuses,
   notAppliedReasons,
   notComparedReasons,
@@ -80,6 +89,8 @@ export {
   noDivergenceWords,
   notAppliedWords,
   notComparedWords,
+  originWords,
+  unboundEvidenceWords,
   verdictWords,
 } from "./internal/twinWords";
 export {

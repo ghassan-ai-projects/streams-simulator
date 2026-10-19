@@ -31,6 +31,9 @@ function OwnSession({ state, launch, onFinished, form }: OwnProps) {
             launch.connect.reset();
             onFinished(state.run);
           }}
+          onAnother={() => {
+            launch.connect.reset();
+          }}
         />
       );
     case "failed":

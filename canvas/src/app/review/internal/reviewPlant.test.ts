@@ -6,6 +6,7 @@ import { report } from "../../../test/runFixture";
 import { createPlantSession } from "../../plant";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import type { PlantSession } from "../../plant";
+import type { ReviewState } from "./reviewState";
 import { reviewPlantFor, showRunPlant } from "./reviewPlant";
 
 const workspace = {
@@ -82,25 +83,37 @@ function session() {
 
 describe("opening a review's plant", () => {
   const target = { key: "run:w-1", fallback: "domains/mini.domain.json" };
+  const saved = (runDomain: ReviewState["runDomain"]) => ({ runDomain, connection: "saved" as const });
+  const running = (runDomain: ReviewState["runDomain"]) => ({ runDomain, connection: "running" as const });
+  const failed = {
+    phase: "failed",
+    failure: { kind: "missing", diagnostic: { displayCode: "x", message: "m" } },
+  } as const;
 
   it("shows the plant the run recorded under the run's key", () => {
     const { plants, show, load } = session();
-    showRunPlant(plants, target, { phase: "ready", value: recorded }, workspace);
+    showRunPlant(plants, target, saved({ phase: "ready", value: recorded }), workspace);
     expect(show).toHaveBeenCalledWith("run:w-1", recorded);
     expect(load).not.toHaveBeenCalled();
   });
 
   it("loads the workspace's file when the recorded plant failed and there is one to load", () => {
-    const failed = {
-      phase: "failed",
-      failure: { kind: "missing", diagnostic: { displayCode: "x", message: "m" } },
-    } as const;
     const { plants, show, load } = session();
-    showRunPlant(plants, target, failed, workspace);
+    showRunPlant(plants, target, saved(failed), workspace);
     expect(load).toHaveBeenCalledWith("domains/mini.domain.json", workspace);
-    showRunPlant(plants, { key: "run:w-1", fallback: undefined }, failed, workspace);
-    showRunPlant(plants, target, failed, null);
-    showRunPlant(plants, target, { phase: "loading" }, workspace);
+    showRunPlant(plants, { key: "run:w-1", fallback: undefined }, saved(failed), workspace);
+    showRunPlant(plants, target, saved(failed), null);
+    showRunPlant(plants, target, saved({ phase: "loading" }), workspace);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  it("loads the plant of a running session by its session record, without waiting for a run file it does not have", () => {
+    const { plants, show, load } = session();
+    showRunPlant(plants, target, running({ phase: "loading" }), workspace);
+    expect(load).toHaveBeenCalledWith("domains/mini.domain.json", workspace);
+    showRunPlant(plants, { key: "run:w-1", fallback: undefined }, running({ phase: "loading" }), workspace);
+    showRunPlant(plants, target, running({ phase: "loading" }), null);
     expect(load).toHaveBeenCalledTimes(1);
     expect(show).not.toHaveBeenCalled();
   });

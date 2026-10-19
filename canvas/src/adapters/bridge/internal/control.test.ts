@@ -15,6 +15,8 @@ function sent(t: ReturnType<typeof bridgeTransport>): { url: unknown; body: unkn
   return { url, body: typeof raw === "string" ? (JSON.parse(raw) as unknown) : undefined };
 }
 
+const digest = `sha256:${"a".repeat(64)}`;
+
 describe("a control sent through the bridge", () => {
   it.each<[ControlRequest, Record<string, unknown>]>([
     [
@@ -34,12 +36,12 @@ describe("a control sent through the bridge", () => {
       { op: "approve_mode", scope: { kind: "all" }, enabled: false },
     ],
     [
-      { op: "approve", commandId: "cmd-7" },
-      { op: "approve", command_id: "cmd-7" },
+      { op: "approve", commandId: "cmd-7", contentDigest: digest },
+      { op: "approve", command_id: "cmd-7", content_digest: digest },
     ],
     [
-      { op: "deny", commandId: "cmd-7" },
-      { op: "deny", command_id: "cmd-7" },
+      { op: "deny", commandId: "cmd-7", contentDigest: digest },
+      { op: "deny", command_id: "cmd-7", content_digest: digest },
     ],
     [{ op: "state" }, { op: "state" }],
   ])("sends %j as the node's own request document and nothing else", async (request, args) => {
@@ -64,7 +66,11 @@ describe("a control sent through the bridge", () => {
     ["control_timeout", 422, "timeout"],
     ["control_unreadable", 422, "unreadable"],
     ["bridge_failed", 500, "unavailable"],
-    ["bad_arguments", 400, "unreadable"],
+    ["bad_arguments", 400, "rejected"],
+    ["some_new_code", 404, "rejected"],
+    ["constructor", 400, "rejected"],
+    ["__proto__", 422, "rejected"],
+    ["some_new_code", 503, "unavailable"],
   ])("maps the bridge's %s to the failure %s", async (code, status, kind) => {
     const t = answering(status, { error: { code, message: "words" } });
     expect(await bridgeAdapter(t).review.control({ op: "state" })).toMatchObject({

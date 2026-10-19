@@ -10,7 +10,7 @@
 
 .table th,
 .table td {
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   font-weight: 400;
   text-align: left;
   border-top: 1px solid var(--border-subtle);
@@ -26,6 +26,12 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
+}
+
+.table .id {
+  min-width: 8ch;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .table .number,
@@ -80,7 +86,7 @@
 
 .outcome {
   width: 1%;
-  min-width: 10em;
+  min-width: 7em;
   white-space: normal;
   overflow-wrap: anywhere;
 }

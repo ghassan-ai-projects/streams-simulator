@@ -19,7 +19,7 @@ function controlArgs(request: ControlRequest): Readonly<Record<string, unknown>>
       return { op: request.op, scope: wireScope(request.scope), enabled: request.enabled };
     case "approve":
     case "deny":
-      return { op: request.op, command_id: request.commandId };
+      return { op: request.op, command_id: request.commandId, content_digest: request.contentDigest };
     case "state":
       return { op: request.op };
   }

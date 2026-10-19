@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  commandOrigins,
   commandStatuses,
   notAppliedReasons,
   notComparedReasons,
@@ -14,6 +15,7 @@ import {
   notAppliedWords,
   notComparedWords,
   numberWords,
+  originWords,
   toleranceSourceWords,
   verdictWords,
 } from "./twinWords";
@@ -27,6 +29,7 @@ describe("the words of the twin report", () => {
     ["no-divergence lines", noDivergenceWords, twinVerdicts],
     ["judge reasons", judgeReasonWords, twinJudgeReasons],
     ["command statuses", commandStatusWords, commandStatuses],
+    ["command origins", originWords, commandOrigins],
     ["not-applied reasons", notAppliedWords, notAppliedReasons],
     ["not-compared reasons", notComparedWords, notComparedReasons],
     ["tolerance sources", toleranceSourceWords, toleranceSources],

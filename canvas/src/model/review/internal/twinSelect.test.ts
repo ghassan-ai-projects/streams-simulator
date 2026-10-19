@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blankReport } from "../../../test/runFixture";
 import { firstOf, twinModel } from "../../../test/twinReportFixture";
-import type { Report } from "./report";
 import type { TwinMetric } from "./twin";
 import {
   coverageOf,
@@ -15,25 +13,21 @@ import {
   unitOfMetric,
 } from "./twinSelect";
 
-const traced = blankReport({ checks: [{ name: "field_trace", status: "match" }] });
-const untraced = blankReport({ checks: [{ name: "trace", status: "match" }] });
-
 describe("when the twin comparison is offered", () => {
-  it("offers it for a saved session with a field trace and a domain", () => {
-    expect(twinOffer(traced, "saved", "mini")).toEqual({ kind: "offered", domain: "mini" });
+  it("offers it for a saved session that names a domain, and lets the binary refuse a run with no board", () => {
+    expect(twinOffer("saved", "mini")).toEqual({ kind: "offered", domain: "mini" });
   });
 
   it("shows nothing for a run that is not a saved session", () => {
-    expect(twinOffer(traced, "none", "mini")).toEqual({ kind: "absent" });
-    expect(twinOffer(traced, "running", "mini")).toEqual({ kind: "absent" });
+    expect(twinOffer("none", "mini")).toEqual({ kind: "absent" });
+    expect(twinOffer("running", "mini")).toEqual({ kind: "absent" });
   });
 
-  it.each<[Report | null, string, string]>([
-    [null, "mini", "The run report is not read yet."],
-    [untraced, "mini", "This run recorded no field trace, so it has no real board to compare."],
-    [traced, "", "The session record does not name the domain the twin would run."],
-  ])("says why it is withheld", (report, domain, why) => {
-    expect(twinOffer(report, "saved", domain)).toEqual({ kind: "withheld", why });
+  it("says why it is withheld when the session record names no domain", () => {
+    expect(twinOffer("saved", "")).toEqual({
+      kind: "withheld",
+      why: "The session record does not name the domain the twin would run.",
+    });
   });
 });
 
@@ -44,9 +38,9 @@ describe("how tolerances and the rule are worded", () => {
     expect(toleranceWords({ value: null, source: "none" }, "Cel")).toBe("No tolerance (none)");
   });
 
-  it("states the default share as a percentage with the binary's own description", () => {
-    expect(ruleWords(twinModel({ spanFraction: 0.05, ruleDescription: "Absolute." }))).toBe(
-      "Default tolerance: 5 % of the metric's range. Absolute.",
+  it("shows the binary's own description of the rule and builds no words of its own", () => {
+    expect(ruleWords(twinModel({ ruleDescription: "Absolute, 5 % of the range." }))).toBe(
+      "Absolute, 5 % of the range.",
     );
   });
 });
@@ -56,6 +50,24 @@ describe("what covers a device in the report", () => {
     const [covered] = coverageOf(twinModel(), "sensor");
     expect(covered).toMatchObject({ kind: "series", metric: { metric: "temperature" } });
     expect(covered?.kind === "series" ? covered.divergences.map((d) => d.name) : []).toEqual(["sensor.temperature#1"]);
+    expect(covered).toMatchObject({ undrawn: 0 });
+  });
+
+  it("leaves out a divergence that lies beyond the readings the truncated series draws, and counts it", () => {
+    const base = twinModel();
+    const metric: TwinMetric = {
+      ...firstOf(base.metrics),
+      series: { ...firstOf(base.metrics).series, truncated: true, total: 3000 },
+    };
+    const beyond = { ...firstOf(base.divergences), name: "sensor.temperature#2", firstNs: 900e9, lastNs: 950e9 };
+    const straddling = { ...firstOf(base.divergences), name: "sensor.temperature#3", firstNs: 450e9, lastNs: 950e9 };
+    const report = twinModel({ metrics: [metric], divergences: [...base.divergences, beyond, straddling] });
+    const [covered] = coverageOf(report, "sensor");
+    expect(covered).toMatchObject({ kind: "series", undrawn: 1 });
+    expect(covered?.kind === "series" ? covered.divergences.map((d) => d.name) : []).toEqual([
+      "sensor.temperature#1",
+      "sensor.temperature#3",
+    ]);
   });
 
   it("keeps the divergences of other metrics and devices out of a series", () => {
@@ -134,9 +146,15 @@ describe("lines about a metric and a divergence", () => {
 
   it("says when the series was cut short", () => {
     const { series } = firstOf(twinModel().metrics);
-    expect(truncationNote(series)).toBe("");
-    expect(truncationNote({ ...series, truncated: true, total: 3000 })).toBe(
+    expect(truncationNote(series, 0)).toBe("");
+    expect(truncationNote({ ...series, truncated: true, total: 3000 }, 0)).toBe(
       "Showing the first 5 of 3000 compared readings.",
+    );
+    expect(truncationNote({ ...series, truncated: true, total: 3000 }, 1)).toBe(
+      "Showing the first 5 of 3000 compared readings. 1 stretch where they part ways lies beyond the readings shown; the Report tab lists it.",
+    );
+    expect(truncationNote({ ...series, truncated: true, total: 3000 }, 3)).toContain(
+      "3 stretches where they part ways lie beyond the readings shown; the Report tab lists them.",
     );
   });
 });

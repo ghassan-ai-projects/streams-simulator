@@ -45,6 +45,10 @@ describe("interrupt marks on the timeline", () => {
     expect(interruptMarks(denied, 1).map((m) => m.label)).toEqual([
       "cmd-7 refused: Refused at the node: local control",
     ]);
+    const purged = recordOf({ event: "purge", commandId: "c-1", device: "fan", reason: "local_control" });
+    expect(interruptMarks(purged, 1)).toMatchObject([
+      { label: "c-1 refused: Refused at the node: local control", raw: "purge c-1 local_control" },
+    ]);
     const stop = recordOf({ event: "stop", device: "fan", command: "stop_fan" });
     expect(interruptMarks(stop, 1)).toMatchObject([{ label: "Safe stop sent to fan", raw: "stop fan stop_fan" }]);
   });

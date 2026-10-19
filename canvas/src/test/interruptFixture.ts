@@ -1,3 +1,4 @@
+import type { ConnectState } from "../app/launch";
 import type {
   ControlReply,
   InterruptRecord,
@@ -6,6 +7,7 @@ import type {
   SessionDevice,
   SessionLive,
 } from "../model/review";
+import { interruptsWire, liveWire } from "./liveFixture";
 
 export const emptyState: InterruptState = { holds: [], approve: [], pending: [], devices: [] };
 
@@ -16,6 +18,12 @@ export const fanWaits: PendingApproval = {
   deadlineNs: 130e9,
   queuedAtNs: 10e9,
   clock: "world",
+  contentDigest: `sha256:${"a".repeat(64)}`,
+  args: [
+    { name: "duty_permille", value: "300" },
+    { name: "lease_ms", value: "5000" },
+  ],
+  argsTruncated: false,
 };
 
 export const sensorWaits: PendingApproval = {
@@ -25,6 +33,9 @@ export const sensorWaits: PendingApproval = {
   deadlineNs: 1_700_000_045e9,
   queuedAtNs: 1,
   clock: "wall",
+  contentDigest: `sha256:${"b".repeat(64)}`,
+  args: [],
+  argsTruncated: false,
 };
 
 export const busyState: InterruptState = {
@@ -49,6 +60,7 @@ export function replyOf(overrides: Partial<ControlReply> = {}): ControlReply {
     commandId: "",
     stopped: [],
     skipped: [],
+    unreachable: [],
     state: busyState,
     ...overrides,
   };
@@ -109,3 +121,50 @@ export function liveOf(overrides: Partial<SessionLive> = {}): SessionLive {
     ...overrides,
   };
 }
+
+export const offeredSession: Extract<ConnectState, { readonly phase: "live" }> = {
+  phase: "live",
+  domain: "mini",
+  run: "c-1",
+  check: null,
+  binding: null,
+  stopping: false,
+  controls: true,
+  note: null,
+};
+
+const fanWire = {
+  device: "fan",
+  board: "mega-01",
+  instance: "fan-01",
+  environment: "simulated",
+  boot_id: "1",
+  health: "simulated",
+  reboots: 0,
+  readings: [],
+};
+
+export function sessionSnapshot(interrupts?: object) {
+  const wire = liveWire(10e9);
+  return { ...wire, devices: [...wire.devices, fanWire], ...(interrupts === undefined ? {} : { interrupts }) };
+}
+
+const [waitingFan] = interruptsWire().pending;
+
+export const busyInterrupts = interruptsWire({
+  holds: [
+    { kind: "board", id: "uno-07", latched: false },
+    { kind: "device", id: "fan", latched: true },
+  ],
+  pending: [
+    { ...waitingFan, deadline_ns: 130e9 },
+    {
+      ...waitingFan,
+      command_id: "cmd-8",
+      device: "sensor",
+      command: "calibrate",
+      deadline_ns: 1_700_000_045e9,
+      clock: "wall",
+    },
+  ],
+});

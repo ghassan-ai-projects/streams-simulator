@@ -1,5 +1,5 @@
 import type { ReviewSession, ReviewState, TwinState } from "../../../app/review";
-import { readyReport, twinFor } from "../../../app/review";
+import { twinFor } from "../../../app/review";
 import { twinOffer } from "../../../model/review";
 import { failureLine, useFocusOnMount, useStore } from "../../primitives";
 import { Section } from "./ReportParts";
@@ -8,6 +8,7 @@ import styles from "./Twin.module.css";
 import { TwinForm } from "./TwinForm";
 import { CommandsSection, DivergencesSection, MetricsSection } from "./TwinParts";
 import { TwinResult } from "./TwinResult";
+import { useTwinSeen } from "./useTwinSeen";
 
 interface TwinPanelProps {
   readonly review: ReviewSession;
@@ -19,8 +20,15 @@ const intro =
   "Runs this plant's domain as the twin, with the commands the board accepted, and compares it with what the " +
   "board reported. It measures the twin; the board's readings are evidence, not truth.";
 
-function Refused({ shown }: { readonly shown: Extract<TwinState, { phase: "failed" }> }) {
-  const alert = useFocusOnMount<HTMLParagraphElement>();
+function Refused({
+  shown,
+  review,
+}: {
+  readonly shown: Extract<TwinState, { phase: "failed" }>;
+  readonly review: ReviewSession;
+}) {
+  const alert = useFocusOnMount<HTMLParagraphElement>({ when: shown.fresh });
+  useTwinSeen(review, shown);
   return (
     <p ref={alert} tabIndex={-1} role="alert" className={styles.failure}>
       {`The comparison could not be made: ${failureLine(shown.failure.diagnostic)}`}
@@ -28,15 +36,15 @@ function Refused({ shown }: { readonly shown: Extract<TwinState, { phase: "faile
   );
 }
 
-function Outcome({ shown }: { readonly shown: TwinState }) {
-  if (shown.phase === "failed") return <Refused shown={shown} />;
-  if (shown.phase === "ready") return <TwinResult report={shown.report} request={shown.request} />;
+function Outcome({ shown, review }: { readonly shown: TwinState; readonly review: ReviewSession }) {
+  if (shown.phase === "failed") return <Refused shown={shown} review={review} />;
+  if (shown.phase === "ready") return <TwinResult shown={shown} review={review} />;
   return null;
 }
 
 export function TwinPanel({ review, state, startNs }: TwinPanelProps) {
   const stored = useStore(review.twin);
-  const offer = twinOffer(readyReport(state), state.connection, state.sessionDomain);
+  const offer = twinOffer(state.connection, state.sessionDomain);
   const shown = twinFor(stored, state.worldId);
   if (offer.kind === "absent") return null;
   if (offer.kind === "withheld") {
@@ -54,7 +62,7 @@ export function TwinPanel({ review, state, startNs }: TwinPanelProps) {
         <p className={styles.status} role="status">
           {shown.phase === "loading" ? "Comparing the board with the twin…" : ""}
         </p>
-        <Outcome shown={shown} />
+        <Outcome shown={shown} review={review} />
       </Section>
       {shown.phase === "ready" && <TwinDetails review={review} shown={shown} startNs={startNs} />}
     </>

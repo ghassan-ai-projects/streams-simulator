@@ -16,6 +16,7 @@ export type JournalEntry =
   | { readonly kind: "session"; readonly atNs: number; readonly domain: string; readonly simulated: readonly string[] }
   | { readonly kind: "live"; readonly live: SessionLive; readonly atNs: number }
   | { readonly kind: "live-unreadable"; readonly atNs: number }
+  | { readonly kind: "interrupt-unreadable"; readonly atNs: number }
   | { readonly kind: "interrupt"; readonly atNs: number; readonly record: InterruptRecord }
   | { readonly kind: "observation"; readonly observation: Observation }
   | { readonly kind: "opened"; readonly atNs: number; readonly mode: string; readonly adapter: string }

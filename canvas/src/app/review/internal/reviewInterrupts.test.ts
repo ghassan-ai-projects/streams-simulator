@@ -49,7 +49,8 @@ describe("interrupts in a live review", () => {
     stream(liveWire(12e9));
     expect(review.snapshot().liveUnreadableNs).toBeNull();
     stream(interruptWire({ event: "teleport" }, 13e9));
-    expect(review.snapshot().liveUnreadableNs).toBe(13e9);
+    expect(review.snapshot().liveUnreadableNs).toBeNull();
+    expect(review.snapshot().interruptUnreadableNs).toBe(13e9);
   });
 
   it("keeps a snapshot with an interrupt state as a state of its own at the cursor", () => {
@@ -58,6 +59,34 @@ describe("interrupts in a live review", () => {
     expect(review.snapshot().live?.interrupts).toMatchObject({ holds: [{ latched: false }] });
     stream({ ...liveWire(11e9), interrupts: interruptsWire({ holds: [] }) });
     expect(review.snapshot().liveHistory?.entries).toHaveLength(2);
+  });
+
+  it("shows nothing of a finished session's controls to the next session", async () => {
+    const { bridge, review, stream } = setup();
+    bridge.actions.set("session.control", success(controlReplyWire()));
+    stream({ ...liveWire(10e9), interrupts: interruptsWire({ holds: [] }) });
+    review.controls.pick({ kind: "board", id: "uno-07" });
+    await review.controls.hold({ kind: "board", id: "uno-07" });
+    expect(review.controls.snapshot()).toMatchObject({ run: "w-2", seen: { run: "w-2" } });
+    review.close();
+    review.openLive("w-3");
+    expect(review.controls.snapshot()).toMatchObject({
+      run: "w-3",
+      seen: null,
+      last: null,
+      sending: [],
+      picked: { kind: "all", id: "" },
+    });
+  });
+
+  it("keeps a session's controls while its screens come and go", async () => {
+    const { bridge, review } = setup();
+    bridge.actions.set("session.control", success(controlReplyWire()));
+    review.controls.pick({ kind: "board", id: "uno-07" });
+    await review.controls.hold({ kind: "board", id: "uno-07" });
+    review.openLive("w-2");
+    review.close();
+    expect(review.controls.snapshot()).toMatchObject({ run: "w-2", picked: { kind: "board", id: "uno-07" } });
   });
 
   it("sends a control and remembers the newest snapshot the answer was read against", async () => {

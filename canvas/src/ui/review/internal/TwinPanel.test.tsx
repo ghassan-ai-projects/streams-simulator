@@ -68,7 +68,9 @@ describe("the twin comparison in the review", () => {
     expect(counts.getByText("Readings compared").nextSibling).toHaveTextContent("5");
     expect(counts.getByText("Beyond tolerance").nextSibling).toHaveTextContent("2");
     expect(counts.getByText("Commands not applied").nextSibling).toHaveTextContent("2");
-    expect(within(result).getByText(/Default tolerance: 5 % of the metric's range\./)).toBeInTheDocument();
+    expect(
+      within(result).getByText("Absolute, per metric: 5 % of the declared range unless a tolerance is declared."),
+    ).toBeInTheDocument();
     expect(within(result).getByText("Twin: domain mini. No tolerance was typed.")).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
@@ -166,12 +168,51 @@ describe("the twin comparison in the review", () => {
     expect(screen.getByText("The board reported no metric the twin could be compared on.")).toBeInTheDocument();
   });
 
-  it("withholds the comparison, with the reason, when the run has no field trace or the domain is unknown", async () => {
-    await openSaved({ report: reportWire });
-    expect(
-      screen.getByText("This run recorded no field trace, so it has no real board to compare."),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Compare with twin" })).toBeNull();
+  it("offers the comparison for any saved session and lets the binary say when the run has no board to compare", async () => {
+    const { bridge } = await openSaved({ report: reportWire });
+    bridge.handlers.set("run.twin_report", () =>
+      failure(cannedFailure("plantwire_failed", 422, "the run recorded no field trace")),
+    );
+    fireEvent.click(compare());
+    expect(await screen.findByRole("alert")).toHaveTextContent("the run recorded no field trace");
+  });
+
+  it("does not take focus again when the result is shown again, for example after a change of tab", async () => {
+    const { review, view } = await openSaved();
+    fireEvent.click(compare());
+    const heading = within(await resultGroup()).getByRole("heading", { name: verdictWords.diverges.line });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    await waitFor(() => {
+      expect(review.twin.snapshot()).toMatchObject({ phase: "ready", fresh: false });
+    });
+    view.unmount();
+    render(<TwinPanel review={review} state={review.snapshot()} startNs={0} />);
+    const again = within(await resultGroup()).getByRole("heading", { name: verdictWords.diverges.line });
+    expect(again).not.toHaveFocus();
+  });
+
+  it("names a safe stop the node ordered as the node's, and says when the evidence is bound to nothing", async () => {
+    const { bridge } = await openSaved();
+    const stop = { command_id: "node-stop-1", device: "sensor", command: "stop", origin: "node", status: "applied" };
+    const run = {
+      field_trace_digest: `sha256:${"a".repeat(64)}`,
+      journal_digest: `sha256:${"a".repeat(64)}`,
+      evidence_bound: false,
+    };
+    bridge.handlers.set("run.twin_report", () => success(twinReportWire({ commands: [stop], run })));
+    fireEvent.click(compare());
+    const list = await screen.findByRole("list", { name: "Commands and the twin" });
+    expect(within(list).getByText("Node safe stop")).toBeInTheDocument();
+    expect(screen.getByText(/Evidence is not bound to a run\.json/)).toBeInTheDocument();
+  });
+
+  it("explains the reasons a stop of the node makes a run impossible to judge", async () => {
+    const { bridge } = await openSaved();
+    bridge.handlers.set("run.twin_report", () => success(cannotJudgeWire({ reason: "node_stop_unconfirmed" })));
+    fireEvent.click(compare());
+    expect(await screen.findByText(/The board never confirmed a safe stop the node ordered/)).toBeInTheDocument();
   });
 
   it("withholds it when the session record does not name the domain", async () => {

@@ -99,10 +99,10 @@ interface ChartViewProps {
 }
 
 export function TwinChartView({ series, startNs, cursorNs }: ChartViewProps) {
-  const { metric, divergences } = series;
+  const { metric, divergences, undrawn } = series;
   const chart = chartOf(metric, divergences, startNs, cursorNs);
   const unit = metric.unit === "" ? "" : ` (${metric.unit})`;
-  const truncated = truncationNote(metric.series);
+  const truncated = truncationNote(metric.series, undrawn);
   return (
     <figure className={styles.figure}>
       <figcaption className={styles.heading}>{`${metric.metric}${unit}`}</figcaption>

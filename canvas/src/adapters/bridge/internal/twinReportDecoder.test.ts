@@ -17,7 +17,8 @@ describe("the twin report document", () => {
       verdict: "diverges",
       reason: null,
       twinDomain: "mini",
-      spanFraction: 0.05,
+      evidenceBound: true,
+      ruleDescription: "Absolute, per metric: 5 % of the declared range unless a tolerance is declared.",
       summary: { compared: 5, within: 3, diverged: 2, notCompared: 2, commandsApplied: 1, commandsNotApplied: 2 },
     });
     expect(report?.commands).toEqual([
@@ -25,6 +26,7 @@ describe("the twin report document", () => {
         commandId: "cmd-1",
         device: "sensor",
         command: "set_mode",
+        origin: "host",
         atNs: 50e9,
         status: "applied",
         reason: null,
@@ -34,6 +36,7 @@ describe("the twin report document", () => {
         commandId: "cmd-2",
         device: "sensor",
         command: "set_mode",
+        origin: "host",
         atNs: 60e9,
         status: "not_applied",
         reason: "refused_by_board",
@@ -43,6 +46,7 @@ describe("the twin report document", () => {
         commandId: "cmd-3",
         device: "sensor",
         command: "reset",
+        origin: "host",
         atNs: null,
         status: "twin_refused",
         reason: null,
@@ -116,6 +120,11 @@ describe("the twin report document", () => {
     ["a twin with no domain", changed((w) => Object.assign(w.twin, { domain: "" }))],
     ["no tolerance rule", { ...twinReportWire(), tolerance_rule: null }],
     ["a tolerance share that is not a number", changed((w) => Object.assign(w.tolerance_rule, { span_fraction: "x" }))],
+    ["no description of the tolerance rule", changed((w) => Object.assign(w.tolerance_rule, { description: "" }))],
+    ["no statement whether the evidence is bound", changed((w) => Reflect.deleteProperty(w.run, "evidence_bound"))],
+    ["an evidence flag that is not a boolean", changed((w) => Object.assign(w.run, { evidence_bound: "yes" }))],
+    ["no run", { ...twinReportWire(), run: null }],
+    ["a reason that is not text", changed((w) => Object.assign(w, { reason: 4 }))],
     ["commands that are not a list", { ...twinReportWire(), commands: {} }],
     ["metrics that are not a list", { ...twinReportWire(), metrics: {} }],
     ["divergences that are not a list", { ...twinReportWire(), divergences: {} }],
@@ -137,12 +146,25 @@ describe("the commands of the twin report", () => {
         commandId: "cmd-1",
         device: "sensor",
         command: "set_mode",
+        origin: "host",
         atNs: null,
         status: "applied",
         reason: null,
         detail: "",
       },
     ]);
+  });
+
+  it("reads the safe stop the node ordered as a command of the node, and a host command as the host's", () => {
+    const stop = {
+      command_id: "node-stop-1",
+      device: "fan-01",
+      command: "stop_fan",
+      origin: "node",
+      status: "applied",
+    };
+    expect(twinReport(withCommand(stop))?.commands[0]).toMatchObject({ commandId: "node-stop-1", origin: "node" });
+    expect(twinReport(withCommand({ ...applied, origin: "host" }))?.commands[0]).toMatchObject({ origin: "host" });
   });
 
   it.each<[string, unknown]>([
@@ -152,6 +174,9 @@ describe("the commands of the twin report", () => {
     ["a time that is not a number", { ...applied, at_ns: "50" }],
     ["no command id", { ...applied, command_id: "" }],
     ["no device", { ...applied, device: undefined }],
+    ["a device that is not text", { ...applied, device: 7 }],
+    ["a detail that is not text", { ...applied, detail: ["x"] }],
+    ["an origin nobody defined", { ...applied, origin: "operator" }],
     ["a command that was not applied and gives no reason", { ...applied, status: "not_applied" }],
   ])("drops the report when a command has %s", (_name, command) => {
     expect(twinReport(withCommand(command))).toBeNull();
@@ -209,6 +234,8 @@ describe("the metrics of the twin report", () => {
     ],
     ["no device", (m: Record<string, unknown>) => (m.device = "")],
     ["no metric name", (m: Record<string, unknown>) => Reflect.deleteProperty(m, "metric")],
+    ["a unit that is not text", (m: Record<string, unknown>) => (m.unit = 3)],
+    ["a kind that is not text", (m: Record<string, unknown>) => (m.kind = false)],
   ])("drops the report when a metric has %s", (_name, change) => {
     expect(twinReport(withMetric(change))).toBeNull();
   });
@@ -235,6 +262,7 @@ describe("the divergences of the twin report", () => {
     ["commands that are not a list of ids", (d: Record<string, unknown>) => (d.commands = [1])],
     ["no name", (d: Record<string, unknown>) => (d.name = "")],
     ["no device", (d: Record<string, unknown>) => Reflect.deleteProperty(d, "device")],
+    ["a metric that is not text", (d: Record<string, unknown>) => (d.metric = 5)],
   ])("drops the report when a divergence has %s", (_name, change) => {
     expect(twinReport(withDivergence(change))).toBeNull();
   });

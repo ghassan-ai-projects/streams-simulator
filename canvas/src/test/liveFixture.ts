@@ -51,6 +51,9 @@ export function interruptsWire(overrides: Record<string, unknown> = {}) {
         deadline_ns: 1767225780e9,
         queued_at_ns: 1767225660e9,
         clock: "world",
+        content_digest: `sha256:${"a".repeat(64)}`,
+        args: { duty_permille: 300, lease_ms: 5000 },
+        args_truncated: false,
       },
     ],
     devices: [

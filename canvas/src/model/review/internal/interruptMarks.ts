@@ -1,5 +1,5 @@
 import { requestWords } from "./interruptWords";
-import type { ControlRequest, InterruptEvent, InterruptRecord } from "./interrupts";
+import type { InterruptEvent, InterruptRecord, WordedRequest } from "./interrupts";
 import { refusalWords } from "./sessionWords";
 import type { EventMark } from "./timeline";
 
@@ -7,12 +7,12 @@ function mark(atNs: number, label: string, raw: string): EventMark {
   return { atNs, label, raw, kind: "interrupt", tone: "other", entity: "", untilNs: null };
 }
 
-function modeRequest(record: InterruptRecord): ControlRequest | null {
+function modeRequest(record: InterruptRecord): WordedRequest | null {
   const { scope, enabled } = record;
   return scope === null || enabled === null ? null : { op: "approve_mode", scope, enabled };
 }
 
-function requestOf(record: InterruptRecord): ControlRequest | null {
+function requestOf(record: InterruptRecord): WordedRequest | null {
   const { op, scope, commandId } = record;
   if (op === "approve" || op === "deny") return commandId === "" ? null : { op, commandId };
   if (op === "approve_mode") return modeRequest(record);
@@ -39,6 +39,11 @@ function resolveMark(record: InterruptRecord, atNs: number): EventMark {
   return mark(atNs, `${record.commandId} refused: ${why}`, `resolve refuse ${record.commandId} ${record.reason}`);
 }
 
+function purgeMark(record: InterruptRecord, atNs: number): EventMark {
+  const why = refusalWords(record.reason);
+  return mark(atNs, `${record.commandId} refused: ${why}`, `purge ${record.commandId} ${record.reason}`);
+}
+
 function stopMark(record: InterruptRecord, atNs: number): EventMark {
   return mark(atNs, `Safe stop sent to ${record.device}`, `stop ${record.device} ${record.command}`);
 }
@@ -50,6 +55,7 @@ const makers: Readonly<Partial<Record<InterruptEvent, Maker>>> = {
   reply: replyMark,
   resolve: resolveMark,
   stop: stopMark,
+  purge: purgeMark,
 };
 
 export function interruptMarks(record: InterruptRecord, atNs: number): readonly EventMark[] {

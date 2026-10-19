@@ -1,10 +1,8 @@
 import { counted } from "../../shared/words";
-import type { Report } from "./report";
+import type { Connection } from "./origins";
 import { runClock } from "./timeline";
 import type { TwinDivergence, TwinMetric, TwinReport, TwinSeries, TwinTolerance } from "./twin";
 import { notComparedWords, numberWords, toleranceSourceWords } from "./twinWords";
-
-type Connection = "none" | "running" | "saved";
 
 type TwinOffer =
   | { readonly kind: "absent" }
@@ -12,16 +10,16 @@ type TwinOffer =
   | { readonly kind: "offered"; readonly domain: string };
 
 export type TwinCoverage =
-  | { readonly kind: "series"; readonly metric: TwinMetric; readonly divergences: readonly TwinDivergence[] }
+  | {
+      readonly kind: "series";
+      readonly metric: TwinMetric;
+      readonly divergences: readonly TwinDivergence[];
+      readonly undrawn: number;
+    }
   | { readonly kind: "empty"; readonly metric: TwinMetric; readonly why: string };
 
-const fieldTraceRecorded = (report: Report): boolean => report.checks.some((check) => check.name === "field_trace");
-
-export function twinOffer(report: Report | null, connection: Connection, domain: string): TwinOffer {
+export function twinOffer(connection: Connection, domain: string): TwinOffer {
   if (connection !== "saved") return { kind: "absent" };
-  if (report === null) return { kind: "withheld", why: "The run report is not read yet." };
-  if (!fieldTraceRecorded(report))
-    return { kind: "withheld", why: "This run recorded no field trace, so it has no real board to compare." };
   if (domain === "") {
     return { kind: "withheld", why: "The session record does not name the domain the twin would run." };
   }
@@ -35,8 +33,7 @@ export function toleranceWords(tolerance: TwinTolerance, unit: string): string {
 }
 
 export function ruleWords(report: TwinReport): string {
-  const percent = numberWords(report.spanFraction * 100);
-  return `Default tolerance: ${percent} % of the metric's range. ${report.ruleDescription}`;
+  return report.ruleDescription;
 }
 
 function reasonsWords(metric: TwinMetric): string {
@@ -48,19 +45,34 @@ function emptyWhy(metric: TwinMetric): string {
   return `The twin cannot judge ${metric.metric}: ${reasonsWords(metric)}.`;
 }
 
+function intersects(divergence: TwinDivergence, firstNs: number, lastNs: number): boolean {
+  return divergence.lastNs >= firstNs && divergence.firstNs <= lastNs;
+}
+
 function coverageFor(report: TwinReport, metric: TwinMetric): TwinCoverage {
-  if (metric.series.points.length === 0) return { kind: "empty", metric, why: emptyWhy(metric) };
-  const same = (d: TwinDivergence) => d.device === metric.device && d.metric === metric.metric;
-  return { kind: "series", metric, divergences: report.divergences.filter(same) };
+  const first = metric.series.points[0];
+  const last = metric.series.points.at(-1);
+  if (first === undefined || last === undefined) return { kind: "empty", metric, why: emptyWhy(metric) };
+  const mine = report.divergences.filter((d) => d.device === metric.device && d.metric === metric.metric);
+  const drawn = mine.filter((d) => intersects(d, first.atNs, last.atNs));
+  return { kind: "series", metric, divergences: drawn, undrawn: mine.length - drawn.length };
 }
 
 export function coverageOf(report: TwinReport, device: string): readonly TwinCoverage[] {
   return report.metrics.filter((metric) => metric.device === device).map((metric) => coverageFor(report, metric));
 }
 
-export function truncationNote(series: TwinSeries): string {
+function undrawnWords(undrawn: number): string {
+  if (undrawn === 0) return "";
+  const stretches =
+    undrawn === 1 ? "1 stretch where they part ways lies" : `${String(undrawn)} stretches where they part ways lie`;
+  return ` ${stretches} beyond the readings shown; the Report tab lists ${undrawn === 1 ? "it" : "them"}.`;
+}
+
+export function truncationNote(series: TwinSeries, undrawn: number): string {
   if (!series.truncated) return "";
-  return `Showing the first ${String(series.points.length)} of ${String(series.total)} compared readings.`;
+  const cut = `Showing the first ${String(series.points.length)} of ${String(series.total)} compared readings.`;
+  return `${cut}${undrawnWords(undrawn)}`;
 }
 
 export function metricLine(metric: TwinMetric): string {

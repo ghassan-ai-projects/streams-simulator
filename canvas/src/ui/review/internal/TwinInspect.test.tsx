@@ -79,6 +79,38 @@ describe("the twin overlay in Inspect", () => {
     expect(await screen.findByText("Showing the first 5 of 3000 compared readings.")).toBeInTheDocument();
   });
 
+  it("draws and counts only the stretches inside the readings a truncated series draws, and says how many lie beyond", async () => {
+    const { bridge, review } = await openSaved();
+    const metric = twinMetricWire();
+    const series = { ...metric.series, total: 3000, truncated: true };
+    const beyond = {
+      name: "sensor.temperature#2",
+      device: "sensor",
+      metric: "temperature",
+      first_ns: 900e9,
+      last_ns: 950e9,
+      readings: 4,
+      tolerance: 2.5,
+      worst_error: 9,
+      worst_at_ns: 920e9,
+      board_value: 31,
+      twin_value: 22,
+      commands: [],
+    };
+    const wire = twinReportWire();
+    bridge.handlers.set("run.twin_report", () =>
+      success({ ...wire, metrics: [{ ...metric, series }], divergences: [...wire.divergences, beyond] }),
+    );
+    await compared(review);
+    const chart = await screen.findByRole("img", { name: /^temperature: / });
+    expect(chart).toHaveAccessibleName(/1 stretch where they part ways\.$/);
+    expect(
+      screen.getByText(
+        "Showing the first 5 of 3000 compared readings. 1 stretch where they part ways lies beyond the readings shown; the Report tab lists it.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("explains why a metric cannot be judged instead of drawing nothing", async () => {
     const { bridge, review } = await openSaved();
     bridge.handlers.set("run.twin_report", () => success(cannotJudgeWire()));
@@ -117,11 +149,14 @@ describe("the twin overlay in Inspect", () => {
     expect(within(region()).getByRole("button", { name: "Open Twin vs board" })).toBeInTheDocument();
   });
 
-  it("shows nothing for a board that is simulated, a run with no field trace, or an instance that is not a board", async () => {
+  it("shows nothing for a board that is simulated or an instance that is not a board", async () => {
     const simulated = await openSaved({ entity: "CT-1" });
     expect(simulated.view.container).toBeEmptyDOMElement();
-    simulated.view.unmount();
-    const untraced = await openSaved({ report: reportWire });
-    expect(untraced.view.container).toBeEmptyDOMElement();
+  });
+
+  it("offers the overlay for any saved session with a real board and leaves the binary to refuse a run without a trace", async () => {
+    const { view } = await openSaved({ report: reportWire });
+    expect(view.container).not.toBeEmptyDOMElement();
+    expect(within(region()).getByRole("button", { name: "Open Twin vs board" })).toBeInTheDocument();
   });
 });

@@ -1,19 +1,20 @@
-import { useId, useState } from "react";
-import type { ConnectSession } from "../../../app/launch";
+import { useId } from "react";
+import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { ReviewSession, ReviewState } from "../../../app/review";
-import type { InterruptState, NodeNow } from "../../../model/review";
+import type { InterruptState, ScopeChoice, ScopeStatus } from "../../../model/review";
 import {
   activeScopes,
-  allDevices,
-  chosenScope,
+  chosenChoice,
   newestInterrupts,
   scopeChoices,
-  scopeKey,
+  scopeLabel,
   scopeStatus,
 } from "../../../model/review";
-import { useInterval, useStore } from "../../primitives";
+import { useStore } from "../../primitives";
 import { ActiveInterrupts } from "./ActiveInterrupts";
+import type { Enabled } from "./InterruptButtons";
 import { InterruptButtons, ScopeField } from "./InterruptButtons";
+import type { Reason } from "./InterruptOutcome";
 import { InterruptOutcome } from "./InterruptOutcome";
 import { PendingApprovals } from "./PendingApprovals";
 import styles from "./Interrupts.module.css";
@@ -25,47 +26,119 @@ interface InterruptsProps {
   readonly now: () => number;
 }
 
-function useWallMs(now: () => number): number {
-  const [current, setCurrent] = useState(now);
-  useInterval(() => {
-    setCurrent(now());
-  }, 1000);
-  return current;
+interface Facts {
+  readonly shown: InterruptState | null;
+  readonly offered: boolean;
+  readonly stopping: boolean;
+  readonly present: boolean;
 }
 
-function reasonOf(shown: InterruptState | null, offered: boolean): "waiting" | "not-offered" | null {
-  if (shown !== null) return null;
-  return offered ? "waiting" : "not-offered";
+function reasonOf({ shown, offered, stopping, present }: Facts): Reason | null {
+  if (!offered) return "not-offered";
+  if (stopping) return "stopping";
+  if (shown === null) return "waiting";
+  return present ? null : "absent-scope";
 }
 
-export function Interrupts({ review, state, connect, now }: InterruptsProps) {
-  const noteId = useId();
-  const [picked, setPicked] = useState(scopeKey(allDevices));
+function enabledOf({ shown, offered, stopping, present }: Facts): Enabled {
+  const reachable = offered && !stopping;
+  return { actions: reachable && shown !== null && present, stop: reachable };
+}
+
+function factsOf(shown: InterruptState | null, connection: ConnectState, choice: ScopeChoice): Facts {
+  const offered = connection.phase !== "live" || connection.controls;
+  return { shown, offered, stopping: connection.phase === "live" && connection.stopping, present: choice.present };
+}
+
+interface BarView {
+  readonly world: number;
+  readonly shown: InterruptState | null;
+  readonly choices: readonly ScopeChoice[];
+  readonly choice: ScopeChoice;
+  readonly status: ScopeStatus;
+  readonly enabled: Enabled;
+  readonly reason: Reason | null;
+}
+
+function useBarView({ review, state, connect }: InterruptsProps): BarView {
   const controls = useStore(review.controls);
   const connection = useStore(connect);
-  const wallMs = useWallMs(now);
   const newest = state.liveHistory?.entries.at(-1) ?? null;
-  const shown = newestInterrupts(newest, controls.seen);
-  const choices = scopeChoices(newest);
-  const scope = chosenScope(choices, picked);
-  const offered = connection.phase !== "live" || connection.controls;
-  const nodeNow: NodeNow = { worldNs: newest?.atNs ?? 0, wallMs };
+  const shown = newestInterrupts(newest, controls.seen, state.worldId);
+  const choices = scopeChoices(newest, controls.picked);
+  const choice = chosenChoice(choices, controls.picked);
+  const facts = factsOf(shown, connection, choice);
+  const status = scopeStatus(shown, choice.scope);
+  return {
+    world: newest?.atNs ?? 0,
+    shown,
+    choices,
+    choice,
+    status,
+    enabled: enabledOf(facts),
+    reason: reasonOf(facts),
+  };
+}
+
+interface RowProps {
+  readonly review: ReviewSession;
+  readonly view: BarView;
+  readonly noteId: string;
+}
+
+function ControlRow({ review, view, noteId }: RowProps) {
+  const { choices, choice } = view;
+  return (
+    <div className={styles.row}>
+      <ScopeField
+        choices={choices}
+        picked={choice.key}
+        onPick={(key) => {
+          const picked = choices.find((entry) => entry.key === key);
+          if (picked !== undefined) review.controls.pick(picked.scope);
+        }}
+      />
+      <InterruptButtons
+        controls={review.controls}
+        scope={choice.scope}
+        status={view.status}
+        enabled={view.enabled}
+        noteId={noteId}
+      />
+    </div>
+  );
+}
+
+function StatusRow({ review, view }: Omit<RowProps, "noteId">) {
+  const { status, choice } = view;
+  const covered = status.coveredBy === "" ? "" : `${scopeLabel(choice.scope)} is also covered by ${status.coveredBy}.`;
+  return (
+    <div className={styles.statusRow}>
+      <ActiveInterrupts active={activeScopes(view.shown)} covered={covered} />
+      <InterruptOutcome review={review} reason={view.reason} />
+    </div>
+  );
+}
+
+export function Interrupts(props: InterruptsProps) {
+  const noteId = useId();
+  const { review, now } = props;
+  const view = useBarView(props);
   return (
     <section className={styles.bar} aria-label="Interrupts">
-      <div className={styles.row}>
-        <h2 className={styles.title}>Interrupts</h2>
-        <ScopeField choices={choices} picked={scopeKey(scope)} onPick={setPicked} />
-        <InterruptButtons
-          controls={review.controls}
-          scope={scope}
-          status={scopeStatus(shown, scope)}
-          ready={shown !== null}
-          noteId={noteId}
-        />
-      </div>
-      <ActiveInterrupts active={activeScopes(shown)} noteId={noteId} />
-      <InterruptOutcome review={review} reason={reasonOf(shown, offered)} />
-      <PendingApprovals controls={review.controls} pending={shown?.pending ?? []} now={nodeNow} />
+      <h2 className="sr-only">Interrupts</h2>
+      <ControlRow review={review} view={view} noteId={noteId} />
+      <StatusRow review={review} view={view} />
+      <p className="sr-only" id={noteId}>
+        Emergency stop sends each device in scope its safe stop and holds the scope, latched, until you release it.
+      </p>
+      <PendingApprovals
+        controls={review.controls}
+        pending={view.shown?.pending ?? []}
+        world={view.world}
+        now={now}
+        enabled={view.enabled.stop}
+      />
     </section>
   );
 }

@@ -1,9 +1,11 @@
+import type { ReviewSession, TwinState } from "../../../app/review";
 import type { TwinReport, TwinRequest } from "../../../model/review";
-import { judgeReasonWords, ruleWords, verdictWords } from "../../../model/review";
+import { judgeReasonWords, ruleWords, unboundEvidenceWords, verdictWords } from "../../../model/review";
 import { useFocusOnMount } from "../../primitives";
 import parts from "./ReportParts.module.css";
 import styles from "./Twin.module.css";
 import { VerdictChip } from "./TwinVerdict";
+import { useTwinSeen } from "./useTwinSeen";
 
 function Counts({ report }: { readonly report: TwinReport }) {
   const { summary } = report;
@@ -35,8 +37,15 @@ function typedWords(request: TwinRequest): string {
   return request.tolerance.trim() === "" ? "No tolerance was typed." : `Tolerances as typed: ${request.tolerance}`;
 }
 
-export function TwinResult({ report, request }: { readonly report: TwinReport; readonly request: TwinRequest }) {
-  const heading = useFocusOnMount<HTMLHeadingElement>();
+interface ResultProps {
+  readonly shown: Extract<TwinState, { phase: "ready" }>;
+  readonly review: ReviewSession;
+}
+
+export function TwinResult({ shown, review }: ResultProps) {
+  const { report, request } = shown;
+  const heading = useFocusOnMount<HTMLHeadingElement>({ when: shown.fresh });
+  useTwinSeen(review, shown);
   return (
     <div className={styles.result} role="group" aria-label="Twin comparison result">
       <div className={styles.verdictRow}>
@@ -46,6 +55,7 @@ export function TwinResult({ report, request }: { readonly report: TwinReport; r
         </h3>
       </div>
       {report.reason !== null && <p className={parts.muted}>{judgeReasonWords[report.reason]}</p>}
+      {!report.evidenceBound && <p className={styles.meta}>{unboundEvidenceWords}</p>}
       <Counts report={report} />
       <p className={styles.meta}>{ruleWords(report)}</p>
       <p className={styles.meta}>{`Twin: domain ${report.twinDomain}. ${typedWords(request)}`}</p>

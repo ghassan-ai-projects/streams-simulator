@@ -45,7 +45,15 @@ describe("connected session evidence", () => {
     expect(within(table).getByText("Unconfirmed", { exact: true })).toBeInTheDocument();
     expect(within(table).getByText("Host observed", { exact: true })).toBeInTheDocument();
     expect(within(table).getAllByText("Effect unknown", { exact: true })).toHaveLength(3);
-    expect(within(table).getByRole("columnheader", { name: "Sent at" })).toBeInTheDocument();
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent),
+    ).toEqual(["Command", "Stages"]);
+    for (const stage of ["Sent at", "Acceptance", "Board report", "Effect evidence"]) {
+      expect(within(table).getAllByText(stage, { exact: true })).toHaveLength(4);
+    }
+    expect(screen.getByRole("region", { name: "Command evidence, scrollable" })).toHaveAttribute("tabindex", "0");
     expect(within(table).getAllByText(/· Simulated ·/)).toHaveLength(3);
     expect(within(table).getAllByText(/· Real board ·/)).toHaveLength(1);
     const health = screen.getByRole("region", { name: "Connection health" });

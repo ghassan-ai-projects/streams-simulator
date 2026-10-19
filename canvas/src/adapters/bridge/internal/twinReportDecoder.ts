@@ -8,6 +8,7 @@ import type {
   TwinTolerance,
 } from "../../../model/review";
 import {
+  commandOrigins,
   commandStatuses,
   notAppliedReasons,
   notComparedReasons,
@@ -15,8 +16,8 @@ import {
   twinJudgeReasons,
   twinVerdicts,
 } from "../../../model/review";
-import { isRecord, text } from "../../../model/shared/json";
-import { names, optional, pick, rows } from "./decodeKit";
+import { isRecord } from "../../../model/shared/json";
+import { names, optional, optionalTexts, pick, requiredTexts, rows } from "./decodeKit";
 
 type Wire = Record<string, unknown>;
 
@@ -28,10 +29,6 @@ function numbersOf<K extends string>(value: unknown, keys: readonly K[]): Record
   if (!isRecord(value)) return null;
   const entries = keys.map((key) => [key, value[key]] as const);
   return entries.every(([, entry]) => finite(entry)) ? (Object.fromEntries(entries) as Record<K, number>) : null;
-}
-
-function named(row: Wire, keys: readonly string[]): boolean {
-  return keys.every((key) => text(row[key]) !== "");
 }
 
 function summaryOf(value: unknown): TwinSummary | null {
@@ -64,20 +61,30 @@ function summaryOf(value: unknown): TwinSummary | null {
   };
 }
 
-function commandOf(row: Wire): TwinCommand | null {
+function outcomeOf(row: Wire) {
   const status = pick(row.status, commandStatuses);
   const reason = optional(row.reason, notAppliedReasons);
-  const timed = row.at_ns === undefined || finite(row.at_ns);
-  if (status === null || reason === null || !timed || !named(row, ["command_id", "device", "command"])) return null;
+  const origin = optional(row.origin, commandOrigins);
+  if (status === null || reason === null || origin === null) return null;
   if (status === "not_applied" && reason.value === null) return null;
+  return { status, reason: reason.value, origin: origin.value ?? "host" };
+}
+
+function commandOf(row: Wire): TwinCommand | null {
+  const outcome = outcomeOf(row);
+  const ids = requiredTexts(row, ["command_id", "device", "command"] as const);
+  const detail = optionalTexts(row, ["detail"] as const);
+  const timed = row.at_ns === undefined || finite(row.at_ns);
+  if (outcome === null || ids === null || detail === null || !timed) return null;
   return {
-    commandId: text(row.command_id),
-    device: text(row.device),
-    command: text(row.command),
+    commandId: ids.command_id,
+    device: ids.device,
+    command: ids.command,
+    origin: outcome.origin,
     atNs: finite(row.at_ns) ? row.at_ns : null,
-    status,
-    reason: reason.value,
-    detail: text(row.detail),
+    status: outcome.status,
+    reason: outcome.reason,
+    detail: detail.detail,
   };
 }
 
@@ -107,14 +114,14 @@ function metricOf(row: Wire): TwinMetric | null {
     return reason === null || !finite(entry.count) ? null : { reason, count: entry.count };
   });
   const series = seriesOf(row.series);
+  const named = requiredTexts(row, ["device", "metric"] as const);
+  const labels = optionalTexts(row, ["kind", "unit"] as const);
   if (verdict === null || tolerance === null || counts === null || reasons === null || series === null) return null;
-  if (!named(row, ["device", "metric"])) return null;
+  if (named === null || labels === null) return null;
   const { compared, within, diverged } = counts;
   return {
-    device: text(row.device),
-    kind: text(row.kind),
-    metric: text(row.metric),
-    unit: text(row.unit),
+    ...named,
+    ...labels,
     tolerance,
     verdict,
     counts: { compared, within, diverged, notCompared: counts.not_compared },
@@ -135,11 +142,10 @@ function divergenceOf(row: Wire): TwinDivergence | null {
     "twin_value",
   ] as const);
   const commands = names(row.commands);
-  if (n === null || commands === null || !named(row, ["name", "device", "metric"])) return null;
+  const ids = requiredTexts(row, ["name", "device", "metric"] as const);
+  if (n === null || commands === null || ids === null) return null;
   return {
-    name: text(row.name),
-    device: text(row.device),
-    metric: text(row.metric),
+    ...ids,
     firstNs: n.first_ns,
     lastNs: n.last_ns,
     readings: n.readings,
@@ -160,22 +166,22 @@ function headOf(value: Wire) {
   return { verdict, reason: reason.value, summary };
 }
 
+function provenanceOf(value: Wire) {
+  const twin = isRecord(value.twin) ? requiredTexts(value.twin, ["domain"] as const) : null;
+  const rule = isRecord(value.tolerance_rule) ? value.tolerance_rule : null;
+  const described = rule === null ? null : requiredTexts(rule, ["description"] as const);
+  const bound = isRecord(value.run) ? value.run.evidence_bound : null;
+  if (twin === null || described === null || !finite(rule?.span_fraction) || typeof bound !== "boolean") return null;
+  return { twinDomain: twin.domain, evidenceBound: bound, ruleDescription: described.description };
+}
+
 function bodyOf(value: Wire) {
-  const twin = isRecord(value.twin) && text(value.twin.domain) !== "" ? text(value.twin.domain) : null;
-  const rule: Wire = isRecord(value.tolerance_rule) ? value.tolerance_rule : {};
+  const provenance = provenanceOf(value);
   const commands = rows(value.commands, commandOf);
   const metrics = rows(value.metrics, metricOf);
   const divergences = rows(value.divergences, divergenceOf);
-  if (twin === null || !finite(rule.span_fraction) || commands === null) return null;
-  if (metrics === null || divergences === null) return null;
-  return {
-    twinDomain: twin,
-    spanFraction: rule.span_fraction,
-    ruleDescription: text(rule.description),
-    commands,
-    metrics,
-    divergences,
-  };
+  if (provenance === null || commands === null || metrics === null || divergences === null) return null;
+  return { ...provenance, commands, metrics, divergences };
 }
 
 export function twinReport(value: unknown): TwinReport | null {

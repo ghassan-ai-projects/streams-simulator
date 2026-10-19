@@ -31,13 +31,19 @@ export function reviewPlantFor(state: ReviewState, shown: PlantState, workspace:
   return { plant, title: plantTitle(plant, entry, domainId), path: entry?.path ?? null, key, fallback };
 }
 
+type Recorded = Pick<ReviewState, "runDomain" | "connection">;
+
+function fallbackWanted({ runDomain, connection }: Recorded): boolean {
+  return runDomain.phase === "failed" || (runDomain.phase === "loading" && connection === "running");
+}
+
 export function showRunPlant(
   plants: PlantSession,
   target: Pick<ReviewPlant, "key" | "fallback">,
-  runDomain: ReviewState["runDomain"],
+  recorded: Recorded,
   workspace: Workspace | null,
 ): void {
-  if (runDomain.phase === "ready") void plants.show(target.key, runDomain.value);
-  else if (runDomain.phase === "failed" && target.fallback !== undefined && workspace !== null)
+  if (recorded.runDomain.phase === "ready") void plants.show(target.key, recorded.runDomain.value);
+  else if (fallbackWanted(recorded) && target.fallback !== undefined && workspace !== null)
     void plants.load(target.fallback, workspace);
 }

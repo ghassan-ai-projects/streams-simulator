@@ -1,4 +1,5 @@
 import type {
+  ArgPair,
   ControlOp,
   ControlReply,
   ControlScope,
@@ -9,9 +10,9 @@ import type {
   InterruptState,
   PendingApproval,
 } from "../../../model/review";
-import { isRecord, number, text } from "../../../model/shared/json";
+import { isRecord } from "../../../model/shared/json";
 import type { Given } from "./decodeKit";
-import { names, optional, pick, rows } from "./decodeKit";
+import { names, optional, optionalTexts, pick, requiredTexts, rows } from "./decodeKit";
 
 const scopeKinds = ["all", "board", "device"] as const;
 const clocks = ["world", "wall"] as const;
@@ -31,13 +32,14 @@ const interruptEvents: readonly InterruptEvent[] = [
   "resolve",
   "stop",
   "effect",
+  "purge",
 ];
 
 function scopeOf(row: Record<string, unknown>): ControlScope | null {
   const kind = pick(row.kind, scopeKinds);
-  const id = text(row.id);
-  if (kind === null || (row.id !== undefined && typeof row.id !== "string")) return null;
-  return (kind === "all") === (id === "") ? { kind, id } : null;
+  const named = optionalTexts(row, ["id"]);
+  if (kind === null || named === null) return null;
+  return (kind === "all") === (named.id === "") ? { kind, id: named.id } : null;
 }
 
 function optionalScope(value: unknown): Given<ControlScope | null> | null {
@@ -51,24 +53,43 @@ function holdOf(row: Record<string, unknown>): InterruptHold | null {
   return scope === null || typeof row.latched !== "boolean" ? null : { scope, latched: row.latched };
 }
 
+function argText(value: unknown): string {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function argPairs(value: unknown): readonly ArgPair[] | null {
+  if (!isRecord(value)) return null;
+  return Object.entries(value).map(([name, entry]) => ({ name, value: argText(entry) }));
+}
+
 function pendingOf(row: Record<string, unknown>): PendingApproval | null {
   const clock = pick(row.clock, clocks);
-  const numbers = typeof row.deadline_ns === "number" && typeof row.queued_at_ns === "number";
-  if (clock === null || !numbers || text(row.command_id) === "") return null;
+  const ids = requiredTexts(row, ["command_id", "device", "command", "content_digest"] as const);
+  const args = argPairs(row.args);
+  const deadlineNs = row.deadline_ns;
+  const queuedAtNs = row.queued_at_ns;
+  if (clock === null || ids === null || args === null) return null;
+  if (typeof deadlineNs !== "number" || typeof queuedAtNs !== "number") return null;
+  if (typeof row.args_truncated !== "boolean") return null;
   return {
-    commandId: text(row.command_id),
-    device: text(row.device),
-    command: text(row.command),
-    deadlineNs: number(row.deadline_ns),
-    queuedAtNs: number(row.queued_at_ns),
+    commandId: ids.command_id,
+    device: ids.device,
+    command: ids.command,
+    contentDigest: ids.content_digest,
+    deadlineNs,
+    queuedAtNs,
     clock,
+    args,
+    argsTruncated: row.args_truncated,
   };
 }
 
 function coveredOf(row: Record<string, unknown>): CoveredDevice | null {
   const mode = pick(row.mode, modes);
-  if (mode === null || typeof row.latched !== "boolean" || text(row.device) === "") return null;
-  return { device: text(row.device), board: text(row.board), mode, latched: row.latched };
+  const device = requiredTexts(row, ["device"] as const);
+  const board = optionalTexts(row, ["board"] as const);
+  if (mode === null || typeof row.latched !== "boolean" || device === null || board === null) return null;
+  return { device: device.device, board: board.board, mode, latched: row.latched };
 }
 
 function interruptState(value: unknown): InterruptState | null {
@@ -103,7 +124,15 @@ function variantsOf(row: Record<string, unknown>): Variants | null {
   return { op: op.value, result: result.value, verdict: verdict.value, resolution: resolution.value };
 }
 
-export function interruptRecord(row: Record<string, unknown>): InterruptRecord | null {
+interface Head {
+  readonly event: InterruptEvent;
+  readonly clock: "world" | "wall";
+  readonly nodeNs: number;
+  readonly scope: ControlScope | null;
+  readonly enabled: boolean | null;
+}
+
+function headOf(row: Record<string, unknown>): (Head & Variants) | null {
   const event = pick(row.event, interruptEvents);
   const clock = pick(row.clock, clocks);
   const variants = variantsOf(row);
@@ -111,17 +140,20 @@ export function interruptRecord(row: Record<string, unknown>): InterruptRecord |
   const flagged = row.enabled === undefined || typeof row.enabled === "boolean";
   if (event === null || clock === null || variants === null || scope === null || !flagged) return null;
   if (typeof row.node_ns !== "number") return null;
+  const enabled = typeof row.enabled === "boolean" ? row.enabled : null;
+  return { ...variants, event, clock, nodeNs: row.node_ns, scope: scope.value, enabled };
+}
+
+export function interruptRecord(row: Record<string, unknown>): InterruptRecord | null {
+  const head = headOf(row);
+  const given = optionalTexts(row, ["command_id", "device", "command", "reason"] as const);
+  if (head === null || given === null) return null;
   return {
-    event,
-    clock,
-    ...variants,
-    nodeNs: row.node_ns,
-    scope: scope.value,
-    enabled: typeof row.enabled === "boolean" ? row.enabled : null,
-    commandId: text(row.command_id),
-    device: text(row.device),
-    command: text(row.command),
-    reason: text(row.reason),
+    ...head,
+    commandId: given.command_id,
+    device: given.device,
+    command: given.command,
+    reason: given.reason,
   };
 }
 
@@ -130,16 +162,19 @@ export function controlReply(value: unknown): ControlReply | null {
   const result = pick(value.result, results);
   const op = optional(value.op, controlOps);
   const state = interruptState(value.state);
-  const stopped = names(value.stopped);
-  const skipped = names(value.skipped);
-  if (result === null || op === null || state === null || stopped === null || skipped === null) return null;
+  const lists = [names(value.stopped), names(value.skipped), names(value.unreachable)] as const;
+  const given = optionalTexts(value, ["reason", "command_id"] as const);
+  if (result === null || op === null || state === null || given === null) return null;
+  const [stopped, skipped, unreachable] = lists;
+  if (stopped === null || skipped === null || unreachable === null) return null;
   return {
     result,
     op: op.value,
-    reason: text(value.reason),
-    commandId: text(value.command_id),
+    reason: given.reason,
+    commandId: given.command_id,
     stopped,
     skipped,
+    unreachable,
     state,
   };
 }

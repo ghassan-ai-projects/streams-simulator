@@ -1,4 +1,4 @@
-import type { Report, VerifyState } from "../../../model/review";
+import type { Connection, Report, VerifyState } from "../../../model/review";
 import { alarmRow, badgeOf, replayLine } from "../../../model/review";
 import { fileLine, integrityLine, kpisOf } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
@@ -75,7 +75,7 @@ interface TruthProps {
   readonly unit: (entity: string, state: string) => string;
   readonly entity: string | null;
   readonly only?: "kpi";
-  readonly connection?: "none" | "running" | "saved" | undefined;
+  readonly connection?: Connection | undefined;
 }
 
 const connectedTruth =

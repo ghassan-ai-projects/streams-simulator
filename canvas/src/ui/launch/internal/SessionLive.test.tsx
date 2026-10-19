@@ -42,6 +42,22 @@ describe("a running connected session in the run panel", () => {
     expect(onFinished).toHaveBeenCalledWith("c-1");
   });
 
+  it("lets a stopped session be followed by another one without a reload", async () => {
+    const fake = sessionBridge();
+    const { onFinished } = renderSession(fake);
+    fill("Host socket", "/tmp/h.sock");
+    fireEvent.click(screen.getByRole("button", { name: "Start the session" }));
+    await screen.findByText("Connected session · run c-1");
+    fake.actions.set("session.stop", success({ run: "c-1", state: "ended", domain: "mini" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stop and save" }));
+    expect(await screen.findByText("The session was stopped and saved as run c-1.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Set up another run" }));
+    expect(screen.queryByText("The session was stopped and saved as run c-1.")).toBeNull();
+    expect(screen.getByLabelText("Host socket")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start the session" })).toBeInTheDocument();
+    expect(onFinished).not.toHaveBeenCalled();
+  });
+
   it("shows a gateway the binary refused, marks its real boards not bound, and says the next step", async () => {
     const fake = sessionBridge();
     renderSession(fake);

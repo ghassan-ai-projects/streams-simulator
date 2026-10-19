@@ -42,7 +42,7 @@ export function journalEntry(value: string): JournalEntry | null {
 function interruptEntry(parsed: Record<string, unknown>): JournalEntry {
   const atNs = number(parsed.at_ns);
   const record = interruptRecord(parsed);
-  return record === null ? { kind: "live-unreadable", atNs } : { kind: "interrupt", atNs, record };
+  return record === null ? { kind: "interrupt-unreadable", atNs } : { kind: "interrupt", atNs, record };
 }
 
 function validEnvelope(entry: Record<string, unknown>): boolean {

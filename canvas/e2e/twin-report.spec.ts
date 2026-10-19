@@ -98,6 +98,8 @@ test("the twin versus board report compares a saved session with the twin on use
     .click();
   const overlay = page.getByRole("region", { name: "Twin prediction · fan-01", exact: true });
   await expect(overlay).toBeVisible();
-  await expect(overlay.getByText(/does not cover fan-01|reported no reading of|cannot judge/)).toBeVisible();
+  await expect(
+    overlay.getByText("The board reported no reading of duty_permille to compare.", { exact: true }),
+  ).toBeVisible();
   expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
 });

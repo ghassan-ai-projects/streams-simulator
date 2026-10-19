@@ -13,6 +13,7 @@ import type { LiveHistory, ReviewState } from "./reviewState";
 export type LiveItem =
   | { readonly kind: "snapshot"; readonly live: SessionLive }
   | { readonly kind: "unreadable"; readonly atNs: number }
+  | { readonly kind: "interrupt-unreadable"; readonly atNs: number }
   | { readonly kind: "interrupt"; readonly atNs: number; readonly record: InterruptRecord };
 
 const maxLiveSnapshots = 2000;
@@ -135,6 +136,10 @@ function unreadableAfter(current: number | null, items: readonly LiveItem[]): nu
   return unreadable;
 }
 
+function interruptUnreadableAfter(current: number | null, items: readonly LiveItem[]): number | null {
+  return items.reduce((newest, item) => (item.kind === "interrupt-unreadable" ? item.atNs : newest), current);
+}
+
 function followsNewest(state: ReviewState): boolean {
   return state.following && state.connection === "running";
 }
@@ -148,6 +153,7 @@ function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: nu
     liveHistory,
     liveMarks: withMarks(state.liveMarks, items),
     liveUnreadableNs: unreadableAfter(state.liveUnreadableNs, items),
+    interruptUnreadableNs: interruptUnreadableAfter(state.interruptUnreadableNs, items),
     newestNs: liveHistory?.endNs ?? state.newestNs,
     lastLiveAtMs: fresh.length > 0 ? nowMs : state.lastLiveAtMs,
   };
@@ -157,6 +163,7 @@ function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: nu
 export function liveItemOf(entry: JournalEntry): LiveItem | null {
   if (entry.kind === "live") return { kind: "snapshot", live: entry.live };
   if (entry.kind === "interrupt") return { kind: "interrupt", atNs: entry.atNs, record: entry.record };
+  if (entry.kind === "interrupt-unreadable") return { kind: "interrupt-unreadable", atNs: entry.atNs };
   return entry.kind === "live-unreadable" ? { kind: "unreadable", atNs: entry.atNs } : null;
 }
 

@@ -1,5 +1,11 @@
 export const twinVerdicts = ["agrees", "diverges", "cannot_judge"] as const;
-export const twinJudgeReasons = ["no_commands_applied", "no_readings_compared"] as const;
+export const twinJudgeReasons = [
+  "no_commands_applied",
+  "no_readings_compared",
+  "node_stop_not_applied",
+  "node_stop_unconfirmed",
+] as const;
+export const commandOrigins = ["host", "node"] as const;
 export const commandStatuses = ["applied", "not_applied", "twin_refused"] as const;
 export const notAppliedReasons = [
   "interrupt_refused",
@@ -23,6 +29,7 @@ export const toleranceSources = ["declared", "default_span", "none"] as const;
 
 export type TwinVerdict = (typeof twinVerdicts)[number];
 export type TwinJudgeReason = (typeof twinJudgeReasons)[number];
+export type CommandOrigin = (typeof commandOrigins)[number];
 export type CommandStatus = (typeof commandStatuses)[number];
 export type NotAppliedReason = (typeof notAppliedReasons)[number];
 export type NotComparedReason = (typeof notComparedReasons)[number];
@@ -52,6 +59,7 @@ export interface TwinCommand {
   readonly commandId: string;
   readonly device: string;
   readonly command: string;
+  readonly origin: CommandOrigin;
   readonly atNs: number | null;
   readonly status: CommandStatus;
   readonly reason: NotAppliedReason | null;
@@ -119,7 +127,7 @@ export interface TwinReport {
   readonly reason: TwinJudgeReason | null;
   readonly summary: TwinSummary;
   readonly twinDomain: string;
-  readonly spanFraction: number;
+  readonly evidenceBound: boolean;
   readonly ruleDescription: string;
   readonly commands: readonly TwinCommand[];
   readonly metrics: readonly TwinMetric[];

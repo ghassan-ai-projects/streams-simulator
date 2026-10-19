@@ -40,38 +40,6 @@ function handlers(review: ReviewSession, running: boolean) {
   };
 }
 
-interface TimelineProps {
-  readonly review: ReviewSession;
-  readonly state: ReviewState;
-  readonly connect: ConnectSession;
-  readonly now: () => number;
-}
-
-function Timeline({ review, state, connect, now }: TimelineProps) {
-  const report = readyReport(state);
-  const span = runSpan(report, review.index.bounds());
-  const startNs = Math.min(span.startNs, state.liveHistory?.startNs ?? span.startNs);
-  const running = state.connection === "running";
-  return (
-    <div>
-      {running && <LiveControls review={review} state={state} startNs={startNs} now={now} />}
-      {running && <Interrupts review={review} state={state} connect={connect} now={now} />}
-      <Scrubber
-        startNs={startNs}
-        endNs={Math.max(span.endNs, state.newestNs)}
-        liveMarks={state.liveMarks}
-        positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
-        report={report}
-        origins={state.origins}
-        binding={state.binding}
-        playing={state.playing}
-        speed={state.speed}
-        {...handlers(review, running)}
-      />
-    </div>
-  );
-}
-
 interface CentreProps extends GraphProps {
   readonly connect: ConnectSession;
   readonly now: () => number;
@@ -80,15 +48,53 @@ interface CentreProps extends GraphProps {
   readonly review: ReviewSession;
 }
 
-export function Centre({ review, state, plant, hall, onHall, worldId, navigation, connect, now }: CentreProps) {
+function startOf(review: ReviewSession, state: ReviewState): number {
+  const span = runSpan(readyReport(state), review.index.bounds());
+  return Math.min(span.startNs, state.liveHistory?.startNs ?? span.startNs);
+}
+
+function Timeline({ review, state }: Pick<CentreProps, "review" | "state">) {
+  const report = readyReport(state);
+  const span = runSpan(report, review.index.bounds());
+  return (
+    <Scrubber
+      startNs={startOf(review, state)}
+      endNs={Math.max(span.endNs, state.newestNs)}
+      liveMarks={state.liveMarks}
+      positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
+      report={report}
+      origins={state.origins}
+      binding={state.binding}
+      playing={state.playing}
+      speed={state.speed}
+      {...handlers(review, state.connection === "running")}
+    />
+  );
+}
+
+function LiveTop({ review, state, connect, now }: Omit<CentreProps, "worldId" | "navigation">) {
+  return (
+    <div className={styles.liveTop}>
+      <LiveControls review={review} state={state} startNs={startOf(review, state)} now={now} />
+      <Interrupts review={review} state={state} connect={connect} now={now} />
+    </div>
+  );
+}
+
+export function Centre(props: CentreProps) {
+  const { review, state, plant, hall, onHall, worldId, navigation } = props;
+  const missing = state.report.phase === "failed" && state.report.failure.kind === "missing";
   return (
     <section className={styles.center} aria-label={`Run ${worldId}`}>
-      <Timeline review={review} state={state} connect={connect} now={now} />
-      {state.report.phase === "failed" && state.report.failure.kind === "missing" ? (
-        <MissingRun worldId={worldId} navigation={navigation} />
-      ) : (
-        <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />
-      )}
+      {state.connection === "running" && <LiveTop {...props} />}
+      <div className={styles.body}>
+        <Timeline review={review} state={state} />
+        {missing ? (
+          <MissingRun worldId={worldId} navigation={navigation} />
+        ) : (
+          <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />
+        )}
+      </div>
     </section>
   );
 }

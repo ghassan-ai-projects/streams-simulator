@@ -6,11 +6,12 @@ import { Observable, createOperationIdentity } from "../../shared";
 export type TwinState =
   | { readonly phase: "idle" }
   | { readonly phase: "loading"; readonly request: TwinRequest }
-  | { readonly phase: "ready"; readonly request: TwinRequest; readonly report: TwinReport }
-  | { readonly phase: "failed"; readonly request: TwinRequest; readonly failure: TwinFailure };
+  | { readonly phase: "ready"; readonly request: TwinRequest; readonly report: TwinReport; readonly fresh: boolean }
+  | { readonly phase: "failed"; readonly request: TwinRequest; readonly failure: TwinFailure; readonly fresh: boolean };
 
 export interface TwinSession extends Store<TwinState> {
   compare(request: TwinRequest): Promise<void>;
+  markSeen(): void;
 }
 
 const idle: TwinState = { phase: "idle" };
@@ -35,8 +36,13 @@ export class TwinStore extends Observable<TwinState> implements TwinSession {
     if (!operation.live()) return;
     this.set(
       outcome.ok
-        ? { phase: "ready", request, report: outcome.value }
-        : { phase: "failed", request, failure: outcome.failure },
+        ? { phase: "ready", request, report: outcome.value, fresh: true }
+        : { phase: "failed", request, failure: outcome.failure, fresh: true },
     );
+  }
+
+  markSeen(): void {
+    const state = this.snapshot();
+    if ((state.phase === "ready" || state.phase === "failed") && state.fresh) this.set({ ...state, fresh: false });
   }
 }

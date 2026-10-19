@@ -7,6 +7,7 @@ import {
   noDivergenceWords,
   notAppliedWords,
   notComparedWords,
+  originWords,
   runClock,
   unitOfMetric,
 } from "../../../model/review";
@@ -27,6 +28,7 @@ function CommandItem({ command, startNs }: { readonly command: TwinCommand; read
     <li className={styles.item}>
       <span className={styles.name}>{`${command.commandId} · ${command.command} on ${command.device}${at}`}</span>
       <span>{statusWords(command)}</span>
+      {command.origin === "node" && <span className={styles.meta}>{originWords.node}</span>}
       {command.detail !== "" && <span className={styles.meta}>{command.detail}</span>}
     </li>
   );

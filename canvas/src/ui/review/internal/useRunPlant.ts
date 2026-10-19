@@ -20,11 +20,11 @@ export function useRunPlant(state: ReviewState, plants: PlantSession, workspace:
   const shown = useStore(plants);
   const known = listing.phase === "ready" ? listing.workspace : null;
   const view = reviewPlantFor(state, shown, known);
-  const { runDomain } = state;
+  const { runDomain, connection } = state;
   const { key, fallback } = view;
   useEffect(() => {
-    showRunPlant(plants, { key, fallback }, runDomain, known);
-  }, [runDomain, key, fallback, known, plants]);
+    showRunPlant(plants, { key, fallback }, { runDomain, connection }, known);
+  }, [runDomain, connection, key, fallback, known, plants]);
   return view;
 }
 

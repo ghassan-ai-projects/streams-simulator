@@ -1010,3 +1010,160 @@ text and computes no judgement.
   cursor), so the overlay draws both series from the report: the board's compared readings and the twin's prediction at the
   same times (at most 2000 points, the first ones). D-92. (b) No span-fraction field: the action accepts `span_fraction`, the
   canvas does not offer it. D-93. (c) Choosing a divergence moves the cursor only; it does not select the board.
+
+## M5 review fixes (Go)
+
+The M5 review found these in R11a and R12a; every item has a regression test that fails on the old code. Contracts changed:
+`node-control-v0.1`, `interrupt-log-v0.1`, `twin-report-v0.1`, `run-journal-v0.1` (embedded copies equal).
+
+- **Commands queued for a future start time (node of the world).** `hold` put a command with a `not_before_ns` in `Session.queued`,
+  and `runQueue` ran it without asking the interrupt rules, so a command accepted before an emergency stop started the device
+  again after the latch. Now a control that restricts (`hold`, `estop`, `approve_mode` with `enabled`) and is applied refuses every
+  queued command its scope covers: `ledger.Release`, a terminal `DRECEIPT refused, local_control` (boot `none`) for the command and
+  for each repeat that waited with it, and a `purge` record. `purge` is evidence like `effect`: replay checks that a verdict
+  `pass` for that command id precedes it and does not recompute it. The twin report reads a purge as an interrupt refusal. A
+  command already forwarded to a gateway cannot be recalled (D-94).
+- **Pending approvals are unambiguous and shown.** A `DCMD` whose `command_id` is already waiting (as a command or as a repeat) is
+  refused `duplicate` before the hold and approval rules (a declared safe stop still passes). Each `pending` entry of the state
+  view and of the live snapshot gains `content_digest` (the command's content digest: device, command, arguments, expected boot),
+  `args` (at most 2048 bytes of canonical JSON, else `{}`) and `args_truncated`; the logged `command` input carries the same `args`
+  and `args_truncated`, so the view replays. `approve` and `deny` may carry `content_digest`; a waiting command with other
+  content makes the request `refused, unknown_command` and changes nothing.
+- **The safe-stop exemption is the machine's.** The `command` input no longer has `safe_stop`. The rules pass a command when
+  its name is the inventory's declared safe-stop command of that device, it has no arguments and they were not left out as
+  too large. The inventory (`safe_stop` per device) is the one source for the node of the world (the effector flagged safe_stop)
+  and the relay (the kind's command flagged `safe_stop`); a host `halt` with `{"mode":"run"}` is held.
+- **Emergency stop.** It is not refused for capacity: it adds one latch, and when the total of scopes passes 64 the rules drop,
+  in sorted order, approval scopes and then plain holds the latch covers (nothing latched is ever dropped; with nothing to drop the
+  total stays above 64). The inventory entry of a device gains `unreachable` (the relay: no boot ever known, its `DDEATH` seen, the gateway not admitted, or the world gone; see "Stop boots" below); the
+  reply gains `unreachable` beside `stopped` and `skipped`: a device that declares a safe stop and could not be ordered is listed
+  there and never in `stopped`, and no `stop` is recorded for it. A node of the world performs the stops first and answers the
+  host second, joining both errors, so a failed answer no longer skips the stops.
+- **Relay stop identity.** A host command with an id starting `node-stop-` is refused `malformed`; each stop has its own
+  idempotency key (a digest that includes the stop's id), a table of issued ids that evicts the oldest instead of clearing, and
+  an `effect` record `ordered` written when the stop is sent, so the interrupt log names every stop even if the gateway never
+  answers. An `effect` must follow a `stop` of its device (replay checks it).
+- **A stalled host.** The relay is one loop; a host that stops reading used to hold it for the 30 s write deadline, and with it
+  the controls and the stop to the gateway. Relay links now have a 2 s write deadline (a host that stalls is lost and redialled
+  as before), `apply` sends to the gateway and the world before the host, and a tick serves a control after its own moves.
+  The wait that remains is one bounded write plus one tick (D-99).
+- **Stop boots.** Losing the host must not unreach the gateway. `forgetGatewayBirths` (host lost: the births must be announced to
+  the host again) used to empty the relay's table of the gateway's boots, so an emergency stop right after a stalled host was
+  dropped reported every device `unreachable` and sent nothing. The relay now keeps a second table of the last boot each device
+  announced, written from every `DBIRTH` and `DDEATH` the admitted gateway sends (also while the host is away, and not for a stray or
+  forged record), and the stop path reads only that table: the stop is addressed to that boot (a device that has rebooted since
+  refuses it `wrong_boot`, which is safe), with the host's last authority epoch, which is kept when the host is lost. An entry
+  is removed by the device's `DDEATH` or when the gateway is lost or readmitted (and a simulated device's when the world is gone);
+  a gateway rebirth request, a host loss and the host's rebirth leave it. The table is derived from the same recorded gateway
+  records and shows only through `inventory.devices[].unreachable`, so the log and its replay did not change.
+- **A log that fails.** A session closes its interrupt log and replays it; when it does not replay (or a record could not be
+  written) the file is renamed `interrupts.rejected.jsonl`, `run.json` records no digest, a warning is logged and
+  `plantwire connect` fails with `ErrInterruptLogRejected` (the replay error inside). A node of the world also logs the end of
+  the session: `flush` and a `resolve` `session_ending` for each waiting command (no receipt is sent, D-97).
+- **Twin report.**
+  - *Node stops.* The report turns each `effect` command id of the interrupt log (`node-stop-N`, the relay's stop to the gateway)
+    into a command with `origin: "node"`, the device's declared safe-stop command and arguments `{}`, classified from the gateway's
+    receipt in the field trace like a host command and applied to the twin at the same time rule. When a stop the node ordered
+    never got an answer (`never_forwarded`, `not_accepted`) the report is `cannot_judge` with `reason: "node_stop_unconfirmed"`,
+    and when the twin refuses it, `"node_stop_not_applied"`; both take precedence over `diverges`. A board that refused the stop
+    leaves the verdict to the readings.
+  - *Evidence.* The interrupt log is read through `app.VerifyInterruptLog` (digest, schema, rules replay) and a log that does
+    not replay is refused (`domain.ErrInterruptReplay`); a missing `interrupts.jsonl` that `run.json` records is `ErrTwinNoInterruptLog`;
+    `run.evidence_bound` is true when `run.json` exists and recorded the journal digest the file was checked against, false for a
+    folder with no `run.json` (the files are then evidence of nothing but themselves). `journal.jsonl` is read with the 64 MiB
+    limit through `kernel.ReadRegular`, so a link or a device in its place is refused (`kernel.ErrNotRegular`, `ErrTooLarge`).
+- **Control socket.** The server's line buffer is one byte larger so the bridge's longest line (4096 bytes) is accepted, and an
+  idle connection is closed after 60 s. The bridge makes the socket directory under the temp directory and, when the path is
+  longer than a unix socket allows (103 bytes), under `/tmp`; when no base is short enough the session starts without controls
+  (`ErrControlPathTooLong`).
+
+Exact shapes (new members only):
+
+```json
+{"op": "approve", "command_id": "cmd-7", "content_digest": "sha256:..."}
+{"result": "applied", "op": "estop", "stopped": ["fan-01"], "skipped": ["zone-01"], "unreachable": ["fan-02"], "state": {...}}
+{"command_id": "cmd-7", "device": "fan-01", "command": "set_pwm_lease", "deadline_ns": 1, "queued_at_ns": 1, "clock": "world",
+ "content_digest": "sha256:...", "args": {"duty_permille": 300}, "args_truncated": false}
+{"event": "purge", "command_id": "c-1", "device": "fan-01", "reason": "local_control", "clock": "world", "node_ns": 1}
+{"event": "inventory", "devices": [{"device": "fan-01", "board": "mega-01", "clock": "wall", "safe_stop": "stop_fan", "unreachable": false}], ...}
+```
+
+Twin report: `commands[].origin` (`"node"`, absent for the host), `run.evidence_bound` (boolean, always present), and the `reason`
+values `node_stop_not_applied` and `node_stop_unconfirmed`.
+
+## M5 review fixes (canvas)
+
+The real-browser, code-quality and adversarial reviews of the canvas side of R11b and R12b. The binary keeps every rule; the
+canvas shows what it says. Every item has a regression test that fails on the old code, except the layout items, which the
+e2e at 1280 x 800 checks.
+
+- **The bar is always visible (H1).** On the live view the Interrupts region and the live bar sit above a part of the screen
+  that scrolls (`ReviewScreen.module.css`: `.liveTop`, then `.body`), so scrolling can never move the controls out of the window.
+  The graph row shrinks (`minmax(236px, 1fr)` for the plant with its bar) instead of pushing the page past the window. The
+  bar is one row at 1280 px (scope select, Hold, Release, Approve each command and Emergency stop; the title is a hidden heading
+  and the scope label is hidden text), and it holds a place for its status row (40 px) and its waiting list (72 px), so the plant
+  does not move when chips, an outcome or a waiting command appear. The e2e (`interrupts-layout.spec.ts`) checks the region
+  inside the window and fully visible after scrolling, the plant's bottom inside 800 px and its top within 2 px while a command
+  waits and after a stop latches.
+- **The emergency stop is never dropped (H2).** `ControlStore` keeps the controls in flight as a list with an order number. An
+  emergency stop is always sent, also while another control waits for the node; any other control pressed while one is in
+  flight is not sent, `send` returns `"not-sent"`, the bar says "not sent: another control is still waiting", and the buttons
+  are disabled meanwhile. Focus moves to the waiting heading only when a decision was sent. The stop is enabled whenever the
+  control socket is offered, without waiting for the node's first state. The newest outcome (by order) stays: a stop's outcome
+  is not replaced by an older control's, and while an older control is still waiting the stop's outcome is shown with a note.
+- **The plant of a running session opens by address (H3).** `showRunPlant` takes the run's domain state and its connection;
+  while the recorded plant is still loading for a running session it loads the plant the session record names, as it
+  already did after a failure.
+- **A session's controls belong to the session (H4).** `ControlState` carries the run it belongs to, `ControlSession.bind`
+  resets the answers, the outcome, the blocked request and the picked scope when the review store's `worldId` changes, and
+  `newestInterrupts` returns a state seen only for the run on screen. The picked scope lives in the controls store, so the plant
+  screen and the live view share it. A control's answer that arrives after the run changed is dropped. After "Stop and save" the
+  Run panel offers "Set up another run".
+- **Controls follow the socket and the session (M1).** Hold, Release, Approve each command and the Approve and Deny of a
+  waiting command need the state, the control socket and a session that is not stopping; the stop needs the socket and a
+  session that is not stopping. Each missing condition has its note.
+- **A picked scope that left the session stays picked (M2).** It is listed as "Board gone (not in this session)", Hold, Release
+  and Approve each command are disabled for it with a note, and the stop stays enabled.
+- **Answer against snapshot (M3).** The store remembers the states the answer superseded (`SeenState.older`); a snapshot equal to
+  one of them and different from the answer is not shown (D-102). A state read after a failure carries a generation, and a read
+  that finishes after a newer answer is dropped without a claim that it was read.
+- **Release and coverage in words (M4).** A release says what the node's returned state still holds: "Released all devices. 2
+  narrower holds remain: board uno-07, device fan." or "Released device sensor. Device sensor is still held through board
+  uno-07." A scope covered by a wider hold or approval says so under the chips ("Device sensor is also covered by Board
+  uno-07: Held."). Both read the returned state's holds and covered devices (`interruptCover.ts`); nothing else is computed.
+- **Disabled controls look disabled (M5).** The bar's buttons use the disabled tokens (`--disabled-*`) and `cursor: not-allowed`;
+  a pressed toggle also shows a check mark, not only a colour.
+- **The command table fits (M6).** Command evidence has two columns, the command and its four stages as labelled lines (Sent
+  at, Acceptance, Board report, Effect evidence), so nothing is hidden at 1280 px; its scroll region is a named region. Table
+  cells in the report take 8 px of side padding, an instance id may wrap and the outcome column starts at 7 em, which keeps the
+  Effector calls table inside the panel (`review.spec.ts` checks it at 1280 px).
+- **Twin result focus (M8).** `TwinState` ready and failed carry `fresh`; the result heading (or the refusal) takes focus when
+  `fresh`, and `TwinSession.markSeen` clears it, so a change of tab does not move focus again.
+- **Truncated series (M9).** A divergence that does not intersect the readings drawn is not drawn and not counted in the chart's
+  name; the note under the chart says how many lie beyond ("1 stretch where they part ways lies beyond the readings shown; the
+  Report tab lists it.").
+- **Interrupt marks (M10).** The timeline mark for an interrupt is an octagon (like the stop sign of the button), not a rounded
+  square, so it differs from binding and effector marks by shape.
+- **Announcements (M12).** A newly arrived waiting command is announced in a polite status line; the outcome line is a status
+  region marked busy while a control is in flight or its state is read again, so only the final outcome is announced; the
+  once-a-second tick runs only while a command waits and the deadline is worded "expires in about …"; the waiting command's name
+  wraps instead of being cut; the arguments of a waiting command are shown (bounded to six pairs of forty characters, or "arguments
+  too large to show").
+- **Failure words (M13).** An unknown 4xx code of a control is `rejected` ("The bridge refused the request, so nothing was
+  confirmed.", with the bridge's own message), not "The answer could not be read". The code is looked up in a map, so a code
+  such as `constructor` is not read from the prototype; the refusal-reason table is a map for the same reason.
+- **New binary members.** The decoder reads, and requires, `args`, `args_truncated` and `content_digest` of each waiting command;
+  approve and deny send the `content_digest` the operator saw (`content_digest` in the request). The stop's reply `unreachable`
+  (optional) is worded "The stop could NOT be sent to …: they may still be energised." and makes the outcome a failure. A twin
+  command has `origin` (absent means host; `node` shows "Node safe stop"), the report requires `run.evidence_bound` (false shows
+  "Evidence is not bound to a run.json …"), and the judge reasons `node_stop_not_applied` and `node_stop_unconfirmed` have
+  words. `interrupt` journal records with the event `purge` are marked on the timeline ("c-1 refused: Refused at the node: local
+  control"). Text members of every interrupt and twin record must be text: a number where a device, command or reason belongs
+  drops the record. An interrupt record that does not decode has its own note in the live bar, not the one about a snapshot.
+- **The twin comparison is offered more widely.** `twinOffer` no longer keys on the check named `field_trace`: any saved session
+  whose record names a domain offers the comparison and the binary's refusal explains a run with no board. The rule description
+  is the binary's `tolerance_rule.description`, shown as given.
+- **Deviations and what is left.** (a) The `twins/*.twin.json` 404s on the device list need a bridge listing: D-101. (b) The
+  snapshot-versus-answer guard is by content: D-102. (c) The plant node tags keep their short words: D-103. (d) The e2e pins the
+  overlay of the stand-in session to "The board reported no reading of duty_permille to compare." (the stand-in announces a fan
+  with one metric and sends no reading).

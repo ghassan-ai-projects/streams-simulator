@@ -36,6 +36,27 @@ describe("the twin comparison of a run", () => {
     });
   });
 
+  it("marks a new answer fresh once, so a screen focuses its result on arrival and never again", async () => {
+    const { store } = setup();
+    store.markSeen();
+    expect(store.snapshot()).toEqual({ phase: "idle" });
+    await store.compare(request);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", fresh: true });
+    store.markSeen();
+    expect(store.snapshot()).toMatchObject({ phase: "ready", fresh: false });
+    store.markSeen();
+    expect(store.snapshot()).toMatchObject({ phase: "ready", fresh: false });
+  });
+
+  it("marks a refusal fresh the same way", async () => {
+    const { bridge, store } = setup();
+    bridge.handlers.set("run.twin_report", () => failure(cannedFailure("plantwire_failed", 422, "invalid tolerance")));
+    await store.compare(request);
+    expect(store.snapshot()).toMatchObject({ phase: "failed", fresh: true });
+    store.markSeen();
+    expect(store.snapshot()).toMatchObject({ phase: "failed", fresh: false });
+  });
+
   it("keeps a report that cannot judge as a result", async () => {
     const { bridge, store } = setup();
     bridge.handlers.set("run.twin_report", () => success(cannotJudgeWire()));

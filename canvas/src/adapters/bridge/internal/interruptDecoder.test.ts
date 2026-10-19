@@ -5,6 +5,7 @@ import { journalEntry } from "./journalDecoder";
 
 const line = (fields: Record<string, unknown>) => journalEntry(JSON.stringify(interruptWire(fields)));
 const unreadable = { kind: "live-unreadable", atNs: 10e9 };
+const unreadableRecord = { kind: "interrupt-unreadable", atNs: 10e9 };
 
 describe("interrupt journal records", () => {
   it("reads an operator control with its scope", () => {
@@ -64,14 +65,28 @@ describe("interrupt journal records", () => {
     ["scope shape", { scope: "board" }],
     ["enabled flag", { enabled: "yes" }],
     ["node time", { node_ns: "now" }],
-  ])("drops a record with an unknown %s instead of guessing", (_, change) => {
-    expect(line({ event: "control", op: "hold", scope: { kind: "all", id: "" }, ...change })).toEqual(unreadable);
+    ["device that is not text", { device: 7 }],
+    ["command id that is not text", { command_id: ["cmd-1"] }],
+    ["reason that is not text", { reason: { why: "x" } }],
+  ])("drops a record with an unknown %s instead of guessing, in its own words", (_, change) => {
+    expect(line({ event: "control", op: "hold", scope: { kind: "all", id: "" }, ...change })).toEqual(unreadableRecord);
+  });
+
+  it("reads the purge of a waiting command the node refused", () => {
+    expect(line({ event: "purge", command_id: "c-1", device: "fan-01", reason: "local_control" })).toMatchObject({
+      kind: "interrupt",
+      record: { event: "purge", commandId: "c-1", device: "fan-01", reason: "local_control" },
+    });
   });
 
   it("refuses a row that is not a record", () => {
     expect(interruptRecord({})).toBeNull();
   });
 });
+
+function waiting(change: Record<string, unknown>) {
+  return { ...interruptsWire(), pending: [{ ...interruptsWire().pending[0], ...change }] };
+}
 
 describe("the interrupt state in a live snapshot", () => {
   const snapshot = (change: Record<string, unknown>) => journalEntry(JSON.stringify({ ...liveWire(), ...change }));
@@ -84,7 +99,19 @@ describe("the interrupt state in a live snapshot", () => {
           holds: [{ scope: { kind: "board", id: "uno-07" }, latched: false }],
           approve: [{ kind: "all", id: "" }],
           pending: [
-            { commandId: "cmd-7", device: "fan", command: "set_fan", clock: "world", deadlineNs: 1767225780e9 },
+            {
+              commandId: "cmd-7",
+              device: "fan",
+              command: "set_fan",
+              clock: "world",
+              deadlineNs: 1767225780e9,
+              contentDigest: `sha256:${"a".repeat(64)}`,
+              args: [
+                { name: "duty_permille", value: "300" },
+                { name: "lease_ms", value: "5000" },
+              ],
+              argsTruncated: false,
+            },
           ],
           devices: [
             { device: "sensor", mode: "hold" },
@@ -127,6 +154,18 @@ describe("the interrupt state in a live snapshot", () => {
       { ...interruptsWire(), devices: [{ device: "", board: "m", mode: "hold", latched: false }] },
     ],
     ["a device without its latch", { ...interruptsWire(), devices: [{ device: "fan", board: "m", mode: "hold" }] }],
+    [
+      "a device whose name is not text",
+      { ...interruptsWire(), devices: [{ device: 4, board: "m", mode: "hold", latched: false }] },
+    ],
+    [
+      "a device whose board is not text",
+      { ...interruptsWire(), devices: [{ device: "fan", board: 4, mode: "hold", latched: false }] },
+    ],
+    ["a waiting command without its digest", waiting({ content_digest: undefined })],
+    ["a waiting command with a number as its device", waiting({ device: 3 })],
+    ["a waiting command whose arguments are a list", waiting({ args: [1] })],
+    ["a waiting command without its truncation flag", waiting({ args_truncated: undefined })],
   ])("drops the snapshot when the interrupt state is %s", (_, interrupts) => {
     expect(snapshot({ interrupts })).toEqual(unreadable);
   });
@@ -154,6 +193,15 @@ describe("the node's answer to a control", () => {
     );
   });
 
+  it("reads the devices an emergency stop could not reach, and a reply without them as none", () => {
+    expect(
+      controlReply({ result: "applied", op: "estop", stopped: [], unreachable: ["fan-02"], state: interruptsWire() }),
+    ).toMatchObject({ unreachable: ["fan-02"] });
+    expect(controlReply({ result: "applied", op: "hold", state: interruptsWire() })).toMatchObject({
+      unreachable: [],
+    });
+  });
+
   it("reads a refusal that names no request, and keeps a reason it has no words for", () => {
     expect(controlReply({ result: "refused", reason: "malformed", state: interruptsWire() })).toMatchObject({
       op: null,
@@ -175,6 +223,11 @@ describe("the node's answer to a control", () => {
       "skipped devices that are not a list",
       { result: "applied", op: "estop", skipped: "led", state: interruptsWire() },
     ],
+    [
+      "unreachable devices that are not names",
+      { result: "applied", op: "estop", unreachable: [4], state: interruptsWire() },
+    ],
+    ["a reason that is not text", { result: "refused", reason: 4, op: "hold", state: interruptsWire() }],
   ])("refuses a reply with %s", (_, value) => {
     expect(controlReply(value)).toBeNull();
   });
