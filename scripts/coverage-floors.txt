@@ -26,7 +26,7 @@ internal/component/internal/domain  98
 internal/component/internal/files   100
 # The canvas bridge module (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/canvasbridge                     100
-internal/canvasbridge/internal/app        92
+internal/canvasbridge/internal/app        99
 internal/canvasbridge/internal/domain     95
 internal/canvasbridge/internal/entropy    100
 internal/canvasbridge/internal/files      90
