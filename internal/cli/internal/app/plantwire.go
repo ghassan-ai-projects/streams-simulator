@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -74,7 +73,14 @@ func cmdPlantWireHost(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	return serveHost(options, host)
+}
+
+func serveHost(options plantWireHostOptions, host plantwire.HostOptions) (any, error) {
 	report, err := plantwire.Host(context.Background(), options.socket, time.Duration(options.delayMS)*time.Millisecond, host)
+	if errors.Is(err, plantwire.ErrHostPolicy) {
+		return nil, usagef("%v", err)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -82,26 +88,13 @@ func cmdPlantWireHost(s *session, args []string) (any, error) {
 }
 
 func hostOptions(options plantWireHostOptions) (plantwire.HostOptions, error) {
-	host := plantwire.HostOptions{Environment: options.environment, ProtocolMax: 1, Epoch: options.epoch, Policy: options.policy}
-	var err error
-	if options.script != "" {
-		host.Script, err = loadWith(options.script, plantwire.ParseScript)
+	base := plantwire.HostOptions{Environment: options.environment, ProtocolMax: 1, Epoch: options.epoch, Policy: options.policy}
+	host, err := plantwire.LoadHost(base, options.script, options.inventory)
+	if errors.Is(err, plantwire.ErrHostInput) {
+		return host, usagef("%v", err)
 	}
-	if err == nil && options.inventory != "" {
-		host.Inventory, err = loadWith(options.inventory, plantwire.ParseInventory)
-	}
-	return host, err
-}
-
-func loadWith[T any](path string, parse func([]byte) (T, error)) (T, error) {
-	var zero T
-	raw, err := files.Read(path)
 	if err != nil {
-		return zero, fmt.Errorf("streamsim: %w", err)
+		return host, fmt.Errorf("streamsim: %w", err)
 	}
-	parsed, err := parse(raw)
-	if err != nil {
-		return zero, usagef("%v", err)
-	}
-	return parsed, nil
+	return host, nil
 }

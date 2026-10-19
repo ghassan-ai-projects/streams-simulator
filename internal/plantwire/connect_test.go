@@ -37,3 +37,13 @@ func TestTheFacadeChecksAConnectPlanAndRefusesASessionWithoutARunFolder(t *testi
 		t.Fatalf("CheckConnect of an unknown instance = %v, want ErrPlanRefused", err)
 	}
 }
+
+func TestTheFacadeEchoesThePlansPolicyListSorted(t *testing.T) {
+	t.Parallel()
+	low, high := "sha256:"+strings.Repeat("a", 64), "sha256:"+strings.Repeat("c", 64)
+	plan := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock","policies":["` + high + `","` + low + `"]}`
+	check, err := CheckConnect(facadeConnectOptions(t, plan))
+	if err != nil || len(check.Policies) != 2 || check.Policies[0] != low || check.Policies[1] != high {
+		t.Fatalf("CheckConnect = %+v, %v, want the plan's policies sorted", check, err)
+	}
+}

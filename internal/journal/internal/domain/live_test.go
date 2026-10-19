@@ -2,6 +2,8 @@ package domain
 
 import "testing"
 
+const policyFixture = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
 func liveFixture() map[string]any {
 	return map[string]any{"host": "online", "gateway": "online", "commands_truncated": false,
 		"devices": []any{map[string]any{"device": "P1", "board": "b-1", "instance": "pump-1", "environment": "hardware",
@@ -9,7 +11,10 @@ func liveFixture() map[string]any {
 				"value": 42.0, "quality": "good", "state": "good"}}}},
 		"commands": []any{map[string]any{"command_id": "c-1", "device": "P1", "environment": "hardware", "command": "start", "boot_id": "boot-1", "sent": true,
 			"receipt": "accepted", "reason": "", "report": "succeeded", "effect": "observed", "effect_evidence": "Host checked flow: observed",
-			"sent_at_ns": 100, "updated_at_ns": 120}},
+			"sent_at_ns": 100, "updated_at_ns": 120},
+			map[string]any{"command_id": "c-2", "device": "P1", "environment": "simulated", "command": "start", "boot_id": "boot-1", "sent": true,
+				"receipt": "refused", "reason": "policy_not_allowed", "report": "pending", "effect": "unknown", "effect_evidence": "",
+				"sent_at_ns": 130, "updated_at_ns": 130, "policy_digest": policyFixture}},
 		"marks": []any{map[string]any{"at_ns": 120, "kind": "command", "subject": "command", "label": "Host checked flow: observed", "entity": "P1"}}}
 }
 

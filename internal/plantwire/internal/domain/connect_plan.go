@@ -39,6 +39,7 @@ type ConnectPlan struct {
 	Bound         []Bound
 	HostSocket    string
 	GatewaySocket string
+	Policies      AllowList
 }
 
 type planCheck struct {
@@ -57,7 +58,10 @@ func CheckPlan(plan *model.SessionPlan, instances []PlanInstance) (ConnectPlan, 
 	for i, binding := range plan.Real {
 		issues = append(issues, check.binding(i, binding)...)
 	}
-	return check.outcome(plan, instances), issues
+	allowed, listed := NewAllowList(plan.Policies, "/policies")
+	connect := check.outcome(plan, instances)
+	connect.Policies = allowed
+	return connect, append(issues, listed...)
 }
 
 func socketIssues(plan *model.SessionPlan) []model.Issue {

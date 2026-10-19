@@ -11,6 +11,7 @@ type SessionPlan struct {
 	HostSocket    string        `json:"host_socket"`
 	GatewaySocket string        `json:"gateway_socket,omitempty"`
 	Real          []RealBinding `json:"real,omitempty"`
+	Policies      []string      `json:"policies,omitempty"`
 }
 
 type RealBinding struct {

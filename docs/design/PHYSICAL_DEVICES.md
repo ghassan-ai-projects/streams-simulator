@@ -1220,3 +1220,35 @@ e2e at 1280 x 800 checks.
   waiting-commands list is not a tab stop (its buttons are). The "First: …" line under the timeline wraps and a timeline chip's
   title carries its full text. An applied emergency stop reply without `unreachable` is refused by the decoder (the contract
   requires it).
+
+## Policy allow-list P1 as-built (binary)
+
+Design: [POLICY-ALLOW-LIST](../physical-devices/POLICY-ALLOW-LIST.md) (D-88). P1 is the contract and the binary; the bridge
+file class and the canvas form are P2.
+
+- **The plan carries the list.** `session-plan-v0.1` gains optional `policies`: 1 to 8 strings of `sha256:` and 64 lower-case
+  hex digits (`minItems`, `maxItems`, `pattern` at `/policies/<i>`). The `plantwire` domain rule `NewAllowList(digests, pointer)`
+  (`internal/plantwire/internal/domain/policies.go`) is the one place the list is judged: `policy_malformed`,
+  `too_many_policies`, `policy_listed_twice` (at the second occurrence), `policy_reserved` (the relay's all-zero stop digest);
+  a list with an issue allows nothing. `CheckPlan` joins its issues (pointer `/policies`) with the binding issues; the flag
+  sources (`plantwire node --policy`, `plantwire relay --domain ... --policy`) go through the same rule as `ErrBadOptions`,
+  at `Serve` for a node and at the simulated node's start for a mixed relay, before anything connects.
+- **Enforcement.** `Session` holds the built list (`allowed`); `authorize` keeps the epoch check and then asks
+  `allowed.Allows(c.Policy)`. A queued, approved or waiting command is checked again at execution, as before. A safe stop skips
+  the check, as before. The connected session takes `p.plan.Policies.Digests()` for its node (node mode and the simulated side
+  of a mixed relay); `ConnectOptions.Policies` and `plantwire connect --policy` are gone.
+- **Echo and record.** `plantwire connect --check` returns `policies`: the list in effect, sorted, `[]` when the plan names
+  none (never null). The `session` journal record's `plan` is the same document, so it records the sorted list
+  (`run-journal-v0.1` `session.plan.policies`, required, at most 8). The list is a recorded session input, not part of the
+  run's identity: `run.json`, the trace digest and the command log are unchanged, and a connected session replays as before. A
+  command the list let through is in the command log as any command is; one it refused never reached the world.
+- **The refused digest.** `live_command.policy_digest` (optional, pattern `sha256:` and 64 hex) is present only when the receipt
+  is `refused` with reason `policy_not_allowed`. `Live.sent` keeps the command's digest in an unexported field and
+  `Live.receipt` copies it when the refusal arrives, if it is well formed. This holds for a simulated device (refused by the
+  node) and a real board (refused by the gateway). The plant wire contract is untouched (`DRECEIPT` gains nothing).
+- **The reference host.** `plantwire host` with a `--script` and no well-formed `--policy` (the reserved all-zero digest
+  included) is a usage error before it listens (`plantwire.CheckHost`, the same `NewAllowList` rule; `ServeHost` applies it
+  too). The `--policy` help text says the host "carries" the digest; it signs nothing.
+- **Gate edits.** None. New files carry no I/O and need no register entry.
+- **Deviations from the note.** None in behaviour. `Serve` checks the node's flag list before it dials, so `node --policy nope`
+  fails as bad options without a host.

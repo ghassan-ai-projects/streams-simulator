@@ -119,20 +119,21 @@ func TestANodeRefusesASharedSocket(t *testing.T) {
 	}
 }
 
-func TestTheHostScriptAndInventoryAreReadStrictly(t *testing.T) {
+func TestTheFacadeLoadsTheHostScriptOnlyWhenNamed(t *testing.T) {
 	t.Parallel()
-	script, err := ParseScript([]byte(`[{"at_ns":5,"device":"P1","command":"start","args":{}}]`))
-	if err != nil || len(script) != 1 || script[0].Device != "P1" {
-		t.Fatalf("ParseScript = %+v, %v", script, err)
+	dir := t.TempDir()
+	script, broken := filepath.Join(dir, "script.json"), filepath.Join(dir, "broken.json")
+	if err := os.WriteFile(script, []byte(`[{"at_ns":5,"device":"P1","command":"start","args":{}}]`), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if _, err := ParseScript([]byte(`[{"when":5}]`)); err == nil || !strings.Contains(err.Error(), "plantwire host script") {
-		t.Fatalf("ParseScript with an unknown field = %v", err)
+	if err := os.WriteFile(broken, []byte(`[{"when":5}]`), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	inventory, err := ParseInventory([]byte(`{"P1":"pump"}`))
-	if err != nil || inventory["P1"] != "pump" {
-		t.Fatalf("ParseInventory = %v, %v", inventory, err)
+	loaded, err := LoadHost(HostOptions{Environment: "simulated"}, script, "")
+	if err != nil || len(loaded.Script) != 1 || loaded.Environment != "simulated" {
+		t.Fatalf("LoadHost = %+v, %v, want the script read and the environment kept", loaded, err)
 	}
-	if _, err := ParseInventory([]byte(`[]`)); err == nil || !strings.Contains(err.Error(), "plantwire host inventory") {
-		t.Fatalf("ParseInventory of an array = %v", err)
+	if _, err := LoadHost(HostOptions{}, broken, ""); !errors.Is(err, ErrHostInput) {
+		t.Fatalf("LoadHost of a malformed script = %v, want ErrHostInput", err)
 	}
 }

@@ -40,8 +40,9 @@
     "session": {
       "description": "Observer session metadata, persisted before wire traffic. Outside the replayable stream digest.",
       "required": ["mode", "plan"],
-      "properties": {"mode": {"const": "connected"}, "plan": {"type": "object", "required": ["domain", "environment", "instances", "implements_checked"],
-        "properties": {"domain": {"type": "string"}, "environment": {"enum": ["simulated", "mixed"]}, "instances": {"type": "array", "items": {"type": "object"}}, "implements_checked": {"type": "array", "items": {"type": "object"}}}}}
+      "properties": {"mode": {"const": "connected"}, "plan": {"type": "object", "required": ["domain", "environment", "instances", "implements_checked", "policies"],
+        "properties": {"domain": {"type": "string"}, "environment": {"enum": ["simulated", "mixed"]}, "instances": {"type": "array", "items": {"type": "object"}}, "implements_checked": {"type": "array", "items": {"type": "object"}},
+          "policies": {"type": "array", "maxItems": 8, "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "description": "The allow-list in effect, sorted: the policy digests the session's simulated devices accepted in a command. A recorded configuration, not a replay input."}}}}
     },
     "live": {
       "description": "Observer session projection computed by plantwire from admitted protocol evidence. Latest 128 commands; truncation explicit. Marks are deltas. Outside the replayable digest.",
@@ -76,7 +77,8 @@
       "properties": {
         "command_id": {"type": "string"}, "device": {"type": "string"}, "environment": {"enum": ["simulated", "hardware", "unknown"]}, "command": {"type": "string"}, "boot_id": {"type": "string"}, "sent": {"const": true},
         "receipt": {"enum": ["pending", "accepted", "refused"]}, "reason": {"type": "string"}, "report": {"enum": ["pending", "succeeded", "failed", "unknown"]},
-        "effect": {"enum": ["unknown", "observed"]}, "effect_evidence": {"type": "string"}, "sent_at_ns": {"type": "integer"}, "updated_at_ns": {"type": "integer"}
+        "effect": {"enum": ["unknown", "observed"]}, "effect_evidence": {"type": "string"}, "sent_at_ns": {"type": "integer"}, "updated_at_ns": {"type": "integer"},
+        "policy_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "The policy digest the host carried in the command. Present only when the receipt is refused with reason policy_not_allowed."}
       }
     },
     "ref": {

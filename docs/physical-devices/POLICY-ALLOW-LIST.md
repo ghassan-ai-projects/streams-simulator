@@ -1,6 +1,6 @@
 # Policy allow-list for simulated devices (D-88): design
 
-Status: decided by the owner on 2026-10-19; not built. Two rounds (P1, P2) after the M5 reviews close. File and line
+Status: decided by the owner on 2026-10-19; P1 (contract and binary) built, P2 (bridge and canvas) not built. Two rounds (P1, P2) after the M5 reviews close. File and line
 references are to `f491fbbc` (branch `physical-devices-m5`).
 
 ## Decisions
@@ -288,3 +288,17 @@ into the plan. Recorded sessions without `plan.policies` read "not recorded".
   the flag kept, it can merge through `NewAllowList` with no other change.
 - No conflict with determinism, the truth boundary, consumer knowledge or per-domain code was found. The list is operator
   data on the observer side, the binary names no host, and domains are untouched.
+
+## As built (P1)
+
+The binary half is built as §3 and §4 say; see "Policy allow-list P1 as-built (binary)" in `docs/design/PHYSICAL_DEVICES.md`.
+Differences and additions:
+
+- `Serve` checks the node's flag list (`policyOptions`) before it dials, so `plantwire node --policy nope` fails as bad options
+  without a host; the relay's simulated node is checked at its start (`validate`), before the relay listens.
+- Remaining decision 1 was built as recommended: `plantwire.CheckHost` (one `NewAllowList` rule) refuses a `--script` without a
+  well-formed, non-reserved `--policy` as a usage error, and `ServeHost` applies it too (`ErrHostPolicy`).
+- `sessionNote` also turns a nil `Policies` into `[]`, as it does for `instances`, so a hand-built check document still
+  satisfies the journal schema.
+- The `live` command's `policy_digest` is copied only when it is well formed (`refusedPolicy`), a second guard beside the
+  observer's schema check.

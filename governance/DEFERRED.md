@@ -357,6 +357,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > (approved `ref-a` is refused at the node's normal checks). Trigger to fix: a canvas session that must command a simulated
 > device; the fix needs a design decision: an operator-supplied allow-list in the session plan, validated by the binary, and a
 > UI field for it.
+> D-88 progress: the binary half (plan `policies`, validation, echo, record, enforcement, the refused digest on the `live` command)
+> is built (P1, `docs/design/PHYSICAL_DEVICES.md` "Policy allow-list P1 as-built"). The bridge file class, the canvas form, the
+> default and the commands-table digest are P2; D-88 closes after P2.
 > D-89 (the relay drops a schema-invalid host record without a reason): `Relay.hostRecord` (`relay_host.go`) counts a host record
 > that fails its schema, or whose type is not a host record type, in `stats.Dropped` and writes no receipt and no evidence for
 > it. A host with an empty `policy_digest` therefore waits with nothing to show why. Trigger to fix: a host that stalls with no
