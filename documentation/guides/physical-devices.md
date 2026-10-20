@@ -136,7 +136,7 @@ In the canvas, **Open live view** shows the session as it runs.
 - The commands table shows each command with its stages. A command the node refused locally reads "Refused at the node: local control", distinct from a refusal of the board or the host.
 - Scrubbing back pauses following. **Back to live** resumes. The history is bounded to 2000 snapshots in the browser, and the bar says when it has trimmed.
 
-A real board that stays connected but sends no admitted record for 30 seconds is treated as lost: its devices are reported `link_down` and the gateway link is shown offline.
+A real board that stays connected but sends no admitted record for 30 seconds while the host is present is treated as lost: its devices are reported `link_down` and the gateway link is shown offline. While the host is away the board is told so and may stay silent; the 30 seconds start again when the host returns.
 
 ### 5. Interrupts: hold, approve, emergency stop
 

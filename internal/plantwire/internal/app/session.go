@@ -252,11 +252,15 @@ func ServeHost(ctx context.Context, socketPath string, delay time.Duration, opti
 		return host.Report{}, fmt.Errorf("plantwire: host: %w", err)
 	}
 	reference := host.New(options)
-	err := uds.ServeHost(ctx, socketPath, reference, uds.Pacing{Delay: delay, Handshake: uds.HandshakeWait}, options.Ready)
+	err := uds.ServeHost(ctx, socketPath, reference, hostPacing(delay), options.Ready)
 	if err != nil && !endsHostCleanly(err) {
 		return reference.Report(), fmt.Errorf("plantwire: %w", err)
 	}
 	return reference.Report(), nil
+}
+
+func hostPacing(delay time.Duration) uds.Pacing {
+	return uds.Pacing{Delay: delay, Handshake: uds.HandshakeWait, Heartbeat: host.HeartbeatIntervalMS * time.Millisecond}
 }
 
 func endsHostCleanly(err error) bool {

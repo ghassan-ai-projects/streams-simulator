@@ -246,7 +246,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > sent a `STATE` with `heartbeat` above zero, because the reference host sends one `STATE` at the handshake and never a
 > heartbeat; a host that dies without closing its socket and never beat is not noticed until the stream ends. Trigger to fix:
 > a host that is silent but connected in a lab run; then the reference host gains heartbeats and the relay's watchdog arms at
-> the handshake.
+> the handshake. Narrowed by fan S10 (2026-10-20): the reference host sends `STATE` with an increasing `heartbeat` every
+> `heartbeat_interval_ms` of wall time while a session is live, so a hardware gateway behind it no longer declares it lost after
+> 3 s and the relay's watchdog arms at its first beat; the relay still arms only after a heartbeat above zero.
 > D-70 (relay: one gateway, no store-and-forward): the relay serves one gateway at a time (a second connection waits until
 > the first is gone), and a gateway record that arrives while no host session exists is dropped and counted, not held, because
 > store-and-forward with `historical: true` is the gateway's job (SPEC section 7). R8 kept this for the mixed node: it still
@@ -273,7 +275,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > with its serial or socket open in a lab run. **Fixed in R10:** the relay counts its ticks since the last admitted gateway
 > record (a stray, forged, malformed or repeated record does not count) and after 30 s of silence reports its devices
 > `DDEATH link_down`, closes the gateway link and records the gateway offline; the watchdog arms at admission, without a
-> host heartbeat (`relay_liveness.go`).
+> host heartbeat (`relay_liveness.go`). Changed by fan S10 (2026-10-20): the watchdog is suspended while the relay has no host
+> (before the first and during a host loss), when SPEC sections 7 and 8 make the gateway buffer and stay silent, and it starts
+> afresh when the host's first `STATE` reaches the gateway.
 > D-74 (relay: no rebirth rate limit): a gateway that sends a sequence gap on every record makes the relay ask it to rebirth
 > once per gap, and a host that sends a rebirth `NCMD` in a loop makes the mixed node rebirth the gateway and the world each
 > time. Each request is one record and the birth is bounded, but nothing limits the rate. Trigger to fix: a flapping link in a

@@ -267,7 +267,9 @@ host's owner-only Unix socket, sends births, data in slices closed by an `NSYNC`
 through the run's effector path, and writes the run's artifact and journal (with `wire` and `pacing` records) to `--out`.
 `plantwire host` is the reference host: it creates an owner-only socket, accepts one node, checks the environment, version,
 contract and that every commissioned device is in the node's birth, quarantines devices its inventory does not list, requests a rebirth on a gap, issues scripted commands
-when the world reaches their time, verifies them against later observations, and prints its report.
+when the world reaches their time, verifies them against later observations, and prints its report. While a session is live it
+sends `STATE` with an increasing `heartbeat` every `heartbeat_interval_ms` (1000) of wall time, so a hardware node does not
+declare it lost.
 
 ```text
 streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated|hardware|mixed]
@@ -340,7 +342,8 @@ The gateway is checked as the reference host checks a node that is set to `hardw
 `mixed`, speaks another contract, announces a `kind_digest` that does not hold or a kind twice is refused with the refusal in a
 `STATE`. The host's `STATE` (heartbeat, `authority_epoch`) reaches the gateway unchanged, a host that is lost is reported to the
 gateway as offline with its session kept, a gateway that is lost has each of its devices reported `DDEATH link_down` to the host,
-a gateway that stays connected but sends no admitted record for 30 s is treated as lost the same way, and a host that
+a gateway that stays connected but sends no admitted record for 30 s while its host is present is treated as lost the same way
+(the watchdog is suspended while the relay has no host and starts afresh when a host's first `STATE` reaches the gateway), and a host that
 refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
 has no fault, perturbation or script option; `run`, `replay`, `verify`, `scenario` and `plantwire node` have no gateway option.
 The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}` (and, for a mixed relay,

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -62,5 +63,22 @@ func waitForJournal(t *testing.T, out, text string) {
 			t.Fatalf("the journal in %s never held %s", out, text)
 		case <-time.After(10 * time.Millisecond):
 		}
+	}
+}
+
+func TestTheReferenceHostBeatsInWallTimeWhileItsNodeIsSilent(t *testing.T) {
+	t.Parallel()
+	hostPath := testsupport.SocketPath(t)
+	started := startHost(t, hostPath, relayHostOptions("hardware"))
+	node := dialGateway(t, hostPath, relayGateway(t, "s-1"))
+	if state := node.handshake(); !state.Online || domain.Seq(state.Record["heartbeat"]) != 0 {
+		t.Fatalf("handshake STATE = %v, want online with heartbeat 0", state.Record)
+	}
+	beats := node.await(func(m domain.Message) bool { return m.Type == "STATE" })
+	if beat := beats[len(beats)-1].Record; beat["online"] != true || domain.Seq(beat["heartbeat"]) != 1 || domain.Seq(beat["heartbeat_interval_ms"]) != 1000 {
+		t.Fatalf("beat = %v, want the next heartbeat of an online host", beat)
+	}
+	if report := started.stop(); report.Refused != "" {
+		t.Fatalf("report = %+v", report)
 	}
 }

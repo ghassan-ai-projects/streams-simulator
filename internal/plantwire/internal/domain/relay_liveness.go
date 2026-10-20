@@ -9,7 +9,7 @@ func connectionNote(side, state string) Note {
 }
 
 func (r *Relay) gatewayTick(elapsedMS int64) Moves {
-	if !r.gateway.admitted {
+	if !r.gateway.admitted || !r.host.shaken {
 		return Moves{}
 	}
 	r.gateway.silent += elapsedMS

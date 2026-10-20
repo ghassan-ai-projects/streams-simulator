@@ -119,6 +119,8 @@ func TestAHostAnswerThatCannotBeEncodedEndsTheSession(t *testing.T) {
 
 type stubPeer struct {
 	replies     []map[string]any
+	beat        map[string]any
+	beats       int
 	accepted    bool
 	done        bool
 	doneOnFirst bool
@@ -127,6 +129,14 @@ type stubPeer struct {
 func (p *stubPeer) Receive(domain.Inbound) []map[string]any {
 	p.done = p.done || p.doneOnFirst
 	return p.replies
+}
+
+func (p *stubPeer) Beat() []map[string]any {
+	if p.beat == nil {
+		return nil
+	}
+	p.beats++
+	return []map[string]any{{"type": p.beat["type"], "heartbeat": p.beats}}
 }
 
 func (p *stubPeer) Accepted() bool { return p.accepted }

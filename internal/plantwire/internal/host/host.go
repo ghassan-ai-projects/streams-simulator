@@ -72,6 +72,7 @@ type Host struct {
 	session    string
 	version    int
 	bdSeq      uint64
+	heartbeat  int64
 }
 
 type device struct {
@@ -141,5 +142,15 @@ func ParseInventory(raw []byte) (map[string]string, error) {
 }
 
 func (h *Host) Accepted() bool { return h.accepted }
+
+const HeartbeatIntervalMS = 1000
+
+func (h *Host) Beat() []map[string]any {
+	if !h.accepted || h.Done() {
+		return nil
+	}
+	h.heartbeat++
+	return h.reply(control("STATE", h.state(true, "")))
+}
 
 func (h *Host) Done() bool { return h.report.Refused != "" }

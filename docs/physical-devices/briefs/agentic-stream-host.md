@@ -71,7 +71,7 @@ Verification of an effect is yours (SPEC section 9: receipt is not result is not
 - It never perturbs, delays or fault-injects a real device's records or commands. A simulated device's records are the simulated world's and carry that world's faults.
 - A side answers only its own commands: a gateway's receipt or result for a command routed to the simulated side (and the reverse), or for a command never routed, is dropped and counted as forged.
 - A recording can be replayed to you: `plantwire replay-trace` announces the node and **every board `simulated`**, so a host set to `hardware` refuses it and no consumer can take it for hardware. It refuses every command (`not_ready`) and never reaches a gateway.
-- Bounds you can rely on: a record is at most 64 KiB (1 MiB for births); the latest 128 commands are shown; the relay's links have a 2 s write deadline, so a host that does not read for 2 s is treated as lost and redialled; a gateway silent for 30 s is reported `link_down`.
+- Bounds you can rely on: a record is at most 64 KiB (1 MiB for births); the latest 128 commands are shown; the relay's links have a 2 s write deadline, so a host that does not read for 2 s is treated as lost and redialled; a gateway silent for 30 s while a host is attached is reported `link_down` (the timer is suspended while the relay has no host).
 
 ## Acceptance checks
 

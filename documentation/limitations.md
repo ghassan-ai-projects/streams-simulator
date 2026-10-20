@@ -73,9 +73,9 @@ configuration; the adapter does not contain per-domain argument callbacks.
 | --- | --- | --- |
 | The relay serves one gateway at a time, and a gateway record that arrives while no host session exists is dropped, not held. Store-and-forward is the gateway's job (D-70). | Two gateways behind one node are not supported, and a host outage loses data unless the gateway buffers it with `historical: true`. | One gateway per session; buffer in the gateway. |
 | One connected session runs at a time in the bridge. | A second `session.start` is refused `session_running`. | Stop the running session first. |
-| The reference host sends no heartbeat, so a host that dies without closing its socket is not noticed (D-69). | Host loss from silence is detected only for hosts that send heartbeats. | Use a host that sends them. |
+| The reference host sent no heartbeat, so a host that died without closing its socket was not noticed and a hardware gateway declared it lost after 3 s (D-69, fixed: it beats every second while a session is live). | Host loss from silence is detected only for hosts that send heartbeats. | Use a host that sends them. |
 | Nothing limits the rate of rebirth requests a flapping gateway or a looping host causes (D-74). | A flapping link produces repeated births. | Fix the link. |
-| A gateway that sends no admitted record for 30 seconds is treated as lost (D-73, fixed). | A slow gateway must still send an admitted record, readings for example, at least every 30 s. | Keep the gateway sending. |
+| A gateway that sends no admitted record for 30 seconds while its host is present is treated as lost (D-73, fixed). While the relay has no host (before the first and during a host loss) the watchdog is suspended, and it starts afresh when the host's first `STATE` reaches the gateway. | A slow gateway must still send an admitted record, readings for example, at least every 30 s while its host is present. | Keep the gateway sending. |
 
 ### Recording and replay
 

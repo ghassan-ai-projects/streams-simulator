@@ -145,6 +145,9 @@ func (r *Relay) stateDown(m *Moves, in Inbound) {
 }
 
 func (r *Relay) noteBeat(in Inbound) {
+	if r.host.state == nil {
+		r.gateway.silent = 0
+	}
 	r.host.state, r.host.silent = content(in.Record), 0
 	r.host.interval = saturatingInt64(Seq(in.Record["heartbeat_interval_ms"]))
 	r.host.beating = r.host.beating || Seq(in.Record["heartbeat"]) > 0

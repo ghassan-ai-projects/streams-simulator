@@ -1,10 +1,10 @@
 package uds
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"time"
@@ -15,6 +15,7 @@ import (
 
 type Peer interface {
 	Receive(domain.Inbound) []map[string]any
+	Beat() []map[string]any
 	Accepted() bool
 	Done() bool
 }
@@ -22,6 +23,7 @@ type Peer interface {
 type Pacing struct {
 	Delay     time.Duration
 	Handshake time.Duration
+	Heartbeat time.Duration
 }
 
 const HandshakeWait = 10 * time.Second
@@ -57,70 +59,76 @@ func serveOne(ctx context.Context, listener net.Listener, peer Peer, pacing Paci
 }
 
 func session(ctx context.Context, conn net.Conn, peer Peer, pacing Pacing) (bool, error) {
-	defer func() { _ = conn.Close() }()
+	link := NewAccepted(conn, HandshakeWait)
+	defer func() { _ = link.Close() }()
 	hangUp := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer hangUp()
-	if err := conn.SetReadDeadline(time.Now().Add(pacing.Handshake)); err != nil {
+	if err := link.Expect(pacing.Handshake); err != nil {
 		return true, fmt.Errorf("plantwire host: %w", err)
 	}
-	return serveConn(ctx, conn, peer, pacing.Delay)
+	beats, stop := heartbeats(pacing.Heartbeat)
+	defer stop()
+	return serveLink(ctx, link, peer, beats, pacing.Delay)
 }
 
-func serveConn(ctx context.Context, conn net.Conn, peer Peer, delay time.Duration) (bool, error) {
-	writer, scanner := bufio.NewWriter(conn), lines(conn)
-	spoke := false
-	for !peer.Done() && scanner.Scan() {
-		spoke = true
-		if err := respond(ctx, conn, writer, peer, scanner.Bytes(), delay); err != nil {
-			return true, err
-		}
+func heartbeats(every time.Duration) (<-chan time.Time, func()) {
+	if every <= 0 {
+		return nil, func() {}
 	}
-	if err := scanner.Err(); err != nil {
-		return true, fmt.Errorf("plantwire host: read: %w", err)
+	return Ticks(every)
+}
+
+func serveLink(ctx context.Context, link *Link, peer Peer, beats <-chan time.Time, delay time.Duration) (bool, error) {
+	spoke := false
+	for !peer.Done() {
+		heard, open, err := turn(ctx, link, peer, beats, delay)
+		spoke = spoke || heard
+		if err != nil || !open {
+			return spoke, err
+		}
 	}
 	return spoke, nil
 }
 
-func lines(conn net.Conn) *bufio.Scanner {
-	scanner := bufio.NewScanner(conn)
-	scanner.Buffer(make([]byte, 64*1024), domain.MaxBirthBytes)
-	return scanner
+func turn(ctx context.Context, link *Link, peer Peer, beats <-chan time.Time, delay time.Duration) (heard, open bool, err error) {
+	select {
+	case in, open := <-link.Incoming():
+		if !open {
+			return false, false, readEnd(link.failed)
+		}
+		return true, true, respond(ctx, link, peer, in, delay)
+	case <-beats:
+		return false, true, answer(ctx, link, peer.Beat(), 0)
+	}
 }
 
-func respond(ctx context.Context, conn net.Conn, writer *bufio.Writer, peer Peer, line []byte, delay time.Duration) error {
-	in, ok := domain.Decode(line)
-	if !ok {
+func readEnd(failed error) error {
+	if errors.Is(failed, io.EOF) {
 		return nil
 	}
-	if err := answer(ctx, writer, peer.Receive(in), delay); err != nil {
-		return err
-	}
-	return settle(conn, peer)
+	return fmt.Errorf("plantwire host: read: %w", failed)
 }
 
-func settle(conn net.Conn, peer Peer) error {
+func respond(ctx context.Context, link *Link, peer Peer, in domain.Inbound, delay time.Duration) error {
+	if err := answer(ctx, link, peer.Receive(in), delay); err != nil {
+		return err
+	}
 	if !peer.Accepted() {
 		return nil
 	}
-	if err := conn.SetReadDeadline(time.Time{}); err != nil {
-		return fmt.Errorf("plantwire host: %w", err)
-	}
-	return nil
+	return link.Settle()
 }
 
-func answer(ctx context.Context, writer *bufio.Writer, records []map[string]any, delay time.Duration) error {
+func answer(ctx context.Context, link *Link, records []map[string]any, delay time.Duration) error {
 	for _, record := range records {
 		if err := pause(ctx, record, delay); err != nil {
 			return err
 		}
-		if err := writeLine(writer, record); err != nil {
-			return err
-		}
 	}
-	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("plantwire host: write: %w", err)
+	if len(records) == 0 {
+		return nil
 	}
-	return nil
+	return link.Send(records)
 }
 
 func pause(ctx context.Context, record map[string]any, delay time.Duration) error {
@@ -133,15 +141,4 @@ func pause(ctx context.Context, record map[string]any, delay time.Duration) erro
 	case <-time.After(delay):
 		return nil
 	}
-}
-
-func writeLine(writer *bufio.Writer, record map[string]any) error {
-	line, err := json.Marshal(record)
-	if err != nil {
-		return fmt.Errorf("plantwire host: encode: %w", err)
-	}
-	if _, err := writer.Write(append(line, '\n')); err != nil {
-		return fmt.Errorf("plantwire host: write: %w", err)
-	}
-	return nil
 }
