@@ -5,8 +5,9 @@
 - **Model roles (owner, 2026-10-20):** **Opus writes** (production code and its tests, documents); **Sonnet investigates**
   (reads code, traces behaviour, writes findings and briefs' facts); **Haiku runs** commands, gates, lint and lint fixes, and
   any small mechanical task. The main session briefs, reviews every diff and commits.
-- **Branches:** streamsim rounds on a branch per phase cut from the previous tip, starting from `real-run`; Agentic Stream and
-  the gateway on their own branches in their repositories. Merge to `main` only when the owner says so.
+- **Branches:** streamsim rounds on a branch per phase cut from the previous tip, starting from `real-run`. Agentic Stream:
+  `fan-h0` (H0), then `fan-plantwire-host` (A0 to A4). Gateway (`agent-research-lab`): `fan-gateway`. Tamoz: no branch (no
+  code). Untracked files the owner keeps in those checkouts are left alone. Merge to `main` only when the owner says so.
 
 ## Outcome
 
@@ -55,3 +56,4 @@ too large is split; a deviation from the plan that improves it is made and recor
 
 | Round | Repository | Commit | Notes |
 |---|---|---|---|
+| P0 | streams-simulator | 9b95c33a | Plan and goal committed; the old demo canvas (PID 27234) stopped, its workspace left in place; commits at start: streams-simulator `real-run` 9b95c33a, agentic-stream `real-run` 91c2079d, tamoz `real-run` 9170538c, agent-research-lab `main` faf457b; `make build` and `make phase-gate` green on 9b95c33a (354 s; the Enola step reported coupling changes as information only) |
