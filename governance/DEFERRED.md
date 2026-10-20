@@ -509,4 +509,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > scripted actuator fault in a live session (fan experiment S5 scenarios beyond `zone_heat_load`) and before the A/B/C
 > evaluation (fan experiment PLAN.md section 8.1 item 1); then a fault declares in the domain data whether it persists over
 > later commands, rather than a global flip of the precedence, and replay stays byte for byte deterministic. Found by the S3
-> actuator fault tests (`test/contract/thermal_actuator_faults_test.go` commands before the onset for this reason).
+> actuator fault tests (`test/contract/thermal_actuator_faults_test.go` commands before the onset for this reason). Guarded by fan S11a
+> (2026-10-20): until it is fixed, `plantwire connect` refuses a planned disturbance whose fault acts on a state a command of
+> the instance's kind sets (`fault_on_commanded_state`, decided from the domain's effector effects), so no live session
+> scripts a fault the next command would cancel.

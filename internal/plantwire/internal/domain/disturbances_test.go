@@ -10,7 +10,7 @@ import (
 func disturbedInstances() []PlanInstance {
 	instances := benchInstances()
 	instances[0].Faults = []PlanFault{{ID: "zone_heat_load"}, {ID: "dht11_stuck"}}
-	instances[1].Faults = []PlanFault{{ID: "led_flicker", Pulse: true}}
+	instances[1].Faults = []PlanFault{{ID: "led_flicker", Pulse: true}, {ID: "led_stuck_off", Commanded: true}}
 	return instances
 }
 
@@ -31,6 +31,8 @@ func TestEveryBrokenDisturbanceIsReportedAtItsMemberWithItsRule(t *testing.T) {
 			"/disturbances/1/instance", KeywordDisturbanceOnRealInstance},
 		"a pulse fault with a duration": {nil, model.Disturbance{AtS: 5, Instance: "led-01", Fault: "led_flicker", DurationS: seconds(3)},
 			"/disturbances/1/duration_s", KeywordDurationWithPulseFault},
+		"a fault on a state a command sets": {nil, model.Disturbance{AtS: 5, Instance: "led-01", Fault: "led_stuck_off"},
+			"/disturbances/1/fault", KeywordFaultOnCommandedState},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

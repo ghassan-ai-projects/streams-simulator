@@ -133,7 +133,7 @@ func twinKinds(spec *simdomain.Compiled, board domain.BoardTrace, dirs []string)
 func twinKindDigests(checked []model.ImplementsChecked) []domain.TwinKind {
 	digests := make([]domain.TwinKind, len(checked))
 	for i, entry := range checked {
-		digests[i] = domain.TwinKind{Kind: entry.Kind, KindDigest: entry.KindDigest}
+		digests[i] = domain.TwinKind{Kind: entry.Kind, KindDigest: entry.KindDigest, BoardType: entry.BoardType, BoardDigest: entry.BoardDigest}
 	}
 	return digests
 }

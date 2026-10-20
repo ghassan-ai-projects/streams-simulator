@@ -4,6 +4,16 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Review fixes for the semantic kinds and paced sessions (fan S11a).** The board mapping a run translates through is named
+  in everything the run produces: `implements_checked` and the check's real instances carry `board_type` and `board_digest`,
+  `run.json` gains `board_digests`, the `binding` note names the mapping the gateway was expected to hold, and the twin report
+  names the twin's (the wire does not, which would be contract 1.5.0). New board rules: `board_readback_mismatch`,
+  `board_table_incomplete`, `board_raw_shared`. A command argument the mapping does not consume is refused, not dropped. A paced
+  session anchors its world and its disturbances when the host attaches, keeps reading the host during a slice's wait and
+  refuses a command whose deadline passed on the wall clock. The reference host's `idempotency_key` names one command
+  (command id and content), so lease renewals execute; the fixtures follow (SPEC section 9). A disturbance on a state a command
+  sets is refused (`fault_on_commanded_state`) until D-116 is fixed.
+
 - **Fan experiment plans and a dress rehearsal (fan S8, S9).** `examples/devices/thermal-board/fan-experiment/` holds
   `simulate.plan.json` (every instance simulated, a zone heat load from 120 s for 900 s) and `real.plan.json` (the three
   instances bound to the gateway's board `mega-01`, no disturbances), both paced to the wall clock, with a README that says

@@ -63,7 +63,7 @@ Validates one domain file and reports its ID, digest, channel count, fault count
 streamsim domain validate <path> [--kinds-dir <dir>]...
 ```
 
-- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected and reads no kind file. A kind that also declares `board_type: "<type>"` is the raw model of that board type and implements its kind file through the board mapping `<type>.board.json` (plant wire `BOARD`) found in the same directories by the `board_type` it declares: the kind's channels and effectors are projected through the mapping (names, words, scaled ranges and the arguments each raw command needs are checked against the raw kind and the kind file), and the projected interface must equal the kind file, so `implements_checked` carries the kind file's own digest. A mapping that is not loaded is `implements_missing`; one that disagrees with the raw kind or the kind file is `implements_drift`, with the first differing member in the message. A node of such a domain announces the kind file, translates each command at its boundary into the raw command and arguments the twin runs (the raw command is what the run's command log records), and reports each raw reading as the kind's metric; a raw reading the mapping does not name is not sent. A domain that implements reads only the kind files of the kinds it implements, found by the kind a file declares (a file that does not parse or read is known by its file name, so its failure is reported when its name is an implemented kind); a malformed kind file of another kind is never read as a problem, so one unfinished device does not block the others (it still fails `kind validate`). The check compares the safe-stop flag of each command too: a domain flags a safe stop with `safe_stop: true` on its effector, and the kind file must flag the same commands. A kind file must be a regular file of at most 1 MiB (a symbolic link or a named pipe is refused), one JSON document, with no member named twice and no number beyond the range of a double. `domain validate` and `run` print `implements_checked`, a list of `{kind, kind_digest}` for the kind files the domain was checked against; it is empty when no kind of the domain implements one, so an empty list means there was nothing to check. `domain compose`, `run`, `plantwire node` and `mcp` take the same option and run the same check; `domain lint` takes none, because it judges a nominal day of the domain's behaviour, not its interface (`--kinds-dir` there is a usage error). A recorded run (`replay`, `verify`, `scenario from-run`) does not run it either: it reproduces a recorded run and sends nothing to a host.
+- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected and reads no kind file. A kind that also declares `board_type: "<type>"` is the raw model of that board type and implements its kind file through the board mapping `<type>.board.json` (plant wire `BOARD`) found in the same directories by the `board_type` it declares (its `implements_checked` entry then carries `board_type` and `board_digest`): the kind's channels and effectors are projected through the mapping (names, words, scaled ranges and the arguments each raw command needs are checked against the raw kind and the kind file), and the projected interface must equal the kind file, so `implements_checked` carries the kind file's own digest. A mapping that is not loaded is `implements_missing`; one that disagrees with the raw kind or the kind file is `implements_drift`, with the first differing member in the message. A node of such a domain announces the kind file, translates each command at its boundary into the raw command and arguments the twin runs (the raw command is what the run's command log records), and reports each raw reading as the kind's metric; a raw reading the mapping does not name is not sent. A domain that implements reads only the kind files of the kinds it implements, found by the kind a file declares (a file that does not parse or read is known by its file name, so its failure is reported when its name is an implemented kind); a malformed kind file of another kind is never read as a problem, so one unfinished device does not block the others (it still fails `kind validate`). The check compares the safe-stop flag of each command too: a domain flags a safe stop with `safe_stop: true` on its effector, and the kind file must flag the same commands. A kind file must be a regular file of at most 1 MiB (a symbolic link or a named pipe is refused), one JSON document, with no member named twice and no number beyond the range of a double. `domain validate` and `run` print `implements_checked`, a list of `{kind, kind_digest}` for the kind files the domain was checked against; it is empty when no kind of the domain implements one, so an empty list means there was nothing to check. `domain compose`, `run`, `plantwire node` and `mcp` take the same option and run the same check; `domain lint` takes none, because it judges a nominal day of the domain's behaviour, not its interface (`--kinds-dir` there is a usage error). A recorded run (`replay`, `verify`, `scenario from-run`) does not run it either: it reproduces a recorded run and sends nothing to a host.
 
 ### `kind validate`
 
@@ -383,19 +383,27 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   identity.
 
 - `disturbances` (optional, at most 64) — faults the session injects into its simulated world, each
-  `{at_s, instance, fault, duration_s?, severity?}`: the fault starts `at_s` seconds after the world starts (paced or not) and,
+  `{at_s, instance, fault, duration_s?, severity?}`: the fault starts `at_s` seconds after the host attaches (its first `STATE`;
+  in an unpaced session that is the world's start) and,
   with `duration_s`, is cleared that much later; `severity` defaults to the domain's magnitude. Every disturbance is injected
   when the session starts, through the same path as `fault.inject` and `fault.clear`, so the run's command log and its sealed
   journal hold it and `replay` and `verify` reproduce it without the plan. The schedule is never sent to the host, never echoed
   by `--check` and never written to the observer journal: the host sees only its effect on the readings. A plan whose
   disturbance names an unknown instance (`unknown_instance`), a fault the instance's kind does not declare (`unknown_fault`),
-  an instance bound to a real board (`disturbance_on_real_instance`) or a duration for a pulse fault, whose length the domain
-  fixes (`duration_with_pulse_fault`), is refused with the pointer `/disturbances/N/...`; a negative severity or an `at_s` or
+  an instance bound to a real board (`disturbance_on_real_instance`), a duration for a pulse fault, whose length the domain
+  fixes (`duration_with_pulse_fault`), or a fault that acts on a state a command of the instance's kind sets
+  (`fault_on_commanded_state`: the next command would cancel it while the truth keeps it open, deferred D-116; this covers
+  the thermal `fan_stall` and `led_stuck_off`, decided from the domain's effects, not from names) is refused with the pointer `/disturbances/N/...`; a negative severity or an `at_s` or
   `duration_s` beyond 30 days (the longest run) breaks the plan's schema.
 
 - `pace` (optional, only `"wall"`) — paces the session to the wall clock. The world starts at the wall time the session
   starts (floored to the millisecond; for a mixed session, when the relay opens) instead of 2026-01-01, and that start is
   recorded in `run.json` (`world_config.start_time_ns`), so `replay` and `verify` reproduce the run exactly as an unpaced one.
+  The world is anchored when the host attaches: at the host's first `STATE` it advances, unobserved, to the last slice end
+  before the wall clock, so a host or gateway that arrives late gets no catch-up burst of past slices, and the disturbance
+  schedule counts from there. While the node waits for a slice's wall time it keeps reading the host (a heartbeat never blocks
+  the host) and acts on what arrived at the next barrier; a command whose `deadline_ns` has passed on the wall clock is
+  refused `expired` even when the world lags it.
   Each slice is released when the wall clock reaches the world time it ends at, on an absolute schedule (no drift adds up), so
   a 10 minute session takes 10 minutes and world time is UTC; a slice that is already late is released at once, so after a
   stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), three missed barriers still
@@ -404,13 +412,17 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   world starts at 2026-01-01 and slices follow one another as fast as the host answers, as before.
 
 - `--check` — reads the plan against its domain and kind files and starts nothing. The document is
-  `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked, policies}`
+  `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?, board_type?, board_digest?}], implements_checked, policies}`
   (`policies` is the list in effect, sorted, `[]` when the plan names none). `environment` is `simulated` without a gateway,
   `hardware` when every instance is bound to a real device (the world then announces no board), and `mixed` otherwise; the
   relay's merged `NBIRTH` claims the environment of the boards it actually announces, so a strict `hardware` host accepts an
   all-real session. Each
   instance is `real` (with the board and device the gateway must announce and the digest of the kind file it must announce
-  them with) or `simulated`. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
+  them with, and, when the world implements that kind through a board mapping, its `board_type` and `board_digest`: the
+  mapping the gateway must hold too, which the wire does not carry) or `simulated`. Each `implements_checked` entry of a kind
+  implemented through a board mapping carries the mapping's `board_type` and `board_digest`, and the run records them in
+  `run.json` (`board_digests`), in its `session` record and in each `binding` note, so a changed row, scale or lease changes
+  what a run says it read. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
   into the plan: `unknown_instance`, `no_kind_file` (only an instance whose kind implements a kind file can be a real board),
   `instance_bound_twice`, `device_bound_twice`, `gateway_required`, `same_socket` (compared after cleaning the paths),
   `socket_not_absolute`, `socket_parent_component` (a `..` component), `socket_control_character`,

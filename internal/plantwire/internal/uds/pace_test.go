@@ -2,6 +2,7 @@ package uds
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -9,37 +10,62 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-func TestTheWallPacerReleasesEverySliceOnItsAbsoluteScheduleAndNeverEarly(t *testing.T) {
+func TestTheWallPacerWaitsForEverySliceOnItsAbsoluteScheduleAndNeverForAPastOne(t *testing.T) {
 	t.Parallel()
-	const slice = 25 * time.Millisecond
+	const slice = int64(time.Second)
 	before := time.Now()
 	pacer := StartWallPacer()
 	if start := pacer.StartNS(); start > before.UnixNano() || start < before.UnixNano()-int64(time.Millisecond) {
 		t.Fatalf("start %d, want the wall time at start floored to the millisecond (read at %d)", start, before.UnixNano())
 	}
-	for k := int64(1); k <= 4; k++ {
-		if err := pacer.Release(t.Context(), pacer.StartNS()+k*int64(slice)); err != nil {
-			t.Fatal(err)
-		}
-		if early := time.Until(time.Unix(0, pacer.StartNS()+k*int64(slice))); early > 0 {
-			t.Fatalf("slice %d released %v before its wall time", k, early)
+	for k := int64(1); k <= 3; k++ {
+		if wait := pacer.WaitNS(pacer.StartNS() + k*slice); wait > k*slice || wait < k*slice-int64(time.Second) {
+			t.Fatalf("slice %d waits %v, want its wall time minus the time since the start", k, time.Duration(wait))
 		}
 	}
-	if elapsed := time.Since(before); elapsed < 4*slice-time.Millisecond || elapsed > 4*slice+5*time.Second {
-		t.Fatalf("four slices of %v took %v", slice, elapsed)
+	if wait := pacer.WaitNS(pacer.StartNS() - int64(time.Hour)); wait != 0 {
+		t.Fatalf("a past instant waits %v, want none", time.Duration(wait))
 	}
 }
 
-func TestTheWallPacerDoesNotWaitForAPastInstantAndStopsWhenInterrupted(t *testing.T) {
+func TestALinkDrainedForAWaitReadsEveryRecordTheHostSendsMeanwhile(t *testing.T) {
 	t.Parallel()
-	pacer := NewWallPacer(domain.WallScheduleFrom(time.Now().UnixNano()))
-	before := time.Now()
-	if err := pacer.Release(t.Context(), pacer.StartNS()-int64(time.Hour)); err != nil || time.Since(before) > time.Second {
-		t.Fatalf("a past instant: %v after %v, want an immediate release", err, time.Since(before))
+	path, listener := privateListener(t)
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		line, _ := json.Marshal(map[string]any{"type": "STATE"})
+		for range 200 {
+			if _, err := conn.Write(append(line, '\n')); err != nil {
+				return
+			}
+		}
+		<-t.Context().Done()
+	}()
+	link, err := Dial(t.Context(), path, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = link.Close() }()
+	started := time.Now()
+	held, err := link.Drain(t.Context(), 200*time.Millisecond)
+	if err != nil || len(held) != 200 || time.Since(started) < 200*time.Millisecond {
+		t.Fatalf("Drain = %d records, %v after %v, want all 200 read during the whole wait", len(held), err, time.Since(started))
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	if err := pacer.Release(ctx, pacer.StartNS()+int64(time.Hour)); !errors.Is(err, context.Canceled) || !Interrupted(err) {
-		t.Fatalf("an interrupted wait: %v, want context.Canceled", err)
+	if _, err := link.Drain(ctx, time.Hour); !errors.Is(err, context.Canceled) {
+		t.Fatalf("an interrupted drain: %v, want context.Canceled", err)
+	}
+}
+
+func TestTheWallPacersWorldNowIsTheWallClockOnItsSchedule(t *testing.T) {
+	t.Parallel()
+	pacer := NewWallPacer(domain.WallSchedule{WorldStartNS: 1_000, WallStartNS: time.Now().UnixNano()})
+	if now := pacer.WorldNowNS(); now < 1_000 || now > 1_000+int64(5*time.Second) {
+		t.Fatalf("world now %d, want the world start plus the wall time since the schedule began", now)
 	}
 }

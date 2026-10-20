@@ -50,7 +50,8 @@ func (f *findings) examine(index int, kind *model.Kind, files KindFiles) {
 		f.issues = append(f.issues, model.RuleIssue(fmt.Sprintf("/kinds/%d/implements", index), implementsKeyword(err), "implements", err.Error()))
 		return
 	}
-	f.checked = append(f.checked, model.ImplementsChecked{Kind: kind.Implements, KindDigest: digest})
+	f.checked = append(f.checked, model.ImplementsChecked{Kind: kind.Implements, KindDigest: digest, BoardType: kind.BoardType,
+		BoardDigest: f.boards[kind.BoardType].Digest})
 }
 
 func implementsKeyword(err error) string {

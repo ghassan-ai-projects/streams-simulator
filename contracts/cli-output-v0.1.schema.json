@@ -305,7 +305,7 @@
     },
     "implements_checked": {
       "type": "array",
-      "description": "The kind files the domain was checked against: one entry per domain kind that implements a kind file, with the digest of that kind file. Empty when no kind of the domain implements one, so an empty list means there was nothing to check, never that the check was skipped.",
+      "description": "The kind files the domain was checked against: one entry per domain kind that implements a kind file, with the digest of that kind file and, for a kind implemented through a board mapping, the board type and board_digest. Empty when no kind of the domain implements one, so an empty list means there was nothing to check, never that the check was skipped.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -320,6 +320,15 @@
           },
           "kind_digest": {
             "$ref": "#/$defs/digest"
+          },
+          "board_type": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Present when the domain kind implements the kind file through a board mapping: the board type of that mapping."
+          },
+          "board_digest": {
+            "$ref": "#/$defs/digest",
+            "description": "Present with board_type: the board_digest of the board mapping the kind was checked through (plant wire SPEC section 15)."
           }
         }
       }
@@ -1061,7 +1070,9 @@
               "kind": {"type": "string", "minLength": 1},
               "kind_digest": {"$ref": "#/$defs/digest", "description": "Real instances: the digest of the kind file the gateway must announce for the device."},
               "board": {"type": "string", "minLength": 1},
-              "device": {"type": "string", "minLength": 1}
+              "device": {"type": "string", "minLength": 1},
+              "board_type": {"type": "string", "minLength": 1, "description": "Real instances whose kind the world implements through a board mapping: the board type of that mapping."},
+              "board_digest": {"$ref": "#/$defs/digest", "description": "With board_type: the board_digest of the mapping the twin translates through, which the gateway must hold too (the wire does not carry it)."}
             }
           }
         },

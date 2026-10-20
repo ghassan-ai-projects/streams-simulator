@@ -58,3 +58,21 @@ func TestAMergedBirthIsOnTheWallClockWhenItsSimulatedNodeIsPaced(t *testing.T) {
 		t.Error("merging changed the gateway's own birth")
 	}
 }
+
+func TestTheAttachedSliceIsTheLastWholeSliceBeforeTheHostAttached(t *testing.T) {
+	t.Parallel()
+	for name, c := range map[string]struct{ clock, slice, now, want int64 }{
+		"an attach before the first slice":     {100, 10, 105, 100},
+		"an attach three and a half slices in": {100, 10, 135, 130},
+		"an attach on a slice end":             {100, 10, 140, 140},
+		"a clock ahead of the wall":            {100, 10, 90, 100},
+		"no slice":                             {100, 0, 500, 100},
+	} {
+		if got := AttachedSlice(c.clock, c.slice, c.now); got != c.want {
+			t.Errorf("%s: AttachedSlice = %d, want %d", name, got, c.want)
+		}
+	}
+	if world := (WallSchedule{WorldStartNS: 10, WallStartNS: 1000}).WorldAt(1500); world != 510 {
+		t.Errorf("WorldAt = %d, want 510", world)
+	}
+}

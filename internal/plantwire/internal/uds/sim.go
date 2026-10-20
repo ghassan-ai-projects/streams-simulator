@@ -60,6 +60,11 @@ func (l *SimLink) AwaitHandshake(ctx context.Context, until func(domain.Message)
 	return l.collect(ctx, until, max(l.wait, HandshakeWait))
 }
 
+func (l *SimLink) Drain(ctx context.Context, wait time.Duration) ([]domain.Inbound, error) {
+	inbound, _, err := l.collect(ctx, neverMet, wait)
+	return inbound, err
+}
+
 func (l *SimLink) collect(ctx context.Context, until func(domain.Message) bool, wait time.Duration) ([]domain.Inbound, bool, error) {
 	timer := time.NewTimer(wait)
 	defer timer.Stop()

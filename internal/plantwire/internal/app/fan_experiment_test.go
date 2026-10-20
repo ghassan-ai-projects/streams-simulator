@@ -143,4 +143,11 @@ func TestTheRealFanExperimentAdmitsTheStandInBoardAndCarriesTheCommandsToIt(t *t
 		t.Fatalf("Connect = %+v with %d commands at the board, want a clean stop after both commands", ended, commands)
 	}
 	commandsSucceeded(t, started.stop(), "led-alert", "fan-45")
+	bindings := journalOfType(t, out, "binding")
+	if len(bindings) == 0 {
+		t.Fatal("no binding note was journalled")
+	}
+	if digests, _ := bindings[0]["board_digests"].(map[string]any); digests["arduino-thermal"] == nil {
+		t.Errorf("binding note = %v, want the board mapping the gateway was expected to hold", bindings)
+	}
 }

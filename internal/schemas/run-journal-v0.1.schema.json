@@ -167,6 +167,7 @@
       "required": ["outcome", "issues"],
       "properties": {
         "outcome": {"enum": ["matched", "refused"]},
+        "board_digests": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "description": "For each board type a bound instance's kind is implemented through, the board_digest of the mapping the world holds: the gateway does not announce one, so this records what it was expected to hold."},
         "refusal": {"type": "string"},
         "reason": {"type": "string"},
         "issues": {

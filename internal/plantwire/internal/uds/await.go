@@ -102,6 +102,13 @@ func stopped(ctx context.Context) (domain.Inbound, bool, error) {
 
 func (l *Link) WaitedMS() int64 { return l.waited }
 
+func (l *Link) Drain(ctx context.Context, wait time.Duration) ([]domain.Inbound, error) {
+	inbound, _, err := l.collect(ctx, neverMet, wait)
+	return inbound, err
+}
+
+func neverMet(domain.Message) bool { return false }
+
 type WallPacer struct {
 	schedule domain.WallSchedule
 }
@@ -116,17 +123,8 @@ func NewWallPacer(schedule domain.WallSchedule) *WallPacer {
 
 func (p *WallPacer) StartNS() int64 { return p.schedule.WorldStartNS }
 
-func (p *WallPacer) Release(ctx context.Context, worldNS int64) error {
-	wait := p.schedule.WaitNS(worldNS, time.Now().UnixNano())
-	if wait == 0 {
-		return nil
-	}
-	timer := time.NewTimer(time.Duration(wait))
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("plantwire: %w", ctx.Err())
-	case <-timer.C:
-		return nil
-	}
+func (p *WallPacer) WorldNowNS() int64 { return p.schedule.WorldAt(time.Now().UnixNano()) }
+
+func (p *WallPacer) WaitNS(worldNS int64) int64 {
+	return p.schedule.WaitNS(worldNS, time.Now().UnixNano())
 }

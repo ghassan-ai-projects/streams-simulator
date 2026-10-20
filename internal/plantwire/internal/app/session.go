@@ -19,6 +19,7 @@ type Link interface {
 	Await(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
 	AwaitHandshake(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
 	WaitedMS() int64
+	Drain(ctx context.Context, wait time.Duration) ([]domain.Inbound, error)
 }
 
 type Options struct {
@@ -45,7 +46,8 @@ type Options struct {
 }
 
 type Pacer interface {
-	Release(ctx context.Context, worldNS int64) error
+	WaitNS(worldNS int64) int64
+	WorldNowNS() int64
 }
 
 var (
@@ -104,6 +106,7 @@ type Session struct {
 	liveChanged bool
 	ints        *interruptSide
 	allowed     domain.AllowList
+	held        []domain.Inbound
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
@@ -138,6 +141,13 @@ func (s *Session) handshake(ctx context.Context) error {
 	if err := s.sendNodeBirth(); err != nil {
 		return err
 	}
+	if err := s.attach(ctx); err != nil {
+		return err
+	}
+	return s.send(s.devices.births(s.run.Status().ClockNS)...)
+}
+
+func (s *Session) attach(ctx context.Context) error {
 	state, err := s.awaitState(ctx)
 	if err != nil {
 		return err
@@ -145,7 +155,7 @@ func (s *Session) handshake(ctx context.Context) error {
 	if err := s.adopt(state); err != nil {
 		return err
 	}
-	return s.send(s.devices.births(s.run.Status().ClockNS)...)
+	return s.anchor(ctx)
 }
 
 func (s *Session) adopt(state domain.Message) error {

@@ -68,16 +68,24 @@ func discardRun(r *run.Run) {
 }
 
 func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, domain.Interfaces, error) {
-	spec, adapterSpec, faces, err := loadSimInputs(o)
+	inputs, err := loadSimInputs(o)
 	if err != nil {
 		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: spec, Adapter: adapterSpec, Seed: o.Seed, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: cmp.Or(o.StartNS, model.DefaultStartTimeNS), JournalDir: out, SessionRecord: simSession(o)})
+	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: inputs.spec, Adapter: inputs.adapter, Seed: o.Seed, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: cmp.Or(o.StartNS, model.DefaultStartTimeNS), JournalDir: out, SessionRecord: simSession(o),
+		BoardDigests: boardDigests(inputs.checked)})
 	if err != nil {
 		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	return r, faces, nil
+	return r, inputs.faces, nil
+}
+
+type simInputs struct {
+	spec    *simdomain.Compiled
+	adapter *model.Adapter
+	checked []model.ImplementsChecked
+	faces   domain.Interfaces
 }
 
 func simSession(o SimulatedOptions) map[string]any {
@@ -87,16 +95,16 @@ func simSession(o SimulatedOptions) map[string]any {
 	return sessionNote(o.Session)
 }
 
-func loadSimInputs(o SimulatedOptions) (*simdomain.Compiled, *model.Adapter, domain.Interfaces, error) {
+func loadSimInputs(o SimulatedOptions) (simInputs, error) {
 	spec, adapterSpec, err := run.LoadInputs(o.DomainsDir, o.AdaptersDir, o.Domain, o.Adapter)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("load simulated inputs: %w", err)
+		return simInputs{}, fmt.Errorf("load simulated inputs: %w", err)
 	}
-	_, faces, err := loadInterfaces(spec.Spec, o.Node.KindsDirs)
+	checked, faces, err := loadInterfaces(spec.Spec, o.Node.KindsDirs)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
+		return simInputs{}, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
 	}
-	return spec, adapterSpec, faces, nil
+	return simInputs{spec: spec, adapter: adapterSpec, checked: checked, faces: faces}, nil
 }
 
 func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, error) {

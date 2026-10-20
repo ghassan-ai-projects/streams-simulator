@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log/slog"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -133,6 +135,10 @@ func (d *devices) reading(event model.SimEvent) (*model.Kind, string, any, bool)
 		return kind, event.Channel, event.Value, kind != nil
 	}
 	metric, value, carried := wire.SemanticReading(*mapped, event.Channel, event.Value)
+	if metric != "" && !carried {
+		slog.Warn("plantwire: a raw reading has no word in its board mapping and is not carried",
+			"device", event.EntityID, "raw", event.Channel, "value", event.Value)
+	}
 	return kind, metric, value, carried
 }
 

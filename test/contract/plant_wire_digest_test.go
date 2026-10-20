@@ -25,16 +25,16 @@ func TestFixturesCarryTheRealContractAndCapabilityDigests(t *testing.T) {
 	}
 }
 
-func TestEveryCommandFixtureCarriesTheIdempotencyKeyOfItsContent(t *testing.T) {
+func TestEveryCommandFixtureCarriesTheIdempotencyKeyOfItsIntent(t *testing.T) {
 	t.Parallel()
 	for _, file := range fixtures(t, "exchanges", "*.jsonl") {
-		if strings.Contains(filepath.Base(file), "different-content") {
+		if strings.HasPrefix(filepath.Base(file), "duplicate-") {
 			continue
 		}
 		_, steps := exchangeSteps(t, file)
 		for _, step := range steps {
 			if record := member(step, "record"); member(record, "type") == "DCMD" && member(record, "idempotency_key") != idempotencyKey(t, record) {
-				t.Errorf("%s: %v does not hash its content", filepath.Base(file), member(record, "command_id"))
+				t.Errorf("%s: %v does not hash its command id and content", filepath.Base(file), member(record, "command_id"))
 			}
 		}
 	}
@@ -63,5 +63,9 @@ func idempotencyKey(t *testing.T, record any) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return digest
+	key, err := canonical.Digest(map[string]any{"command_id": member(record, "command_id"), "content": digest})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return key
 }

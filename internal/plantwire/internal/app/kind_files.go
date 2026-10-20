@@ -30,6 +30,19 @@ func loadInterfaces(spec *model.DomainSpec, kindsDirs []string) ([]model.Impleme
 	return domain.CheckInterfaces(spec, kindFiles, boards)
 }
 
+func boardDigests(checked []model.ImplementsChecked) map[string]string {
+	digests := map[string]string{}
+	for _, entry := range checked {
+		if entry.BoardType != "" {
+			digests[entry.BoardType] = entry.BoardDigest
+		}
+	}
+	if len(digests) == 0 {
+		return nil
+	}
+	return digests
+}
+
 func readBoards(spec *model.DomainSpec, dirs []string) (domain.BoardFiles, error) {
 	wanted := domain.BoardTypes(spec)
 	if len(wanted) == 0 {

@@ -39,7 +39,7 @@ func mappedKindIssues(at string, kind MappedKind) []model.Issue {
 		issues = append(issues, nameIssues(pointer, name)...)
 		issues = append(issues, mappedMetricIssues(pointer, name, kind)...)
 	}
-	return issues
+	return append(issues, readBackIssues(at, kind)...)
 }
 
 func mappedCommandsIssues(at string, kind MappedKind) []model.Issue {

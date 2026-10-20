@@ -133,7 +133,7 @@ The gateway dials `gateway_socket`. The simulator checks it against the plan at 
 The fan experiment ships ready-made plans for both cases, a simulated rehearsal and the real board, in
 [`examples/devices/thermal-board/fan-experiment/`](../../examples/devices/thermal-board/fan-experiment/README.md).
 
-Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. With `pace: "wall"` the world starts at the session's wall time and each slice is released when the wall clock reaches it, so world time is UTC and a 10 minute session takes 10 minutes; the barrier stays a cap. Without `pace` (offline tests and benchmarks) the world advances barrier by barrier as fast as the host answers.
+Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. With `pace: "wall"` the world is anchored when the host attaches (a late host or gateway gets no burst of past slices) and each slice is released when the wall clock reaches it, so world time is UTC and a 10 minute session takes 10 minutes; the barrier stays a cap. Without `pace` (offline tests and benchmarks) the world advances barrier by barrier as fast as the host answers.
 
 **Give the reference host `--delay-ms` in an unpaced session.** Against the reference host with no `--delay-ms` and no `pace` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
 

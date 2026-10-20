@@ -23,9 +23,9 @@ func CheckArguments(schema map[string]any, args map[string]any) error {
 }
 
 func RawCommand(mapped MappedKind, name string, args map[string]any) (string, map[string]any, error) {
-	command, known := mapped.Commands[name]
-	if !known {
-		return "", nil, fmt.Errorf("%w: no command %q", ErrNotTranslated, name)
+	command, err := translatable(mapped, name, args)
+	if err != nil {
+		return "", nil, err
 	}
 	raw, err := rawArguments(command, args, mapped.RawEnums)
 	if err != nil {
@@ -35,6 +35,30 @@ func RawCommand(mapped MappedKind, name string, args map[string]any) (string, ma
 		return "", nil, err
 	}
 	return command.Raw, raw, nil
+}
+
+func translatable(mapped MappedKind, name string, args map[string]any) (MappedCommand, error) {
+	command, known := mapped.Commands[name]
+	if !known {
+		return MappedCommand{}, fmt.Errorf("%w: no command %q", ErrNotTranslated, name)
+	}
+	if extra := unconsumed(command, args); extra != "" {
+		return MappedCommand{}, fmt.Errorf("%w: the board mapping does not use the argument %q", ErrNotTranslated, extra)
+	}
+	return command, nil
+}
+
+func unconsumed(command MappedCommand, args map[string]any) string {
+	used := map[string]bool{command.By: command.By != ""}
+	for _, name := range sortedKeys(command.Args) {
+		used[command.Args[name].From] = command.Args[name].From != ""
+	}
+	for _, name := range sortedKeys(args) {
+		if !used[name] {
+			return name
+		}
+	}
+	return ""
 }
 
 func rawArguments(command MappedCommand, args map[string]any, rawEnums map[string][]string) (map[string]any, error) {

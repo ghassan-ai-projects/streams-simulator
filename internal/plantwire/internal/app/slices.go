@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
@@ -13,10 +14,32 @@ func (s *Session) step(ctx context.Context, at int64) error {
 	if s.options.Pace == nil {
 		return s.slice(ctx, at)
 	}
-	if err := s.options.Pace.Release(ctx, at); err != nil {
-		return fmt.Errorf("plantwire: pace: %w", err)
+	if err := s.release(ctx, at); err != nil {
+		return err
 	}
 	return s.slice(ctx, at)
+}
+
+func (s *Session) release(ctx context.Context, at int64) error {
+	wait := s.options.Pace.WaitNS(at)
+	if wait <= 0 {
+		return nil
+	}
+	held, err := s.link.Drain(ctx, time.Duration(wait))
+	s.held = append(s.held, held...)
+	if err == nil {
+		return nil
+	}
+	if ctx.Err() != nil {
+		return fmt.Errorf("plantwire: pace: %w", err)
+	}
+	return s.hostLost(s.takeHeld(), fmt.Errorf("pace: %w", err))
+}
+
+func (s *Session) takeHeld() []domain.Inbound {
+	held := s.held
+	s.held = nil
+	return held
 }
 
 func (s *Session) slice(ctx context.Context, at int64) error {
@@ -45,6 +68,7 @@ func (s *Session) data() []domain.Record {
 
 func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 	inbound, met, err := s.awaitSync(ctx, syncSeq)
+	inbound = append(s.takeHeld(), inbound...)
 	s.run.JournalPacing(syncSeq, s.link.WaitedMS(), !met)
 	if err != nil {
 		return s.hostLost(inbound, err)

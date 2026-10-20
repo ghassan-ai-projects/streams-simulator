@@ -17,6 +17,7 @@ const (
 
 type PlanInstance struct {
 	ID, Kind, Implements, KindDigest string
+	BoardType, BoardDigest           string
 	Faults                           []PlanFault
 }
 
@@ -27,11 +28,15 @@ type PlannedInstance struct {
 	KindDigest string `json:"kind_digest,omitempty"`
 	Board      string `json:"board,omitempty"`
 	Device     string `json:"device,omitempty"`
+
+	BoardType   string `json:"board_type,omitempty"`
+	BoardDigest string `json:"board_digest,omitempty"`
 }
 
 type Bound struct {
 	Index                                     int
 	Instance, Board, Device, Kind, KindDigest string
+	BoardType, BoardDigest                    string
 }
 
 type ConnectPlan struct {
@@ -148,7 +153,7 @@ func (c *planCheck) instanceIssue(at string, b model.RealBinding) (model.Issue, 
 func (c *planCheck) bind(i int, b model.RealBinding) {
 	instance := c.known[b.Instance]
 	c.bound = append(c.bound, Bound{Index: i, Instance: b.Instance, Board: b.Board, Device: b.Device,
-		Kind: instance.Implements, KindDigest: instance.KindDigest})
+		Kind: instance.Implements, KindDigest: instance.KindDigest, BoardType: instance.BoardType, BoardDigest: instance.BoardDigest})
 }
 
 func (c *planCheck) outcome(plan *model.SessionPlan, instances []PlanInstance) ConnectPlan {
@@ -171,7 +176,8 @@ func (c *planCheck) environment(plan *model.SessionPlan, instances int) string {
 func (c *planCheck) planned(instance PlanInstance) PlannedInstance {
 	for _, b := range c.bound {
 		if b.Instance == instance.ID {
-			return PlannedInstance{Instance: instance.ID, Origin: PlannedReal, Kind: instance.Kind, KindDigest: b.KindDigest, Board: b.Board, Device: b.Device}
+			return PlannedInstance{Instance: instance.ID, Origin: PlannedReal, Kind: instance.Kind, KindDigest: b.KindDigest, Board: b.Board, Device: b.Device,
+				BoardType: b.BoardType, BoardDigest: b.BoardDigest}
 		}
 	}
 	return PlannedInstance{Instance: instance.ID, Origin: PlannedSimulated, Kind: instance.Kind}

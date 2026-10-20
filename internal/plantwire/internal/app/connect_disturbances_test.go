@@ -83,6 +83,14 @@ func TestTheCheckOfAPlanWithDisturbancesNeverEchoesThemAndRefusesABrokenOne(t *t
 	if !errors.Is(err, ErrPlanRefused) || !ok || invalid.Issues[0].Pointer != "/disturbances/0/fault" || invalid.Issues[0].Keyword != "unknown_fault" {
 		t.Fatalf("a fan fault on the zone: %v, want unknown_fault at /disturbances/0/fault", err)
 	}
+	for _, actuator := range []string{`"instance":"fan-01","fault":"fan_stall"`, `"instance":"led-01","fault":"led_stuck_off"`} {
+		stalled := strings.Replace(heatLoad, `"instance":"zone-01","fault":"zone_heat_load"`, actuator, 1)
+		_, err = CheckConnect(connectOptions(t, strings.TrimSuffix(planText("/tmp/h.sock", ""), "}")+stalled, ""))
+		invalid, ok = model.AsValidationError(err)
+		if !ok || invalid.Issues[0].Pointer != "/disturbances/0/fault" || invalid.Issues[0].Keyword != "fault_on_commanded_state" {
+			t.Errorf("%s: %v, want fault_on_commanded_state: a command would cancel the fault (D-116)", actuator, err)
+		}
+	}
 }
 
 func TestADisturbanceStartsWithinTheLongestRun(t *testing.T) {

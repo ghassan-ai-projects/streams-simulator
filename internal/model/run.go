@@ -43,6 +43,8 @@ type RunArtifact struct {
 	FieldTraceDigest string `json:"field_trace_digest,omitempty"`
 
 	InterruptLogDigest string `json:"interrupt_log_digest,omitempty"`
+
+	BoardDigests map[string]string `json:"board_digests,omitempty"`
 }
 
 type ArtifactRef struct {

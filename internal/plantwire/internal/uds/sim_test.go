@@ -136,3 +136,18 @@ func TestSpawnReportsTheResultThenCallsAfter(t *testing.T) {
 	}
 	<-called
 }
+
+func TestASimLinkDrainedForAWaitReturnsWhatWasDeliveredMeanwhile(t *testing.T) {
+	t.Parallel()
+	link := NewSimLink(time.Second)
+	for seq := range 2 {
+		link.Deliver(domain.Inbound{Message: domain.Message{Type: "STATE", Seq: uint64(seq)}})
+	}
+	if held, err := link.Drain(t.Context(), 20*time.Millisecond); err != nil || len(held) != 2 {
+		t.Fatalf("Drain = %d records, %v, want both delivered records", len(held), err)
+	}
+	link.Close()
+	if _, err := link.Drain(t.Context(), time.Hour); !errors.Is(err, ErrSimClosed) {
+		t.Fatalf("a closed link: %v, want ErrSimClosed", err)
+	}
+}

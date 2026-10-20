@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"testing"
 )
@@ -14,23 +13,30 @@ type fakePacer struct {
 	syncsBefore []int
 	interrupt   int
 	cancel      context.CancelFunc
+	worldNow    int64
+	lag         int64
+	wait        int64
 }
 
-func (p *fakePacer) Release(ctx context.Context, worldNS int64) error {
+func (p *fakePacer) WaitNS(worldNS int64) int64 {
 	p.released = append(p.released, worldNS)
+	if p.lag > 0 {
+		p.worldNow = worldNS + p.lag
+	}
 	p.syncsBefore = append(p.syncsBefore, countOf(p.host.types(), "NSYNC"))
 	if len(p.released) == p.interrupt {
 		p.cancel()
-		return fmt.Errorf("plantwire: %w", ctx.Err())
 	}
-	return nil
+	return p.wait
 }
+
+func (p *fakePacer) WorldNowNS() int64 { return p.worldNow }
 
 func pacedSession(t *testing.T, host *scriptedHost, slices int64, interrupt int) (*fakePacer, error) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	pacer := &fakePacer{host: host, interrupt: interrupt, cancel: cancel}
+	pacer := &fakePacer{host: host, interrupt: interrupt, cancel: cancel, wait: 1}
 	options := sliceOptions(slices)
 	options.Pace = pacer
 	return pacer, NewSession(utilityRun(t), host, options).Run(ctx)

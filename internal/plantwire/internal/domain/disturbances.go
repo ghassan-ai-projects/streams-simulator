@@ -12,11 +12,13 @@ const (
 	KeywordUnknownFault              = "unknown_fault"
 	KeywordDisturbanceOnRealInstance = "disturbance_on_real_instance"
 	KeywordDurationWithPulseFault    = "duration_with_pulse_fault"
+	KeywordFaultOnCommandedState     = "fault_on_commanded_state"
 )
 
 type PlanFault struct {
-	ID    string
-	Pulse bool
+	ID        string
+	Pulse     bool
+	Commanded bool
 }
 
 type ScheduledFault struct {
@@ -74,6 +76,9 @@ func faultIssues(at string, instance PlanInstance, d model.Disturbance) []model.
 	case instance.Faults[index].Pulse && d.DurationS != nil:
 		return []model.Issue{model.RuleIssue(at+"/duration_s", KeywordDurationWithPulseFault, "duration_s", fmt.Sprintf(
 			"%q is a pulse fault: the domain fixes its duration", clip(d.Fault)))}
+	case instance.Faults[index].Commanded:
+		return []model.Issue{model.RuleIssue(at+"/fault", KeywordFaultOnCommandedState, "fault", fmt.Sprintf(
+			"%q acts on a state a command of %s sets, and the next command would cancel it (D-116): not scriptable yet", clip(d.Fault), clip(d.Instance)))}
 	}
 	return nil
 }

@@ -103,3 +103,35 @@ func assertTheWireSpeaksTheKindFiles(t *testing.T, sent []map[string]any) {
 		t.Errorf("indicator readings %v, want the state word watch on the wire", states)
 	}
 }
+
+func TestAMappedNodeRefusesArgumentsTheKindForbidsEvenWhenTheyWouldTranslate(t *testing.T) {
+	t.Parallel()
+	r, faces := mappedThermalRun(t)
+	forbidden := map[string]map[string]any{
+		"c-half":   {"level_percent": 30.5},
+		"c-lease":  {"level_percent": 30, "lease_ms": 99999},
+		"c-extra":  {"level_percent": 30, "extra": map[string]any{"x": 1}},
+		"c-string": {"level_percent": "30"},
+	}
+	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
+		if syncs != 1 {
+			return
+		}
+		for _, id := range []string{"c-half", "c-lease", "c-extra", "c-string"} {
+			h.reply("DCMD", mappedCommand(h, id, "fan-01", "set_cooling", forbidden[id]))
+		}
+	}}
+	options := sliceOptions(3)
+	options.Policies, options.Interfaces = []string{policy}, faces
+	if err := NewSession(r, host, options).Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	for id := range forbidden {
+		if got := answersOf(host.sent, id); len(got) == 0 || got[0] != "DRECEIPT:refusedout_of_range" {
+			t.Errorf("%s: answers %v, want refused out_of_range", id, got)
+		}
+	}
+	if calls := r.World.EffectorCalls(); len(calls) != 0 {
+		t.Fatalf("the twin ran %v, want no command executed", calls)
+	}
+}

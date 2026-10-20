@@ -81,7 +81,8 @@ func (c *controlEndpoint) close() {
 
 func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) {
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: p.spec, Adapter: p.adapter, Seed: p.session.WorldSeed(),
-		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: p.startNS(), JournalDir: out, SessionRecord: sessionNote(p.result())})
+		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: p.startNS(), JournalDir: out, SessionRecord: sessionNote(p.result()),
+		BoardDigests: boardDigests(p.checked)})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}

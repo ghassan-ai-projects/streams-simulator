@@ -94,7 +94,14 @@ func (s *Session) fresh(c domain.Command) string {
 	if c.NotBeforeNS > s.now()+domain.MaxDeadlineAheadNS {
 		return "out_of_range"
 	}
-	return domain.Freshness(c, s.now())
+	return domain.Freshness(c, s.pacedNow())
+}
+
+func (s *Session) pacedNow() int64 {
+	if s.options.Pace == nil {
+		return s.now()
+	}
+	return max(s.now(), s.options.Pace.WorldNowNS())
 }
 
 func (s *Session) onBoot(c domain.Command) string {

@@ -94,3 +94,23 @@ func TestARawReadingBecomesTheKindsMetric(t *testing.T) {
 		})
 	}
 }
+
+func TestAnArgumentTheMappingDoesNotUseIsRefusedNotDropped(t *testing.T) {
+	t.Parallel()
+	for name, args := range map[string]map[string]any{
+		"a host lease":     {"level_percent": int64(30), "lease_ms": int64(99999)},
+		"an extra member":  {"level_percent": int64(30), "extra": "x"},
+		"a safe stop with": {"level_percent": int64(30)},
+	} {
+		command := "set_cooling"
+		if name == "a safe stop with" {
+			command = "stop_fan"
+		}
+		if _, _, err := RawCommand(thermalMapping(t, "fan"), command, args); !errors.Is(err, ErrNotTranslated) {
+			t.Errorf("%s: RawCommand = %v, want ErrNotTranslated", name, err)
+		}
+	}
+	if _, _, err := RawCommand(thermalMapping(t, "indicator"), "show_state", map[string]any{"state": "watch", "pattern": "solid"}); !errors.Is(err, ErrNotTranslated) {
+		t.Errorf("a raw word beside the kind word: %v, want ErrNotTranslated", err)
+	}
+}
