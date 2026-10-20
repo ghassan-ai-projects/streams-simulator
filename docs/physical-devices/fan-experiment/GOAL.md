@@ -52,6 +52,18 @@ too large is split; a deviation from the plan that improves it is made and recor
 - Every round committed with its review; the full gate green on the last commit of each repository's branch.
 - PHYSICAL_DEVICES.md, `documentation/` and the other repositories' docs describe what was built; deviations in the round log.
 
+## Waiting for the owner (found while working autonomously)
+
+| # | Item | Where | Recommendation |
+|---|---|---|---|
+| W1 | Tamoz's prompt frame names the output protocol but never defines it (keys, allowed intents); the repair message repeats only the error code. The fan spec works around it in its own prompt (config) | P0.5-FINDINGS.md F1, F2 | A Tamoz change: put the output contract and the allowed intents in the frame and the repair message |
+| W2 | Overlapping attempts: Agentic Stream redispatches 7 ms after a deadline while Tamoz still holds the episode lease, so attempt 2 fails `checkpoint_conflict` and the episode ends. Neither side's protocol forbids it | P0.5-FINDINGS.md F3 | Decide which side owns the fix; the fan run avoids it with a budget longer than a model call |
+| W3 | `export-run`/`verify-run` say `pass` for a run where nothing happened (safety verdict only) | P0.5-FINDINGS.md F4 | Add a liveness or `inconclusive` state, or document it |
+| W4 | Tamoz's terminal says only `graph_status: failed`; the real cause survives only in a checkpoint | P0.5-FINDINGS.md F7 | Surface the failure reason |
+| W5 | D-116 (High): a command after an actuator fault's onset cancels the fault in the world core | governance/DEFERRED.md | Fix before scripted actuator faults and the A/B/C evaluation |
+| W6 | `tamoz` (a consumer name) appears in Agentic Stream production code, including a key in the sealed shadow-comparison document | H0-FINDINGS.md section 7 | Backlog; renaming changes comparison digests |
+| W7 | The run artifact does not record the event-schema registry digest (logged only, H0.5) | PLAN.md 5.1 decision 4 | A versioned manifest change when wanted |
+
 ## Round log
 
 | Round | Repository | Commit | Notes |
