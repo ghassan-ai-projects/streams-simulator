@@ -1047,7 +1047,7 @@
       "additionalProperties": false,
       "properties": {
         "domain": {"type": "string", "minLength": 1},
-        "environment": {"enum": ["simulated", "mixed"], "description": "mixed when the plan has a gateway: its boards are announced beside the world's."},
+        "environment": {"enum": ["simulated", "hardware", "mixed"], "description": "simulated without a gateway; with one, hardware when every instance is bound to a real device and mixed when the gateway's boards are announced beside the world's."},
         "policies": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/digest"}, "description": "The allow-list in effect, sorted; empty when the plan names none."},
         "instances": {
           "type": "array",

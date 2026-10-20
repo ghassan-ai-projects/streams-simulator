@@ -84,7 +84,7 @@ A real fan cools the real DHT11, not the twin's zone. The real rung therefore bi
 
 When every instance is bound, the world's board has no members and is not announced, but the relay still writes
 `environment: mixed` on the merged birth (`relay_mixed.go` `mergedBirth`). SPEC section 2 says `mixed` needs at least one board
-of each environment, so a strict host refuses `environment_mismatch`. Not yet confirmed by a test. **Plan:** S2 writes the
+of each environment, so a strict host refuses `environment_mismatch`. **Fixed in S2 (confirmed by a failing test first).** S2 wrote the
 test first, then derives the environment from the boards actually announced.
 
 ### 3.6 Smaller items

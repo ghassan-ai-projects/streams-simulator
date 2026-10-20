@@ -50,6 +50,12 @@ describe("connect gateway", () => {
     });
   });
 
+  it("reads a plan whose every instance is real as one with a gateway", async () => {
+    const t = answering(200, { result: { ...check, environment: "hardware" } });
+    const outcome = await bridgeAdapter(t).launch.checkSession("{plan}");
+    expect(outcome.ok && outcome.value.mixed).toBe(true);
+  });
+
   it.each([
     [null],
     [{ instances: "all" }],

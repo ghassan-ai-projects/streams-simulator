@@ -381,7 +381,10 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
 
 - `--check` — reads the plan against its domain and kind files and starts nothing. The document is
   `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked, policies}`
-  (`policies` is the list in effect, sorted, `[]` when the plan names none): each
+  (`policies` is the list in effect, sorted, `[]` when the plan names none). `environment` is `simulated` without a gateway,
+  `hardware` when every instance is bound to a real device (the world then announces no board), and `mixed` otherwise; the
+  relay's merged `NBIRTH` claims the environment of the boards it actually announces, so a strict `hardware` host accepts an
+  all-real session. Each
   instance is `real` (with the board and device the gateway must announce and the digest of the kind file it must announce
   them with) or `simulated`. A plan that does not hold is `plantwire_failed` with one issue per broken rule, each pointing
   into the plan: `unknown_instance`, `no_kind_file` (only an instance whose kind implements a kind file can be a real board),

@@ -150,16 +150,20 @@ func (c *planCheck) bind(i int, b model.RealBinding) {
 }
 
 func (c *planCheck) outcome(plan *model.SessionPlan, instances []PlanInstance) ConnectPlan {
-	environment := EnvironmentSimulated
-	if plan.GatewaySocket != "" {
-		environment = EnvironmentMixed
-	}
+	environment := c.environment(plan, len(instances))
 	planned := make([]PlannedInstance, len(instances))
 	for i, instance := range instances {
 		planned[i] = c.planned(instance)
 	}
 	return ConnectPlan{Environment: environment, Instances: planned, Bound: c.bound,
 		HostSocket: cleanSocket(plan.HostSocket), GatewaySocket: cleanSocket(plan.GatewaySocket)}
+}
+
+func (c *planCheck) environment(plan *model.SessionPlan, instances int) string {
+	if plan.GatewaySocket == "" {
+		return EnvironmentSimulated
+	}
+	return AnnouncedEnvironment(map[string]bool{EnvironmentHardware: true, EnvironmentSimulated: len(c.bound) < instances})
 }
 
 func (c *planCheck) planned(instance PlanInstance) PlannedInstance {

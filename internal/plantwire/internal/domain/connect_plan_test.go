@@ -76,3 +76,17 @@ func TestEveryBrokenBindingIsReportedAtItsMemberWithItsRule(t *testing.T) {
 		})
 	}
 }
+
+func TestAPlanWithEveryInstanceBoundIsAHardwarePlan(t *testing.T) {
+	t.Parallel()
+	instances := benchInstances()[:2]
+	plan, issues := CheckPlan(benchPlan(model.RealBinding{Instance: "zone-01", Board: "uno-07", Device: "zone-01"},
+		model.RealBinding{Instance: "led-01", Board: "uno-07", Device: "led-01"}), instances)
+	if len(issues) != 0 || plan.Environment != EnvironmentHardware {
+		t.Fatalf("issues %+v, environment %q, want a hardware plan: no simulated board is left to announce", issues, plan.Environment)
+	}
+	gatewayOnly, issues := CheckPlan(benchPlan(), instances)
+	if len(issues) != 0 || gatewayOnly.Environment != EnvironmentMixed {
+		t.Fatalf("issues %+v, environment %q, want a gateway beside a world with no binding to be mixed", issues, gatewayOnly.Environment)
+	}
+}

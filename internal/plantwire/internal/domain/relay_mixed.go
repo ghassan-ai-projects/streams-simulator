@@ -156,11 +156,22 @@ func (r *Relay) birthContent() map[string]any {
 func mergedBirth(gateway, simulated map[string]any) map[string]any {
 	merged := content(gateway)
 	kinds := mergedKinds(listOf(gateway["kinds"]), listOf(simulated["kinds"]))
-	merged["environment"] = EnvironmentMixed
+	boards := append(slices.Clone(listOf(gateway["boards"])), listOf(simulated["boards"])...)
+	merged["environment"] = AnnouncedEnvironment(boardEnvironments(boards))
 	merged["kinds"] = kinds
-	merged["boards"] = append(slices.Clone(listOf(gateway["boards"])), listOf(simulated["boards"])...)
+	merged["boards"] = boards
 	merged["capability_digest"] = CapabilityDigest(kinds)
 	return merged
+}
+
+func boardEnvironments(boards []any) map[string]bool {
+	environments := map[string]bool{}
+	for _, board := range boards {
+		fields, _ := board.(map[string]any)
+		environment, _ := fields["environment"].(string)
+		environments[environment] = true
+	}
+	return environments
 }
 
 func mergedKinds(gateway, simulated []any) []any {

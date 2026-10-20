@@ -70,3 +70,13 @@ func unmixed(m Message) *EnvironmentFault {
 	}
 	return &EnvironmentFault{Pointer: "/boards", Reason: fmt.Sprintf("node environment mixed needs a simulated and a hardware board, none of its %d boards is %s", len(m.Boards), missing)}
 }
+
+func AnnouncedEnvironment(boards map[string]bool) string {
+	switch {
+	case boards[EnvironmentSimulated] && boards[EnvironmentHardware]:
+		return EnvironmentMixed
+	case boards[EnvironmentSimulated]:
+		return EnvironmentSimulated
+	}
+	return EnvironmentHardware
+}
