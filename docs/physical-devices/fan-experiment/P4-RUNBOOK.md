@@ -150,8 +150,9 @@ export AGENTIC_STREAM_SUBSCRIBER_TOKEN=$(openssl rand -hex 16)      # mandatory,
 cd "$RUN" && nohup "$AS" serve --db "$RUN/stream.db" \
   --spec "$RUN/config/zone-thermal-bench-fan.situation.yaml" \
   --worker-socket "$RUN/worker.sock" --worker-name tamoz \
-  --effect-profile emulator \
-  --plant-wire-socket "$RUN/host.sock" --plant-wire-environment simulated \
+  --effect-profile physical --live-actuation --owner-authorized \
+  --plant-wire-socket "$RUN/host.sock" --plant-wire-environment mixed \
+  --hardware-boards mega-01 \
   --plant-wire-kinds "$KINDS" --plant-wire-site "$RUN/config/thermal-bench.site.json" \
   --device-catalog "$RUN/config/thermal-bench.catalog.json" \
   --dispatch-lease 4m --listen 127.0.0.1:0 --poll-interval 1s > "$RUN/stream.log" 2>&1 & echo $! > "$RUN/stream.pid"
@@ -160,8 +161,8 @@ sleep 3; grep -E "plant wire host ready|spec loaded|serving runtime API|error" "
 
 | Flag | Value and why |
 | --- | --- |
-| `--effect-profile emulator` | The plant wire host counts as the effect link of `emulator` or `physical`. **Consent flags are OFF**: no `--live-actuation`, no `--owner-authorized`, no `--hardware-boards`; `--plant-wire-environment simulated` accepts only a node whose boards are all `simulated` and refuses any `hardware` board visibly (D3) |
-| `--dispatch-lease 4m` | A dispatch call ends after 0.9 of the lease: 216 s. The fan command can be held at the node up to its 120 s `expires_after_ms`, plus 2 s for the node's terminal answer; a call shorter than that is an unknown outcome. `serve` refuses to start when a route expires at or after the call's end: the default 1 min lease (54 s call) was refused with `route "select_thermal_mode" expires after 2m0s, a dispatch call ends after 54s` (smoke test, section 11). The minimum that starts is about 134 s |
+| `--effect-profile physical --live-actuation --owner-authorized --hardware-boards mega-01 --plant-wire-environment mixed` | **D3: one `serve` for both rungs.** The consent for the named hardware board is given once, at start, so the switch to the real board is only the session plan and needs no restart (PLAN D3, R1). The simulated rung commands only simulated devices, which need no consent, so the flags change nothing for it; `mega-01` appears only in the real rung. `--plant-wire-environment mixed` accepts a node that announces `simulated` (this rung) and one that announces `hardware` (the real rung); `simulated` would refuse the real board, `hardware` would refuse this rung. The consent rule is the `device` module's (`device.GrantsActuationConsent`): the physical profile with both flags |
+| `--dispatch-lease 4m` | A dispatch call ends after 0.9 of the lease: 216 s, less the answer grace (2 s) and the verification window (6 s): 208 s. The fan command can be held at the node up to its 120 s `expires_after_ms`, plus 2 s for the node's terminal answer; a call shorter than that is an unknown outcome. `serve` refuses to start when a route expires at or after the call's end: the default 1 min lease (54 s call) was refused with `route "select_thermal_mode" expires after 2m0s, a dispatch call ends after 54s` (smoke test, section 11). The minimum that starts is about 134 s |
 | `--plant-wire-kinds "$KINDS"` | The commissioned kind files: `$RUN/src-sim/examples/devices/thermal-board` (the same files the node announces; the folder also holds the board mapping and domain, which the host ignores) |
 | `--plant-wire-site` | The site file (outside the repository); its digest is logged |
 | `--device-catalog` | The catalog copy with the fan at 120000 ms; without it the host would send no commands |
@@ -169,7 +170,7 @@ sleep 3; grep -E "plant wire host ready|spec loaded|serving runtime API|error" "
 | `--worker-socket`, `--worker-name tamoz` | As in P0.5 |
 
 Expected log lines (seen in the smoke test with a different spec path): `plant wire kind file read` x3 with the kind digests above,
-`plant wire host ready contract_version=1.4.0 contract_digest=sha256:92cdaaa1... environment=simulated hardware_boards=[]
+`plant wire host ready contract_version=1.4.0 contract_digest=sha256:92cdaaa1... environment=mixed hardware_boards=[mega-01]
 site_digest=sha256:34025cf9...`, `spec loaded ... policy_digest=...`, `serving runtime API`.
 
 ### Step 3 (any shell): confirm the policy digest
@@ -195,18 +196,23 @@ sleep 5; ls -l "$CTL" "$RUN/sim-run"; tail -3 "$RUN/connect.log"
 - `at_s` 120 of the disturbance counts from the host's first `STATE` (attach), so the heat load starts about 2 minutes after
   this command and lasts `HEAT_S` (1800 s).
 
-### Shell 4: the operator (approve-each on the fan, monitor)
+### Shell 4: the operator (watch only: the simulated rung needs no approval)
+
+The simulated rung needs **no human approval**: the node forwards every command to the twin at once (the approve mode
+stays off), so a command is executed as soon as the model proposes it. The operator only watches. The approve, deny
+and hold rehearsals belong to the real rung (P5/P6, with the owner at the board) or to a separate rehearsal run
+against the simulated node.
 
 Immediately after the node is up (first fan command is at least three minutes away):
 
 ```bash
-"$K/scripts/ctl.sh" approve-mode on fan-01        # {"result":"applied",...,"approve":[{"kind":"device","id":"fan-01"}]}
-"$K/scripts/ctl.sh" state
-"$K/scripts/watch.sh"                              # live: pending approvals, latest temperature, phase, episodes, commands
+"$K/scripts/ctl.sh" state                           # {"op":"state",...,"approve":[],"holds":[],"pending":[]}
+"$K/scripts/watch.sh"                               # live: pending approvals, latest temperature, phase, episodes, commands
 ```
 
-Only the fan is in approve-each. The LED (`led-01`) runs as R1/automatic with no node veto, which is what criterion 3 needs.
-(`ctl.sh approve-mode on led-01` would hold LED commands too; their `expires_after_ms` is 20 s, so do not.)
+Do **not** run `ctl.sh approve-mode on fan-01` for the simulated rung: a command that waits at the node for an
+approval that nobody gives expires after its 120 s deadline instead of running (the first attempt of 2026-10-20 did
+that: `queue` then `refused expired`).
 
 ## 5. What to expect and what the operator does
 
@@ -222,21 +228,13 @@ timeline: times are from the host's attach.
 | 4 to 10 | Decisions: one per material change (watch, cooling, over_ceiling), each a Tamoz episode of 20 to 80 s. Expect LED alert first, the fan at the later ones. Total number is **not predictable**: expect 2 to 4 |
 | 32 | Heat load ends (1800 s after its start); stop the session by about T+35 when the evidence is in |
 
-Dispatch is serial (`DispatchOnce` handles one command at a time): while a fan command waits at the node for approval, no later
-command (an LED one) is dispatched behind it. Answer a pending fan command inside its 120 s window or let it expire on purpose.
+Dispatch is serial (`DispatchOnce` handles one command at a time). No command waits at the node in this rung, so a
+later command is never held behind an earlier one.
 
-Operator script for fan commands, in the order they appear in `ctl.sh pending` (`watch.sh` shows it; the command id is printed):
-
-| Fan command | Action | Expected |
+| Fan command | What happens | Expected |
 | --- | --- | --- |
-| #1 | `ctl.sh approve <command_id>` within 120 s | node `DRECEIPT queued`, then `accepted`; `DCMD set_cooling {level_percent: 45}` reaches `fan-01`, `DRESULT succeeded`; the fan reads `level_percent` 45 for the 5 s lease, then 0; Agentic Stream verifies it from that reading (6 s window) |
-| #2 | `ctl.sh deny <command_id>` | `refused local_control` (criterion 4, denial) |
-| #3 | do nothing for 120 s | `expired` at the deadline (`queued`, then `refused expired`) |
-| #4 or later, or whenever #1 to #3 are done | `ctl.sh hold fan-01` before it arrives | `refused local_control`, no queueing (criterion 6). `ctl.sh release fan-01` afterwards |
-
-Realistically one attempt yields two fan commands. Plan **two attempts** when four outcomes are wanted: attempt A =
-approve (#1), deny (#2); attempt B (a fresh `prep-run.sh`, fresh databases, same configuration) = leave #1 to expire, then set the
-hold before #2. Each attempt takes about 25 to 35 minutes. Do not edit the spec between attempts without recording it.
+| #1 (and any later one) | nothing to do: the node forwards it | node `DRECEIPT accepted`; `DCMD set_cooling {level_percent: 45}` reaches `fan-01`, `DRESULT succeeded`; the fan reads `level_percent` 45 for the 5 s lease, then 0; Agentic Stream verifies it from that reading (6 s window) |
+| any | `ctl.sh hold fan-01` before it arrives (a rehearsal, not this rung) | `refused local_control`, no queueing (criterion 6). `ctl.sh release fan-01` afterwards |
 
 Do not feed anything, and do not touch the model's output. If a model answers in a wrong shape, that is a finding (section 9), not
 something to patch around (PLAN 4.3).
@@ -259,7 +257,8 @@ as failed; stop only after the last evidence is in.
 ```bash
 AS_SHA=$(git -C "$STREAM" rev-parse --short fan-a)
 "$AS" export-run --db "$RUN/stream.db" --tenant default --output "$RUN/artifact" --run-id "$(basename $RUN)" \
-  --provider zai --model glm-5.3-flash --git-commit "$AS_SHA" --policy-digest "$POLICY_DIGEST" --scenario-seed 1 | tee "$RUN/export.log"
+  --provider zai --model glm-5.3-flash --git-commit "$AS_SHA" --policy-digest "$POLICY_DIGEST" --scenario-seed 1 \
+  --device-id zone-01 | tee "$RUN/export.log"
 "$AS" verify-run "$RUN/artifact" | tee "$RUN/verify.log"; cat "$RUN/artifact/verdict.json"
 "$SIMBIN" verify "$RUN/sim-run/run.json" | tee "$RUN/sim-verify.log"
 "$SIMBIN" report "$RUN/sim-run" --format markdown --out "$RUN/sim-report.md"
@@ -267,8 +266,10 @@ AS_SHA=$(git -C "$STREAM" rev-parse --short fan-a)
 du -sh "$RUN/sim-run"
 ```
 
-`verdict: pass` is a safety verdict only and is `pass` with zero decisions and zero commands (P0.5 F4): cite the criteria below,
-never the verdict alone. `export-run`/`verify-run` have only been seen on device-wire runs: UNVERIFIED on plant wire commands.
+`--device-id` names the device the artifact describes: several devices reported state in this experiment, and the
+export refuses to guess (`manifest device_id is required when multiple device states exist`). `verdict: pass` is a
+safety verdict only and is `pass` with zero decisions and zero commands (P0.5 F4): cite the criteria below, never the
+verdict alone. `export-run`/`verify-run` have only been seen on device-wire runs: UNVERIFIED on plant wire commands.
 Open the database without `-readonly`, and only after `serve` stopped (a WAL database with no `-shm` file cannot be opened
 read-only).
 
@@ -334,12 +335,10 @@ The canvas is the same node plus a human at the buttons. It does not change Agen
   item, PLAN 8: the canvas computes nothing the binary owns). On the real rung the disturbance is physical (O5), so the canvas
   fits there.
 - **Switch to the real board (D3), the only differences:** the plan gains `gateway_socket` and `real`
-  (`real.plan.json`); Agentic Stream's consent for the named board is given once at its start:
-  `--effect-profile physical --live-actuation --owner-authorized --plant-wire-environment mixed|hardware --hardware-boards mega-01`.
-  This kit started `serve` without those flags (consent OFF, as required for the simulated rung), so **the real rung needs a `serve`
-  restart** unless the owner decides to run the simulated rung with the consent flags and `mega-01` already listed (simulated
-  devices are commanded freely either way). That is the owner's decision D3 vs "consent flags OFF"; the runbook follows the
-  latter. Also: `--device-firmware-digest` is not used with plant wire; the gateway's allow-list takes the same
+  (`real.plan.json`). Agentic Stream keeps running: its consent for the named board was given once, at its start
+  (`--effect-profile physical --live-actuation --owner-authorized --plant-wire-environment mixed --hardware-boards mega-01`,
+  section 4), so **no `serve` restart is needed**; the simulated rung is unaffected by the consent because simulated
+  devices need none. `--device-firmware-digest` is not used with plant wire; the gateway's allow-list takes the same
   `$POLICY_DIGEST`; fan `expires_after_ms` stays 120000; the 5 s lease is the firmware's.
 - The owner also decides the `hold` and `estop` rehearsals on the real rung and the e-stop (O2); the canvas lists
   `stopped`/`skipped`/`unreachable` for an emergency stop and does not show a clean stop when a device is skipped.
@@ -351,11 +350,14 @@ Verified (2026-10-20, nothing of the joined run was started):
 - Both binaries build from the committed refs by `git archive` (`fan-sim` 04439426 streams-simulator, `fan-a` f577ece8 agentic-stream).
 - `agentic-stream validate` accepts the spec copy; `streams-simulator plantwire connect --plan ... --check` accepts the plan
   (done by `prep-run.sh` into a throwaway folder, then removed).
-- A smoke start of `serve` alone (6 to 8 s, no worker, no node, throwaway database in `/tmp`, ended by `timeout`) with the exact
-  flags of section 4 and the final spec: it started, read the three kind files and the site file, announced `plant wire host
+- A smoke start of `serve` alone (6 to 8 s, no worker, no node, throwaway database in `/tmp`, ended by `timeout`) with the flags
+  of section 4 as they stood before the D3 change (`--effect-profile emulator --plant-wire-environment simulated`, no consent
+  flags): it started, read the three kind files and the site file, announced `plant wire host
   ready` (contract 1.4.0, digest `sha256:92cdaaa1...`, `simulated`), logged `spec loaded` with a `policy_digest` equal to the
   `validate` value (`confirm-policy.sh` printed `match`), and the default `--dispatch-lease` was refused with the message
-  quoted in section 4.
+  quoted in section 4. **The D3 flag combination of section 4 (`--effect-profile physical --live-actuation
+  --owner-authorized --plant-wire-environment mixed --hardware-boards mega-01`) is UNVERIFIED**: it is the combination the
+  first run uses, so the run itself is its check (the host must announce `environment=mixed hardware_boards=[mega-01]`).
 - `ctl.sh` and `journal-summary.py` against a fake control socket and a synthetic journal; `check-run.sh` against the SQL
   of an old P0.5 database (syntax and columns).
 
