@@ -252,6 +252,15 @@ Tests: a route with a new name that the catalog names reaches the device; a rout
 intent no effector owns stops `serve` at start; the existing experiment end-to-end tests (`cmd/agentic-stream/experiment_e2e_test.go`,
 `experiment_live_feed_test.go`) pass unchanged; the baseline produces the same choices for the thermal spec as today.
 
+**Investigation and decisions (2026-10-20).** Findings with file:line evidence and the round split: [H0-FINDINGS.md](H0-FINDINGS.md).
+Decided by the main session under the owner's standing authority (work autonomously): (1) in the `simulated` profile, device
+routes become simulated effects; (2) H0.2 is strict in `emulator` and `physical`: with a gateway present, the fallback owns no
+route; (3) the existing example specs stay untouched (no pinned digest or gateway allow-list change), the baseline mapping is
+proven on a test spec and used in the new fan spec; (4) the event-schema registry digest is logged at start only; recording it
+in the run artifact is a versioned contract change, deferred; (5) AR-13 (a generic router in `actionport`) later. The baseline
+mapping turned out to be unreachable on every shipped spec (the baseline picks the first satisfiable intent, the watch intent),
+so round 0 pins today's baseline choices before anything changes.
+
 H0 needs no plant wire and no decision: it runs on today's device-wire path, so it can start at once, and the host module (A3)
 then inherits catalog-owned routing instead of adding a third route name. After H0, a new device command is configuration and
 data only (kind file, board mapping, spec intent, catalog route).
