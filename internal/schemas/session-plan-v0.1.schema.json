@@ -32,6 +32,11 @@
         "pattern": "^sha256:[0-9a-f]{64}$",
         "x-expected": "a policy digest: sha256: and 64 lower-case hexadecimal digits"
       }
+    },
+    "pace": {
+      "enum": ["wall"],
+      "x-expected": "wall, or no pace member",
+      "description": "wall: the world starts at the wall time the session starts (recorded in run.json as the world start time, so a replay reproduces it) and each slice is released when the wall clock reaches its world time, so world time is UTC; the barrier stays a cap. Absent: slices follow one another as fast as the host answers."
     }
   },
   "$defs": {

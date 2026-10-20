@@ -9,6 +9,7 @@ import (
 	simdomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -53,6 +54,7 @@ type connectPlan struct {
 	adapter *model.Adapter
 	plan    domain.ConnectPlan
 	checked []model.ImplementsChecked
+	pacer   *uds.WallPacer
 }
 
 func CheckConnect(options ConnectOptions) (ConnectCheck, error) {

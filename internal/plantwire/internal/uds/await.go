@@ -101,3 +101,32 @@ func stopped(ctx context.Context) (domain.Inbound, bool, error) {
 }
 
 func (l *Link) WaitedMS() int64 { return l.waited }
+
+type WallPacer struct {
+	schedule domain.WallSchedule
+}
+
+func StartWallPacer() *WallPacer {
+	return NewWallPacer(domain.WallScheduleFrom(time.Now().UnixNano()))
+}
+
+func NewWallPacer(schedule domain.WallSchedule) *WallPacer {
+	return &WallPacer{schedule: schedule}
+}
+
+func (p *WallPacer) StartNS() int64 { return p.schedule.WorldStartNS }
+
+func (p *WallPacer) Release(ctx context.Context, worldNS int64) error {
+	wait := p.schedule.WaitNS(worldNS, time.Now().UnixNano())
+	if wait == 0 {
+		return nil
+	}
+	timer := time.NewTimer(time.Duration(wait))
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("plantwire: %w", ctx.Err())
+	case <-timer.C:
+		return nil
+	}
+}

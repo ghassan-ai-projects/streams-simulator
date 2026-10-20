@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ type SimulatedOptions struct {
 	BarrierCap  time.Duration
 	Node        Options
 	Session     ConnectCheck
+	StartNS     int64
 }
 
 type simNode struct {
@@ -65,7 +67,7 @@ func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, e
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: spec, Adapter: adapterSpec, Seed: o.Seed, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: simSession(o)})
+		TimeMode: model.TimeStepped, StartTimeNS: cmp.Or(o.StartNS, model.DefaultStartTimeNS), JournalDir: out, SessionRecord: simSession(o)})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire relay: %w", err)
 	}

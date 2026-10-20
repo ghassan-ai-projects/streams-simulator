@@ -2,7 +2,10 @@ package model
 
 import "github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 
-const SessionPlanSchemaVersion = "0.1"
+const (
+	SessionPlanSchemaVersion = "0.1"
+	PaceWall                 = "wall"
+)
 
 type SessionPlan struct {
 	SchemaVersion string        `json:"schema_version"`
@@ -12,6 +15,7 @@ type SessionPlan struct {
 	GatewaySocket string        `json:"gateway_socket,omitempty"`
 	Real          []RealBinding `json:"real,omitempty"`
 	Policies      []string      `json:"policies,omitempty"`
+	Pace          string        `json:"pace,omitempty"`
 }
 
 type RealBinding struct {
@@ -25,6 +29,10 @@ func (p *SessionPlan) WorldSeed() uint64 {
 		return 1
 	}
 	return *p.Seed
+}
+
+func (p *SessionPlan) PacedByWall() bool {
+	return p.Pace == PaceWall
 }
 
 func DecodeSessionPlan(raw []byte) (*SessionPlan, error) {

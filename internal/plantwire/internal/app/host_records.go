@@ -93,6 +93,13 @@ func (s *Session) sendNodeBirth(followers ...domain.Record) error {
 
 func (s *Session) nodeBirth() (domain.Record, error) {
 	identity := domain.NodeIdentity{Environment: s.options.Environment, ProtocolMax: s.options.ProtocolMax,
-		BDSeq: s.bdSeq, PriorLastSeq: s.options.PriorLastSeq}
+		BDSeq: s.bdSeq, PriorLastSeq: s.options.PriorLastSeq, ClockMode: s.clockMode()}
 	return domain.NodeBirth(identity, s.devices.kinds(), s.devices.boards())
+}
+
+func (s *Session) clockMode() string {
+	if s.options.Pace == nil {
+		return ""
+	}
+	return domain.ClockModeWall
 }

@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Paced live sessions (fan S1).** The session plan gains optional `pace: "wall"` (in place in `session-plan-v0.1`).
+  `plantwire connect` then starts the world at the wall time the session starts (recorded in `run.json`, so `replay` and
+  `verify` are unchanged) and releases each slice when the wall clock reaches its world time, on an absolute schedule; the
+  barrier stays a cap. The node's `NBIRTH` (and a mixed session's merged birth) announces `clock_mode: wall`. Without `pace`
+  nothing changes. D-71 is narrowed: `plantwire node` and `plantwire relay --domain` stay unpaced.
+
 - **Plant wire contract 1.4.0: the board mapping (fan S4a).** The contract folder gains `schemas/BOARD.schema.json` (a board
   type's raw values for its kinds: raw command and arguments as a fixed value, a scaled kind argument or a table row chosen by
   a kind word; the board's lease; raw readings copied, scaled or translated; the raw words of enumerated values; no expression

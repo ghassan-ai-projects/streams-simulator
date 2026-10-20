@@ -34,7 +34,7 @@ func TestTheOnlyRelayOptionThatShapesRecordsActsOnTheSimulatedWorldAlone(t *test
 	for _, field := range reflect.VisibleFields(reflect.TypeFor[SimulatedOptions]()) {
 		fields = append(fields, field.Name)
 	}
-	if want := []string{"DomainsDir", "AdaptersDir", "Domain", "Adapter", "Seed", "BarrierCap", "Node", "Session"}; !reflect.DeepEqual(fields, want) {
+	if want := []string{"DomainsDir", "AdaptersDir", "Domain", "Adapter", "Seed", "BarrierCap", "Node", "Session", "StartNS"}; !reflect.DeepEqual(fields, want) {
 		t.Fatalf("SimulatedOptions fields = %v, want %v: the node options inside it (wire faults, policies) reach the simulated session only", fields, want)
 	}
 }

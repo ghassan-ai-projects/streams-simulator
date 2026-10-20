@@ -258,7 +258,10 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > for three barrier caps the world's session ends (its devices are reported `DDEATH offline`) and the relay keeps passing the
 > gateway's records. Trigger to fix: a lab run where the world and the board must be compared in real time; then a paced
 > session design (a wall-clock slice schedule owned by `run`, with the barrier as a cap and not as the pace) replaces the
-> free-running slices, and the world is reborn when the host returns.
+> free-running slices, and the world is reborn when the host returns. Narrowed by fan S1 (2026-10-20): `plantwire connect` with a
+> session plan member `pace: "wall"` starts the world at the wall time, records it in `run.json` and releases each slice on an
+> absolute wall schedule with the barrier as a cap, for a node and a mixed session alike; `plantwire node` and the gateway-less
+> `plantwire relay --domain` stay unpaced, and the world is still not reborn when the host returns.
 > D-72 (replay of a mixed recording): `plantwire replay-trace` plays the field trace, the gateway's side of a recording, to a
 > host as a simulated node; the simulated part of a mixed recording is reproduced and verified by `replay`/`verify` (domain,
 > seed, command log and trace digest), not streamed to a host beside the trace, and a replay answers no command (every

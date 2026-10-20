@@ -39,6 +39,11 @@ type Options struct {
 
 	Control      *ControlPort
 	InterruptLog InterruptLog
+	Pace         Pacer
+}
+
+type Pacer interface {
+	Release(ctx context.Context, worldNS int64) error
 }
 
 var (
@@ -120,7 +125,7 @@ func (s *Session) Run(ctx context.Context) error {
 		return err
 	}
 	for at := s.run.Status().ClockNS + s.options.SliceNS; at <= s.options.UntilNS && !s.finished; at += s.options.SliceNS {
-		if err := s.slice(ctx, at); err != nil {
+		if err := s.step(ctx, at); err != nil {
 			return err
 		}
 	}

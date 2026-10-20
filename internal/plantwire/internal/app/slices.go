@@ -9,6 +9,16 @@ import (
 
 const missedBarriersForHostLoss = 3
 
+func (s *Session) step(ctx context.Context, at int64) error {
+	if s.options.Pace == nil {
+		return s.slice(ctx, at)
+	}
+	if err := s.options.Pace.Release(ctx, at); err != nil {
+		return fmt.Errorf("plantwire: pace: %w", err)
+	}
+	return s.slice(ctx, at)
+}
+
 func (s *Session) slice(ctx context.Context, at int64) error {
 	if _, err := s.run.Advance(ctx, at, false); err != nil {
 		return fmt.Errorf("plantwire: advance: %w", err)

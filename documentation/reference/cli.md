@@ -334,7 +334,7 @@ streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <d
   path to the gateway link. The gateway's records are never perturbed; the world keeps its own faults. `--out` then holds a run
   folder: `run.json` (with `field_trace_digest`), the world's trace, ledger and history, both journals and the field trace.
   The world is advanced slice by slice in virtual time as `plantwire node` does, as fast as the host answers each barrier; it is
-  not paced to the wall clock (deferred D-71).
+  not paced to the wall clock (deferred D-71); a session plan with `pace: "wall"` run by `plantwire connect` is.
 
 The gateway is checked as the reference host checks a node that is set to `hardware`: a gateway that announces `simulated` or
 `mixed`, speaks another contract, announces a `kind_digest` that does not hold or a kind twice is refused with the refusal in a
@@ -378,6 +378,16 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   second occurrence) and the reserved all-zero digest of the relay's own stops (`policy_reserved`) are refused. Real boards
   are checked by the gateway's own list. The list is recorded in the `session` record of the journal, not in the run's
   identity.
+
+- `pace` (optional, only `"wall"`) — paces the session to the wall clock. The world starts at the wall time the session
+  starts (floored to the millisecond; for a mixed session, when the relay opens) instead of 2026-01-01, and that start is
+  recorded in `run.json` (`world_config.start_time_ns`), so `replay` and `verify` reproduce the run exactly as an unpaced one.
+  Each slice is released when the wall clock reaches the world time it ends at, on an absolute schedule (no drift adds up), so
+  a 10 minute session takes 10 minutes and world time is UTC; a slice that is already late is released at once, so after a
+  stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), three missed barriers still
+  end the world, and an operator control waits at most one slice. The `NBIRTH` announces `node_metrics.clock_mode` `wall`
+  (the merged birth of a mixed session too). A paced session longer than 30 days ends with the run span limit. Absent, the
+  world starts at 2026-01-01 and slices follow one another as fast as the host answers, as before.
 
 - `--check` — reads the plan against its domain and kind files and starts nothing. The document is
   `{domain, environment, instances: [{instance, origin, kind, kind_digest?, board?, device?}], implements_checked, policies}`

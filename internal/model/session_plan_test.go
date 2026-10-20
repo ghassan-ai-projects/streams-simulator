@@ -103,3 +103,29 @@ func TestASessionPlanWithABrokenPolicyListIsRefusedAtTheListOrTheEntry(t *testin
 		})
 	}
 }
+
+func TestASessionPlanIsPacedByTheWallClockOnlyWhenItSaysSo(t *testing.T) {
+	t.Parallel()
+	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h"`
+	cases := []struct {
+		name, plan string
+		paced      bool
+	}{
+		{"no pace", base + `}`, false},
+		{"wall", base + `,"pace":"wall"}`, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			plan, err := DecodeSessionPlan([]byte(tc.plan))
+			if err != nil || plan.PacedByWall() != tc.paced {
+				t.Fatalf("DecodeSessionPlan = %+v, %v, want paced %v", plan, err, tc.paced)
+			}
+		})
+	}
+	_, err := DecodeSessionPlan([]byte(base + `,"pace":"fast"}`))
+	invalid, ok := AsValidationError(err)
+	if !ok || invalid.Contract != ContractSessionPlan || invalid.Issues[0].Pointer != "/pace" {
+		t.Fatalf("pace fast: %v, want a session-plan violation at /pace", err)
+	}
+}

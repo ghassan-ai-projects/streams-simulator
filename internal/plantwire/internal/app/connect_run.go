@@ -42,6 +42,9 @@ func freshRunFolder(out string) error {
 }
 
 func (p *connectPlan) serve(ctx context.Context, o ConnectOptions) (ConnectResult, error) {
+	if p.session.PacedByWall() {
+		p.pacer = uds.StartWallPacer()
+	}
 	control, err := openControl(ctx, o.ControlSocket)
 	if err != nil {
 		return ConnectResult{}, err
@@ -78,7 +81,7 @@ func (c *controlEndpoint) close() {
 
 func (p *connectPlan) newRun(ctx context.Context, out string) (*run.Run, error) {
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: p.spec, Adapter: p.adapter, Seed: p.session.WorldSeed(),
-		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: sessionNote(p.result())})
+		SinkName: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: p.startNS(), JournalDir: out, SessionRecord: sessionNote(p.result())})
 	if err != nil {
 		return nil, fmt.Errorf("plantwire connect: %w", err)
 	}
@@ -154,12 +157,23 @@ func connectRelay(ctx context.Context, o ConnectOptions, p *connectPlan, port *C
 func (p *connectPlan) relayOptions(o ConnectOptions, port *ControlPort) RelayOptions {
 	return RelayOptions{GatewaySocket: p.plan.GatewaySocket, HostSocket: p.plan.HostSocket, Out: o.Out, Ready: o.Ready, Control: port,
 		Simulated: &SimulatedOptions{DomainsDir: o.DomainsDir, AdaptersDir: o.AdaptersDir, Domain: p.session.Domain, Adapter: connectAdapter,
-			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1"), Session: p.result()}}
+			Seed: p.session.WorldSeed(), BarrierCap: o.BarrierCap, Node: p.nodeOptions(o, "sim-1"), Session: p.result(), StartNS: p.startNS()}}
 }
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
-	return Options{Environment: domain.EnvironmentSimulated, ProtocolMax: domain.Version, SessionID: session, SliceNS: o.SliceNS,
-		UntilNS: model.DefaultStartTimeNS + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound}
+	options := Options{Environment: domain.EnvironmentSimulated, ProtocolMax: domain.Version, SessionID: session, SliceNS: o.SliceNS,
+		UntilNS: p.startNS() + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound}
+	if p.pacer != nil {
+		options.Pace = p.pacer
+	}
+	return options
+}
+
+func (p *connectPlan) startNS() int64 {
+	if p.pacer == nil {
+		return model.DefaultStartTimeNS
+	}
+	return p.pacer.StartNS()
 }
 
 func joined(served, ended error) error {
