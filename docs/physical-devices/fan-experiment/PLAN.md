@@ -265,6 +265,17 @@ H0 needs no plant wire and no decision: it runs on today's device-wire path, so 
 then inherits catalog-owned routing instead of adding a third route name. After H0, a new device command is configuration and
 data only (kind file, board mapping, spec intent, catalog route).
 
+**S1, S4, S5 investigation and decisions (2026-10-20).** Findings: [S-FINDINGS.md](S-FINDINGS.md). Decided by the main
+session: S4 translates at the node boundary (the twin domain stays raw; a pure projection of the raw kind through the board
+mapping gives the semantic kind the wire announces); the lease lives in the board mapping only, so contract 1.4.0 adds only
+the board mapping schema (`BOARD`); S5 adds `disturbances` to session plan v0.1 in place, as `policies` was (deviation from
+"v0.2" above: pre-release, no backward compatibility); S1 is a session-plan member `pace: wall`, and adds no I/O-edge gate
+entry (if the wall-clock pacing cannot reuse an already inventoried clock access, the round stops and the gate change waits
+for the owner's explicit approval, AGENTS.md MUST 3). Order: S7, S2, S4a, S1a, S5a, S4b, S4c.
+
+**Gateway (G1) investigation and decisions (2026-10-20).** Findings: [G-FINDINGS.md](G-FINDINGS.md); its questions Q1 to Q8
+taken as recommended; rounds G1a to G1e and G2 against contract 1.3.0 behind a `BoardMapping` class, then G1f re-vendors 1.4.0.
+
 ### Agentic Stream (one module, design first)
 
 Its `AGENTS.md` requires a design before code. The ports exist, so the design is "a new adapter behind existing ports":
