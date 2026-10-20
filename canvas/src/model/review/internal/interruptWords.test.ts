@@ -152,7 +152,7 @@ describe("interrupt words", () => {
     expect(waitingWords(0)).toBe("No commands wait for approval.");
     expect(waitingWords(1)).toBe("1 command waiting for approval");
     expect(waitingWords(2)).toBe("2 commands waiting for approval");
-    expect(pendingTitle(fanWaits)).toBe("set_fan on fan");
+    expect(pendingTitle(fanWaits)).toBe("set_cooling on fan");
     expect(deadlineWords(fanWaits, { worldNs: 100e9, wallMs: 0 })).toBe("expires in about 30 s (run time)");
     expect(deadlineWords(fanWaits, { worldNs: 130e9, wallMs: 0 })).toBe(
       "deadline reached; the node settles it at its next step",
@@ -164,7 +164,7 @@ describe("interrupt words", () => {
   });
 
   it("shows the arguments of a waiting command, bounded, and says when the binary left them out", () => {
-    expect(argsWords(fanWaits)).toBe("duty_permille: 300, lease_ms: 5000");
+    expect(argsWords(fanWaits)).toBe("level_percent: 30");
     expect(argsWords(sensorWaits)).toBe("no arguments");
     expect(argsWords({ ...sensorWaits, argsTruncated: true })).toBe("arguments too large to show");
     const many = Array.from({ length: 8 }, (_, index) => ({ name: `k${String(index)}`, value: "v" }));
@@ -174,7 +174,7 @@ describe("interrupt words", () => {
   });
 
   it("announces a command that arrived in words", () => {
-    expect(arrivalWords(fanWaits)).toBe("A command is waiting for approval: set_fan on fan (cmd-7).");
+    expect(arrivalWords(fanWaits)).toBe("A command is waiting for approval: set_cooling on fan (cmd-7).");
   });
 });
 

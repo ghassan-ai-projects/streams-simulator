@@ -1,6 +1,6 @@
 # Handoff briefs for the work outside this repository
 
-The physical-devices goal (M1 to M5) built everything streamsim owns. These briefs hand over the rest: the gateway's plant wire side, the plant wire host, the independent effect instrument, and the owner's bench checks. They are working documents; they name the other repositories and tools because their readers are those teams. They contain no secrets or customer data. Written in R13, against plant wire contract 1.3.0.
+The physical-devices goal (M1 to M5) built everything streamsim owns. These briefs hand over the rest: the gateway's plant wire side, the plant wire host, the independent effect instrument, and the owner's bench checks. They are working documents; they name the other repositories and tools because their readers are those teams. They contain no secrets or customer data. Written in R13, against plant wire contract 1.3.0;updated in fan S4c (2026-10-20) for contract 1.4.0: semantic kinds on the wire through the board mapping (D7), paced sessions (D2).
 
 | Brief | For | Milestones | What it asks |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ Read order for the owner: the bench checks, the instrument brief, then the other
 
 ## Facts all four briefs rely on
 
-- The plant wire contract is `contracts/plant-wire/` (vendored byte for byte, pinned `DIGEST`). streamsim accepts only the contract version (1.3.0) and digest it was built with.
+- The plant wire contract is `contracts/plant-wire/` (vendored byte for byte, pinned `DIGEST`). streamsim accepts only the contract version (1.4.0, the content of `contracts/plant-wire/VERSION`) and digest it was built with.
 - The device model is the kind file (`examples/devices/thermal-board/*.kind.json` for the thermal bench). A gateway announces the same kinds and `kind_digest`s; a simulated twin implements them.
 - The policy digest in a command is checked by the node: the session plan's list for simulated devices, the gateway's own list for the real board. device-wire-v1 has no policy refusal code, so the gateway is the only place a real board can refuse a policy.
 - streamsim only refuses or stops at its node. It never originates an ordinary command, never perturbs a real device's records, and has no path to hardware from a replay.

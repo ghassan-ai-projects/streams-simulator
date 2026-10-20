@@ -63,10 +63,10 @@ describe("the interrupt controls on the live screen", () => {
     expect(within(active).getByText("All devices: Approving each command")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "2 commands waiting for approval" })).toBeInTheDocument();
     const waiting = screen.getByRole("list", { name: "Waiting commands" });
-    expect(within(waiting).getByText("set_fan on fan")).toBeInTheDocument();
+    expect(within(waiting).getByText("set_cooling on fan")).toBeInTheDocument();
     expect(within(waiting).getByText("cmd-7 · expires in about 2 min (run time)")).toBeInTheDocument();
     expect(within(waiting).getByText("cmd-8 · expires in about 45 s")).toBeInTheDocument();
-    expect(within(waiting).getAllByText("Arguments: duty_permille: 300, lease_ms: 5000")).toHaveLength(2);
+    expect(within(waiting).getAllByText("Arguments: level_percent: 30")).toHaveLength(2);
     expect(screen.getByText(/latched, until you release it/)).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });

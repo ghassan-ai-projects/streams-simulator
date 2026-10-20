@@ -36,7 +36,7 @@ const command: SessionCommand = {
   commandId: "c-1",
   device: "fan",
   environment: "simulated",
-  command: "set_fan",
+  command: "set_cooling",
   bootId: "none",
   receipt: "refused",
   reason: "local_control",

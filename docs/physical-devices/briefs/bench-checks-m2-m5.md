@@ -1,9 +1,9 @@
 # The owner's bench checks, M2 to M5
 
 - **For:** the owner, at the thermal LED/fan bench.
-- **From:** the streamsim physical-devices goal (R13). The exits below are those of `docs/design/PHYSICAL_DEVICES.md` section 7. **Nothing here has been run against hardware.** The simulator's own tests use a scripted stand-in gateway; these checks are what turns each milestone's physical exit into evidence.
+- **From:** the streamsim physical-devices goal (R13). Updated in fan S4c (2026-10-20) for contract 1.4.0: semantic kinds on the wire through the board mapping (D7), the shipped twin domain, paced sessions (D2). The exits below are those of `docs/design/PHYSICAL_DEVICES.md` section 7. **Nothing here has been run against hardware.** The simulator's own tests use a scripted stand-in gateway; these checks are what turns each milestone's physical exit into evidence.
 - **You need:** the built binary (`make build`, which writes `bin/streams-simulator`), `jq` (or any JSON Lines reader), the gateway with its plant wire side (`gateway-plant-wire.md`), Agentic Stream as the real host with the changes in `agentic-stream-host.md`, Tamoz, and the independent instrument (`bench-instrument.md`) for M5.
-- **Convention.** Commands run from the repository root. `B=bin/streams-simulator`. A pass needs the expected output **and** the evidence file saved. A fail is a result: record it, do not retry until it passes. **`--out` must be a new folder for every session**: `connect` refuses a folder that already holds a run file (`plantwire_failed`; D-114, fixed). Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks unique `c-<8 hex>` names. **Give the reference host `--delay-ms 250`** wherever it is started below: without it the world free-runs (about 75 MB of run folder per second), and `twin-report` refuses a `journal.jsonl` over 64 MiB. Stop sessions in minutes, not hours. The reference host prints its report and exits 0 when its node ends, also when `connect` is stopped during a `--delay-ms` wait, and when it is interrupted before any node arrived (D-115, fixed).
+- **Convention.** Commands run from the repository root. `B=bin/streams-simulator`. A pass needs the expected output **and** the evidence file saved. A fail is a result: record it, do not retry until it passes. **`--out` must be a new folder for every session**: `connect` refuses a folder that already holds a run file (`plantwire_failed`; D-114, fixed). Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks unique `c-<8 hex>` names. **Pace every session with a simulated world** (`"pace": "wall"` in the plan, as the canvas does) **and give the reference host `--delay-ms 250`** wherever it is started below: without either the world free-runs (about 75 MB of run folder per second), and `twin-report` refuses a `journal.jsonl` over 64 MiB. Stop sessions in minutes, not hours. The reference host prints its report and exits 0 when its node ends, also when `connect` is stopped during a `--delay-ms` wait, and when it is interrupted before any node arrived (D-115, fixed).
 
 ## 0. Preparation
 
@@ -16,7 +16,7 @@ cat contracts/plant-wire/DIGEST                      # the contract digest the g
 $B kind validate examples/devices/thermal-board/*.kind.json | jq '.kinds[] | {kind, kind_digest}'
 ```
 
-Write the three `kind_digest` values and the contract digest in the evidence sheet. The gateway must announce contract version `1.3.0` and exactly those digests.
+Write the three `kind_digest` values and the contract digest in the evidence sheet. The gateway must announce contract version `1.4.0` (`cat contracts/plant-wire/VERSION`) and exactly those digests.
 
 Create the lab folders. Socket directories must be owner-only and the paths short (a socket path is at most 103 characters):
 
@@ -24,14 +24,12 @@ Create the lab folders. Socket directories must be owner-only and the paths shor
 D=$(mktemp -d /tmp/bench.XXXX)                       # mode 0700
 W=$(mktemp -d /tmp/benchws.XXXX)
 mkdir -p "$W/domains" "$W/kinds" "$W/runs"
-cp examples/devices/thermal-board/*.kind.json "$W/kinds/"
-$B kind twin "$W"/kinds/*.kind.json \
-  --choices examples/devices/thermal-board/thermal-board.twin.json \
-  --out "$W/domains/arduino-thermal-twin.domain.json"
-$B domain validate "$W/domains/arduino-thermal-twin.domain.json" --kinds-dir "$W/kinds"
+cp examples/devices/thermal-board/*.kind.json examples/devices/thermal-board/arduino-thermal.board.json "$W/kinds/"
+cp examples/devices/thermal-board/thermal-board.domain.json "$W/domains/arduino-thermal.domain.json"
+$B domain validate "$W/domains/arduino-thermal.domain.json" --kinds-dir "$W/kinds"
 ```
 
-Expected: `domain validate` prints `implements_checked` with the three kinds and their digests. The twin's board is named `mega-01`: **give the gateway's board another id** (for example `mega-bench`), or the gateway is refused `inventory_mismatch`.
+Expected: `domain validate` prints `implements_checked` with the three kinds and their digests (the twin's fan and indicator implement their semantic kind files through the board mapping). The twin's board is named `mega-01`: **give the gateway's board another id** (for example `mega-bench`), or the gateway is refused `inventory_mismatch`.
 
 Fix the policy digest the host will carry. Ask Agentic Stream for it (`agentic-stream-host.md` asks them to expose it). For the reference host, any well-formed value works:
 
@@ -97,8 +95,8 @@ Plan B puts `zone-01` and `fan-01` on the real board and leaves `led-01` simulat
 
 ```bash
 cat > "$D/plan.json" <<EOF
-{"schema_version": "0.1", "domain": "arduino-thermal-twin", "seed": 1,
- "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock",
+{"schema_version": "0.1", "domain": "arduino-thermal", "seed": 1,
+ "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock", "pace": "wall",
  "real": [{"instance": "zone-01", "board": "mega-bench", "device": "zone-01"},
           {"instance": "fan-01", "board": "mega-bench", "device": "fan-01"}],
  "policies": ["$POLICY"]}
@@ -107,15 +105,16 @@ $B plantwire connect --plan "$D/plan.json" --check --domains-dir "$W/domains" --
   | jq '{environment, instances, policies}'
 ```
 
-Expected: `environment` `"mixed"`; `zone-01` and `fan-01` `real` with the kind digests of step 0, `led-01` `simulated`; `policies` holds `$POLICY`. A plan that does not hold prints the broken rule with a pointer. For M3-3 the reference host issues two scripted commands. `--script` needs a well-formed `--policy` (else exit 2, `usage_invalid`); `at_ns` is **world** time, which starts at 1767225600000000000 (2026-01-01T00:00:00Z), not wall time; `id` is the command's `command_id`. Then:
+Expected: `environment` `"mixed"`; `zone-01` and `fan-01` `real` with the kind digests of step 0, `led-01` `simulated`; `policies` holds `$POLICY`. A plan that does not hold prints the broken rule with a pointer. For M3-3 the reference host issues two scripted commands. `--script` needs a well-formed `--policy` (else exit 2, `usage_invalid`); `at_ns` is **world** time; the plan is paced, so world time is UTC from the session's start and the script below issues its commands about one minute after it is written (start the session within that minute); `id` is the command's `command_id`. Commands use the kinds' words and units; the gateway turns them into raw values through the board mapping. Then:
 
 ```bash
+T0=$(( $(date +%s) + 60 ))
 cat > "$D/script.json" <<EOF
-[{"id": "c-led", "at_ns": 1767225605000000000, "device": "led-01", "command": "set_led",
-  "args": {"brightness_permille": 200, "pattern": 1}},
- {"id": "c-fan", "at_ns": 1767225608000000000, "device": "fan-01", "command": "set_pwm_lease",
-  "args": {"duty_permille": 300, "lease_ms": 10000},
-  "verify": {"metric": "duty_permille", "equals": 300, "tolerance": 10, "within_ns": 5000000000}}]
+[{"id": "c-led", "at_ns": ${T0}000000000, "device": "led-01", "command": "show_state",
+  "args": {"state": "watch"}},
+ {"id": "c-fan", "at_ns": $(( T0 + 3 ))000000000, "device": "fan-01", "command": "set_cooling",
+  "args": {"level_percent": 30},
+  "verify": {"metric": "level_percent", "equals": 30, "tolerance": 1, "within_ns": 5000000000}}]
 EOF
 # terminal 1 (reference host; or start Agentic Stream on $D/host.sock)
 $B plantwire host --socket "$D/host.sock" --environment mixed --policy "$POLICY" --inventory "$D/inventory.json" \
@@ -184,7 +183,7 @@ jq -c 'select(.type=="wire" and .direction=="gateway") | .record
 
 ### M4-2 Refused, unconfirmed and confirmed at a glance
 
-Produce three commands to the real `fan-01` (arguments: `duty_permille` 300, `lease_ms` 10000 unless stated):
+Produce three commands to the real `fan-01` (`set_cooling` with `level_percent` 30 unless stated):
 
 | Command | How | Expected stages |
 | --- | --- | --- |
@@ -209,7 +208,7 @@ Start the instrument's log (`bench-instrument.md`) and the gateway log with comm
 
 ### M5-1 A Tamoz decision drives the real fan, confirmed by the instrument
 
-- Let Tamoz issue a `set_pwm_lease` to `fan-01`. In the canvas the stages read accepted, board reports success.
+- Let Tamoz issue a `set_cooling` to `fan-01` (through Agentic Stream). In the canvas the stages read accepted, board reports success.
 - From the instrument file: the tachometer and the current channel show the fan running at about the commanded duty inside the lease window after the command's UTC time (from the gateway log).
 - Pass: the instrument confirms the effect, recorded in the table of `bench-instrument.md`. Fail: the board reports success and the instrument shows nothing.
 
@@ -256,7 +255,7 @@ jq -c '.record | select(.event=="control" or .event=="verdict" or .event=="resol
 ### M5-4 The twin report names the divergences
 
 ```bash
-$B plantwire twin-report "$W/runs/m5-session-1" --domain arduino-thermal-twin \
+$B plantwire twin-report "$W/runs/m5-session-1" --domain arduino-thermal \
   --domains-dir "$W/domains" --kinds-dir "$W/kinds" \
   --tolerance zone-01.temperature=2 \
   | jq '{verdict, reason, summary, divergences: [.divergences[] | {name, first_ns, last_ns, worst_error, commands}]}'

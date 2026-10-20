@@ -75,6 +75,16 @@ go run ./cmd/streamsim domain validate examples/devices/thermal-board/thermal-bo
 
 `domain validate` prints `implements_checked` with the `kind_digest` of each kind file the twin was checked against. A twin that drifts from its kind file fails with `domain_invalid` and an issue at `/kinds/<i>/implements`.
 
+The steps below work in a workspace `$W` that holds the example: the kind files and the board mapping in `kinds/`, the twin
+domain (id `arduino-thermal`) in `domains/`, and the runs in `runs/`:
+
+```bash
+W=$(mktemp -d)
+mkdir -p "$W/domains" "$W/kinds" "$W/runs"
+cp examples/devices/thermal-board/*.kind.json examples/devices/thermal-board/arduino-thermal.board.json "$W/kinds/"
+cp examples/devices/thermal-board/thermal-board.domain.json "$W/domains/arduino-thermal.domain.json"
+```
+
 ### 2. Capture a device from a board
 
 When a real board announces itself, its kinds can be saved as draft kind files. A birth is a claim, so the binary only drafts; a person reviews and saves.
@@ -93,7 +103,7 @@ Only the observer journal is read, never the sealed one. The command recomputes 
 
 The plan says which instances of the plant are real boards behind the gateway. Every other instance is simulated.
 
-**Canvas.** On a plant, open the Run panel, choose **Connected session**, give the host socket and the gateway socket, **Add a real board** for each real instance (instance, board, device), list the **Allowed policy digests**, **Check the plan**, then **Start the session**. A refused plan names the field and the rule. Only one session runs at a time.
+**Canvas.** On a plant, open the Run panel, choose **Connected session**, give the host socket and the gateway socket, **Add a real board** for each real instance (instance, board, device), list the **Allowed policy digests**, **Check the plan**, then **Start the session**. A refused plan names the field and the rule. Only one session runs at a time. The canvas paces every connected session to the wall clock (`pace: "wall"` in the plan it writes): the world starts at the session's wall time and advances one world second per wall second.
 
 **Command line.** Write the plan, check it, then start the node.
 
@@ -101,8 +111,8 @@ The plan says which instances of the plant are real boards behind the gateway. E
 D=$(mktemp -d)
 POLICY=sha256:$(printf 'b%.0s' $(seq 64))
 cat > "$D/plan.json" <<EOF
-{"schema_version": "0.1", "domain": "arduino-thermal-twin", "seed": 1,
- "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock",
+{"schema_version": "0.1", "domain": "arduino-thermal", "seed": 1,
+ "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock", "pace": "wall",
  "real": [{"instance": "zone-01", "board": "uno-07", "device": "zone-01"}],
  "policies": ["$POLICY"]}
 EOF
@@ -120,9 +130,9 @@ go run ./cmd/streamsim plantwire connect --plan "$D/plan.json" \
 
 The gateway dials `gateway_socket`. The simulator checks it against the plan at its handshake: the bound board and device must be announced, as the kind the plan expects, with the kind file's `kind_digest`. A gateway that does not match is refused `inventory_mismatch` with the first failing rule as the reason, and the simulator keeps listening. A refused binding shows as "Not bound", and the world does not announce that instance to the host either.
 
-Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. The simulated world advances barrier by barrier as fast as the host answers; it is not paced to the wall clock.
+Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. With `pace: "wall"` the world starts at the session's wall time and each slice is released when the wall clock reaches it, so world time is UTC and a 10 minute session takes 10 minutes; the barrier stays a cap. Without `pace` (offline tests and benchmarks) the world advances barrier by barrier as fast as the host answers.
 
-**Give the reference host `--delay-ms`.** Against the reference host with no `--delay-ms` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
+**Give the reference host `--delay-ms` in an unpaced session.** Against the reference host with no `--delay-ms` and no `pace` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
 
 `connect` needs the host's socket: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). The reference host prints its report and exits 0 when its node ends, also when you stop `connect` while the host is waiting out a `--delay-ms`, and when it is interrupted before any node arrived (then with an empty report).
 
@@ -211,7 +221,7 @@ A replay is not a board. It announces the node and every board as `simulated`, s
 
 ```bash
 go run ./cmd/streamsim plantwire twin-report "$W/runs/c-lab1" \
-  --domain arduino-thermal-twin --domains-dir "$W/domains" --kinds-dir "$W/kinds" \
+  --domain arduino-thermal --domains-dir "$W/domains" --kinds-dir "$W/kinds" \
   --tolerance zone-01.temperature=2
 ```
 

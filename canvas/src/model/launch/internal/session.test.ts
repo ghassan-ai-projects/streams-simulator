@@ -13,11 +13,17 @@ import type { PlanIssue } from "./session";
 import { bindingWords, checkWords, issueDetail, issueWords, plannedWords } from "./sessionWords";
 
 describe("session plan", () => {
-  it("writes the form as the plan document the binary reads, with no gateway or real board when none is given", () => {
+  it("writes the form as the plan document the binary reads, paced to the wall clock, with no gateway or real board when none is given", () => {
     const plan = JSON.parse(
       sessionPlanText("arduino-thermal", { ...firstSessionDraft, hostSocket: " /tmp/h.sock " }),
     ) as unknown;
-    expect(plan).toEqual({ schema_version: "0.1", domain: "arduino-thermal", seed: 1, host_socket: "/tmp/h.sock" });
+    expect(plan).toEqual({
+      schema_version: "0.1",
+      domain: "arduino-thermal",
+      seed: 1,
+      host_socket: "/tmp/h.sock",
+      pace: "wall",
+    });
   });
 
   it("sends the seed as typed: a whole number as a number, anything else as text the binary refuses", () => {
@@ -42,6 +48,7 @@ describe("session plan", () => {
       domain: "d",
       seed: 1,
       host_socket: "",
+      pace: "wall",
       gateway_socket: "/tmp/g.sock",
       real: [{ instance: "zone-01", board: "uno-07", device: "zone-01" }],
     });

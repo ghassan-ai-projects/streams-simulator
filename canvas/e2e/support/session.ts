@@ -41,7 +41,6 @@ export interface ScriptedCommand {
   readonly args: Readonly<Record<string, unknown>>;
 }
 
-const worldStartNs = 1_767_225_600e9;
 export const scriptPolicy = `sha256:${"b".repeat(64)}`;
 export const shortScriptPolicy = "sha256:bbbbbbbb…bbbbbbbb";
 
@@ -67,9 +66,10 @@ export function openBench(binary: string): Bench {
 export function openScriptedBench(binary: string, steps: readonly ScriptedCommand[]): Bench {
   const dir = mkdtempSync("/tmp/ssc-");
   const script = join(dir, "script.json");
+  const openedMs = Date.now();
   const issued = steps.map((step) => ({
     id: step.id,
-    at_ns: worldStartNs + step.afterS * 1e9,
+    at_ns: (openedMs + step.afterS * 1000) * 1e6,
     device: step.device,
     command: step.command,
     args: step.args,

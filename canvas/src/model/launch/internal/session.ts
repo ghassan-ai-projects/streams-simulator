@@ -80,6 +80,7 @@ function planOf(domain: string, draft: SessionDraft): Record<string, unknown> {
     domain,
     seed: seedSlot,
     host_socket: draft.hostSocket.trim(),
+    pace: "wall",
     ...(gateway === "" ? {} : { gateway_socket: gateway }),
     ...(policies.length === 0 ? {} : { policies }),
     ...(draft.real.length === 0

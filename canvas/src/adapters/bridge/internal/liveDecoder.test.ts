@@ -128,7 +128,7 @@ describe("binary session evidence", () => {
         marks: [],
         devices: [
           { health: "simulated", readings: [{ value: 0, state: "simulated" }] },
-          { health: "simulated", readings: [{ value: null, state: "untrusted", quality: "warming_up" }, {}] },
+          { health: "simulated", readings: [{ value: null, state: "untrusted", quality: "warming_up" }] },
           { environment: "hardware", health: "online", readings: [{ value: null, state: "untrusted" }, {}] },
         ],
       },
@@ -141,7 +141,11 @@ describe("binary session evidence", () => {
           { subject: "gateway", label: "Gateway link offline" },
           { subject: "device", entity: "zone-01" },
         ],
-        devices: [{}, {}, { health: "offline", readings: [{ state: "disconnected" }, { state: "disconnected" }] }],
+        devices: [
+          { readings: [{ name: "level_percent", unit: "%", value: 0 }] },
+          { readings: [{ name: "state", value: "off", state: "simulated" }] },
+          { health: "offline", readings: [{ state: "disconnected" }, { state: "disconnected" }] },
+        ],
       },
     });
   });

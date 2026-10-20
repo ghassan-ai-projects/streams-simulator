@@ -6,7 +6,9 @@ export function liveWire(atNs = 10e9) {
     at_ns: atNs,
     host: "online",
     gateway: "online",
-    marks: [{ at_ns: atNs, kind: "command", subject: "command", label: "fan command set_fan accepted", entity: "fan" }],
+    marks: [
+      { at_ns: atNs, kind: "command", subject: "command", label: "fan command set_cooling accepted", entity: "fan" },
+    ],
     devices: [
       {
         device: "sensor",
@@ -19,23 +21,25 @@ export function liveWire(atNs = 10e9) {
         readings: [{ name: "temperature_c", unit: "degC", value: 28, quality: "good", state: "good" }],
       },
     ],
-    commands: [
-      {
-        command_id: "cmd-1",
-        device: "fan",
-        environment: "simulated",
-        command: "set_fan",
-        boot_id: "61",
-        sent: true,
-        sent_at_ns: 1e9,
-        updated_at_ns: atNs,
-        receipt: "accepted",
-        reason: "",
-        report: "succeeded",
-        effect: "unknown",
-        effect_evidence: "",
-      },
-    ],
+    commands: [liveCommand(atNs)],
+  };
+}
+
+function liveCommand(atNs: number) {
+  return {
+    command_id: "cmd-1",
+    device: "fan",
+    environment: "simulated",
+    command: "set_cooling",
+    boot_id: "61",
+    sent: true,
+    sent_at_ns: 1e9,
+    updated_at_ns: atNs,
+    receipt: "accepted",
+    reason: "",
+    report: "succeeded",
+    effect: "unknown",
+    effect_evidence: "",
   };
 }
 
@@ -47,12 +51,12 @@ export function interruptsWire(overrides: Record<string, unknown> = {}) {
       {
         command_id: "cmd-7",
         device: "fan",
-        command: "set_fan",
+        command: "set_cooling",
         deadline_ns: 1767225780e9,
         queued_at_ns: 1767225660e9,
         clock: "world",
         content_digest: `sha256:${"a".repeat(64)}`,
-        args: { duty_permille: 300, lease_ms: 5000 },
+        args: { level_percent: 30 },
         args_truncated: false,
       },
     ],

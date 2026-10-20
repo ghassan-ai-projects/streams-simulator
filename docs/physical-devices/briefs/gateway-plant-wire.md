@@ -1,7 +1,7 @@
 # Brief: the Arduino gateway's plant wire side
 
 - **For:** the gateway work in `agent-research-lab` (`real-world-sensor/assessment/tools/arduino_gateway.py` and its successor), M2.
-- **From:** the streamsim physical-devices goal (R13). Written against streamsim at the end of R13, plant wire contract 1.3.0.
+- **From:** the streamsim physical-devices goal (R13). Written against streamsim at the end of R13, plant wire contract 1.3.0. Updated in fan S4c (2026-10-20) for contract 1.4.0: semantic kinds on the wire through the board mapping (D7), paced sessions (D2).
 - **Not in this brief:** device-wire-v1, the firmware, the serial protocol. They do not change.
 - **Read first:** `contracts/plant-wire/SPEC.md` (whole), `contracts/plant-wire/fixtures/README.md`, and the kind files in `examples/devices/thermal-board/` (`thermal_sensor`, `indicator`, `fan`). `docs/design/PHYSICAL_DEVICES.md` sections 1 and 2 give the reasons.
 
@@ -19,14 +19,15 @@ In the lab shape the socket you dial belongs to streamsim (`plantwire relay` or 
 ## 1. Connect and announce
 
 1. Dial the socket as a node. Refuse to dial a socket that is not owner-only (the socket and its directory owned by you, no group or other access). Do not dial TCP; v1 is Unix sockets only.
-2. Send `NBIRTH` as the first record, with `protocol_version` 1, `protocol_min` and `protocol_max`, `contract_version` **`1.3.0`**, `contract_digest` equal to the content of `contracts/plant-wire/DIGEST` (vendor the folder byte for byte), `environment` **`hardware`**, `bd_seq`, `prior_last_seq`, `capability_digest`, `kinds`, `boards` and `node_metrics`.
+2. Send `NBIRTH` as the first record, with `protocol_version` 1, `protocol_min` and `protocol_max`, `contract_version` **`1.4.0`** (the content of `contracts/plant-wire/VERSION`), `contract_digest` equal to the content of `contracts/plant-wire/DIGEST` (vendor the folder byte for byte), `environment` **`hardware`**, `bd_seq`, `prior_last_seq`, `capability_digest`, `kinds`, `boards` and `node_metrics`.
    - streamsim accepts **only** the contract version and digest it was built with. A different version or digest is refused `contract_unsupported`. (SPEC section 6 speaks of a minimum; the implementation requires equality, recorded as D-113 in `governance/DEFERRED.md`.)
    - Every board in `boards` is `{board, environment: "hardware", members}`; `members` are the device ids on the board. One board per physical controller (the Mega is one board). A board that says `simulated` or `mixed` is refused `environment_mismatch`, and so is a node that is not `hardware`.
 3. **Announce the same kind files.** `kinds` holds one entry per kind, equal to the kind file plus `kind_digest`. Compute `kind_digest` as `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the kind file's content (the entry without `kind_digest`). `streamsim kind validate <file>` prints the digest it expects for each file; your digests must equal them. Announce exactly the kinds the plan binds:
    - `thermal_sensor` (`temperature` Cel 0 to 50, `humidity` % 20 to 90, no commands),
-   - `indicator` (`brightness_permille` 0 to 1000, `pattern` code 0 to 2, writable; commands `set_led` and `stop_led`, the latter `safe_stop`),
-   - `fan` (`duty_permille` 0 to 600, writable; commands `set_pwm_lease` with `duty_permille` 0 to 600 and `lease_ms` 5000 to 10000, and `stop_fan`, `safe_stop`).
+   - `indicator` (`state` one of `off`, `watch`, `alert`, writable; commands `show_state {state}` and `stop_led`, the latter `safe_stop`),
+   - `fan` (`level_percent` % 0 to 60, writable; commands `set_cooling {level_percent}` with `level_percent` 0 to 60, and `stop_fan`, `safe_stop`).
    The gateway never invents metrics or commands and never edits a kind file's content to suit the hardware. The field mapping (which pin drives the fan) stays in your configuration. If you change a kind file, you change its digest everywhere.
+   - **The wire speaks the kinds; the firmware speaks raw values.** Translate both ways through the board mapping `examples/devices/thermal-board/arduino-thermal.board.json` (schema `contracts/plant-wire/schemas/BOARD.schema.json`), the same file the twin reads: `set_cooling {level_percent}` becomes the firmware's `set_pwm_lease {duty_permille: level_percent × 10, lease_ms: 5000}`; `show_state {state}` becomes `set_led` with the mapping's `brightness_permille` and `pattern` for that state; a `duty_permille` reading is reported as `level_percent` (÷ 10) and a `pattern` reading as `state`. No raw value (duty, pattern, lease) crosses the plant wire.
 4. The relay recomputes every `kind_digest` from the entry you sent. A digest that does not hold, or a kind announced twice (also under another case), is refused `inventory_mismatch`. A session that binds an instance to your device (see `session-plan-v0.1`) is checked further at the handshake: the bound board must be announced, must hold the device, and the device's kind must be announced with the digest of the kind file the plan names. Failures are `board_missing`, `device_missing`, `kind_missing`, `kind_mismatch`, and the reason arrives in the refusal's `STATE`.
 5. After `NBIRTH`, send one `DBIRTH` per device: `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, and the current value of every metric (`null` with quality `warming_up` before the first sample). `board` must be the board whose `members` hold the device and `kind` must be a kind your `NBIRTH` announced; otherwise the relay drops the birth. Use the ids you want to see in the host (`zone-01`, `led-01`, `fan-01`). Device and board ids must not equal ids in the simulated world of a mixed session, or the whole gateway is refused `inventory_mismatch`; a plan that binds an instance to your device makes the world withhold that instance, which is the intended way to put a twin and a board of one model in one session.
 6. Wait for the host's `STATE` before assuming a session. If the host refuses (`STATE {online: false, refusal}`), the link closes. Do not reconnect without an operator's action.
@@ -84,7 +85,7 @@ Because the stop uses wall-clock time for `deadline_ns`, **your gateway clock mu
 
 ### Commands you cannot be asked to cancel
 
-The relay can hold, approve and refuse what the host sends **before** it reaches you. A command it has already forwarded is yours: if you queue it for its `not_before_ns` or have it in flight, a later hold or emergency stop cannot recall it (D-94). If you can cancel a queued command on request, say so; the relay would then be taught to ask. Until then, keep `not_before_ns` waits short, and make leases the way to bound a command (`set_pwm_lease` requires `lease_ms` 5000 to 10000).
+The relay can hold, approve and refuse what the host sends **before** it reaches you. A command it has already forwarded is yours: if you queue it for its `not_before_ns` or have it in flight, a later hold or emergency stop cannot recall it (D-94). If you can cancel a queued command on request, say so; the relay would then be taught to ask. Until then, keep `not_before_ns` waits short, and make leases the way to bound a command (the board mapping gives `set_cooling` a 5000 ms lease; the firmware's `set_pwm_lease` accepts 5000 to 10000).
 
 ## 5. Rebirth, sequences and host loss
 

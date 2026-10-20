@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The canvas paces its connected sessions and speaks the semantic kinds (fan S4c).** The session plan the canvas builds
+  carries `pace: "wall"` (D2), so a connected session started from the canvas runs in wall time (world time is UTC from its
+  start). The canvas test fixtures and the end-to-end benches use the wire vocabulary (`set_cooling {level_percent}`, readings
+  in the kinds' units), and the scripted reference-host commands of the end-to-end tests are timed from the wall clock. The
+  briefs and guides describe the semantic commands, the board mapping and paced sessions.
+
 - **The thermal example speaks semantic kinds (fan S4b, part 2).** `examples/devices/thermal-board/` now holds the semantic fan
   (`set_cooling {level_percent}`, `level_percent`) and indicator (`show_state {state}`, `state`) kind files beside the board
   mapping; the twin domain's fan and indicator declare `board_type: "arduino-thermal"`, so a node, a relay's simulated node and
