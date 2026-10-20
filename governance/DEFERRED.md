@@ -489,3 +489,13 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > for the report gets none; the evidence is in the node's `journal.jsonl`. Trigger to fix: a bench that relies on the host's
 > report; then a node that ends and an interrupt before a node arrives are both a clean end with the report printed. Found by the
 > R13 documentation review.
+>
+> D-116 (**High**; a command after an actuator fault's onset cancels the fault): `stateOf` in
+> `internal/world/internal/domain/state.go` applies a state's faults only when the latest fault onset is later than the latest
+> command on that state (`lastFault > lastKick`, since 63b1f1c6). A `fan_stall` or `led_stuck_off` holds until the consumer
+> next commands the fan or the LED, then the fan runs and the LED lights as commanded, while the fault interval stays open in the
+> truth. A scripted stalled-fan or stuck-LED scenario therefore measures the wrong thing, silently. Trigger to fix: before any
+> scripted actuator fault in a live session (fan experiment S5 scenarios beyond `zone_heat_load`) and before the A/B/C
+> evaluation (fan experiment PLAN.md section 8.1 item 1); then a fault declares in the domain data whether it persists over
+> later commands, rather than a global flip of the precedence, and replay stays byte for byte deterministic. Found by the S3
+> actuator fault tests (`test/contract/thermal_actuator_faults_test.go` commands before the onset for this reason).
