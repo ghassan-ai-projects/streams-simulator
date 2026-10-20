@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1",
+  "domain": "arduino-thermal",
+  "seed": 1,
+  "host_socket": "/tmp/fan-experiment/host.sock",
+  "gateway_socket": "/tmp/fan-experiment/gateway.sock",
+  "pace": "wall",
+  "policies": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+  "real": [
+    {"instance": "zone-01", "board": "mega-01", "device": "zone-01"},
+    {"instance": "led-01", "board": "mega-01", "device": "led-01"},
+    {"instance": "fan-01", "board": "mega-01", "device": "fan-01"}
+  ]
+}

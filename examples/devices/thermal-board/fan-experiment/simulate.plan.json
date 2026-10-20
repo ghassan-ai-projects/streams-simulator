@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.1",
+  "domain": "arduino-thermal",
+  "seed": 1,
+  "host_socket": "/tmp/fan-experiment/host.sock",
+  "pace": "wall",
+  "policies": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+  "disturbances": [{"at_s": 120, "instance": "zone-01", "fault": "zone_heat_load", "duration_s": 900}]
+}

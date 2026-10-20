@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Fan experiment plans and a dress rehearsal (fan S8, S9).** `examples/devices/thermal-board/fan-experiment/` holds
+  `simulate.plan.json` (every instance simulated, a zone heat load from 120 s for 900 s) and `real.plan.json` (the three
+  instances bound to the gateway's board `mega-01`, no disturbances), both paced to the wall clock, with a README that says
+  what differs and how to run each. Tests check both plans, rehearse the simulated one against the reference host (the heat
+  load raises the zone; `show_state alert` and `set_cooling {level_percent: 45}` are accepted and read back) and drive the
+  real one with the stand-in gateway.
+
 - **The canvas paces its connected sessions and speaks the semantic kinds (fan S4c).** The session plan the canvas builds
   carries `pace: "wall"` (D2), so a connected session started from the canvas runs in wall time (world time is UTC from its
   start). The canvas test fixtures and the end-to-end benches use the wire vocabulary (`set_cooling {level_percent}`, readings
