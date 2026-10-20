@@ -133,9 +133,17 @@ func planInstances(spec *simdomain.Compiled, checked []model.ImplementsChecked) 
 	instances := make([]domain.PlanInstance, len(ids))
 	for i, id := range ids {
 		kind := spec.InstanceKind(spec.InstanceSetFor(id))
-		instances[i] = domain.PlanInstance{ID: id, Kind: kind.Name, Implements: kind.Implements, KindDigest: digests[kind.Implements]}
+		instances[i] = domain.PlanInstance{ID: id, Kind: kind.Name, Implements: kind.Implements, KindDigest: digests[kind.Implements], Faults: planFaults(kind)}
 	}
 	return instances
+}
+
+func planFaults(kind *model.Kind) []domain.PlanFault {
+	faults := make([]domain.PlanFault, len(kind.Faults))
+	for i, fault := range kind.Faults {
+		faults[i] = domain.PlanFault{ID: fault.ID, Pulse: fault.Onset.Shape == model.ShapePulse}
+	}
+	return faults
 }
 
 func planViolation(source string, issues []model.Issue) error {

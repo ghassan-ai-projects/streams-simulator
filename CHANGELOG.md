@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Scripted disturbances (fan S5).** The session plan gains optional `disturbances` (in place in `session-plan-v0.1`):
+  `{at_s, instance, fault, duration_s?, severity?}`, injected into the simulated world when a connected session starts (and
+  cleared after `duration_s`) through the run's fault path, so the command log and the sealed journal record them and replay
+  needs nothing from the plan. The check, the observer journal and the wire never carry the schedule. New plan rules:
+  `unknown_fault`, `disturbance_on_real_instance`, `duration_with_pulse_fault` (and `unknown_instance`).
+
 - **Paced live sessions (fan S1).** The session plan gains optional `pace: "wall"` (in place in `session-plan-v0.1`).
   `plantwire connect` then starts the world at the wall time the session starts (recorded in `run.json`, so `replay` and
   `verify` are unchanged) and releases each slice when the wall clock reaches its world time, on an absolute schedule; the

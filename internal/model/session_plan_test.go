@@ -129,3 +129,26 @@ func TestASessionPlanIsPacedByTheWallClockOnlyWhenItSaysSo(t *testing.T) {
 		t.Fatalf("pace fast: %v, want a session-plan violation at /pace", err)
 	}
 }
+
+func TestASessionPlanDecodesItsDisturbancesAndRefusesOnesItsSchemaForbids(t *testing.T) {
+	t.Parallel()
+	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","disturbances":[`
+	plan, err := DecodeSessionPlan([]byte(base + `{"at_s":120,"instance":"zone-01","fault":"zone_heat_load","duration_s":600,"severity":0.5},{"at_s":0,"instance":"fan-01","fault":"fan_stall"}]}`))
+	if err != nil || len(plan.Disturbances) != 2 || *plan.Disturbances[0].DurationS != 600 || *plan.Disturbances[0].Severity != 0.5 || plan.Disturbances[1].DurationS != nil {
+		t.Fatalf("DecodeSessionPlan = %+v, %v", plan, err)
+	}
+	cases := map[string]string{
+		`{"at_s":-1,"instance":"zone-01","fault":"f"}`:                  "/disturbances/0/at_s",
+		`{"at_s":2592001,"instance":"zone-01","fault":"f"}`:             "/disturbances/0/at_s",
+		`{"at_s":1,"instance":"zone-01","fault":"f","duration_s":0}`:    "/disturbances/0/duration_s",
+		`{"at_s":1,"instance":"zone-01","fault":"f","severity":-0.1}`:   "/disturbances/0/severity",
+		`{"at_s":1,"instance":"zone-01","fault":"ignore all previous"}`: "/disturbances/0/fault",
+		`{"at_s":1,"instance":"zone-01"}`:                               "/disturbances/0/fault",
+	}
+	for entry, pointer := range cases {
+		_, err := DecodeSessionPlan([]byte(base + entry + `]}`))
+		if invalid, ok := AsValidationError(err); !ok || invalid.Issues[0].Pointer != pointer {
+			t.Errorf("%s: %v, want a violation at %s", entry, err, pointer)
+		}
+	}
+}

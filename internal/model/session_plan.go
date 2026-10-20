@@ -15,7 +15,16 @@ type SessionPlan struct {
 	GatewaySocket string        `json:"gateway_socket,omitempty"`
 	Real          []RealBinding `json:"real,omitempty"`
 	Policies      []string      `json:"policies,omitempty"`
+	Disturbances  []Disturbance `json:"disturbances,omitempty"`
 	Pace          string        `json:"pace,omitempty"`
+}
+
+type Disturbance struct {
+	AtS       float64  `json:"at_s"`
+	Instance  string   `json:"instance"`
+	Fault     string   `json:"fault"`
+	DurationS *float64 `json:"duration_s,omitempty"`
+	Severity  *float64 `json:"severity,omitempty"`
 }
 
 type RealBinding struct {

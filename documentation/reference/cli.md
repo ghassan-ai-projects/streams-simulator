@@ -379,6 +379,17 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   are checked by the gateway's own list. The list is recorded in the `session` record of the journal, not in the run's
   identity.
 
+- `disturbances` (optional, at most 64) — faults the session injects into its simulated world, each
+  `{at_s, instance, fault, duration_s?, severity?}`: the fault starts `at_s` seconds after the world starts (paced or not) and,
+  with `duration_s`, is cleared that much later; `severity` defaults to the domain's magnitude. Every disturbance is injected
+  when the session starts, through the same path as `fault.inject` and `fault.clear`, so the run's command log and its sealed
+  journal hold it and `replay` and `verify` reproduce it without the plan. The schedule is never sent to the host, never echoed
+  by `--check` and never written to the observer journal: the host sees only its effect on the readings. A plan whose
+  disturbance names an unknown instance (`unknown_instance`), a fault the instance's kind does not declare (`unknown_fault`),
+  an instance bound to a real board (`disturbance_on_real_instance`) or a duration for a pulse fault, whose length the domain
+  fixes (`duration_with_pulse_fault`), is refused with the pointer `/disturbances/N/...`; a negative severity or an `at_s` or
+  `duration_s` beyond 30 days (the longest run) breaks the plan's schema.
+
 - `pace` (optional, only `"wall"`) — paces the session to the wall clock. The world starts at the wall time the session
   starts (floored to the millisecond; for a mixed session, when the relay opens) instead of 2026-01-01, and that start is
   recorded in `run.json` (`world_config.start_time_ns`), so `replay` and `verify` reproduce the run exactly as an unpaced one.

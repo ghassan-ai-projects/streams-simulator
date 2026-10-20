@@ -33,6 +33,12 @@
         "x-expected": "a policy digest: sha256: and 64 lower-case hexadecimal digits"
       }
     },
+    "disturbances": {
+      "type": "array",
+      "maxItems": 64,
+      "description": "Faults the session injects into its simulated world: each starts at_s seconds after the world starts and, with duration_s, is cleared that much later. They are injected when the session starts, recorded in the run's command log and its sealed truth like any injected fault, and never sent to the host or echoed in the check or the journal. Equal times are applied in list order.",
+      "items": {"$ref": "#/$defs/disturbance"}
+    },
     "pace": {
       "enum": ["wall"],
       "x-expected": "wall, or no pace member",
@@ -45,6 +51,18 @@
       "pattern": "^/[^\\x00-\\x1f\\x7f-\\x9f]{1,102}$",
       "not": {"pattern": "(^|/)\\.\\.(/|$)"},
       "x-expected": "an absolute path of at most 103 characters without control characters or a .. component, the length a unix socket path may have"
+    },
+    "disturbance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_s", "instance", "fault"],
+      "properties": {
+        "at_s": {"type": "number", "minimum": 0, "maximum": 2592000, "description": "Seconds after the world starts; at most 30 days, the longest run."},
+        "instance": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$", "description": "The simulated plant instance the fault strikes."},
+        "fault": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "A fault the instance's kind declares."},
+        "duration_s": {"type": "number", "exclusiveMinimum": 0, "maximum": 2592000, "description": "Seconds until the fault is cleared; absent, it lasts. A pulse fault has its own duration and takes none."},
+        "severity": {"type": "number", "minimum": 0, "description": "The fault's severity; the domain's magnitude when absent."}
+      }
     },
     "binding": {
       "type": "object",

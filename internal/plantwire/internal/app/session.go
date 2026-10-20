@@ -40,6 +40,7 @@ type Options struct {
 	Control      *ControlPort
 	InterruptLog InterruptLog
 	Pace         Pacer
+	Disturbances []domain.ScheduledFault
 }
 
 type Pacer interface {
@@ -118,8 +119,8 @@ func NewSession(r *run.Run, link Link, options Options) *Session {
 
 func (s *Session) Run(ctx context.Context) error {
 	defer s.endLive()
-	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded()); err != nil {
-		return fmt.Errorf("plantwire: %w", err)
+	if err := s.prepare(); err != nil {
+		return err
 	}
 	if err := s.handshake(ctx); err != nil {
 		return err

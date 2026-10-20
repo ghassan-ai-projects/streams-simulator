@@ -166,6 +166,7 @@ func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
 	if p.pacer != nil {
 		options.Pace = p.pacer
 	}
+	options.Disturbances = domain.ScheduleDisturbances(p.session.Disturbances, p.startNS())
 	return options
 }
 

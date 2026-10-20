@@ -17,6 +17,7 @@ const (
 
 type PlanInstance struct {
 	ID, Kind, Implements, KindDigest string
+	Faults                           []PlanFault
 }
 
 type PlannedInstance struct {
@@ -58,6 +59,7 @@ func CheckPlan(plan *model.SessionPlan, instances []PlanInstance) (ConnectPlan, 
 	for i, binding := range plan.Real {
 		issues = append(issues, check.binding(i, binding)...)
 	}
+	issues = append(issues, check.disturbanceIssues(plan)...)
 	allowed, listed := NewAllowList(plan.Policies, "/policies")
 	connect := check.outcome(plan, instances)
 	connect.Policies = allowed
