@@ -15,9 +15,9 @@ const sensorKind = `{"kind":"thermal_sensor","metrics":[
  {"name":"humidity","data_type":"number","unit":"%","eu_range":{"min":0,"max":100},"resolution":1,"writable":false}],"commands":[]}`
 
 const fanKind = `{"kind":"fan","metrics":[
- {"name":"duty_permille","data_type":"integer","unit":"1","eu_range":{"min":0,"max":600},"resolution":1,"writable":true}],
+ {"name":"level_percent","data_type":"integer","unit":"%","eu_range":{"min":0,"max":60},"resolution":1,"writable":true}],
  "commands":[
- {"name":"set_pwm_lease","args_schema":{"type":"object","properties":{"lease_ms":{"type":"integer","minimum":5000,"maximum":10000}},"required":["lease_ms"],"additionalProperties":false},"risk_class":"medium","safe_stop":false},
+ {"name":"set_cooling","args_schema":{"type":"object","properties":{"level_percent":{"type":"integer","minimum":0,"maximum":60}},"required":["level_percent"],"additionalProperties":false},"risk_class":"medium","safe_stop":false},
  {"name":"stop_fan","args_schema":{"type":"object","properties":{},"required":[],"additionalProperties":false},"risk_class":"low","safe_stop":true}]}`
 
 var policy = "sha256:" + strings.Repeat("b", 64)

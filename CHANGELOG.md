@@ -4,12 +4,21 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The thermal example speaks semantic kinds (fan S4b, part 2).** `examples/devices/thermal-board/` now holds the semantic fan
+  (`set_cooling {level_percent}`, `level_percent`) and indicator (`show_state {state}`, `state`) kind files beside the board
+  mapping; the twin domain's fan and indicator declare `board_type: "arduino-thermal"`, so a node, a relay's simulated node and
+  `plantwire twin-report` speak the kind files on the wire and run the raw twin underneath (the twin report translates each
+  command and reading through the mapping). The scaffolded twin choices `thermal-board.twin.json` left the example: the
+  scaffolder cannot reproduce semantic kinds (a word metric, a lease the board owns), so the hand-written raw domain is the
+  thermal twin. The scaffolder keeps its tests on the former raw thermal kind files and choices, now fixtures in
+  `internal/testsupport/testdata/twin-thermal/`. A canvas workspace accepts a board mapping in `kinds/` (`kinds/<type>.board.json`),
+  which `--kinds-dir` passes to the binary with the kind files.
+
 - **Semantic kinds through the board mapping (fan S4b, part 1).** A domain kind may declare `board_type` (in place in
   `domain-spec-v0.2`): it is then the board's raw model and implements its kind file through `<board_type>.board.json`, read
   from the kind directories. The `implements` check projects the raw kind through the mapping and compares it with the kind
   file (names, words, scaled ranges, raw arguments, risk class, safe stop); a plant wire node of such a domain announces the
-  kind file, translates commands into raw commands at its boundary and reports raw readings as the kind's metrics. The
-  shipped thermal example is not migrated yet.
+  kind file, translates commands into raw commands at its boundary and reports raw readings as the kind's metrics.
 
 - **Scripted disturbances (fan S5).** The session plan gains optional `disturbances` (in place in `session-plan-v0.1`):
   `{at_s, instance, fault, duration_s?, severity?}`, injected into the simulated world when a connected session starts (and

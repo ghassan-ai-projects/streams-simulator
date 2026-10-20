@@ -35,7 +35,7 @@ func mixedGateway(t *testing.T, session string) *standin.Node {
 		Kinds: []map[string]any{thermalKindFile(t, "thermal_sensor.kind.json"), thermalKindFile(t, "fan.kind.json")},
 		Devices: []standin.Device{{Name: "zone-02", Kind: "thermal_sensor", BootID: "boot-1", Initial: map[string]any{"temperature": 21.5}},
 			{Name: "fan-02", Kind: "fan", BootID: "boot-1"}},
-		Script: standin.Script{Replies: []standin.Reply{{Command: "set_pwm_lease", Receipt: "accepted", Result: "succeeded"}}}})
+		Script: standin.Script{Replies: []standin.Reply{{Command: "set_cooling", Receipt: "accepted", Result: "succeeded"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,10 +81,10 @@ func startMixedRelayTicked(t *testing.T, hostPath string, options RelayOptions, 
 }
 
 func commandRecord(id, device, boot string, now int64) domain.Record {
-	args := map[string]any{"duty_permille": 300, "lease_ms": 5000}
-	key := domain.Command{Device: device, Name: "set_pwm_lease", Args: args, Boot: boot}.Content()
+	args := map[string]any{"level_percent": 30}
+	key := domain.Command{Device: device, Name: "set_cooling", Args: args, Boot: boot}.Content()
 	return domain.Record{Type: "DCMD", Lane: domain.LaneControl, Fields: map[string]any{"command_id": id, "idempotency_key": key, "device": device,
-		"command": "set_pwm_lease", "args": args, "expected_boot_id": boot, "deadline_ns": now + 120e9, "not_before_ns": 0, "authority_epoch": 7,
+		"command": "set_cooling", "args": args, "expected_boot_id": boot, "deadline_ns": now + 120e9, "not_before_ns": 0, "authority_epoch": 7,
 		"policy_digest": mixedPolicy, "fallback_on_lease_loss": "safe_off"}}
 }
 

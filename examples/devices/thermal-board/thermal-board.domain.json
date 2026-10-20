@@ -170,7 +170,7 @@
     },
     {
       "name": "indicator",
-      "implements": "indicator",
+      "implements": "indicator", "board_type": "arduino-thermal",
       "state": [
         {
           "name": "led_brightness",
@@ -282,7 +282,7 @@
     },
     {
       "name": "fan",
-      "implements": "fan",
+      "implements": "fan", "board_type": "arduino-thermal",
       "state": [
         {
           "name": "fan_duty",

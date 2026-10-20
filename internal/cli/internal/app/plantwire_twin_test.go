@@ -41,8 +41,8 @@ func benchLease(t *testing.T) map[string]any {
 	if err := json.Unmarshal(raw, &record); err != nil {
 		t.Fatal(err)
 	}
-	record["command_id"], record["device"], record["command"] = "cmd-1", "fan-01", "set_pwm_lease"
-	record["args"] = map[string]any{"duty_permille": 300, "lease_ms": 10000}
+	record["command_id"], record["device"], record["command"] = "cmd-1", "fan-01", "set_cooling"
+	record["args"] = map[string]any{"level_percent": 30}
 	return record
 }
 
@@ -55,7 +55,7 @@ func benchRunFolder(t *testing.T, hot float64) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	records := []map[string]any{benchBirth("zone-01", "thermal_sensor", "temperature", "humidity"), benchBirth("fan-01", "fan", "duty_permille")}
+	records := []map[string]any{benchBirth("zone-01", "thermal_sensor", "temperature", "humidity"), benchBirth("fan-01", "fan", "level_percent")}
 	for at := benchStartNS + 5*benchTickNS; at <= benchStartNS+100*benchTickNS; at += 5 * benchTickNS {
 		value := 34.0
 		if at >= benchStartNS+80*benchTickNS {
@@ -155,7 +155,7 @@ func TestATwinReportOfABenchThatFollowsItsTwinAgrees(t *testing.T) {
 func TestDeclaredTolerancesMayBeRepeatedOrCommaSeparated(t *testing.T) {
 	t.Parallel()
 	dir := benchRunFolder(t, 41)
-	args := twinReportArgs(t, dir, "--tolerance", "zone-01.temperature=20", "--tolerance", "thermal_sensor.humidity=9,fan-01.duty_permille=50")
+	args := twinReportArgs(t, dir, "--tolerance", "zone-01.temperature=20", "--tolerance", "thermal_sensor.humidity=9,fan-01.level_percent=50")
 	doc := invoke(t, args...).mustSucceed(t).document(t, "plantwire_twin_report")
 	metrics, _ := doc["metrics"].([]any)
 	tolerances := map[string]float64{}
@@ -165,7 +165,7 @@ func TestDeclaredTolerancesMayBeRepeatedOrCommaSeparated(t *testing.T) {
 		value, _ := tolerance["value"].(float64)
 		tolerances[metric["device"].(string)+"."+metric["metric"].(string)] = value
 	}
-	want := map[string]float64{"zone-01.temperature": 20, "zone-01.humidity": 9, "fan-01.duty_permille": 50}
+	want := map[string]float64{"zone-01.temperature": 20, "zone-01.humidity": 9, "fan-01.level_percent": 50}
 	for key, value := range want {
 		if tolerances[key] != value {
 			t.Errorf("tolerance of %s = %v, want the declared %v (all: %v)", key, tolerances[key], value, tolerances)

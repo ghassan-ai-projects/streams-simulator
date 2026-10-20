@@ -73,7 +73,7 @@ func TestComponentListRefusesARangeThatIsNoRangeOrHasNoUnit(t *testing.T) {
 
 func TestKindTwinSuggestNamesOnlyTheKindFilesItIsGiven(t *testing.T) {
 	t.Parallel()
-	fan := filepath.Join(testsupport.ThermalBoardKindsDir(), "fan.kind.json")
+	fan := filepath.Join(testsupport.TwinThermalKindsDir(), "fan.kind.json")
 	broken := writeFile(t, "pump_monitor.kind.json", `{"kind": "pump_monitor"}`)
 	doc := invoke(t, "kind", "twin", "--suggest", fan).mustSucceed(t).document(t, "kind_suggest")
 	choices, _ := doc["choices"].(map[string]any)

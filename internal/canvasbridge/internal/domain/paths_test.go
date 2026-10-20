@@ -12,12 +12,14 @@ func inDomains(name string) string {
 func TestOnlyTheWorkspaceFilesOfTheCanvasAreAccepted(t *testing.T) {
 	t.Parallel()
 	good := map[string]WorkspacePath{
-		inDomains("plant.domain.json"):    {Rel: inDomains("plant.domain.json"), Class: ClassDomain},
-		"compositions/f.composition.json": {Rel: "compositions/f.composition.json", Class: ClassComposition},
-		"scenarios/s.scenario.json":       {Rel: "scenarios/s.scenario.json", Class: ClassScenario},
-		"layouts/plant.layout.json":       {Rel: "layouts/plant.layout.json", Class: ClassLayout},
-		"runs/w-1/run.json":               {Rel: "runs/w-1/run.json", Class: ClassRun, RunID: "w-1", RunFile: "run.json"},
-		"runs/w-1/sealed/journal.jsonl":   {Rel: "runs/w-1/sealed/journal.jsonl", Class: ClassRun, RunID: "w-1", RunFile: "sealed/journal.jsonl"},
+		inDomains("plant.domain.json"):     {Rel: inDomains("plant.domain.json"), Class: ClassDomain},
+		"compositions/f.composition.json":  {Rel: "compositions/f.composition.json", Class: ClassComposition},
+		"scenarios/s.scenario.json":        {Rel: "scenarios/s.scenario.json", Class: ClassScenario},
+		"layouts/plant.layout.json":        {Rel: "layouts/plant.layout.json", Class: ClassLayout},
+		"kinds/fan.kind.json":              {Rel: "kinds/fan.kind.json", Class: ClassKind},
+		"kinds/arduino-thermal.board.json": {Rel: "kinds/arduino-thermal.board.json", Class: ClassBoard},
+		"runs/w-1/run.json":                {Rel: "runs/w-1/run.json", Class: ClassRun, RunID: "w-1", RunFile: "run.json"},
+		"runs/w-1/sealed/journal.jsonl":    {Rel: "runs/w-1/sealed/journal.jsonl", Class: ClassRun, RunID: "w-1", RunFile: "sealed/journal.jsonl"},
 	}
 	for rel, want := range good {
 		if got, err := ParsePath(rel); err != nil || got != want {
@@ -26,7 +28,7 @@ func TestOnlyTheWorkspaceFilesOfTheCanvasAreAccepted(t *testing.T) {
 	}
 	for _, rel := range []string{"", "/etc/passwd", "../" + inDomains("x.domain.json"), inDomains("../runs/w/run.json"), inDomains("x.json"),
 		inDomains(".domain.json"), inDomains("a/b.domain.json"), inDomains(".hidden.domain.json"), "runs/w-1/secret.txt", "runs/../run.json",
-		"runs/w-1/sealed/other.jsonl", `domains\x.domain.json`, inDomains("/x.domain.json"), "Domains/x.domain.json"} {
+		"runs/w-1/sealed/other.jsonl", "kinds/.board.json", inDomains("a.board.json"), "twins/a.board.json", `domains\x.domain.json`, inDomains("/x.domain.json"), "Domains/x.domain.json"} {
 		if _, err := ParsePath(rel); !errors.Is(err, ErrBadPath) {
 			t.Errorf("ParsePath(%q) = %v, want ErrBadPath", rel, err)
 		}

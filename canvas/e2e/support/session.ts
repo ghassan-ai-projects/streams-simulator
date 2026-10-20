@@ -10,6 +10,7 @@ import { repository } from "./workspace";
 
 const thermalBoard = join(repository, "examples", "devices", "thermal-board");
 const thermalKinds = ["thermal_sensor", "indicator", "fan"];
+const thermalMapping = "arduino-thermal.board.json";
 
 const thermalPlant = "/#/plant?domain=domains%2Farduino-thermal.domain.json";
 
@@ -22,6 +23,7 @@ export function addThermalBench(lab: Lab): void {
   for (const kind of thermalKinds) {
     copyFileSync(join(thermalBoard, `${kind}.kind.json`), join(lab.workspace, "kinds", `${kind}.kind.json`));
   }
+  copyFileSync(join(thermalBoard, thermalMapping), join(lab.workspace, "kinds", thermalMapping));
 }
 
 export interface Bench {

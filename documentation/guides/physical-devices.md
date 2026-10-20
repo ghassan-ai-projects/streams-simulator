@@ -59,18 +59,18 @@ A device is an interface (kind files) plus, if you want to simulate it, a behavi
 
 **Canvas.** Open **Devices**, choose **New device**, and fill the interface: each reading (name, type, unit, range, resolution) and each command (arguments, risk class, safe stop). The Interface step shows what a twin still needs before you reach **Behaviour**. In Behaviour, choose the library instrument for each reading and one response for each command that is not a safe stop (`direct`, `first_order` or `none`), then **Check**. Saving writes the kind files and the twin; a definition the binary refuses is never written.
 
-**Command line.** The thermal bench ships as an example (`examples/devices/thermal-board/`: sensor, indicator and fan kind files, a choices file and a twin domain).
+**Command line.** The thermal bench ships as an example in `examples/devices/thermal-board/`: the sensor, indicator and fan
+kind files the plant wire speaks (the fan takes `set_cooling {level_percent}` and reports `level_percent`; the indicator takes
+`show_state {state}` and reports `state`), the board mapping `arduino-thermal.board.json` with the board's raw values (duty,
+pattern, the 5 s fan lease), and the hand-written twin domain `thermal-board.domain.json`, the board's raw model, whose fan and
+indicator declare `board_type: "arduino-thermal"` and implement their kind files through the mapping. A twin is scaffolded with
+`kind twin` only from kind files whose metrics are numbers set by their commands; the thermal kinds are semantic (a word, a level
+with a board lease), so their twin is the raw domain, checked through the mapping:
 
 ```bash
 go run ./cmd/streamsim kind validate examples/devices/thermal-board/*.kind.json
-go run ./cmd/streamsim kind twin examples/devices/thermal-board/*.kind.json --suggest
-W=$(mktemp -d)
-mkdir -p "$W/domains" "$W/kinds" "$W/runs"
-cp examples/devices/thermal-board/*.kind.json "$W/kinds/"
-go run ./cmd/streamsim kind twin "$W"/kinds/*.kind.json \
-  --choices examples/devices/thermal-board/thermal-board.twin.json \
-  --out "$W/domains/arduino-thermal-twin.domain.json"
-go run ./cmd/streamsim domain validate "$W/domains/arduino-thermal-twin.domain.json" --kinds-dir "$W/kinds"
+go run ./cmd/streamsim domain validate examples/devices/thermal-board/thermal-board.domain.json \
+  --kinds-dir examples/devices/thermal-board
 ```
 
 `domain validate` prints `implements_checked` with the `kind_digest` of each kind file the twin was checked against. A twin that drifts from its kind file fails with `domain_invalid` and an issue at `/kinds/<i>/implements`.

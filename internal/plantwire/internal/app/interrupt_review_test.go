@@ -90,7 +90,7 @@ func TestTwoCommandsUnderOneIdNeverLetTheOperatorApproveOneWhileTheOtherRuns(t *
 		switch syncs {
 		case 1:
 			h.reply("DCMD", fanCommand("c-1", sliceEnd(1)))
-			h.reply("DCMD", thermalCommand("c-1", "led-01", "set_led", map[string]any{"brightness_permille": 500, "pattern": 2}, sliceEnd(1)))
+			h.reply("DCMD", thermalCommand("c-1", "led-01", "show_state", map[string]any{"state": "alert"}, sliceEnd(1)))
 		case 2:
 			c.submit(t, `{"op":"approve","command_id":"c-1"}`)
 		}
@@ -138,7 +138,7 @@ func TestTheSafeStopsOfAnEmergencyStopAreOrderedEvenWhenAnsweringTheHostFails(t 
 	c.submit(t, approveFan)
 	options := sliceOptions(3)
 	options.Policies = []string{policy}
-	options.Control, options.InterruptLog = c.port, c.log
+	options.Control, options.InterruptLog, options.Interfaces = c.port, c.log, c.faces
 	err := NewSession(c.run, link, options).Run(t.Context())
 	if !errors.Is(err, errHostGone) {
 		t.Fatalf("Run = %v, want the failed answer reported", err)
@@ -224,7 +224,7 @@ func TestEveryDeviceOfAnEmergencyStopIsStoppedEvenWhenTellingTheHostTheStateOfTh
 	c.submit(t, estopBoard)
 	options := sliceOptions(2)
 	options.Policies = []string{policy}
-	options.Control, options.InterruptLog = c.port, c.log
+	options.Control, options.InterruptLog, options.Interfaces = c.port, c.log, c.faces
 	if err := NewSession(c.run, link, options).Run(t.Context()); !errors.Is(err, errHostGone) {
 		t.Fatalf("Run = %v, want the failed state record reported", err)
 	}

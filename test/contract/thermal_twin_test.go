@@ -30,7 +30,7 @@ func scaffoldedThermalTwin(t *testing.T) *component.Composed {
 	if err != nil {
 		t.Fatal(err)
 	}
-	choices, err := os.ReadFile(testsupport.ThermalBoardChoices())
+	choices, err := os.ReadFile(testsupport.TwinThermalChoices())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func scaffoldedThermalTwin(t *testing.T) *component.Composed {
 		}
 		return twin, twin.Domain.Spec, nil
 	}
-	twin, err := plantwire.Scaffold(nil, []string{testsupport.ThermalBoardKindsDir()}, "thermal-board.twin.json", scaffold)
+	twin, err := plantwire.Scaffold(nil, []string{testsupport.TwinThermalKindsDir()}, "thermal-board.twin.json", scaffold)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestTheScaffoldedThermalTwinImplementsItsKindFilesAndPassesTheLint(t *testi
 	if want := []string{"thermal_sensor", "indicator", "fan"}; !slices.Equal(twin.Implements, want) {
 		t.Fatalf("implements = %v, want %v", twin.Implements, want)
 	}
-	if checked, err := plantwire.CheckImplements(twin.Domain.Spec, []string{testsupport.ThermalBoardKindsDir()}); err != nil || len(checked) != 3 {
+	if checked, err := plantwire.CheckImplements(twin.Domain.Spec, []string{testsupport.TwinThermalKindsDir()}); err != nil || len(checked) != 3 {
 		t.Fatalf("CheckImplements = %v, %v, want the scaffolded twin to equal its three kind files", checked, err)
 	}
 	report, err := lint.Check(twin.Domain, lint.Options{Seed: lint.DefaultSeed, Hours: lint.DefaultHours})

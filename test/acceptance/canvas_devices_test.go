@@ -85,7 +85,12 @@ func TestTheCanvasBridgeChecksADomainAgainstTheKindsOfItsWorkspace(t *testing.T)
 
 func putKindFiles(t *testing.T, client *bridgeClient) {
 	t.Helper()
-	paths, err := filepath.Glob(filepath.Join(testsupport.ThermalBoardKindsDir(), "*.kind.json"))
+	putKindFilesFrom(t, client, testsupport.ThermalBoardKindsDir())
+}
+
+func putKindFilesFrom(t *testing.T, client *bridgeClient, dir string) {
+	t.Helper()
+	paths, err := filepath.Glob(filepath.Join(dir, "*.kind.json"))
 	if err != nil || len(paths) != 3 {
 		t.Fatalf("thermal board kind files = %v, %v", paths, err)
 	}
@@ -95,6 +100,9 @@ func putKindFiles(t *testing.T, client *bridgeClient) {
 			t.Fatal(err)
 		}
 		putFile(t, client, "kinds/"+filepath.Base(path), string(content))
+	}
+	if mapping, err := os.ReadFile(filepath.Join(dir, "arduino-thermal.board.json")); err == nil {
+		putFile(t, client, "kinds/arduino-thermal.board.json", string(mapping))
 	}
 	names := []string{}
 	for _, entry := range listed(t, client, "kinds") {

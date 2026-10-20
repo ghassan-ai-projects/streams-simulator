@@ -24,7 +24,7 @@ test.afterEach(() => {
   bench = null;
 });
 
-const lease = { duty_permille: 300, lease_ms: 5000 };
+const cooling = { level_percent: 30 };
 const first = `sha256:${"a".repeat(64)}`;
 const second = `sha256:${"c".repeat(64)}`;
 
@@ -46,7 +46,7 @@ test("a command refused for its policy shows the host's digest, copies it on req
 }) => {
   addThermalBench(lab);
   const open = openScriptedBench(lab.binary, [
-    { id: "pol-a", afterS: 80, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "pol-a", afterS: 80, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   bench = open;
   const panel = await openSessionPanel(page);

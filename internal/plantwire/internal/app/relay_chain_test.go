@@ -16,9 +16,9 @@ const relaySensorKind = `{"kind":"thermal_sensor","metrics":[
  {"name":"humidity","data_type":"number","unit":"%","eu_range":{"min":0,"max":100},"resolution":1,"writable":false}],"commands":[]}`
 
 const relayFanKind = `{"kind":"fan","metrics":[
- {"name":"duty_permille","data_type":"integer","unit":"1","eu_range":{"min":0,"max":600},"resolution":1,"writable":true}],
+ {"name":"level_percent","data_type":"integer","unit":"%","eu_range":{"min":0,"max":60},"resolution":1,"writable":true}],
  "commands":[
- {"name":"set_pwm_lease","args_schema":{"type":"object","properties":{"lease_ms":{"type":"integer","minimum":5000,"maximum":10000}},"required":["lease_ms"],"additionalProperties":false},"risk_class":"medium","safe_stop":false},
+ {"name":"set_cooling","args_schema":{"type":"object","properties":{"level_percent":{"type":"integer","minimum":0,"maximum":60}},"required":["level_percent"],"additionalProperties":false},"risk_class":"medium","safe_stop":false},
  {"name":"stop_fan","args_schema":{"type":"object","properties":{},"required":[],"additionalProperties":false},"risk_class":"low","safe_stop":true}]}`
 
 func relayKindFile(t *testing.T, text string) map[string]any {
@@ -36,7 +36,7 @@ func relayGateway(t *testing.T, session string) *standin.Node {
 		Kinds: []map[string]any{relayKindFile(t, relaySensorKind), relayKindFile(t, relayFanKind)},
 		Devices: []standin.Device{{Name: "zone-01", Kind: "thermal_sensor", BootID: "boot-1", Initial: map[string]any{"temperature": 21.5}},
 			{Name: "fan-01", Kind: "fan", BootID: "boot-1"}},
-		Script: standin.Script{Replies: []standin.Reply{{Command: "set_pwm_lease", Receipt: "accepted", Result: "succeeded"}}}})
+		Script: standin.Script{Replies: []standin.Reply{{Command: "set_cooling", Receipt: "accepted", Result: "succeeded"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func relayHostOptions(environment string, script ...host.Scripted) host.Options 
 }
 
 func relayCommandStep() host.Scripted {
-	return host.Scripted{ID: "cmd-1", AtNS: 1, Device: "fan-01", Command: "set_pwm_lease", Args: map[string]any{"lease_ms": 5000}}
+	return host.Scripted{ID: "cmd-1", AtNS: 1, Device: "fan-01", Command: "set_cooling", Args: map[string]any{"level_percent": 30}}
 }
 
 func decodeRecord(t *testing.T, record map[string]any) domain.Inbound {

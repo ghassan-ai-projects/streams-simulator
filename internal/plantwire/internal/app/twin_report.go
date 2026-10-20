@@ -61,39 +61,45 @@ func buildTwinReport(options TwinReportOptions, declared map[string]float64) (do
 	if err != nil {
 		return domain.TwinReport{}, err
 	}
-	input, spec, err := twinInput(options, declared, folder)
+	input, twinModel, err := twinInput(options, declared, folder)
 	if err != nil {
 		return domain.TwinReport{}, err
 	}
-	twin, err := newTwinWorld(spec, input.Trace.StartNS, input.Trace.Devices)
+	twin, err := newTwinWorld(twinModel, input.Trace.StartNS, input.Trace.Devices)
 	if err != nil {
 		return domain.TwinReport{}, err
 	}
 	return domain.EvaluateTwin(input, twin)
 }
 
-func twinInput(options TwinReportOptions, declared map[string]float64, folder twinFolder) (domain.TwinInput, *simdomain.Compiled, error) {
-	board := domain.ReadBoardTrace(folder.trace)
-	if len(board.Devices) == 0 {
-		return domain.TwinInput{}, nil, domain.ErrTwinNoDevices
-	}
-	spec, kinds, info, err := twinDomain(options, board)
-	if err != nil {
-		return domain.TwinInput{}, nil, err
-	}
-	commands, err := twinCommands(folder, board)
-	return domain.TwinInput{Trace: board, Commands: commands, Kinds: kinds, Declared: declared, SpanFraction: options.SpanFraction,
-		Run: folder.evidence, Twin: info}, spec, err
+type twinModel struct {
+	spec  *simdomain.Compiled
+	faces domain.Interfaces
+	kinds domain.KindFiles
 }
 
-func twinDomain(options TwinReportOptions, board domain.BoardTrace) (*simdomain.Compiled, domain.KindFiles, domain.TwinInfo, error) {
+func twinInput(options TwinReportOptions, declared map[string]float64, folder twinFolder) (domain.TwinInput, twinModel, error) {
+	board := domain.ReadBoardTrace(folder.trace)
+	if len(board.Devices) == 0 {
+		return domain.TwinInput{}, twinModel{}, domain.ErrTwinNoDevices
+	}
+	twin, info, err := twinDomain(options, board)
+	if err != nil {
+		return domain.TwinInput{}, twinModel{}, err
+	}
+	commands, err := twinCommands(folder, board)
+	return domain.TwinInput{Trace: board, Commands: commands, Kinds: twin.kinds, Declared: declared, SpanFraction: options.SpanFraction,
+		Run: folder.evidence, Twin: info}, twin, err
+}
+
+func twinDomain(options TwinReportOptions, board domain.BoardTrace) (twinModel, domain.TwinInfo, error) {
 	spec, err := loadTwinDomain(options)
 	if err != nil {
-		return nil, nil, domain.TwinInfo{}, err
+		return twinModel{}, domain.TwinInfo{}, err
 	}
-	kinds, checked, err := twinKinds(spec, board, options.KindsDirs)
+	twin, checked, err := twinKinds(spec, board, options.KindsDirs)
 	info := domain.TwinInfo{Domain: spec.Spec.ID, DomainDigest: spec.Digest, Kinds: twinKindDigests(checked), StartNS: board.StartNS}
-	return spec, kinds, info, err
+	return twin, info, err
 }
 
 func loadTwinDomain(options TwinReportOptions) (*simdomain.Compiled, error) {
@@ -108,16 +114,20 @@ func loadTwinDomain(options TwinReportOptions) (*simdomain.Compiled, error) {
 	return spec, nil
 }
 
-func twinKinds(spec *simdomain.Compiled, board domain.BoardTrace, dirs []string) (domain.KindFiles, []model.ImplementsChecked, error) {
+func twinKinds(spec *simdomain.Compiled, board domain.BoardTrace, dirs []string) (twinModel, []model.ImplementsChecked, error) {
 	kinds, err := readKindFiles(nil, dirs)
 	if err != nil {
-		return nil, nil, err
+		return twinModel{}, nil, err
 	}
 	if err := domain.TwinImplements(spec.Spec, board.Devices); err != nil {
-		return nil, nil, err
+		return twinModel{}, nil, err
 	}
-	checked, err := domain.CheckImplements(spec.Spec, kinds)
-	return kinds, checked, err
+	boards, err := readBoards(spec.Spec, dirs)
+	if err != nil {
+		return twinModel{}, nil, err
+	}
+	checked, faces, err := domain.CheckInterfaces(spec.Spec, kinds, boards)
+	return twinModel{spec: spec, faces: faces, kinds: kinds}, checked, err
 }
 
 func twinKindDigests(checked []model.ImplementsChecked) []domain.TwinKind {

@@ -22,7 +22,6 @@ func TestAMappedConnectedSessionTranslatesACommandRecordsItRawAndReplays(t *test
 	hostPath, out := testsupport.SocketPath(t), filepath.Join(t.TempDir(), "c-1")
 	host := serveWireHost(t, hostPath, false)
 	options := connectOptions(t, strings.TrimSuffix(planText(hostPath, ""), "}")+`,"policies":["`+policy+`"]}`, out)
-	options.DomainsDir, options.KindsDirs = mappedThermalDomains(t), []string{semanticKindsDir()}
 	cancel, done := startConnect(t, options, false)
 	host.waitFor(func(r []map[string]any) bool {
 		return hasRecord(r, "DBIRTH", "device", "fan-01") && len(syncTimes(r)) > 0

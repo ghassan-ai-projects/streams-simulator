@@ -166,8 +166,8 @@ func TestDeclaredTolerancesAndASpanFractionReachTheReport(t *testing.T) {
 	if tol := twinMetric(t, report, "zone-01", "humidity").Tolerance; tol.Source != domain.ToleranceDeclared || *tol.Value != 9 {
 		t.Fatalf("humidity tolerance = %+v, want the kind's declared 9", tol)
 	}
-	if tol := twinMetric(t, report, "fan-01", "duty_permille").Tolerance; tol.Source != domain.ToleranceDefaultSpan || math.Abs(*tol.Value-60) > 1e-9 || report.ToleranceRule.SpanFraction != 0.1 {
-		t.Fatalf("duty tolerance = %+v rule %+v, want 0.1 of the 600 span", tol, report.ToleranceRule)
+	if tol := twinMetric(t, report, "fan-01", "level_percent").Tolerance; tol.Source != domain.ToleranceDefaultSpan || math.Abs(*tol.Value-6) > 1e-9 || report.ToleranceRule.SpanFraction != 0.1 {
+		t.Fatalf("duty tolerance = %+v rule %+v, want 0.1 of the 60 span", tol, report.ToleranceRule)
 	}
 }
 

@@ -143,8 +143,12 @@ func ThermalBoardKindsDir() string {
 	return filepath.Join(RepositoryRoot(), "examples", "devices", "thermal-board")
 }
 
-func ThermalBoardChoices() string {
-	return filepath.Join(ThermalBoardKindsDir(), "thermal-board.twin.json")
+func TwinThermalKindsDir() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "twin-thermal")
+}
+
+func TwinThermalChoices() string {
+	return filepath.Join(TwinThermalKindsDir(), "thermal-board.twin.json")
 }
 
 func ThermalBoardDomain() string {

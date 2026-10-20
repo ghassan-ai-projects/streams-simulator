@@ -13,7 +13,7 @@ import (
 )
 
 func semanticDir() string {
-	return filepath.Join(testsupport.RepositoryRoot(), "internal", "plantwire", "testdata", "semantic")
+	return testsupport.ThermalBoardKindsDir()
 }
 
 func semanticSources(t *testing.T, suffix string, edit func(name, raw string) string) []KindSource {
@@ -40,11 +40,6 @@ func mappedThermal(t *testing.T) *model.DomainSpec {
 	compiled, err := domain.Load(testsupport.ThermalBoardDomain())
 	if err != nil {
 		t.Fatal(err)
-	}
-	for i := range compiled.Spec.Kinds {
-		if name := compiled.Spec.Kinds[i].Name; name == "fan" || name == "indicator" {
-			compiled.Spec.Kinds[i].BoardType = "arduino-thermal"
-		}
 	}
 	return compiled.Spec
 }

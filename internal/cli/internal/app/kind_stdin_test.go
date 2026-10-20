@@ -126,14 +126,14 @@ func TestKindValidateWithoutTwinAcceptsADocumentOnlyATwinWouldRefuse(t *testing.
 
 func TestKindValidateTwinAcceptsTheThermalKindFilesAndTheirSuggestedChoicesScaffoldATwin(t *testing.T) {
 	t.Parallel()
-	paths, err := filepath.Glob(filepath.Join(testsupport.ThermalBoardKindsDir(), "*.kind.json"))
+	paths, err := filepath.Glob(filepath.Join(testsupport.TwinThermalKindsDir(), "*.kind.json"))
 	if err != nil || len(paths) != 3 {
 		t.Fatalf("thermal kind files = %v, %v", paths, err)
 	}
 	invoke(t, append([]string{"kind", "validate", "--twin"}, paths...)...).mustSucceed(t).document(t, "kind_validate")
 	suggested := invoke(t, append([]string{"kind", "twin", "--suggest"}, paths...)...).mustSucceed(t).document(t, "kind_suggest")
 	choices := writeFile(t, "suggested.twin.json", string(mustJSON(t, suggested["choices"])))
-	twin := invoke(t, "kind", "twin", "--choices", choices, "--kinds-dir", testsupport.ThermalBoardKindsDir()).mustSucceed(t).document(t, "kind_twin")
+	twin := invoke(t, "kind", "twin", "--choices", choices, "--kinds-dir", testsupport.TwinThermalKindsDir()).mustSucceed(t).document(t, "kind_twin")
 	if implements, _ := twin["implements"].([]any); len(implements) != 3 {
 		t.Fatalf("kind twin of the suggested choices = %v, want the three kinds implemented", twin)
 	}

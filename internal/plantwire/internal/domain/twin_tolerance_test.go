@@ -55,11 +55,11 @@ func TestTheDefaultToleranceScalesWithTheFraction(t *testing.T) {
 
 func TestParseTolerancesReadsCommaLists(t *testing.T) {
 	t.Parallel()
-	declared, err := ParseTolerances([]string{"zone-01.temperature=2, fan-01.duty_permille=30", "thermal_sensor.humidity=5"})
+	declared, err := ParseTolerances([]string{"zone-01.temperature=2, fan-01.level_percent=30", "thermal_sensor.humidity=5"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]float64{"zone-01.temperature": 2, "fan-01.duty_permille": 30, "thermal_sensor.humidity": 5}
+	want := map[string]float64{"zone-01.temperature": 2, "fan-01.level_percent": 30, "thermal_sensor.humidity": 5}
 	if len(declared) != len(want) {
 		t.Fatalf("declared = %v, want %v", declared, want)
 	}

@@ -37,11 +37,17 @@ type controlled struct {
 	calls   []ControlCall
 	sink    InterruptLog
 	origins bool
+	faces   domain.Interfaces
 }
 
 func newControlled(t *testing.T, script func(c *controlled, syncs int)) *controlled {
 	t.Helper()
 	c := &controlled{t: t, port: NewControlPort(), log: &memoryLog{}, run: runOf(t, testsupport.ThermalBoardDomain())}
+	_, faces, err := loadInterfaces(c.run.Domain().Spec, []string{testsupport.ThermalBoardKindsDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.faces = faces
 	c.host = &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
 		if script != nil {
 			script(c, syncs)
@@ -83,7 +89,7 @@ func (c *controlled) play(t *testing.T, barriers int64) {
 	t.Helper()
 	options := sliceOptions(barriers)
 	options.Policies = []string{policy}
-	options.Control, options.InterruptLog, options.JournalOrigins = c.port, c.log, c.origins
+	options.Control, options.InterruptLog, options.JournalOrigins, options.Interfaces = c.port, c.log, c.origins, c.faces
 	if c.sink != nil {
 		options.InterruptLog = c.sink
 	}
@@ -107,7 +113,7 @@ func thermalCommand(id, device, command string, args map[string]any, now int64) 
 }
 
 func fanCommand(id string, now int64) map[string]any {
-	return thermalCommand(id, "fan-01", "set_pwm_lease", map[string]any{"duty_permille": 300, "lease_ms": 5000}, now)
+	return thermalCommand(id, "fan-01", "set_cooling", map[string]any{"level_percent": 30}, now)
 }
 
 const (
@@ -178,7 +184,7 @@ func TestADeniedCommandIsRefusedAndAWaitingOneExpiresAtItsDeadline(t *testing.T)
 		switch syncs {
 		case 1:
 			h.reply("DCMD", fanCommand("c-deny", sliceEnd(1)))
-			h.reply("DCMD", set(thermalCommand("c-late", "led-01", "set_led", map[string]any{"brightness_permille": 500, "pattern": 2}, sliceEnd(1)),
+			h.reply("DCMD", set(thermalCommand("c-late", "led-01", "show_state", map[string]any{"state": "alert"}, sliceEnd(1)),
 				"deadline_ns", sliceEnd(1)+30e9))
 		case 2:
 			c.submit(t, `{"op":"deny","command_id":"c-deny"}`)

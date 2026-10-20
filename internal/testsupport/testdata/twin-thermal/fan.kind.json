@@ -1,15 +1,18 @@
 {
   "kind": "fan",
   "metrics": [
-    {"name": "level_percent", "data_type": "integer", "unit": "%", "eu_range": {"min": 0, "max": 60}, "resolution": 1, "writable": true}
+    {"name": "duty_permille", "data_type": "integer", "unit": "permille", "eu_range": {"min": 0, "max": 600}, "resolution": 1, "writable": true}
   ],
   "commands": [
     {
-      "name": "set_cooling",
+      "name": "set_pwm_lease",
       "args_schema": {
         "additionalProperties": false,
-        "properties": {"level_percent": {"maximum": 60, "minimum": 0, "type": "integer"}},
-        "required": ["level_percent"],
+        "properties": {
+          "duty_permille": {"maximum": 600, "minimum": 0, "type": "integer"},
+          "lease_ms": {"maximum": 10000, "minimum": 5000, "type": "integer"}
+        },
+        "required": ["duty_permille", "lease_ms"],
         "type": "object"
       },
       "risk_class": "medium",

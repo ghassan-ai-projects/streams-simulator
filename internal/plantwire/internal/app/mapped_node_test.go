@@ -1,10 +1,7 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"slices"
 	"testing"
@@ -15,33 +12,12 @@ import (
 )
 
 func semanticKindsDir() string {
-	return filepath.Join(testsupport.RepositoryRoot(), "internal", "plantwire", "testdata", "semantic")
-}
-
-func mappedThermalDomains(t *testing.T) string {
-	t.Helper()
-	raw, err := os.ReadFile(testsupport.ThermalBoardDomain())
-	if err != nil {
-		t.Fatal(err)
-	}
-	var document map[string]any
-	if err := json.Unmarshal(raw, &document); err != nil {
-		t.Fatal(err)
-	}
-	for _, kind := range document["kinds"].([]any) {
-		if fields := kind.(map[string]any); fields["name"] == "fan" || fields["name"] == "indicator" {
-			fields["board_type"] = "arduino-thermal"
-		}
-	}
-	dir := t.TempDir()
-	out, _ := json.Marshal(document)
-	testsupport.WriteFileIn(t, dir, filepath.Base(testsupport.ThermalBoardDomain()), out)
-	return dir
+	return testsupport.ThermalBoardKindsDir()
 }
 
 func mappedThermalRun(t *testing.T) (*run.Run, wire.Interfaces) {
 	t.Helper()
-	r := runOf(t, filepath.Join(mappedThermalDomains(t), filepath.Base(testsupport.ThermalBoardDomain())))
+	r := runOf(t, testsupport.ThermalBoardDomain())
 	_, faces, err := loadInterfaces(r.Domain().Spec, []string{semanticKindsDir()})
 	if err != nil {
 		t.Fatal(err)

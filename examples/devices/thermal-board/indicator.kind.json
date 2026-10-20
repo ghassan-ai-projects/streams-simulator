@@ -1,19 +1,15 @@
 {
   "kind": "indicator",
   "metrics": [
-    {"name": "brightness_permille", "data_type": "integer", "unit": "permille", "eu_range": {"min": 0, "max": 1000}, "resolution": 1, "writable": true},
-    {"name": "pattern", "data_type": "integer", "unit": "code", "eu_range": {"min": 0, "max": 2}, "resolution": 1, "writable": true}
+    {"name": "state", "data_type": "enum", "enum_values": ["off", "watch", "alert"], "resolution": 1, "writable": true}
   ],
   "commands": [
     {
-      "name": "set_led",
+      "name": "show_state",
       "args_schema": {
         "additionalProperties": false,
-        "properties": {
-          "brightness_permille": {"maximum": 1000, "minimum": 0, "type": "integer"},
-          "pattern": {"maximum": 2, "minimum": 0, "type": "integer"}
-        },
-        "required": ["brightness_permille", "pattern"],
+        "properties": {"state": {"enum": ["off", "watch", "alert"], "type": "string"}},
+        "required": ["state"],
         "type": "object"
       },
       "risk_class": "low",

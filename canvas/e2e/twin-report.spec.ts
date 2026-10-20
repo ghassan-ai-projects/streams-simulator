@@ -20,12 +20,12 @@ test.afterEach(() => {
   bench = null;
 });
 
-const lease = { duty_permille: 300, lease_ms: 5000 };
+const cooling = { level_percent: 30 };
 
 async function recordSessionWithCommands(page: Page, lab: { readonly binary: string }): Promise<string> {
   const open = openScriptedBench(lab.binary, [
-    { id: "twin-a", afterS: 80, device: "fan-01", command: "set_pwm_lease", args: lease },
-    { id: "twin-b", afterS: 120, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "twin-a", afterS: 80, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "twin-b", afterS: 120, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   bench = open;
   const panel = await openSessionPanel(page);
@@ -83,7 +83,7 @@ test("the twin versus board report compares a saved session with the twin on use
   await expect(result.getByText("No tolerance was typed.", { exact: false })).toBeVisible();
   const commands = page.getByRole("list", { name: "Commands and the twin" });
   for (const id of ["twin-a", "twin-b"]) {
-    const item = commands.getByRole("listitem").filter({ hasText: `${id} · set_pwm_lease on fan-01` });
+    const item = commands.getByRole("listitem").filter({ hasText: `${id} · set_cooling on fan-01` });
     await expect(item).toContainText("Not applied");
   }
   await expect(page.getByRole("region", { name: "Where the twin and the board part ways", exact: true })).toContainText(
@@ -99,7 +99,7 @@ test("the twin versus board report compares a saved session with the twin on use
   const overlay = page.getByRole("region", { name: "Twin prediction · fan-01", exact: true });
   await expect(overlay).toBeVisible();
   await expect(
-    overlay.getByText("The board reported no reading of duty_permille to compare.", { exact: true }),
+    overlay.getByText("The board reported no reading of level_percent to compare.", { exact: true }),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
 });

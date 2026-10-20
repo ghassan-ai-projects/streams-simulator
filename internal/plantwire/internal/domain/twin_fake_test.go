@@ -58,7 +58,7 @@ func twKinds(withRange bool) KindFiles {
 }
 
 func twApplied(id string, at int64) TwinCommand {
-	return TwinCommand{ID: id, Device: "fan-01", Name: "set_pwm_lease", AtNS: at, Status: CommandApplied}
+	return TwinCommand{ID: id, Device: "fan-01", Name: "set_cooling", AtNS: at, Status: CommandApplied}
 }
 
 func twInput(trace BoardTrace, commands ...TwinCommand) TwinInput {

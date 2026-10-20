@@ -12,7 +12,7 @@ import (
 
 func twinArguments(t *testing.T, extra ...string) []string {
 	t.Helper()
-	return append([]string{"kind", "twin", "--choices", testsupport.ThermalBoardChoices(), "--kinds-dir", testsupport.ThermalBoardKindsDir()}, extra...)
+	return append([]string{"kind", "twin", "--choices", testsupport.TwinThermalChoices(), "--kinds-dir", testsupport.TwinThermalKindsDir()}, extra...)
 }
 
 func TestKindTwinWritesADomainThatImplementsTheKindFilesAndNamesThem(t *testing.T) {
@@ -23,7 +23,7 @@ func TestKindTwinWritesADomainThatImplementsTheKindFilesAndNamesThem(t *testing.
 	if doc["composed"] != out || doc["domain"] != nil || len(implements) != 3 || implements[0] != "thermal_sensor" || implements[2] != "fan" {
 		t.Fatalf("kind twin = %v, want the file written and the three kinds named", doc)
 	}
-	invoke(t, "domain", "validate", out, "--kinds-dir", testsupport.ThermalBoardKindsDir()).mustSucceed(t).document(t, "domain_validate")
+	invoke(t, "domain", "validate", out, "--kinds-dir", testsupport.TwinThermalKindsDir()).mustSucceed(t).document(t, "domain_validate")
 	invoke(t, "domain", "lint", out).mustSucceed(t).document(t, "domain_lint")
 }
 
@@ -38,11 +38,11 @@ func TestKindTwinPrintsTheDomainWhenNoFileIsAskedFor(t *testing.T) {
 
 func TestKindTwinTakesKindFilesAsArguments(t *testing.T) {
 	t.Parallel()
-	paths, err := filepath.Glob(filepath.Join(testsupport.ThermalBoardKindsDir(), "*.kind.json"))
+	paths, err := filepath.Glob(filepath.Join(testsupport.TwinThermalKindsDir(), "*.kind.json"))
 	if err != nil || len(paths) != 3 {
 		t.Fatalf("kind files %v: %v", paths, err)
 	}
-	args := slices.Concat([]string{"kind", "twin", "--choices", testsupport.ThermalBoardChoices()}, paths)
+	args := slices.Concat([]string{"kind", "twin", "--choices", testsupport.TwinThermalChoices()}, paths)
 	invoke(t, args...).mustSucceed(t).document(t, "kind_twin")
 }
 
@@ -56,9 +56,9 @@ func TestKindTwinRefusesWhatItCannotScaffold(t *testing.T) {
 		status  int
 		pointer string
 	}{
-		{"no choices", []string{"kind", "twin", "--kinds-dir", testsupport.ThermalBoardKindsDir()}, "usage_invalid", 2, ""},
+		{"no choices", []string{"kind", "twin", "--kinds-dir", testsupport.TwinThermalKindsDir()}, "usage_invalid", 2, ""},
 		{"a choices file that does not exist", []string{"kind", "twin", "--choices", absent}, "file_not_found", 1, ""},
-		{"a kind with no kind file", []string{"kind", "twin", "--choices", testsupport.ThermalBoardChoices()}, "kind_failed", 1, "/kinds/0/kind"},
+		{"a kind with no kind file", []string{"kind", "twin", "--choices", testsupport.TwinThermalChoices()}, "kind_failed", 1, "/kinds/0/kind"},
 		{"a kinds folder that does not exist", twinArguments(t, "--kinds-dir", filepath.Join(t.TempDir(), "absent")), "file_not_found", 1, ""},
 	}
 	for _, tc := range cases {
@@ -74,7 +74,7 @@ func TestKindTwinRefusesWhatItCannotScaffold(t *testing.T) {
 			}
 			issues, _ := body["issues"].([]any)
 			issue, _ := issues[0].(map[string]any)
-			if issue["pointer"] != tc.pointer || body["source"] != testsupport.ThermalBoardChoices() {
+			if issue["pointer"] != tc.pointer || body["source"] != testsupport.TwinThermalChoices() {
 				t.Fatalf("failure = %v, want an issue at %s from the choices file", body, tc.pointer)
 			}
 		})
@@ -83,12 +83,12 @@ func TestKindTwinRefusesWhatItCannotScaffold(t *testing.T) {
 
 func TestKindTwinRefusesChoicesThatBreakTheirSchemaAtTheMemberThatIsWrong(t *testing.T) {
 	t.Parallel()
-	raw, err := os.ReadFile(testsupport.ThermalBoardChoices())
+	raw, err := os.ReadFile(testsupport.TwinThermalChoices())
 	if err != nil {
 		t.Fatal(err)
 	}
 	broken := writeFile(t, "broken.twin.json", strings.Replace(string(raw), `"first_order"`, `"ramp"`, 1))
-	got := invoke(t, "kind", "twin", "--choices", broken, "--kinds-dir", testsupport.ThermalBoardKindsDir())
+	got := invoke(t, "kind", "twin", "--choices", broken, "--kinds-dir", testsupport.TwinThermalKindsDir())
 	body := got.failure(t)
 	issues, _ := body["issues"].([]any)
 	issue, _ := issues[0].(map[string]any)
