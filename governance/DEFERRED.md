@@ -491,7 +491,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > 1 with `accept ...: use of closed network connection` when it is interrupted before any node arrived. A bench script that waits
 > for the report gets none; the evidence is in the node's `journal.jsonl`. Trigger to fix: a bench that relies on the host's
 > report; then a node that ends and an interrupt before a node arrives are both a clean end with the report printed. Found by the
-> R13 documentation review.
+> R13 documentation review. **Fixed in fan S7:** `ServeHost` ends cleanly with its report when the transport says the node is
+> gone (a broken pipe or a reset, `kernel.PeerGone`) or the host was interrupted (`uds.Interrupted`); any other error still fails.
 >
 > D-116 (**High**; a command after an actuator fault's onset cancels the fault): `stateOf` in
 > `internal/world/internal/domain/state.go` applies a state's faults only when the latest fault onset is later than the latest

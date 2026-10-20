@@ -124,7 +124,7 @@ Without `gateway_socket` the session is a simulated node only; with it, a mixed 
 
 **Give the reference host `--delay-ms`.** Against the reference host with no `--delay-ms` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
 
-`connect` needs the host's socket: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). The reference host prints its report when the session ends cleanly; if you stop `connect` while the host is waiting out a `--delay-ms`, the host may exit 1 (`write ... broken pipe`) without a report, and a host interrupted before any node arrived exits 1 (`accept ... use of closed network connection`). Take the evidence from `journal.jsonl` (D-115).
+`connect` needs the host's socket: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). The reference host prints its report and exits 0 when its node ends, also when you stop `connect` while the host is waiting out a `--delay-ms`, and when it is interrupted before any node arrived (then with an empty report).
 
 ### 4. Run live
 

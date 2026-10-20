@@ -132,3 +132,25 @@ func (p *stubPeer) Receive(domain.Inbound) []map[string]any {
 func (p *stubPeer) Accepted() bool { return p.accepted }
 
 func (p *stubPeer) Done() bool { return p.done }
+
+func TestAHostWhoseNodeHangsUpDuringABarrierWaitEndsWithThePeerGone(t *testing.T) {
+	t.Parallel()
+	path := testsupport.SocketPath(t)
+	served := serveInBackground(t, path, &stubPeer{replies: []map[string]any{{"type": "HSYNC"}}}, Pacing{Delay: 100 * time.Millisecond, Handshake: time.Second})
+	conn := dialHost(t, path)
+	if _, err := conn.Write([]byte("{\"type\":\"NSYNC\"}\n")); err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.Close()
+	if err := <-served; !PeerGone(err) || Interrupted(err) {
+		t.Fatalf("ServeHost = %v, want the node gone, not an interrupt", err)
+	}
+}
+
+func TestAHostInterruptedBeforeANodeEndsInterruptedNotWithThePeerGone(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(t.Context())
+	if err := ServeHost(ctx, testsupport.SocketPath(t), nil, Pacing{}, cancel); !Interrupted(err) || PeerGone(err) {
+		t.Fatalf("ServeHost = %v, want an interrupt", err)
+	}
+}

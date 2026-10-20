@@ -121,3 +121,7 @@ func publish(binding, path string) error {
 	}
 	return nil
 }
+
+func PeerGone(err error) bool {
+	return errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET)
+}

@@ -40,7 +40,6 @@ configuration; the adapter does not contain per-domain argument callbacks.
 
 ## Physical devices
 
-Status: the binary, the bridge and the canvas implement the physical-device support described in [the guide](guides/physical-devices.md); every item below is a known gap or a deliberate limit. Nothing here was verified against a real board by this repository's tests: they run the real binary and canvas against a scripted stand-in gateway, and the owner's bench checks are separate. The full list, with triggers for fixing each item, is [`governance/DEFERRED.md`](../governance/DEFERRED.md) (D-56 to D-115); the references below are its numbers.
 
 ### What you cannot treat as hardware evidence
 
