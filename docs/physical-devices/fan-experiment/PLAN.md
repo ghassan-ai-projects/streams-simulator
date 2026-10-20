@@ -216,6 +216,7 @@ Sizes: S (a round), M (two or three rounds), L (a milestone).
 | S6 | D-114: `connect --out` refuses a used run folder | S | Test |
 | S7 | D-115: reference host exits cleanly with its report | S | Test |
 | S8 | Experiment data: `examples/devices/thermal-board/fan-experiment/` with `simulate.plan.json` and `real.plan.json` (differ only in `gateway_socket` and `real`) and a README | S | `plantwire connect --check` passes both |
+| S10 | Found by the gateway work (2026-10-20): (a) the reference host `plantwire host` sends one STATE with heartbeat 0 and never beats in wall time, so a hardware gateway (SPEC 8) declares it lost after 3 s and refuses commands `session_ending`: the reference host beats every `heartbeat_interval_ms`; (b) the relay drops a gateway after 30 s without an admitted record even while it has told that gateway the host is offline, which is exactly when SPEC 7/8 makes the gateway buffer and stay silent: the relay suspends that watchdog while its host is absent (before the first host and during host loss) | S | The gateway's expected-failure test in `test_plantwire_streamsim.py` flips to pass; a host outage longer than 30 s recovers by rebirth through the relay |
 | S9 | Dress rehearsal without Agentic Stream: `connect` with the simulate plan against `plantwire host`, then the real plan against the stand-in gateway | S | Two retained run folders; `verify` matches |
 
 ### 5.1 Agentic Stream H0: remove hardcoded domain knowledge (first, owner's top priority)
