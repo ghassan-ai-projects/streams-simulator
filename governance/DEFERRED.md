@@ -277,7 +277,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > `DDEATH link_down`, closes the gateway link and records the gateway offline; the watchdog arms at admission, without a
 > host heartbeat (`relay_liveness.go`). Changed by fan S10 (2026-10-20): the watchdog is suspended while the relay has no host
 > (before the first and during a host loss), when SPEC sections 7 and 8 make the gateway buffer and stay silent, and it starts
-> afresh when the host's first `STATE` reaches the gateway.
+> afresh when the host's first `STATE` reaches the gateway. Changed by fan S11b (review B finding 9): a returning host no
+> longer resets the silence, so a flapping host cannot keep a dead gateway; the gateway is closed only after the host has
+> been back 5 s (`rebirthGraceMS`), time for a live gateway to answer the rebirth request.
 > D-74 (relay: no rebirth rate limit): a gateway that sends a sequence gap on every record makes the relay ask it to rebirth
 > once per gap, and a host that sends a rebirth `NCMD` in a loop makes the mixed node rebirth the gateway and the world each
 > time. Each request is one record and the birth is bounded, but nothing limits the rate. Trigger to fix: a flapping link in a

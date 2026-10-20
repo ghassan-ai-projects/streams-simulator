@@ -272,7 +272,10 @@ mapping gives the semantic kind the wire announces); the lease lives in the boar
 the board mapping schema (`BOARD`); S5 adds `disturbances` to session plan v0.1 in place, as `policies` was (deviation from
 "v0.2" above: pre-release, no backward compatibility); S1 is a session-plan member `pace: wall`, and adds no I/O-edge gate
 entry (if the wall-clock pacing cannot reuse an already inventoried clock access, the round stops and the gate change waits
-for the owner's explicit approval, AGENTS.md MUST 3). Order: S7, S2, S4a, S1a, S5a, S4b, S4c.
+for the owner's explicit approval, AGENTS.md MUST 3). Order: S7, S2, S4a, S1a, S5a, S4b, S4c. Deviation recorded in S11b (review A L7):
+S-FINDINGS 3.2 planned `severity_invalid` and `disturbance_after_limit` as plan rules; the schema covers both (a negative
+severity, an `at_s` or `duration_s` beyond 30 days), so no rule keyword exists for them, and a clear may lie up to 60 days out.
+S11 added `fault_on_commanded_state` (until D-116) and `duration_too_short`.
 
 **Gateway (G1) investigation and decisions (2026-10-20).** Findings: [G-FINDINGS.md](G-FINDINGS.md); its questions Q1 to Q8
 taken as recommended; rounds G1a to G1e and G2 against contract 1.3.0 behind a `BoardMapping` class, then G1f re-vendors 1.4.0.

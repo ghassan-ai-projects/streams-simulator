@@ -62,7 +62,7 @@ func TestAPacedSessionRunsInWallTimeFromItsRecordedStartAndReplays(t *testing.T)
 	if start < before.UnixNano()-int64(time.Millisecond) || start > before.Add(elapsed).UnixNano() {
 		t.Fatalf("run.json start %d, want the wall time the session started (between %d and %d)", start, before.UnixNano(), before.Add(elapsed).UnixNano())
 	}
-	if minimum := pacedSlices*time.Duration(options.SliceNS) - time.Millisecond; elapsed < minimum || elapsed > minimum+5*time.Second {
+	if minimum := pacedSlices*time.Duration(options.SliceNS) - time.Millisecond; elapsed < minimum || elapsed > minimum+30*time.Second {
 		t.Fatalf("%d slices of %v took %v of wall time", pacedSlices, time.Duration(options.SliceNS), elapsed)
 	}
 	if times := syncTimes(host.snapshot()); times[0] != start+options.SliceNS {

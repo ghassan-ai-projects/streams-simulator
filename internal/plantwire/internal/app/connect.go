@@ -38,6 +38,7 @@ type ConnectOptions struct {
 type ConnectCheck struct {
 	Domain            string                    `json:"domain"`
 	Environment       string                    `json:"environment"`
+	Gateway           bool                      `json:"gateway"`
 	Instances         []domain.PlannedInstance  `json:"instances"`
 	ImplementsChecked []model.ImplementsChecked `json:"implements_checked"`
 	Policies          []string                  `json:"policies"`
@@ -68,7 +69,7 @@ func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
 }
 
 func (p *connectPlan) result() ConnectCheck {
-	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Instances: p.plan.Instances,
+	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Gateway: p.plan.GatewaySocket != "", Instances: p.plan.Instances,
 		ImplementsChecked: p.checked, Policies: p.plan.Policies.Digests()}
 }
 

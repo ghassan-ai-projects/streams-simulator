@@ -53,13 +53,13 @@ func TestABoardMappingIsRefusedAsAWholeWhenItCannotBeRead(t *testing.T) {
 
 var errBoardSchema = errors.New("board schema")
 
-func TestTwoBoardMappingsCannotMapOneKind(t *testing.T) {
+func TestTwoBoardTypesMayMapOneKindButOneBoardTypeIsMappedOnce(t *testing.T) {
 	t.Parallel()
 	first := KindSource{Path: "a.board.json", Raw: []byte(strings.Replace(fanMapping, "%s", "a", 1))}
 	second := KindSource{Path: "b.board.json", Raw: []byte(strings.Replace(fanMapping, "%s", "b", 1))}
-	_, _, err := ParseBoardFiles([]KindSource{first, second})
-	if !errors.Is(err, ErrBoardKindDuplicate) || !strings.Contains(err.Error(), "a.board.json and b.board.json") {
-		t.Fatalf("two mappings of fan: %v, want ErrBoardKindDuplicate naming both files", err)
+	both, _, err := ParseBoardFiles([]KindSource{first, second})
+	if err != nil || len(both["a"].Kinds) != 1 || len(both["b"].Kinds) != 1 {
+		t.Fatalf("the fan on board types a and b: %v, %v, want both mappings, each read by its board type", both, err)
 	}
 	led := KindSource{Path: "a2.board.json", Raw: []byte(`{"board_type": "a", "kinds": {"led": {"commands": {}, "metrics": {}}}}`)}
 	if _, _, err := ParseBoardFiles([]KindSource{first, led}); !errors.Is(err, ErrBoardTypeDuplicate) {

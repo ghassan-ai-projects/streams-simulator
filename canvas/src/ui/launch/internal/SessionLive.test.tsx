@@ -111,7 +111,7 @@ describe("a running connected session in the run panel", () => {
 
   it("says when the session failed, keeps the run's name, and goes back to the plan", async () => {
     const fake = sessionBridge();
-    const simulated = { ...check, environment: "simulated" };
+    const simulated = { ...check, environment: "simulated", gateway: false };
     fake.actions.set("session.check", success(simulated));
     fake.actions.set("session.start", success({ run: "c-1", state: "running", domain: "mini", plan: simulated }));
     fake.actions.set(

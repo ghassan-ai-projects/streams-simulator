@@ -4,6 +4,15 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Review fixes, the Lows (fan S11b).** `kind validate` accepts board mappings (`*.board.json`) and lists each with its
+  `board_digest` in `boards`. The check document says `gateway` (the canvas reads it instead of the environment word). The
+  wall pacer counts on the monotonic clock. A scaled raw value within floating-point error of a whole number is that number,
+  and a mapping that can feed a whole raw argument a fraction is refused. The relay's gateway watchdog is no longer reset by
+  a returning host (a flapping host cannot keep a dead gateway); a gateway has 5 s after the host's return to answer the
+  rebirth. A disturbance shorter than a nanosecond (`duration_too_short`) and a mapped kind that an instance set overrides are
+  refused; several board types may map one kind. Tests close the mutants M41, M48 and M49; the limitations name the sealed
+  journal's plain-text window.
+
 - **Review fixes for the semantic kinds and paced sessions (fan S11a).** The board mapping a run translates through is named
   in everything the run produces: `implements_checked` and the check's real instances carry `board_type` and `board_digest`,
   `run.json` gains `board_digests`, the `binding` note names the mapping the gateway was expected to hold, and the twin report

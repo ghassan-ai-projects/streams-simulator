@@ -113,8 +113,8 @@ func twinValue(value any, words []string) any {
 }
 
 func exact(number float64) any {
-	if number == math.Trunc(number) && math.Abs(number) < 1<<53 {
-		return int64(number)
+	if nearWhole(number) && math.Abs(number) < 1<<53 {
+		return int64(math.Round(number))
 	}
 	return number
 }

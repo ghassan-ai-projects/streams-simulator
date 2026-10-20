@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"math"
 	"slices"
 )
 
@@ -26,7 +27,29 @@ func (f commandFit) scaled(name string, arg MappedArg) error {
 	case raw == nil:
 		return fmt.Errorf("%s/args/%s: the raw command has no argument %q", f.at, name, name)
 	}
-	return f.boundsFit(name, kind, raw, scaleOf(arg.Scale))
+	scale := scaleOf(arg.Scale)
+	if err := f.boundsFit(name, kind, raw, scale); err != nil {
+		return err
+	}
+	return f.wholeFit(name, arg.From, kind, raw, scale)
+}
+
+func (f commandFit) wholeFit(name, from string, kind, raw map[string]any, scale float64) error {
+	if raw["type"] != "integer" {
+		return nil
+	}
+	step := 1.0
+	if kind["type"] != "integer" {
+		step, _ = numberOf(kind["multipleOf"])
+	}
+	if step > 0 && nearWhole(step*scale) {
+		return nil
+	}
+	return fmt.Errorf("%s/args/%s: the raw argument is whole, and the kind argument %q times %v is not always whole", f.at, name, from, scale)
+}
+
+func nearWhole(value float64) bool {
+	return math.Abs(value-math.Round(value)) <= 1e-9*max(1, math.Abs(value))
 }
 
 func (f commandFit) boundsFit(name string, kind, raw map[string]any, scale float64) error {

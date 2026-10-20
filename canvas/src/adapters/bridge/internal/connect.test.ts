@@ -16,6 +16,7 @@ function sentTo(t: ReturnType<typeof bridgeTransport>): { url: unknown; body: un
 const check = {
   domain: "arduino-thermal",
   environment: "mixed",
+  gateway: true,
   instances: [
     {
       instance: "zone-01",
@@ -50,10 +51,15 @@ describe("connect gateway", () => {
     });
   });
 
-  it("reads a plan whose every instance is real as one with a gateway", async () => {
-    const t = answering(200, { result: { ...check, environment: "hardware" } });
-    const outcome = await bridgeAdapter(t).launch.checkSession("{plan}");
-    expect(outcome.ok && outcome.value.mixed).toBe(true);
+  it("takes whether a gateway is attached from the binary's check, not from the environment word", async () => {
+    const hardware = await bridgeAdapter(
+      answering(200, { result: { ...check, environment: "hardware" } }),
+    ).launch.checkSession("{plan}");
+    expect(hardware.ok && hardware.value.mixed).toBe(true);
+    const without = await bridgeAdapter(answering(200, { result: { ...check, gateway: false } })).launch.checkSession(
+      "{plan}",
+    );
+    expect(without.ok && without.value.mixed).toBe(false);
   });
 
   it.each([

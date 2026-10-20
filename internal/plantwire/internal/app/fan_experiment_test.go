@@ -48,12 +48,12 @@ func TestTheFanExperimentPlansPassTheirCheckAndDifferOnlyInTheGatewayTheBindings
 	t.Parallel()
 	simulate, real := fanExperimentPlan(t, "simulate"), fanExperimentPlan(t, "real")
 	simulated, err := CheckConnect(planOptions(t, simulate, ""))
-	if err != nil || simulated.Environment != domain.EnvironmentSimulated || len(simulated.Policies) != 1 ||
+	if err != nil || simulated.Environment != domain.EnvironmentSimulated || simulated.Gateway || len(simulated.Policies) != 1 ||
 		!reflect.DeepEqual(originsOf(simulated), map[string]string{"zone-01": "simulated@", "led-01": "simulated@", "fan-01": "simulated@"}) {
 		t.Fatalf("simulate.plan.json check = %+v, %v, want every instance simulated and one policy", simulated, err)
 	}
 	hardware, err := CheckConnect(planOptions(t, real, ""))
-	if err != nil || hardware.Environment != domain.EnvironmentHardware || len(hardware.Policies) != 1 ||
+	if err != nil || hardware.Environment != domain.EnvironmentHardware || !hardware.Gateway || len(hardware.Policies) != 1 ||
 		!reflect.DeepEqual(originsOf(hardware), map[string]string{"zone-01": "real@mega-01", "led-01": "real@mega-01", "fan-01": "real@mega-01"}) {
 		t.Fatalf("real.plan.json check = %+v, %v, want every instance real on mega-01 and one policy", hardware, err)
 	}

@@ -111,6 +111,7 @@ func neverMet(domain.Message) bool { return false }
 
 type WallPacer struct {
 	schedule domain.WallSchedule
+	began    time.Time
 }
 
 func StartWallPacer() *WallPacer {
@@ -118,13 +119,15 @@ func StartWallPacer() *WallPacer {
 }
 
 func NewWallPacer(schedule domain.WallSchedule) *WallPacer {
-	return &WallPacer{schedule: schedule}
+	return &WallPacer{schedule: schedule, began: time.Now()}
 }
+
+func (p *WallPacer) wallNow() int64 { return p.began.UnixNano() + int64(time.Since(p.began)) }
 
 func (p *WallPacer) StartNS() int64 { return p.schedule.WorldStartNS }
 
-func (p *WallPacer) WorldNowNS() int64 { return p.schedule.WorldAt(time.Now().UnixNano()) }
+func (p *WallPacer) WorldNowNS() int64 { return p.schedule.WorldAt(p.wallNow()) }
 
 func (p *WallPacer) WaitNS(worldNS int64) int64 {
-	return p.schedule.WaitNS(worldNS, time.Now().UnixNano())
+	return p.schedule.WaitNS(worldNS, p.wallNow())
 }

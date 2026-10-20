@@ -31,6 +31,8 @@ func TestEveryBrokenDisturbanceIsReportedAtItsMemberWithItsRule(t *testing.T) {
 			"/disturbances/1/instance", KeywordDisturbanceOnRealInstance},
 		"a pulse fault with a duration": {nil, model.Disturbance{AtS: 5, Instance: "led-01", Fault: "led_flicker", DurationS: seconds(3)},
 			"/disturbances/1/duration_s", KeywordDurationWithPulseFault},
+		"a duration that rounds to nothing": {nil, model.Disturbance{AtS: 5, Instance: "zone-01", Fault: "zone_heat_load", DurationS: seconds(1e-10)},
+			"/disturbances/1/duration_s", KeywordDurationTooShort},
 		"a fault on a state a command sets": {nil, model.Disturbance{AtS: 5, Instance: "led-01", Fault: "led_stuck_off"},
 			"/disturbances/1/fault", KeywordFaultOnCommandedState},
 	}

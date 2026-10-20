@@ -100,11 +100,18 @@ func loadSimInputs(o SimulatedOptions) (simInputs, error) {
 	if err != nil {
 		return simInputs{}, fmt.Errorf("load simulated inputs: %w", err)
 	}
-	checked, faces, err := loadInterfaces(spec.Spec, o.Node.KindsDirs)
+	checked, faces, err := o.interfaces(spec.Spec)
 	if err != nil {
 		return simInputs{}, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
 	}
 	return simInputs{spec: spec, adapter: adapterSpec, checked: checked, faces: faces}, nil
+}
+
+func (o SimulatedOptions) interfaces(spec *model.DomainSpec) ([]model.ImplementsChecked, domain.Interfaces, error) {
+	if o.Node.Interfaces != nil {
+		return o.Session.ImplementsChecked, o.Node.Interfaces, nil
+	}
+	return loadInterfaces(spec, o.Node.KindsDirs)
 }
 
 func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, error) {

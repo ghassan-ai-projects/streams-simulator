@@ -75,6 +75,7 @@ type hostSide struct {
 	state     map[string]any
 	interval  int64
 	silent    int64
+	present   int64
 	table     seqTable
 	birthed   bool
 	birthSeq  uint64

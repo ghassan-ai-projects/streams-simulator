@@ -34,6 +34,8 @@ type WireFault = domain.WireFault
 
 type KindSummary = domain.KindSummary
 
+type DeviceFiles = domain.DeviceFiles
+
 type TwinRules = domain.TwinRules
 
 type TwinReportOptions = app.TwinReportOptions

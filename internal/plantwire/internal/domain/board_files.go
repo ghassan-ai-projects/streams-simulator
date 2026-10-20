@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -14,7 +15,6 @@ import (
 const BoardFileSuffix = ".board.json"
 
 var (
-	ErrBoardKindDuplicate = errors.New("plantwire: two board mappings map one kind")
 	ErrBoardTypeDuplicate = errors.New("plantwire: two board mappings of one board type")
 	ErrBoardRule          = errors.New("plantwire: a board mapping breaks a rule its schema cannot say")
 )
@@ -58,6 +58,22 @@ type MappedLease struct {
 
 type BoardFiles map[string]BoardMapping
 
+type DeviceFiles struct {
+	Kinds  []KindSummary  `json:"kinds"`
+	Boards []BoardSummary `json:"boards,omitempty"`
+}
+
+func SplitDeviceSources(sources []KindSource) (kinds, boards []KindSource) {
+	for _, source := range sources {
+		if strings.HasSuffix(source.Path, BoardFileSuffix) {
+			boards = append(boards, source)
+		} else {
+			kinds = append(kinds, source)
+		}
+	}
+	return kinds, boards
+}
+
 type BoardSummary struct {
 	Path        string   `json:"path"`
 	BoardType   string   `json:"board_type"`
@@ -89,30 +105,17 @@ func (i boardIndex) parse(source KindSource) (BoardSummary, error) {
 		return BoardSummary{}, err
 	}
 	kinds := slices.Sorted(maps.Keys(mapping.Kinds))
-	if err := i.addBoard(source.Path, mapping, kinds); err != nil {
+	if err := i.addBoard(source.Path, mapping); err != nil {
 		return BoardSummary{}, err
 	}
 	return BoardSummary{Path: source.Path, BoardType: mapping.BoardType, BoardDigest: mapping.Digest, Kinds: kinds}, nil
 }
 
-func (i boardIndex) addBoard(path string, mapping BoardMapping, kinds []string) error {
-	if first, taken := i.origin["board:"+mapping.BoardType]; taken {
+func (i boardIndex) addBoard(path string, mapping BoardMapping) error {
+	if first, taken := i.origin[mapping.BoardType]; taken {
 		return fmt.Errorf("%w: %q is mapped by %s and %s", ErrBoardTypeDuplicate, mapping.BoardType, first, path)
 	}
-	i.files[mapping.BoardType], i.origin["board:"+mapping.BoardType] = mapping, path
-	for _, kind := range kinds {
-		if err := i.add(path, kind); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (i boardIndex) add(path, kind string) error {
-	if first, taken := i.origin["kind:"+kind]; taken {
-		return fmt.Errorf("%w: %q is mapped by %s and %s", ErrBoardKindDuplicate, kind, first, path)
-	}
-	i.origin["kind:"+kind] = path
+	i.files[mapping.BoardType], i.origin[mapping.BoardType] = mapping, path
 	return nil
 }
 

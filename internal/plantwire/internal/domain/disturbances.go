@@ -13,6 +13,7 @@ const (
 	KeywordDisturbanceOnRealInstance = "disturbance_on_real_instance"
 	KeywordDurationWithPulseFault    = "duration_with_pulse_fault"
 	KeywordFaultOnCommandedState     = "fault_on_commanded_state"
+	KeywordDurationTooShort          = "duration_too_short"
 )
 
 type PlanFault struct {
@@ -63,6 +64,10 @@ func (c *planCheck) disturbance(at string, d model.Disturbance) []model.Issue {
 	case c.instances[d.Instance]:
 		return []model.Issue{model.RuleIssue(at+"/instance", KeywordDisturbanceOnRealInstance, "instance", fmt.Sprintf(
 			"%s is a real board: a disturbance strikes only a simulated instance", clip(d.Instance)))}
+	}
+	if d.DurationS != nil && nanoseconds(*d.DurationS) <= 0 {
+		return []model.Issue{model.RuleIssue(at+"/duration_s", KeywordDurationTooShort, "duration_s",
+			"a duration shorter than a nanosecond would clear the fault the instant it starts")}
 	}
 	return faultIssues(at, instance, d)
 }

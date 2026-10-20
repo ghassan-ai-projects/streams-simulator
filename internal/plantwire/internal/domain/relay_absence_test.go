@@ -21,7 +21,7 @@ func TestASilentGatewayIsKeptBeforeTheFirstHostAndWatchedOnceTheHostAnswers(t *t
 	}
 }
 
-func TestASilentGatewayIsKeptDuringAHostLossAndGetsAFullWindowWhenTheHostReturns(t *testing.T) {
+func TestASilentGatewayIsKeptDuringAHostLossAndHasTheRebirthGraceWhenTheHostReturns(t *testing.T) {
 	t.Parallel()
 	g := newRelayRig(t)
 	g.bringUp()
@@ -36,10 +36,44 @@ func TestASilentGatewayIsKeptDuringAHostLossAndGetsAFullWindowWhenTheHostReturns
 	if !hasType(moves.Down, "STATE") || !hasType(moves.Down, "NCMD") {
 		t.Fatalf("the returning host = %+v, want its STATE and a rebirth request forwarded", moves)
 	}
+	silentFor(t, g.relay, 19)
+	if moves := tickOnce(g.relay); !moves.CloseGateway {
+		t.Fatal("a gateway silent before the loss was not closed once the rebirth grace passed without its answer")
+	}
+}
+
+func TestAnAnsweredRebirthAfterAHostLossRestartsTheWindow(t *testing.T) {
+	t.Parallel()
+	g := newRelayRig(t)
+	g.bringUp()
+	silentFor(t, g.relay, 116)
+	g.relay.HostLost()
+	g.relay.HostAttached()
+	g.newHostSession("relay-h2")
+	g.hostSends(hostState(7, 0))
+	g.gw(hardwareBirth(g.t, nil))
 	silentFor(t, g.relay, 119)
 	if moves := tickOnce(g.relay); !moves.CloseGateway {
-		t.Fatal("the watchdog did not re-arm when the host returned")
+		t.Fatal("the watchdog did not run from the gateway's answer")
 	}
+}
+
+func TestAFlappingHostDoesNotKeepADeadGatewayAlive(t *testing.T) {
+	t.Parallel()
+	g := newRelayRig(t)
+	g.bringUp()
+	for session := 2; session < 6; session++ {
+		for range 80 {
+			if moves := tickOnce(g.relay); moves.CloseGateway {
+				return
+			}
+		}
+		g.relay.HostLost()
+		g.relay.HostAttached()
+		g.newHostSession("relay-h" + string(rune('0'+session)))
+		g.hostSends(hostState(7, 0))
+	}
+	t.Fatal("a host that returns every 20 s kept a silent gateway for 80 s")
 }
 
 func TestHostHeartbeatsDoNotKeepASilentGatewayAlive(t *testing.T) {

@@ -119,6 +119,8 @@ func TestAMappingThatDisagreesWithItsKindFileOrItsRawKindIsDriftAtTheMember(t *t
 		"a from that names no argument":       {asIs, swap("arduino-thermal", `"from": "level_percent"`, `"from": "level"`), "/commands/set_cooling/args/duty_permille/from"},
 		"a lease the board refuses":           {asIs, swap("arduino-thermal", `"ms": 5000`, `"ms": 20000`), "/commands/set_cooling/lease"},
 		"a risk class the twin does not have": {swap("fan.kind", `"risk_class": "medium"`, `"risk_class": "low"`), asIs, "commands"},
+		"a mapped command the kind file lacks": {asIs, swap("arduino-thermal", `"stop_fan": {"raw": "stop_fan"}`,
+			`"stop_fan": {"raw": "stop_fan"}, "spin_down": {"raw": "stop_fan"}`), "spin_down"},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -151,5 +153,26 @@ func TestAKindThatNamesABoardMappingNobodyLoadedIsMissing(t *testing.T) {
 	var invalid *model.ValidationError
 	if !errors.Is(err, ErrBoardMissing) || !errors.As(err, &invalid) || invalid.Issues[0].Keyword != "implements_missing" {
 		t.Fatalf("no board mapping loaded: %v, want implements_missing", err)
+	}
+}
+
+func TestAMappedKindThatAnInstanceSetOverridesIsRefused(t *testing.T) {
+	t.Parallel()
+	kinds, _, err := ParseKindFiles(semanticSources(t, KindFileSuffix, asIs))
+	if err != nil {
+		t.Fatal(err)
+	}
+	boards, _, err := ParseBoardFiles(semanticSources(t, BoardFileSuffix, asIs))
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec := mappedThermal(t)
+	for i := range spec.Instances {
+		if spec.Instances[i].Kind == "fan" {
+			spec.Instances[i].Override = &model.Override{}
+		}
+	}
+	if _, _, err := CheckInterfaces(spec, kinds, boards); !errors.Is(err, ErrKindDrift) || !strings.Contains(err.Error(), "overrides") {
+		t.Fatalf("an overridden mapped fan: %v, want drift naming the override", err)
 	}
 }

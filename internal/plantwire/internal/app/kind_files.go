@@ -88,12 +88,18 @@ func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[stri
 	})
 }
 
-func ValidateKindFilesWith(paths []string, rules domain.TwinRules) ([]domain.KindSummary, error) {
+func ValidateKindFilesWith(paths []string, rules domain.TwinRules) (domain.DeviceFiles, error) {
 	sources, err := files.Paths(paths)
 	if err != nil {
-		return nil, err
+		return domain.DeviceFiles{}, err
 	}
-	return validateSources(sources, rules)
+	kindSources, boardSources := domain.SplitDeviceSources(sources)
+	_, boards, err := domain.ParseBoardFiles(boardSources)
+	if err != nil {
+		return domain.DeviceFiles{}, err
+	}
+	kinds, err := validateSources(kindSources, rules)
+	return domain.DeviceFiles{Kinds: kinds, Boards: boards}, err
 }
 
 func ValidateKindStream(reader io.Reader, rules domain.TwinRules) (domain.KindSummary, error) {

@@ -62,7 +62,8 @@ func TestTwinRulesGivenToTheFacadeRefuseAKindDocumentWithEveryIssue(t *testing.T
 func TestValidateKindFilesWithoutRulesAcceptsAFileAndRefusesAMissingOne(t *testing.T) {
 	t.Parallel()
 	dir := pumpKindsDirectory(t)
-	summaries, err := ValidateKindFilesWith([]string{filepath.Join(dir, "pump.kind.json")}, nil)
+	validated, err := ValidateKindFilesWith([]string{filepath.Join(dir, "pump.kind.json")}, nil)
+	summaries := validated.Kinds
 	if err != nil || len(summaries) != 1 || summaries[0].Kind != "pump" {
 		t.Fatalf("ValidateKindFilesWith = %+v, %v, want the pump kind", summaries, err)
 	}

@@ -21,6 +21,18 @@ type findings struct {
 	issues   []model.Issue
 	boards   BoardFiles
 	faces    Interfaces
+
+	overridden map[string]bool
+}
+
+func overriddenKinds(spec *model.DomainSpec) map[string]bool {
+	kinds := map[string]bool{}
+	for _, set := range spec.Instances {
+		if set.Override != nil {
+			kinds[set.Kind] = true
+		}
+	}
+	return kinds
 }
 
 func CheckImplements(spec *model.DomainSpec, files KindFiles) ([]model.ImplementsChecked, error) {
@@ -29,7 +41,7 @@ func CheckImplements(spec *model.DomainSpec, files KindFiles) ([]model.Implement
 }
 
 func CheckInterfaces(spec *model.DomainSpec, files KindFiles, boards BoardFiles) ([]model.ImplementsChecked, Interfaces, error) {
-	found := findings{checked: []model.ImplementsChecked{}, boards: boards, faces: Interfaces{}}
+	found := findings{checked: []model.ImplementsChecked{}, boards: boards, faces: Interfaces{}, overridden: overriddenKinds(spec)}
 	for i := range spec.Kinds {
 		found.examine(i, &spec.Kinds[i], files)
 	}
@@ -108,16 +120,23 @@ func (f *findings) projected(kind *model.Kind, file map[string]any) (*model.Kind
 
 func (f *findings) mappedKind(kind *model.Kind) (MappedKind, error) {
 	board, loaded := f.boards[kind.BoardType]
-	if !loaded {
+	mapped, maps := board.Kinds[kind.Implements]
+	switch {
+	case f.overridden[kind.Name]:
+		return MappedKind{}, overriddenMapping(kind)
+	case !loaded:
 		return MappedKind{}, fmt.Errorf("kind %q implements %q through the board mapping %q, but no board mapping of that type was loaded (%d loaded): %w",
 			kind.Name, kind.Implements, kind.BoardType, len(f.boards), ErrBoardMissing)
-	}
-	mapped, maps := board.Kinds[kind.Implements]
-	if !maps {
+	case !maps:
 		return MappedKind{}, fmt.Errorf("kind %q implements %q through the board mapping %q, which does not map that kind: %w",
 			kind.Name, kind.Implements, kind.BoardType, ErrKindDrift)
 	}
 	return mapped, nil
+}
+
+func overriddenMapping(kind *model.Kind) error {
+	return fmt.Errorf("kind %q implements %q through the board mapping %q, and an instance set overrides it: the wire would announce the base kind: %w",
+		kind.Name, kind.Implements, kind.BoardType, ErrKindDrift)
 }
 
 func compareWithFile(kind *model.Kind, file map[string]any) error {

@@ -82,3 +82,30 @@ func TestTheReferenceHostBeatsInWallTimeWhileItsNodeIsSilent(t *testing.T) {
 		t.Fatalf("report = %+v", report)
 	}
 }
+
+func TestAReferenceHostWhoseNodeHangsUpBeforeTheBarrierAnswerEndsCleanly(t *testing.T) {
+	t.Parallel()
+	hostPath := testsupport.SocketPath(t)
+	ready, ended := make(chan struct{}), make(chan hostEnd, 1)
+	go func() {
+		options := relayHostOptions("hardware")
+		options.Ready = func() { close(ready) }
+		report, err := ServeHost(t.Context(), hostPath, 300*time.Millisecond, options)
+		ended <- hostEnd{report: report, err: err}
+	}()
+	<-ready
+	node := dialGateway(t, hostPath, relayGateway(t, "s-1"))
+	node.handshake()
+	node.send(node.node.Emit(domain.Sync(0, 1767225660000000000))...)
+	if err := node.link.Close(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case end := <-ended:
+		if end.err != nil || end.report.Refused != "" {
+			t.Fatalf("ServeHost = %+v, %v, want a clean end when the node is gone before the HSYNC", end.report, end.err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the reference host did not end after its node hung up")
+	}
+}

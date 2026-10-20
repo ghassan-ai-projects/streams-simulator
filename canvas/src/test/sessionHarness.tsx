@@ -10,6 +10,7 @@ import { domain } from "./plantFixture";
 export const check = {
   domain: "mini",
   environment: "mixed",
+  gateway: true,
   instances: [
     { instance: "CH-1", origin: "real", kind: "chiller", board: "uno-07", device: "ch-1" },
     { instance: "CT-1", origin: "simulated", kind: "tower" },
