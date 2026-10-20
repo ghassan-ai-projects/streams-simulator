@@ -44,11 +44,17 @@ func openSim(ctx context.Context, options RelayOptions) (*simNode, error) {
 	if options.Simulated == nil {
 		return nil, nil
 	}
-	r, err := newSimRun(ctx, *options.Simulated, options.Out)
+	simulated := *options.Simulated
+	r, faces, err := newSimRun(ctx, simulated, options.Out)
 	if err != nil {
 		return nil, err
 	}
-	node, err := newSimNode(ctx, r, *options.Simulated)
+	simulated.Node.Interfaces = faces
+	return builtSimNode(ctx, r, simulated)
+}
+
+func builtSimNode(ctx context.Context, r *run.Run, simulated SimulatedOptions) (*simNode, error) {
+	node, err := newSimNode(ctx, r, simulated)
 	if err != nil {
 		discardRun(r)
 		return nil, err
@@ -61,17 +67,17 @@ func discardRun(r *run.Run) {
 	_, _ = r.End("")
 }
 
-func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, error) {
-	spec, adapterSpec, err := loadSimInputs(o)
+func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, domain.Interfaces, error) {
+	spec, adapterSpec, faces, err := loadSimInputs(o)
 	if err != nil {
-		return nil, fmt.Errorf("plantwire relay: %w", err)
+		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
 	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: spec, Adapter: adapterSpec, Seed: o.Seed, SinkName: model.SinkInproc,
 		TimeMode: model.TimeStepped, StartTimeNS: cmp.Or(o.StartNS, model.DefaultStartTimeNS), JournalDir: out, SessionRecord: simSession(o)})
 	if err != nil {
-		return nil, fmt.Errorf("plantwire relay: %w", err)
+		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	return r, nil
+	return r, faces, nil
 }
 
 func simSession(o SimulatedOptions) map[string]any {
@@ -81,15 +87,16 @@ func simSession(o SimulatedOptions) map[string]any {
 	return sessionNote(o.Session)
 }
 
-func loadSimInputs(o SimulatedOptions) (*simdomain.Compiled, *model.Adapter, error) {
+func loadSimInputs(o SimulatedOptions) (*simdomain.Compiled, *model.Adapter, domain.Interfaces, error) {
 	spec, adapterSpec, err := run.LoadInputs(o.DomainsDir, o.AdaptersDir, o.Domain, o.Adapter)
 	if err != nil {
-		return nil, nil, fmt.Errorf("load simulated inputs: %w", err)
+		return nil, nil, nil, fmt.Errorf("load simulated inputs: %w", err)
 	}
-	if _, err := CheckImplements(spec.Spec, o.Node.KindsDirs); err != nil {
-		return nil, nil, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
+	_, faces, err := loadInterfaces(spec.Spec, o.Node.KindsDirs)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
 	}
-	return spec, adapterSpec, nil
+	return spec, adapterSpec, faces, nil
 }
 
 func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, error) {

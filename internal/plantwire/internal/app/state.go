@@ -12,7 +12,7 @@ func (d *devices) state(device string) []wire.Record {
 	if !known {
 		return nil
 	}
-	kind := d.spec.InstanceKind(d.spec.InstanceSetFor(id))
+	kind, _ := d.kindOf(id)
 	values := []any{}
 	for _, channel := range slices.Sorted(maps.Keys(d.current[id])) {
 		values = append(values, map[string]any{"name": channel, "alias": wire.Alias(kind, channel), "value": d.current[id][channel], "quality": "good"})

@@ -41,6 +41,7 @@ type Options struct {
 	InterruptLog InterruptLog
 	Pace         Pacer
 	Disturbances []domain.ScheduledFault
+	Interfaces   domain.Interfaces
 }
 
 type Pacer interface {
@@ -106,7 +107,7 @@ type Session struct {
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
-	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}, allowed: allowListOf(options.Policies)}
+	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound), options.Interfaces), bdSeq: options.BDSeq, ledger: domain.Ledger{}, allowed: allowListOf(options.Policies)}
 	if options.JournalOrigins && !options.NoWireJournal {
 		s.live = domain.NewLive(false, s.devices.instances(), options.Bound)
 	}
@@ -211,9 +212,11 @@ func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.D
 	if err := policyOptions(options.Policies); err != nil {
 		return fmt.Errorf("plantwire: %w", err)
 	}
-	if _, err := CheckImplements(r.Domain().Spec, options.KindsDirs); err != nil {
+	_, faces, err := loadInterfaces(r.Domain().Spec, options.KindsDirs)
+	if err != nil {
 		return fmt.Errorf("plantwire: %w", model.WithSource(err, r.Domain().Spec.ID))
 	}
+	options.Interfaces = faces
 	return serveSession(ctx, r, socketPath, barrierCap, options)
 }
 

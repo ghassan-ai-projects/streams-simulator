@@ -24,7 +24,11 @@ func (s *Session) executeSafeStop(c domain.Command) error {
 
 func (s *Session) invoke(c domain.Command, worldID string) domain.Answer {
 	entity, _ := s.devices.entity(c.Device)
-	result, err := s.run.InvokeEffector(c.Name, entity, worldID, c.Args, s.now())
+	name, args, err := s.devices.rawCommand(entity, c.Name, c.Args)
+	if err != nil {
+		return refused("out_of_range")
+	}
+	result, err := s.run.InvokeEffector(name, entity, worldID, args, s.now())
 	return outcome(result, err)
 }
 

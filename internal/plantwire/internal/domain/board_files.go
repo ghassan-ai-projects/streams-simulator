@@ -15,6 +15,7 @@ const BoardFileSuffix = ".board.json"
 
 var (
 	ErrBoardKindDuplicate = errors.New("plantwire: two board mappings map one kind")
+	ErrBoardTypeDuplicate = errors.New("plantwire: two board mappings of one board type")
 	ErrBoardRule          = errors.New("plantwire: a board mapping breaks a rule its schema cannot say")
 )
 
@@ -55,7 +56,7 @@ type MappedLease struct {
 	MS  int64  `json:"ms"`
 }
 
-type BoardFiles map[string]MappedKind
+type BoardFiles map[string]BoardMapping
 
 type BoardSummary struct {
 	Path        string   `json:"path"`
@@ -88,19 +89,30 @@ func (i boardIndex) parse(source KindSource) (BoardSummary, error) {
 		return BoardSummary{}, err
 	}
 	kinds := slices.Sorted(maps.Keys(mapping.Kinds))
-	for _, kind := range kinds {
-		if err := i.add(source.Path, kind, mapping.Kinds[kind]); err != nil {
-			return BoardSummary{}, err
-		}
+	if err := i.addBoard(source.Path, mapping, kinds); err != nil {
+		return BoardSummary{}, err
 	}
 	return BoardSummary{Path: source.Path, BoardType: mapping.BoardType, BoardDigest: mapping.Digest, Kinds: kinds}, nil
 }
 
-func (i boardIndex) add(path, kind string, mapped MappedKind) error {
-	if first, taken := i.origin[kind]; taken {
+func (i boardIndex) addBoard(path string, mapping BoardMapping, kinds []string) error {
+	if first, taken := i.origin["board:"+mapping.BoardType]; taken {
+		return fmt.Errorf("%w: %q is mapped by %s and %s", ErrBoardTypeDuplicate, mapping.BoardType, first, path)
+	}
+	i.files[mapping.BoardType], i.origin["board:"+mapping.BoardType] = mapping, path
+	for _, kind := range kinds {
+		if err := i.add(path, kind); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (i boardIndex) add(path, kind string) error {
+	if first, taken := i.origin["kind:"+kind]; taken {
 		return fmt.Errorf("%w: %q is mapped by %s and %s", ErrBoardKindDuplicate, kind, first, path)
 	}
-	i.files[kind], i.origin[kind] = mapped, path
+	i.origin["kind:"+kind] = path
 	return nil
 }
 

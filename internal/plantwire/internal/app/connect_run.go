@@ -162,7 +162,7 @@ func (p *connectPlan) relayOptions(o ConnectOptions, port *ControlPort) RelayOpt
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
 	options := Options{Environment: domain.EnvironmentSimulated, ProtocolMax: domain.Version, SessionID: session, SliceNS: o.SliceNS,
-		UntilNS: p.startNS() + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound}
+		UntilNS: p.startNS() + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound, Interfaces: p.faces}
 	if p.pacer != nil {
 		options.Pace = p.pacer
 	}

@@ -23,7 +23,7 @@ It does not make the board part of the simulator's truth. A simulated device has
 | Term | Meaning |
 | --- | --- |
 | Kind file | `<name>.kind.json`: one plant wire kind, which is the interface of a device (metrics with type, unit and range; commands with argument bounds, risk class and safe stop). Its identity is `kind_digest`. A kind file never carries that member. |
-| `implements` | A domain kind that declares `implements: "<kind>"` is a simulated implementation of that kind file. The binary refuses a domain whose interface differs from the file and names the first differing member. |
+| `implements` | A domain kind that declares `implements: "<kind>"` is a simulated implementation of that kind file. The binary refuses a domain whose interface differs from the file and names the first differing member. With `board_type`, the kind is the board's raw model and implements the file through that board type's mapping (`<board_type>.board.json`). |
 | Twin | The simulated implementation of a kind: a domain that implements the kind files of a board. `kind twin` scaffolds one from kind files and a choices document. |
 | Gateway | The program in front of the hardware. It speaks the plant wire as a node and keeps the hardware protocol to itself. It is outside this repository. |
 | Plant wire node | A program that dials a host's owner-only Unix socket and announces devices. `plantwire node` is the simulated one. |

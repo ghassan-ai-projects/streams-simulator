@@ -51,10 +51,13 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["name", "channels", "faults"],
+        "if": {"required": ["board_type"]},
+        "then": {"required": ["implements"]},
         "properties": {
           "name": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$", "description": "The kind's name. It becomes the entity_type of every instance."},
           "system": {"type": "boolean", "default": false, "description": "A system kind holds plant-wide measurements (an air header, a power bus). It is named by exactly one instance set, which has exactly one name, no id_template and no churn, so each of its channels belongs to exactly one entity."},
           "implements": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The kind file this kind implements, named by its kind name. The kind's plant wire interface (its metrics and commands, as a host sees them in NBIRTH.kinds) must equal that kind file, so the simulated kind and a physical device are the same model. A kind file is one NBIRTH.kinds entry without its kind_digest."},
+          "board_type": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The board type whose board mapping (plant wire BOARD, <board_type>.board.json beside the kind files) this kind implements its kind file through. The kind is then the board's raw model: its own channels and effectors are the board's raw values, and its plant wire interface is the kind file, reached through the mapping in both directions. Needs implements."},
           "state": {
             "type": "array",
             "description": "Hidden world variables. Channels observe these; nothing outside sim-director may ever read them. This is the array whose absence from PlantView is enforced at compile time.",

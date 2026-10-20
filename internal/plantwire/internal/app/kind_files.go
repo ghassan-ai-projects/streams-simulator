@@ -11,14 +11,36 @@ import (
 )
 
 func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, error) {
+	checked, _, err := loadInterfaces(spec, kindsDirs)
+	return checked, err
+}
+
+func loadInterfaces(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, domain.Interfaces, error) {
 	if !spec.HasImplements() {
-		return []model.ImplementsChecked{}, nil
+		return []model.ImplementsChecked{}, domain.Interfaces{}, nil
 	}
 	kindFiles, err := readImplemented(spec, kindsDirs)
 	if err != nil {
+		return nil, nil, err
+	}
+	boards, err := readBoards(spec, kindsDirs)
+	if err != nil {
+		return nil, nil, err
+	}
+	return domain.CheckInterfaces(spec, kindFiles, boards)
+}
+
+func readBoards(spec *model.DomainSpec, dirs []string) (domain.BoardFiles, error) {
+	wanted := domain.BoardTypes(spec)
+	if len(wanted) == 0 {
+		return domain.BoardFiles{}, nil
+	}
+	sources, err := files.ScanBoards(dirs)
+	if err != nil {
 		return nil, err
 	}
-	return domain.CheckImplements(spec, kindFiles)
+	boards, _, err := domain.ParseBoardFiles(domain.SelectBoardSources(sources, wanted))
+	return boards, err
 }
 
 func readImplemented(spec *model.DomainSpec, dirs []string) (domain.KindFiles, error) {

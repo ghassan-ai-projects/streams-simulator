@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Semantic kinds through the board mapping (fan S4b, part 1).** A domain kind may declare `board_type` (in place in
+  `domain-spec-v0.2`): it is then the board's raw model and implements its kind file through `<board_type>.board.json`, read
+  from the kind directories. The `implements` check projects the raw kind through the mapping and compares it with the kind
+  file (names, words, scaled ranges, raw arguments, risk class, safe stop); a plant wire node of such a domain announces the
+  kind file, translates commands into raw commands at its boundary and reports raw readings as the kind's metrics. The
+  shipped thermal example is not migrated yet.
+
 - **Scripted disturbances (fan S5).** The session plan gains optional `disturbances` (in place in `session-plan-v0.1`):
   `{at_s, instance, fault, duration_s?, severity?}`, injected into the simulated world when a connected session starts (and
   cleared after `duration_s`) through the run's fault path, so the command log and the sealed journal record them and replay

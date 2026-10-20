@@ -55,6 +55,7 @@ type connectPlan struct {
 	plan    domain.ConnectPlan
 	checked []model.ImplementsChecked
 	pacer   *uds.WallPacer
+	faces   domain.Interfaces
 }
 
 func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
@@ -112,11 +113,11 @@ func loadConnectInputs(options ConnectOptions, session *model.SessionPlan) (conn
 	if err != nil {
 		return connectPlan{}, fmt.Errorf("plantwire connect: %w", err)
 	}
-	checked, err := CheckImplements(spec.Spec, options.KindsDirs)
+	checked, faces, err := loadInterfaces(spec.Spec, options.KindsDirs)
 	if err != nil {
 		return connectPlan{}, fmt.Errorf("plantwire connect: %w", model.WithSource(err, spec.Spec.ID))
 	}
-	return connectPlan{session: session, spec: spec, adapter: adapterSpec, checked: checked}, nil
+	return connectPlan{session: session, spec: spec, adapter: adapterSpec, checked: checked, faces: faces}, nil
 }
 
 func kindFileDigests(checked []model.ImplementsChecked) map[string]string {

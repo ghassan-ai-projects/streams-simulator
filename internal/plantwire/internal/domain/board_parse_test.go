@@ -61,6 +61,10 @@ func TestTwoBoardMappingsCannotMapOneKind(t *testing.T) {
 	if !errors.Is(err, ErrBoardKindDuplicate) || !strings.Contains(err.Error(), "a.board.json and b.board.json") {
 		t.Fatalf("two mappings of fan: %v, want ErrBoardKindDuplicate naming both files", err)
 	}
+	led := KindSource{Path: "a2.board.json", Raw: []byte(`{"board_type": "a", "kinds": {"led": {"commands": {}, "metrics": {}}}}`)}
+	if _, _, err := ParseBoardFiles([]KindSource{first, led}); !errors.Is(err, ErrBoardTypeDuplicate) {
+		t.Fatalf("two mappings of board type a: %v, want ErrBoardTypeDuplicate", err)
+	}
 	files, summaries, err := ParseBoardFiles([]KindSource{first})
 	if err != nil || len(files) != 1 || summaries[0].BoardType != "a" || !strings.HasPrefix(summaries[0].BoardDigest, "sha256:") {
 		t.Fatalf("one mapping of fan: %v, %+v, %v", files, summaries, err)

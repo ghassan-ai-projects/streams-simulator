@@ -68,12 +68,12 @@ func TestTheThermalBoardMappingGivesTheBoardValuesOfEveryWord(t *testing.T) {
 	if got := summaries[0]; got.Path != want.Path || got.BoardType != want.BoardType || got.BoardDigest != want.BoardDigest || !slices.Equal(got.Kinds, want.Kinds) {
 		t.Fatalf("summary %+v, want %+v", got, want)
 	}
-	cooling := files["fan"].Commands["set_cooling"]
+	cooling := files["arduino-thermal"].Kinds["fan"].Commands["set_cooling"]
 	if cooling.Raw != "set_pwm_lease" || cooling.Args["duty_permille"].From != "level_percent" || cooling.Args["duty_permille"].Scale != "10" ||
 		cooling.Lease == nil || *cooling.Lease != (MappedLease{Arg: "lease_ms", MS: 5000}) {
 		t.Errorf("set_cooling maps to %+v, want set_pwm_lease with duty 10 x level_percent and a 5000 ms lease_ms", cooling)
 	}
-	show := files["indicator"].Commands["show_state"]
+	show := files["arduino-thermal"].Kinds["indicator"].Commands["show_state"]
 	rows := map[string][2]any{"off": {"0", "off"}, "watch": {"500", "slow_blink"}, "alert": {"1000", "solid"}}
 	for word, values := range rows {
 		row := show.Table[word]
@@ -81,9 +81,9 @@ func TestTheThermalBoardMappingGivesTheBoardValuesOfEveryWord(t *testing.T) {
 			t.Errorf("show_state %s maps to %v, want brightness %v pattern %v", word, row, values[0], values[1])
 		}
 	}
-	if state := files["indicator"].Metrics["state"]; state.Raw != "pattern" || state.Table["slow_blink"] != "watch" ||
-		!slices.Equal(files["indicator"].RawEnums["pattern"], []string{"off", "slow_blink", "solid"}) {
-		t.Errorf("the state metric reads %+v with raw words %v", state, files["indicator"].RawEnums)
+	if state := files["arduino-thermal"].Kinds["indicator"].Metrics["state"]; state.Raw != "pattern" || state.Table["slow_blink"] != "watch" ||
+		!slices.Equal(files["arduino-thermal"].Kinds["indicator"].RawEnums["pattern"], []string{"off", "slow_blink", "solid"}) {
+		t.Errorf("the state metric reads %+v with raw words %v", state, files["arduino-thermal"].Kinds["indicator"].RawEnums)
 	}
 }
 
