@@ -4,6 +4,16 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire contract 1.4.0: the board mapping (fan S4a).** The contract folder gains `schemas/BOARD.schema.json` (a board
+  type's raw values for its kinds: raw command and arguments as a fixed value, a scaled kind argument or a table row chosen by
+  a kind word; the board's lease; raw readings copied, scaled or translated; the raw words of enumerated values; no expression
+  forms), SPEC section 15 with the rules a schema cannot say and `board_digest`, a `VERSION` file, and a SPEC section 9 sentence
+  on fresh idempotency keys for a command a host repeats on purpose. No record changed; `DIGEST` and every `NBIRTH` fixture
+  moved. New fixtures `valid/BOARD.json`, eight `invalid/BOARD-*`, a `rules/` folder; `exchanges/reboot-reconcile` now expects
+  the boot its own `DBIRTH` names, and a contract test checks every expectation's device, command and boot against its
+  exchange. `internal/plantwire` parses and validates board mappings (not used by the node yet);
+  `examples/devices/thermal-board/arduino-thermal.board.json` is the Arduino thermal board's mapping.
+
 - **Physical devices: public documentation (R13).** New guide `documentation/guides/physical-devices.md` and architecture page
   `documentation/architecture/physical-devices.md`; a "Physical devices" section in the limitations page, the roadmap, the
   security model and the claims matrix; `streamsim canvas` documented in the CLI reference; the twin-choices contract, the

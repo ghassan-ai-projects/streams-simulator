@@ -18,6 +18,7 @@ var contractCodes = map[Contract]string{
 	ContractKindFile:        "kind_failed",
 	ContractTwinChoices:     "kind_failed",
 	ContractPlantWireBirth:  "kind_failed",
+	ContractBoardFile:       "kind_failed",
 	ContractSessionPlan:     "plantwire_failed",
 	ContractNodeControl:     "plantwire_failed",
 	ContractInterruptLog:    "plantwire_failed",

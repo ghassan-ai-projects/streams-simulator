@@ -2,8 +2,9 @@
 
 | Folder | Contents | A conformant side |
 |---|---|---|
-| `valid/` | One record per type, and one kind file (`KIND.json`) | Accepts each |
+| `valid/` | One record per type, one kind file (`KIND.json`) and one board mapping (`BOARD.json`) | Accepts each |
 | `invalid/` | `{schema, fails_at, record}`: a record that breaks one rule, and the member where it breaks | Refuses each (`malformed`), at that member |
+| `rules/` | `{schema, keyword, fails_at, document}`: a board mapping that passes its schema and breaks one rule of SPEC section 15 | Refuses each with that keyword, at that member |
 | `must-ignore/` | `{schema, record}` with members no schema knows | Accepts each and ignores the extra members |
 | `injection/` | `{schema, expect, record}` with hostile strings in descriptions and string values | Accepts each as data, quotes the strings when showing them to a model, takes no action from them |
 | `exchanges/` | JSON Lines: a header `{exchange, summary, gap?, host_environment?}`, then steps; `seq` runs from 0 by 1 per direction unless the header declares `gap`; `host_environment` (`simulated`, `hardware` or `mixed`, default `simulated`) is the environment the host under test is set to (SPEC section 2) | Reproduces the expected reactions |
@@ -31,3 +32,9 @@ board names its environment, and a board is `simulated` or `hardware`, never `mi
 
 The `lying-result-*` exchanges cover one command per class (setpoint, start, safe stop): the device reports success while the
 observations do not move. `verified-result` is the positive control: the observation moves, so the host counts it done.
+
+`valid/BOARD.json` maps the pump kind of `valid/KIND.json` to a pump controller: a scaled argument and reading (`freq_dhz`,
+scale 5, in both directions), a fixed raw argument, a copied reading and a raw enumerated word translated by a `table`. The
+`BOARD-*` fixtures in `invalid/` break the schema; those in `rules/` break a rule a schema cannot say (member names, raw words,
+an argument set twice, uneven table rows, scales that disagree), so a conformant side checks those as well. Every expectation
+names only a `device`, `command_id` and `boot_id` some record of its exchange carries.
