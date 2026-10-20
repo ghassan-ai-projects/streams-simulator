@@ -62,6 +62,7 @@ too large is split; a deviation from the plan that improves it is made and recor
 | W4 | Tamoz's terminal says only `graph_status: failed`; the real cause survives only in a checkpoint | P0.5-FINDINGS.md F7 | Surface the failure reason |
 | W5 | D-116 (High): a command after an actuator fault's onset cancels the fault in the world core | governance/DEFERRED.md | Fix before scripted actuator faults and the A/B/C evaluation |
 | W6 | `tamoz` (a consumer name) appears in Agentic Stream production code, including a key in the sealed shadow-comparison document | H0-FINDINGS.md section 7 | Backlog; renaming changes comparison digests |
+| W8 | The I/O-edge inventory entry for `internal/plantwire/internal/uds/await.go` keeps its old reason text ("wall-time cap of the plant wire barrier…"), which no longer mentions the S1 pacer that now uses the same clock calls | `test/architecture` (I/O-edge inventory) | Reword the reason (text only; a gate file, so the owner's call) |
 | W7 | The run artifact does not record the event-schema registry digest (logged only, H0.5) | PLAN.md 5.1 decision 4 | A versioned manifest change when wanted |
 
 ## Round log
