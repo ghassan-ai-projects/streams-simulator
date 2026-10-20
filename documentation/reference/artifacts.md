@@ -72,7 +72,7 @@ The observer `journal.jsonl` of a session that involves a gateway or a control s
 ## Size and folder rules for session runs
 
 - **Caps.** `journal.jsonl`, the field trace and the interrupt log are read through a 64 MiB cap. A session against a host that answers every barrier at once (the reference host with no `--delay-ms`) writes about 75 MB of run folder per second, so `plantwire twin-report` refuses its journal within seconds; give the host a delay and keep sessions short (deferred D-77).
-- **One folder per session.** `--out` of `plantwire connect` must be a new folder: reusing one replaces `run.json`, the journals and the traces and leaves a stale `interrupts.jsonl`, and `verify` can then report `matches: true` for the mixture (deferred D-114).
+- **One folder per session.** `--out` of `plantwire connect` must be a new folder: a folder that already holds any run file is refused (`plantwire_failed`) before anything is written, so the evidence of two sessions is never mixed.
 
 ## Artifact lifecycle
 

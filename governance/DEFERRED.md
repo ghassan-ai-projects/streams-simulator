@@ -482,6 +482,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > `matches: true` for the mixture. The canvas is safe (it claims a fresh `c-<8 hex>` folder, retrying a taken name). Trigger to
 > fix: any CLI bench with repeated attempts; then `connect --out` refuses a folder that already holds a `run.json` or any run
 > file (a product change, not made in R13; the docs say a new folder for every session). Found by the R13 documentation review.
+> **Fixed in fan S6:** before it reads the plan, `connect` refuses (`plantwire_failed`, `ErrRunFolderTaken`) a folder that
+> holds any run file, `sealed/journal.jsonl` and `interrupts.rejected.<n>.jsonl` included, and writes nothing into it; an absent
+> folder (the canvas's `c-<8 hex>`) or one without run files is accepted (`run_folder.go` in the plantwire domain and files edge).
 >
 > D-115 (**Low**; the reference host's exit behaviour when its node is stopped): `plantwire host` run with `--delay-ms` exits 1
 > with `plantwire host: write ...: broken pipe` and no report when `plantwire connect` is stopped during a barrier wait, and exits

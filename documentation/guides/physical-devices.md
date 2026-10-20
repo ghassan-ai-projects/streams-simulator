@@ -178,7 +178,7 @@ The request vocabulary is in [`node-control-v0.1`](../../contracts/node-control-
 
 **Canvas.** **Stop and save** interrupts the session; the bridge waits up to 30 seconds for the run to close before it ends the process group. The run opens as an ordinary review labelled "Connected session". **Set up another run** keeps the policy list and clears the sockets and boards.
 
-**Command line.** Interrupt `plantwire connect` (Ctrl-C or `SIGTERM`). It prints `{out, stopped, relay?}`, and the run folder is complete. **`--out` must be a new folder for every session.** Reusing one silently replaces `run.json`, the journals and the traces and leaves a stale `interrupts.jsonl` beside them, and `verify` can then print `matches: true` for a mixture (D-114). Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks a unique `c-<8 hex>` name itself.
+**Command line.** Interrupt `plantwire connect` (Ctrl-C or `SIGTERM`). It prints `{out, stopped, relay?}`, and the run folder is complete. **`--out` must be a new folder for every session.** A folder that already holds a run file is refused (`plantwire_failed`) and left as it was. Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks a unique `c-<8 hex>` name itself.
 
 ```text
 run.json  trace.jsonl  ledger.jsonl  world_state_history.jsonl  journal.jsonl  sealed/journal.jsonl

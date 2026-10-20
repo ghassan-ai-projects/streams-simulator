@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
@@ -17,6 +18,9 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 	if options.Out == "" || options.SliceNS <= 0 {
 		return ConnectResult{}, fmt.Errorf("%w: a connected session needs a run folder and a slice", ErrBadOptions)
 	}
+	if err := freshRunFolder(options.Out); err != nil {
+		return ConnectResult{}, err
+	}
 	planned, err := planConnect(options)
 	if err != nil {
 		return ConnectResult{}, err
@@ -24,6 +28,17 @@ func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error)
 	ctx, stop := uds.UntilInterrupted(ctx)
 	defer stop()
 	return planned.serve(ctx, options)
+}
+
+func freshRunFolder(out string) error {
+	present, err := files.RunFolderFiles(out)
+	if err == nil {
+		err = domain.CheckFreshRunFolder(out, present)
+	}
+	if err != nil {
+		return fmt.Errorf("plantwire connect: %w", err)
+	}
+	return nil
 }
 
 func (p *connectPlan) serve(ctx context.Context, o ConnectOptions) (ConnectResult, error) {

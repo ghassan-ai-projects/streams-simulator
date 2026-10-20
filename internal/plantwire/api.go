@@ -49,6 +49,7 @@ var (
 	ErrTwinRequirements  = domain.ErrTwinRequirements
 	ErrDuplicateMember   = domain.ErrDuplicateMember
 	ErrRefused           = domain.ErrRefused
+	ErrRunFolderTaken    = domain.ErrRunFolderTaken
 	ErrNoBirth           = domain.ErrNoBirth
 	ErrBirthRefused      = domain.ErrBirthRefused
 	ErrSealedStream      = domain.ErrSealedStream
