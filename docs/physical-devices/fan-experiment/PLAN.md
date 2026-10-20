@@ -276,6 +276,18 @@ for the owner's explicit approval, AGENTS.md MUST 3). Order: S7, S2, S4a, S1a, S
 **Gateway (G1) investigation and decisions (2026-10-20).** Findings: [G-FINDINGS.md](G-FINDINGS.md); its questions Q1 to Q8
 taken as recommended; rounds G1a to G1e and G2 against contract 1.3.0 behind a `BoardMapping` class, then G1f re-vendors 1.4.0.
 
+**Agentic Stream adapter (A0) investigation and decisions (2026-10-20).** Findings: [A-FINDINGS.md](A-FINDINGS.md), with the
+rounds A0, A1a, A1b, A2, A3a, A3b, A3c, A4 on branch `fan-a` cut from the `fan-h0` tip. Its questions taken as recommended:
+Q1 forward Agentic Stream's per-intent idempotency key (a content-derived key would replay a repeated identical command and
+never move the fan; SPEC 1.4.0 gains a sentence saying so, S4a); Q2 `authority_epoch` from a flag defaulting to Unix seconds
+at start; Q3 the site file (device, kind, entity, readings, heartbeats, quality table) lives outside the repository, its
+digest logged; Q4 mirror device-wire; Q5 drop historical DDATA from live ingest; Q6 `safe_off` for lease commands; Q7, Q8,
+Q10 later; Q9 streamsim adds a `VERSION` file to the contract folder in 1.4.0 (S4a). Also found: Agentic Stream bounds one
+dispatch to 0.9 of a 1-minute lease, so a command held at the node for approval longer than 54 s becomes an unknown
+outcome; A3a adds `--dispatch-lease` and a start-time check against each route's `expires_after_ms`. Plan section 3.2 was
+wrong about safe stops: Agentic Stream's catalog requires `operation: safe_stop`, so the adapter resolves the kind's declared
+safe-stop command.
+
 ### Agentic Stream (one module, design first)
 
 Its `AGENTS.md` requires a design before code. The ports exist, so the design is "a new adapter behind existing ports":
