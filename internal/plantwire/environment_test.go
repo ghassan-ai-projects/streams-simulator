@@ -22,8 +22,8 @@ func TestAMixedHostAcceptsASimulatedNodeAndTheJournalHoldsItsBoardsAsSimulated(t
 		}
 	}
 	boards, _ := birth["boards"].([]any)
-	if birth["contract_version"] != "1.3.0" || birth["environment"] != "simulated" || len(boards) == 0 {
-		t.Fatalf("journalled NBIRTH %v, want contract 1.3.0, a simulated node and its boards", birth)
+	if birth["contract_version"] != "1.4.0" || birth["environment"] != "simulated" || len(boards) == 0 {
+		t.Fatalf("journalled NBIRTH %v, want contract 1.4.0, a simulated node and its boards", birth)
 	}
 	for _, board := range boards {
 		if got := board.(map[string]any)["environment"]; got != "simulated" {

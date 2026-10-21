@@ -12,7 +12,7 @@ func linkScript() Script {
 	return Script{Steps: []Step{
 		{AtNS: 30, Device: "zone-01", Link: LinkUp, BootID: "boot-2"},
 		{AtNS: 10, Device: "zone-01", Samples: []Sample{{Metric: "temperature", Value: 22.0}, {Metric: "humidity", Value: 40.0, Quality: "suspect"}}},
-		{AtNS: 5, Device: "fan-01", Samples: []Sample{{Metric: "duty_permille", Value: 0}}},
+		{AtNS: 5, Device: "fan-01", Samples: []Sample{{Metric: "level_percent", Value: 0}}},
 		{AtNS: 20, Device: "zone-01", Link: LinkDown},
 	}}
 }
@@ -76,11 +76,11 @@ func TestALinkLossIsADeviceDeathAndTheRebirthIsANewBoot(t *testing.T) {
 
 func TestACommandIsAcknowledgedReportedAndSeenInTheNextReading(t *testing.T) {
 	t.Parallel()
-	step := host.Scripted{ID: "c1", AtNS: 0, Device: "fan-01", Command: "set_pwm_lease", Args: map[string]any{"lease_ms": 6000},
-		Verify: &host.Verify{Metric: "duty_permille", Equals: 300, WithinNS: 10e9}}
+	step := host.Scripted{ID: "c1", AtNS: 0, Device: "fan-01", Command: "set_cooling", Args: map[string]any{"level_percent": 30},
+		Verify: &host.Verify{Metric: "level_percent", Equals: 30, WithinNS: 10e9}}
 	script := Script{
-		Replies: []Reply{{Command: "set_pwm_lease", Receipt: "accepted", Result: "succeeded"}},
-		Steps:   []Step{{AtNS: 2e9, Device: "fan-01", Samples: []Sample{{Metric: "duty_permille", Value: 300}}}},
+		Replies: []Reply{{Command: "set_cooling", Receipt: "accepted", Result: "succeeded"}},
+		Steps:   []Step{{AtNS: 2e9, Device: "fan-01", Samples: []Sample{{Metric: "level_percent", Value: 30}}}},
 	}
 	b := newBench(t, boardNode(t, script), hostOptions("hardware", step))
 	b.handshake()

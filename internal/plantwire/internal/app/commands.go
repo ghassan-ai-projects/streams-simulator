@@ -82,9 +82,9 @@ func (s *Session) identify(c domain.Command) string {
 	switch {
 	case !known:
 		return "unknown_device"
-	case s.run.World.EffectorOf(entity, c.Name) == nil:
+	case s.devices.effector(entity, c.Name) == nil:
 		return "unknown_command"
-	case s.run.World.CheckEffectorArgs(c.Name, c.Args) != nil:
+	case s.devices.checkArgs(entity, c.Name, c.Args) != nil:
 		return "out_of_range"
 	}
 	return ""
@@ -94,7 +94,14 @@ func (s *Session) fresh(c domain.Command) string {
 	if c.NotBeforeNS > s.now()+domain.MaxDeadlineAheadNS {
 		return "out_of_range"
 	}
-	return domain.Freshness(c, s.now())
+	return domain.Freshness(c, s.pacedNow())
+}
+
+func (s *Session) pacedNow() int64 {
+	if s.options.Pace == nil {
+		return s.now()
+	}
+	return max(s.now(), s.options.Pace.WorldNowNS())
 }
 
 func (s *Session) onBoot(c domain.Command) string {
@@ -119,7 +126,7 @@ func (s *Session) safeStop(c domain.Command) bool {
 	if !known {
 		return false
 	}
-	effector := s.run.World.EffectorOf(entity, c.Name)
+	effector := s.devices.effector(entity, c.Name)
 	return effector != nil && effector.SafeStop
 }
 

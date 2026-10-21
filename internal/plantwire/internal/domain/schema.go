@@ -61,10 +61,13 @@ func decode(raw []byte, target any) error {
 	return nil
 }
 
-const kindFileSchema = "KIND"
+const (
+	kindFileSchema  = "KIND"
+	boardFileSchema = "BOARD"
+)
 
 func recordSchema(name string) *jsonschema.Schema {
-	if name == kindFileSchema {
+	if name == kindFileSchema || name == boardFileSchema {
 		return nil
 	}
 	return schemas()[name]

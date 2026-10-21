@@ -3,7 +3,7 @@ import { expect } from "@playwright/test";
 import type { Bench } from "./session";
 import { listPolicies, openScriptedBench, openSessionPanel, planOneRealBoard, startGateway } from "./session";
 
-export const lease = { duty_permille: 300, lease_ms: 5000 };
+export const cooling = { level_percent: 30 };
 
 export function controlsOf(page: Page): Locator {
   return page.getByRole("region", { name: "Interrupts", exact: true });
@@ -20,8 +20,8 @@ export async function startedSession(
   policies: readonly string[] = [],
 ): Promise<Started> {
   const bench = openScriptedBench(lab.binary, [
-    { id: "ref-a", afterS: 160, device: "fan-01", command: "set_pwm_lease", args: lease },
-    { id: "ref-b", afterS: 190, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "ref-a", afterS: 40, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "ref-b", afterS: 50, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   try {
     const panel = await openSessionPanel(page);

@@ -84,8 +84,8 @@ func TestTheStandInBoardBuiltFromTheThermalKindFilesIsAcceptedByTheReferenceHost
 }
 
 var thermalGoldens = map[string]string{
-	"fan":            "sha256:fe29bb90a5abc8180f1287608211e678814fb51b86ffeffd4a89f605e2fa379f",
-	"indicator":      "sha256:1c44d298974f5121a23acc3a9cb2befa3e5f51cb2fcacb3ff111407f1116eb67",
+	"fan":            "sha256:a33eb3a8bb1978e4382563f2ac5f076060dbd3b0b697190b67f6266ef5cc0d82",
+	"indicator":      "sha256:f10fe1d8b98694eabb0f7464b08a23c45e54e641927ac2c01c6e0cf6a31d2180",
 	"thermal_sensor": "sha256:7d0921b1526ddbb40760f3244b7b5f0a6443a125da593a9f0fa2878a871d9d48",
 }
 

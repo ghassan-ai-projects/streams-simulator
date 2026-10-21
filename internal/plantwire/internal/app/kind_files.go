@@ -11,14 +11,49 @@ import (
 )
 
 func CheckImplements(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, error) {
+	checked, _, err := loadInterfaces(spec, kindsDirs)
+	return checked, err
+}
+
+func loadInterfaces(spec *model.DomainSpec, kindsDirs []string) ([]model.ImplementsChecked, domain.Interfaces, error) {
 	if !spec.HasImplements() {
-		return []model.ImplementsChecked{}, nil
+		return []model.ImplementsChecked{}, domain.Interfaces{}, nil
 	}
 	kindFiles, err := readImplemented(spec, kindsDirs)
 	if err != nil {
+		return nil, nil, err
+	}
+	boards, err := readBoards(spec, kindsDirs)
+	if err != nil {
+		return nil, nil, err
+	}
+	return domain.CheckInterfaces(spec, kindFiles, boards)
+}
+
+func boardDigests(checked []model.ImplementsChecked) map[string]string {
+	digests := map[string]string{}
+	for _, entry := range checked {
+		if entry.BoardType != "" {
+			digests[entry.BoardType] = entry.BoardDigest
+		}
+	}
+	if len(digests) == 0 {
+		return nil
+	}
+	return digests
+}
+
+func readBoards(spec *model.DomainSpec, dirs []string) (domain.BoardFiles, error) {
+	wanted := domain.BoardTypes(spec)
+	if len(wanted) == 0 {
+		return domain.BoardFiles{}, nil
+	}
+	sources, err := files.ScanBoards(dirs)
+	if err != nil {
 		return nil, err
 	}
-	return domain.CheckImplements(spec, kindFiles)
+	boards, _, err := domain.ParseBoardFiles(domain.SelectBoardSources(sources, wanted))
+	return boards, err
 }
 
 func readImplemented(spec *model.DomainSpec, dirs []string) (domain.KindFiles, error) {
@@ -53,12 +88,18 @@ func Scaffold[T any](paths, dirs []string, source string, scaffold func(map[stri
 	})
 }
 
-func ValidateKindFilesWith(paths []string, rules domain.TwinRules) ([]domain.KindSummary, error) {
+func ValidateKindFilesWith(paths []string, rules domain.TwinRules) (domain.DeviceFiles, error) {
 	sources, err := files.Paths(paths)
 	if err != nil {
-		return nil, err
+		return domain.DeviceFiles{}, err
 	}
-	return validateSources(sources, rules)
+	kindSources, boardSources := domain.SplitDeviceSources(sources)
+	_, boards, err := domain.ParseBoardFiles(boardSources)
+	if err != nil {
+		return domain.DeviceFiles{}, err
+	}
+	kinds, err := validateSources(kindSources, rules)
+	return domain.DeviceFiles{Kinds: kinds, Boards: boards}, err
 }
 
 func ValidateKindStream(reader io.Reader, rules domain.TwinRules) (domain.KindSummary, error) {

@@ -337,6 +337,12 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Optional. Present only for a run of a plant wire node that ran with a control socket (plantwire connect --control-socket): the SHA-256 of interrupts.jsonl as written, whose lines are RFC 8785 canonical JSON of {ordinal, record} (interrupt-log-v0.1): the node's hold, approval and emergency-stop controls and decisions. `verify` and `report` compare the file on disk with this digest, so a tampered log fails with file_differs; the decisions can be replayed from the inputs in the log. A run without a control socket leaves the member and the file out."
     },
+    "board_digests": {
+      "type": "object",
+      "description": "Optional. Present only for a run of a plant wire node whose domain implements kinds through board mappings: for each board type the run read, the board_digest of its board mapping (SHA-256 of the file's RFC 8785 canonical JSON, plant wire SPEC section 15). The mapping decided which raw commands the run executed, so it is an input of the run; a replay needs only the command log.",
+      "propertyNames": {"pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
+      "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+    },
     "applied_perturbations": {
       "type": "array",
       "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",

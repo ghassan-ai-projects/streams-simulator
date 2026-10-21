@@ -19,6 +19,7 @@ type Link interface {
 	Await(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
 	AwaitHandshake(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
 	WaitedMS() int64
+	Drain(ctx context.Context, wait time.Duration) ([]domain.Inbound, error)
 }
 
 type Options struct {
@@ -39,6 +40,14 @@ type Options struct {
 
 	Control      *ControlPort
 	InterruptLog InterruptLog
+	Pace         Pacer
+	Disturbances []domain.ScheduledFault
+	Interfaces   domain.Interfaces
+}
+
+type Pacer interface {
+	WaitNS(worldNS int64) int64
+	WorldNowNS() int64
 }
 
 var (
@@ -97,10 +106,11 @@ type Session struct {
 	liveChanged bool
 	ints        *interruptSide
 	allowed     domain.AllowList
+	held        []domain.Inbound
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
-	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound)), bdSeq: options.BDSeq, ledger: domain.Ledger{}, allowed: allowListOf(options.Policies)}
+	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r, boundInstances(options.Bound), options.Interfaces), bdSeq: options.BDSeq, ledger: domain.Ledger{}, allowed: allowListOf(options.Policies)}
 	if options.JournalOrigins && !options.NoWireJournal {
 		s.live = domain.NewLive(false, s.devices.instances(), options.Bound)
 	}
@@ -113,14 +123,14 @@ func NewSession(r *run.Run, link Link, options Options) *Session {
 
 func (s *Session) Run(ctx context.Context) error {
 	defer s.endLive()
-	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded()); err != nil {
-		return fmt.Errorf("plantwire: %w", err)
+	if err := s.prepare(); err != nil {
+		return err
 	}
 	if err := s.handshake(ctx); err != nil {
 		return err
 	}
 	for at := s.run.Status().ClockNS + s.options.SliceNS; at <= s.options.UntilNS && !s.finished; at += s.options.SliceNS {
-		if err := s.slice(ctx, at); err != nil {
+		if err := s.step(ctx, at); err != nil {
 			return err
 		}
 	}
@@ -131,6 +141,13 @@ func (s *Session) handshake(ctx context.Context) error {
 	if err := s.sendNodeBirth(); err != nil {
 		return err
 	}
+	if err := s.attach(ctx); err != nil {
+		return err
+	}
+	return s.send(s.devices.births(s.run.Status().ClockNS)...)
+}
+
+func (s *Session) attach(ctx context.Context) error {
 	state, err := s.awaitState(ctx)
 	if err != nil {
 		return err
@@ -138,7 +155,7 @@ func (s *Session) handshake(ctx context.Context) error {
 	if err := s.adopt(state); err != nil {
 		return err
 	}
-	return s.send(s.devices.births(s.run.Status().ClockNS)...)
+	return s.anchor(ctx)
 }
 
 func (s *Session) adopt(state domain.Message) error {
@@ -205,9 +222,11 @@ func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.D
 	if err := policyOptions(options.Policies); err != nil {
 		return fmt.Errorf("plantwire: %w", err)
 	}
-	if _, err := CheckImplements(r.Domain().Spec, options.KindsDirs); err != nil {
+	_, faces, err := loadInterfaces(r.Domain().Spec, options.KindsDirs)
+	if err != nil {
 		return fmt.Errorf("plantwire: %w", model.WithSource(err, r.Domain().Spec.ID))
 	}
+	options.Interfaces = faces
 	return serveSession(ctx, r, socketPath, barrierCap, options)
 }
 
@@ -243,8 +262,17 @@ func ServeHost(ctx context.Context, socketPath string, delay time.Duration, opti
 		return host.Report{}, fmt.Errorf("plantwire: host: %w", err)
 	}
 	reference := host.New(options)
-	if err := uds.ServeHost(ctx, socketPath, reference, uds.Pacing{Delay: delay, Handshake: uds.HandshakeWait}, options.Ready); err != nil {
+	err := uds.ServeHost(ctx, socketPath, reference, hostPacing(delay), options.Ready)
+	if err != nil && !endsHostCleanly(err) {
 		return reference.Report(), fmt.Errorf("plantwire: %w", err)
 	}
 	return reference.Report(), nil
+}
+
+func hostPacing(delay time.Duration) uds.Pacing {
+	return uds.Pacing{Delay: delay, Handshake: uds.HandshakeWait, Heartbeat: host.HeartbeatIntervalMS * time.Millisecond}
+}
+
+func endsHostCleanly(err error) bool {
+	return uds.Interrupted(err) || uds.PeerGone(err)
 }

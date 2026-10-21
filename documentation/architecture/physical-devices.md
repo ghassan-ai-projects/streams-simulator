@@ -50,7 +50,7 @@ Dependencies flow downward as in the [architecture overview](overview.md). The c
 
 ## Records and the contract
 
-The plant wire contract is self-contained under [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md). The physical-device work added three things to it: a `kind_digest` for every kind in `NBIRTH` (1.1.0), an `environment` for every board and the node value `mixed` (1.2.0), and an optional `command_evidence` member of `HSYNC` (1.3.0). A host and the simulator accept only the contract version and digest they were built with.
+The plant wire contract is self-contained under [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md). The physical-device work added four things to it: a `kind_digest` for every kind in `NBIRTH` (1.1.0), an `environment` for every board and the node value `mixed` (1.2.0), an optional `command_evidence` member of `HSYNC` (1.3.0), and the board mapping schema `BOARD` with the folder's `VERSION` (1.4.0). A host and the simulator accept only the contract version and digest they were built with.
 
 Origin is the environment of the board a device was born on; nothing else infers it. A `simulated` node can only have simulated boards, a `hardware` node only hardware boards, and a `mixed` node at least one of each. A simulated world always announces itself `simulated`; a replay of a trace does too, whatever the recording said.
 

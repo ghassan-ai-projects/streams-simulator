@@ -1,11 +1,11 @@
 # Plant wire v1 — specification
 
-- **Status**: contract v1.3.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
+- **Status**: contract v1.4.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
   deployment.
 - **Scope**: the session between a **node** (a simulated world, or an edge gateway in front of hardware) and a **host** (a plant
   supervisor). Field protocols below a gateway are out of scope; section 13 maps the one this contract meets first.
-- **This folder is self-contained**: `SPEC.md`, `schemas/` (one JSON Schema per record, and `KIND` for a kind file), `fixtures/` (see `fixtures/README.md`)
-  and `DIGEST`. It refers to nothing outside itself.
+- **This folder is self-contained**: `SPEC.md`, `schemas/` (one JSON Schema per record, `KIND` for a kind file and `BOARD` for a
+  board mapping), `fixtures/` (see `fixtures/README.md`), `DIGEST` and `VERSION`. It refers to nothing outside itself.
 
 ## 1. Pattern and roles
 
@@ -113,6 +113,8 @@ prose, so an id cannot carry an instruction.
   its own entry with the file; a device is proven to match it only by announcing a `kind_digest` equal to the file's, which a
   host or gateway checks at commissioning. A host recomputes every `kind_digest` from the entry it received and refuses a
   session whose digest differs (`inventory_mismatch`).
+- A kind speaks in the units and words that mean the same on every board; the raw values one board type uses for it live in
+  that board type's **board mapping** (section 15), never in the kind file.
 
 ## 6. Handshake, sessions and rebirth
 
@@ -188,10 +190,14 @@ Commands still queued when a session ends get no receipt; the host counts them a
 | Idempotency (below) | `duplicate` |
 | The device's own preconditions, mode and interlocks | `local_control`, `permissive_not_met`, `locked_out`, `maintenance_isolated`, `interlocked`, `not_ready` |
 
-**Idempotency.** A command's content is `{device, command, args, expected_boot_id}`; `idempotency_key` is `sha256:` and the
-SHA-256 of its RFC 8785 canonical JSON. A node keeps, per key, the content digest, the terminal receipt and the result, for at
+**Idempotency.** A command's content is `{device, command, args, expected_boot_id}`; its content digest is `sha256:` and the
+SHA-256 of its RFC 8785 canonical JSON. `idempotency_key` names one intent; the reference host and the fixtures derive it as the
+digest of `{command_id, content}` (the content digest), so a retransmission keeps its key and a new command gets a new one. A
+node never checks how a key was derived. A node keeps, per key, the content digest, the terminal receipt and the result, for at
 least 24 h plus transport delay (a gateway across restarts). A repeated key with the same content replays the stored receipt
-and result with no second effect; with different content it is refused `duplicate`.
+and result with no second effect; with different content it is refused `duplicate`. A host that derives `idempotency_key` from
+the content alone therefore gets a repeated identical command replayed and never executed again, so a host that may repeat a
+command on purpose (for example to renew a lease) uses a fresh key per intent.
 
 **Safe stop.** A command the node itself declares `safe_stop` is checked only for schema, device, command and boot; it skips the
 deadline, epoch, policy and precondition checks, is never queued (`not_before_ns` does not apply) and is never refused for
@@ -204,7 +210,8 @@ content receives the stored receipt and result. A node does not check that a key
 derives keys otherwise loses the protection.
 
 **Leases.** `fallback_on_lease_loss` is required. A command whose arguments carry `lease_ms` falls back when the lease lapses
-without renewal; every command falls back on host loss.
+without renewal; every command falls back on host loss. A command whose board mapping declares a `lease` (section 15) carries
+it in its raw arguments, so it falls back the same way although its kind arguments name no lease.
 
 **Refusal classes.** A node says which class of refusal applies, never which fault caused it: a simulated node reports a failed
 effector precondition as `permissive_not_met`, an interlock as `interlocked`, a random failure as `not_ready`. A precondition on a
@@ -237,7 +244,7 @@ every string it shows a model and never follows one.
 
 - **Digest.** `DIGEST` holds `sha256:` and the SHA-256 of, for every schema in file-name order, the file name, a newline, the
   schema's RFC 8785 canonical JSON and a newline. It is the `contract_digest` a node announces. A schema change needs a reviewed
-  `DIGEST` change.
+  `DIGEST` change. `VERSION` holds the contract version, the `contract_version` a node announces.
 - **Safety-field floor.** Each repository tests that the members carrying safety and owner decisions stay required and their
   enumerations keep their safety values (commands, receipts, results, births, state, data).
 - **Sync.** A repository vendors this whole folder byte-identically; its programs embed the schemas and never read a path at
@@ -268,6 +275,35 @@ declares at most 256 kinds and 4096 boards of at most 4096 devices.
 
 | Version | Change |
 |---|---|
+| 1.1.0 | Every entry of `NBIRTH.kinds` carries a `kind_digest`; the kind file (`KIND`) is the contract of a kind (section 5). |
 | 1.2.0 | Every board in `NBIRTH.boards` carries `environment` (`simulated` or `hardware`, required); `NBIRTH.environment` gains `mixed`; the host checks the node against its boards and against its own setting, which now has the same three values (section 2). |
 | 1.3.0 | Optional HSYNC command_evidence carries explicit host feedback decisions, independently of board acknowledgement and self-report. |
-| 1.1.0 | Every entry of `NBIRTH.kinds` carries a `kind_digest`; the kind file (`KIND`) is the contract of a kind (section 5). |
+| 1.4.0 | The board mapping file (`BOARD`, section 15) carries a board type's raw values, its lease and `board_digest`; the folder gains `VERSION`; section 9 says why a host that repeats a command on purpose needs a fresh `idempotency_key`. No record changes. |
+
+## 15. Board mapping
+
+A **board mapping** file (`<board type>.board.json`, schema `BOARD`) says how one board type implements kinds: which raw
+command and raw arguments a kind command becomes, and which kind metric a raw reading gives. A twin and a gateway read the same
+file, so the twin and the real board cannot drift apart. A kind the mapping does not name passes through unchanged.
+
+| Member | Rule |
+|---|---|
+| `board_type` | The board type, for example `arduino-thermal`. |
+| `kinds.<kind>.commands.<command>` | `raw`: the raw command. `args`: each raw argument is `{value}` (fixed) or `{from, scale?}` (the kind argument `from` times `scale`, default 1; a value within floating-point error of a whole number is that whole number, and a raw integer argument fed by a kind argument whose step times `scale` is not whole is refused when the mapping is checked against its kinds). `by` with `table`: the kind argument `by` holds a word, and `table.<word>` gives raw argument values. `lease`: `{arg, ms}`, the raw argument that carries the board's lease and its fixed duration. |
+| `kinds.<kind>.metrics.<metric>` | `raw`: the raw reading. Alone it is copied; `scale` divides it (the same direction as a command's `scale`: raw = kind value × scale); `table` maps a raw word to the kind's word. |
+| `kinds.<kind>.raw_enums.<raw name>` | The words of a raw enumerated value in the order of their integer codes: a twin that holds the value as an integer uses the index. |
+
+Three forms only (`value`, `from` with `scale`, `table`): no expressions. Every object with fixed members refuses unknown ones,
+so a misspelt `lease` is never dropped silently. Beyond the
+schema a validator checks (`fixtures/rules/`): every member name is an id (`board_name_invalid`); a string value of a raw name
+listed in `raw_enums`, and every key of a metric `table`, is one of its words (`board_raw_word_unknown`); no raw argument is set
+twice by `args`, a `table` row and the `lease` (`board_argument_conflict`); every `table` row sets the same raw arguments
+(`board_table_uneven`); a metric read from the raw argument a command writes from that metric's name has the command's scale
+(`board_scale_mismatch`); a metric whose `table` reads a raw value back has a row for every word of that raw value's
+`raw_enums` (`board_table_incomplete`), and a command whose `by` names that metric writes, for each word of its `table`, a raw
+word the metric reads back as the same word (`board_readback_mismatch`); no two metrics read one raw value (`board_raw_shared`). A host or gateway also checks the mapping against the kind files it serves: the same commands and
+metrics, `from` and `by` naming kind arguments, table words equal to the kind's words.
+
+**`board_digest`** is `sha256:` and the SHA-256 of the file's RFC 8785 canonical JSON. A board mapping never carries it (a
+stale one would be accepted and ignored). Each board type has one mapping; several board types may map the same kind, and
+the board (its type) a device sits on says which mapping applies.

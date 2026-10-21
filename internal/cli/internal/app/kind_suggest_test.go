@@ -18,7 +18,7 @@ func mustJSON(t *testing.T, value any) []byte {
 
 func TestKindTwinSuggestPrintsValidChoicesForTheKindFilesAndWritesNothing(t *testing.T) {
 	t.Parallel()
-	doc := invoke(t, "kind", "twin", "--suggest", "--kinds-dir", testsupport.ThermalBoardKindsDir()).mustSucceed(t).document(t, "kind_suggest")
+	doc := invoke(t, "kind", "twin", "--suggest", "--kinds-dir", testsupport.TwinThermalKindsDir()).mustSucceed(t).document(t, "kind_suggest")
 	choices, _ := doc["choices"].(map[string]any)
 	kinds, _ := choices["kinds"].([]any)
 	if choices["schema_version"] != "0.1" || choices["id"] != "fan-indicator-thermal-sensor-twin" || len(kinds) != 3 || len(doc) != 1 {
@@ -29,8 +29,8 @@ func TestKindTwinSuggestPrintsValidChoicesForTheKindFilesAndWritesNothing(t *tes
 func TestKindTwinSuggestRefusesWhatItCannotSuggestFor(t *testing.T) {
 	t.Parallel()
 	assertFailureCodes(t, []failureCase{
-		{"choices beside it", []string{"kind", "twin", "--suggest", "--choices", testsupport.ThermalBoardChoices(), "--kinds-dir", testsupport.ThermalBoardKindsDir()}, "usage_invalid", 2},
-		{"an out file beside it", []string{"kind", "twin", "--suggest", "--out", "x.domain.json", "--kinds-dir", testsupport.ThermalBoardKindsDir()}, "usage_invalid", 2},
+		{"choices beside it", []string{"kind", "twin", "--suggest", "--choices", testsupport.TwinThermalChoices(), "--kinds-dir", testsupport.TwinThermalKindsDir()}, "usage_invalid", 2},
+		{"an out file beside it", []string{"kind", "twin", "--suggest", "--out", "x.domain.json", "--kinds-dir", testsupport.TwinThermalKindsDir()}, "usage_invalid", 2},
 		{"no kind file", []string{"kind", "twin", "--suggest"}, "kind_failed", 1},
 		{"a kind file that is no kind file", []string{"kind", "twin", "--suggest", writeFile(t, "thin.kind.json", `{"kind": "thin"}`)}, "kind_failed", 1},
 	})

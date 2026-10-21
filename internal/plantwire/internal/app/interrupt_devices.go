@@ -11,7 +11,7 @@ func (d *devices) interruptInventory() []wire.InterruptDevice {
 }
 
 func (d *devices) safeStopOf(id string) string {
-	kind := d.spec.InstanceKind(d.spec.InstanceSetFor(id))
+	kind, _ := d.kindOf(id)
 	if kind == nil {
 		return ""
 	}

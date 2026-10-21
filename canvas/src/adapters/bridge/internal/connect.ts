@@ -28,7 +28,7 @@ function sessionCheck(value: unknown): SessionCheck | null {
   if (instances.some((instance) => instance === null) || policies === null) return null;
   return {
     domain: text(value.domain),
-    mixed: value.environment === "mixed",
+    mixed: value.gateway === true,
     instances: instances.filter((instance): instance is PlannedInstance => instance !== null),
     policies,
   };

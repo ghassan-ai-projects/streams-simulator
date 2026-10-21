@@ -22,17 +22,17 @@ const (
 	twinTickNS   = int64(1_000_000_000)
 	twinLeaseAt  = twinStartNS + 60*twinTickNS
 	twinEndNS    = twinLeaseAt + 600*twinTickNS
-	twinDuty     = int64(300)
+	twinLevel    = int64(30)
 	twinOpenTemp = 34.0
 )
 
-// twinLease is one set_pwm_lease the host sent, with the receipt the board sent back.
+// twinLease is one set_cooling the host sent, with the receipt the board sent back.
 type twinLease struct {
 	ID, Status, Reason string
 	AtNS               int64
 }
 
-// twinClosedForm is the thermal bench's own equation: with the fan leased at duty 300
+// twinClosedForm is the thermal bench's own equation: with the fan leased at 30 % (duty 300)
 // the zone settles at 22 + 12 - 0.02*300 = 28 degC with a 180 s time constant.
 func twinClosedForm(at int64) float64 {
 	if at < twinLeaseAt {
@@ -59,7 +59,7 @@ func twinBirths() []map[string]any {
 				map[string]any{"name": "humidity", "alias": 2, "value": 42.0, "quality": "good"},
 			}},
 		{"type": "DBIRTH", "device": "fan-01", "kind": "fan", "board": "mega-01", "birth_time_ns": twinStartNS,
-			"metrics": []any{map[string]any{"name": "duty_permille", "alias": 1, "value": 0, "quality": "good"}}},
+			"metrics": []any{map[string]any{"name": "level_percent", "alias": 1, "value": 0, "quality": "good"}}},
 	}
 }
 
@@ -86,8 +86,8 @@ func twinCommand(t *testing.T, lease twinLease) map[string]any {
 		t.Fatal(err)
 	}
 	record := twinDecode(t, raw)
-	record["command_id"], record["device"], record["command"] = lease.ID, "fan-01", "set_pwm_lease"
-	record["args"] = map[string]any{"duty_permille": twinDuty, "lease_ms": 10000}
+	record["command_id"], record["device"], record["command"] = lease.ID, "fan-01", "set_cooling"
+	record["args"] = map[string]any{"level_percent": twinLevel}
 	return record
 }
 

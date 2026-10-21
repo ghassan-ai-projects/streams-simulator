@@ -65,3 +65,7 @@ func DialPrivate(ctx context.Context, path string) (net.Conn, error) {
 func UntilInterrupted(ctx context.Context) (context.Context, context.CancelFunc) {
 	return process.UntilInterrupted(ctx)
 }
+
+func PeerGone(err error) bool {
+	return sockets.PeerGone(err)
+}

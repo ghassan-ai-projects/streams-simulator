@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -23,6 +24,7 @@ type SimulatedOptions struct {
 	BarrierCap  time.Duration
 	Node        Options
 	Session     ConnectCheck
+	StartNS     int64
 }
 
 type simNode struct {
@@ -42,11 +44,17 @@ func openSim(ctx context.Context, options RelayOptions) (*simNode, error) {
 	if options.Simulated == nil {
 		return nil, nil
 	}
-	r, err := newSimRun(ctx, *options.Simulated, options.Out)
+	simulated := *options.Simulated
+	r, faces, err := newSimRun(ctx, simulated, options.Out)
 	if err != nil {
 		return nil, err
 	}
-	node, err := newSimNode(ctx, r, *options.Simulated)
+	simulated.Node.Interfaces = faces
+	return builtSimNode(ctx, r, simulated)
+}
+
+func builtSimNode(ctx context.Context, r *run.Run, simulated SimulatedOptions) (*simNode, error) {
+	node, err := newSimNode(ctx, r, simulated)
 	if err != nil {
 		discardRun(r)
 		return nil, err
@@ -59,17 +67,25 @@ func discardRun(r *run.Run) {
 	_, _ = r.End("")
 }
 
-func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, error) {
-	spec, adapterSpec, err := loadSimInputs(o)
+func newSimRun(ctx context.Context, o SimulatedOptions, out string) (*run.Run, domain.Interfaces, error) {
+	inputs, err := loadSimInputs(o)
 	if err != nil {
-		return nil, fmt.Errorf("plantwire relay: %w", err)
+		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: spec, Adapter: adapterSpec, Seed: o.Seed, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, JournalDir: out, SessionRecord: simSession(o)})
+	r, err := run.New(context.WithoutCancel(ctx), run.Config{Domain: inputs.spec, Adapter: inputs.adapter, Seed: o.Seed, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: cmp.Or(o.StartNS, model.DefaultStartTimeNS), JournalDir: out, SessionRecord: simSession(o),
+		BoardDigests: boardDigests(inputs.checked)})
 	if err != nil {
-		return nil, fmt.Errorf("plantwire relay: %w", err)
+		return nil, nil, fmt.Errorf("plantwire relay: %w", err)
 	}
-	return r, nil
+	return r, inputs.faces, nil
+}
+
+type simInputs struct {
+	spec    *simdomain.Compiled
+	adapter *model.Adapter
+	checked []model.ImplementsChecked
+	faces   domain.Interfaces
 }
 
 func simSession(o SimulatedOptions) map[string]any {
@@ -79,15 +95,23 @@ func simSession(o SimulatedOptions) map[string]any {
 	return sessionNote(o.Session)
 }
 
-func loadSimInputs(o SimulatedOptions) (*simdomain.Compiled, *model.Adapter, error) {
+func loadSimInputs(o SimulatedOptions) (simInputs, error) {
 	spec, adapterSpec, err := run.LoadInputs(o.DomainsDir, o.AdaptersDir, o.Domain, o.Adapter)
 	if err != nil {
-		return nil, nil, fmt.Errorf("load simulated inputs: %w", err)
+		return simInputs{}, fmt.Errorf("load simulated inputs: %w", err)
 	}
-	if _, err := CheckImplements(spec.Spec, o.Node.KindsDirs); err != nil {
-		return nil, nil, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
+	checked, faces, err := o.interfaces(spec.Spec)
+	if err != nil {
+		return simInputs{}, fmt.Errorf("%w", model.WithSource(err, spec.Spec.ID))
 	}
-	return spec, adapterSpec, nil
+	return simInputs{spec: spec, adapter: adapterSpec, checked: checked, faces: faces}, nil
+}
+
+func (o SimulatedOptions) interfaces(spec *model.DomainSpec) ([]model.ImplementsChecked, domain.Interfaces, error) {
+	if o.Node.Interfaces != nil {
+		return o.Session.ImplementsChecked, o.Node.Interfaces, nil
+	}
+	return loadInterfaces(spec, o.Node.KindsDirs)
 }
 
 func newSimNode(ctx context.Context, r *run.Run, o SimulatedOptions) (*simNode, error) {

@@ -49,11 +49,15 @@ func (o validateOptions) rules() plantwire.TwinRules {
 }
 
 func validateKindFiles(paths []string, rules plantwire.TwinRules) (any, error) {
-	kinds, err := plantwire.ValidateKindFilesWith(paths, rules)
+	validated, err := plantwire.ValidateKindFilesWith(paths, rules)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return map[string]any{"valid": true, "kinds": kinds}, nil
+	document := map[string]any{"valid": true, "kinds": validated.Kinds}
+	if len(validated.Boards) > 0 {
+		document["boards"] = validated.Boards
+	}
+	return document, nil
 }
 
 func validateKindStream(s *session, rules plantwire.TwinRules) (any, error) {

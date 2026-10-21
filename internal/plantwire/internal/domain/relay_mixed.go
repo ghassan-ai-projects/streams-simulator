@@ -156,11 +156,40 @@ func (r *Relay) birthContent() map[string]any {
 func mergedBirth(gateway, simulated map[string]any) map[string]any {
 	merged := content(gateway)
 	kinds := mergedKinds(listOf(gateway["kinds"]), listOf(simulated["kinds"]))
-	merged["environment"] = EnvironmentMixed
+	boards := append(slices.Clone(listOf(gateway["boards"])), listOf(simulated["boards"])...)
+	merged["environment"] = AnnouncedEnvironment(boardEnvironments(boards))
 	merged["kinds"] = kinds
-	merged["boards"] = append(slices.Clone(listOf(gateway["boards"])), listOf(simulated["boards"])...)
+	merged["boards"] = boards
 	merged["capability_digest"] = CapabilityDigest(kinds)
+	if pacedByWall(simulated) {
+		merged["node_metrics"] = wallClockMetrics(gateway["node_metrics"])
+	}
 	return merged
+}
+
+func pacedByWall(birth map[string]any) bool {
+	metrics, _ := birth["node_metrics"].(map[string]any)
+	return metrics["clock_mode"] == ClockModeWall
+}
+
+func wallClockMetrics(announced any) map[string]any {
+	metrics, _ := announced.(map[string]any)
+	metrics = maps.Clone(metrics)
+	if metrics == nil {
+		metrics = map[string]any{}
+	}
+	metrics["clock_mode"] = ClockModeWall
+	return metrics
+}
+
+func boardEnvironments(boards []any) map[string]bool {
+	environments := map[string]bool{}
+	for _, board := range boards {
+		fields, _ := board.(map[string]any)
+		environment, _ := fields["environment"].(string)
+		environments[environment] = true
+	}
+	return environments
 }
 
 func mergedKinds(gateway, simulated []any) []any {

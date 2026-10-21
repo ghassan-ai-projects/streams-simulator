@@ -50,7 +50,7 @@ func WithKindFiles[T any](paths, dirs []string, use func(map[string]map[string]a
 	return app.WithKindFiles(paths, dirs, use)
 }
 
-func ValidateKindFilesWith(paths []string, rules TwinRules) ([]KindSummary, error) {
+func ValidateKindFilesWith(paths []string, rules TwinRules) (DeviceFiles, error) {
 	return app.ValidateKindFilesWith(paths, rules)
 }
 

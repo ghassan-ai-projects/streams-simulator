@@ -47,3 +47,13 @@ func TestTheFacadeEchoesThePlansPolicyListSorted(t *testing.T) {
 		t.Fatalf("CheckConnect = %+v, %v, want the plan's policies sorted", check, err)
 	}
 }
+
+func TestTheFacadeRefusesAConnectIntoAFolderThatHoldsARun(t *testing.T) {
+	t.Parallel()
+	options := facadeConnectOptions(t, `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock"}`)
+	options.Out = t.TempDir()
+	testsupport.WriteFileIn(t, options.Out, "journal.jsonl", []byte("{}\n"))
+	if _, err := Connect(t.Context(), options); !errors.Is(err, ErrRunFolderTaken) {
+		t.Fatalf("Connect into a folder holding a journal = %v, want ErrRunFolderTaken", err)
+	}
+}

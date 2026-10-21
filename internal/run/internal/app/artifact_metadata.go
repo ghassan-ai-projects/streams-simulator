@@ -94,6 +94,7 @@ func (r *Run) attachArtifactJournal(artifact *model.RunArtifact) {
 	artifact.JournalFileDigest, artifact.SealedFileDigest = r.journalDigests.ObserverFile, r.journalDigests.DirectorFile
 	artifact.LedgerDigest, artifact.HistoryDigest = r.evidenceDigests()
 	artifact.FieldTraceDigest, artifact.InterruptLogDigest = r.fieldTraceDigest, r.interruptLogDigest
+	artifact.BoardDigests = r.Config.BoardDigests
 }
 
 func (r *Run) evidenceDigests() (string, string) {

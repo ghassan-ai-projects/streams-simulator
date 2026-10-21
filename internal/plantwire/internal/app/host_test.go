@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -26,8 +28,11 @@ type scriptedHost struct {
 	refusal    string
 	silent     bool
 	afterSync  func(h *scriptedHost, syncs int)
-	syncs      int
-	transcript []byte
+
+	drained     []time.Duration
+	duringDrain func(h *scriptedHost)
+	syncs       int
+	transcript  []byte
 }
 
 func (h *scriptedHost) Send(records []map[string]any) error {
@@ -127,6 +132,19 @@ func (h *scriptedHost) AwaitHandshake(ctx context.Context, until func(wire.Messa
 }
 
 func (h *scriptedHost) WaitedMS() int64 { return 0 }
+
+func (h *scriptedHost) Drain(ctx context.Context, wait time.Duration) ([]wire.Inbound, error) {
+	h.drained = append(h.drained, wait)
+	if h.duringDrain != nil {
+		h.duringDrain(h)
+	}
+	got := h.pending
+	h.pending = nil
+	if err := ctx.Err(); err != nil {
+		return got, fmt.Errorf("scripted host: %w", err)
+	}
+	return got, nil
+}
 
 func (h *scriptedHost) types() []string {
 	var out []string

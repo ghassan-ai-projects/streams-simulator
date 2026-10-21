@@ -12,6 +12,7 @@ const file = "settings/default.policies.json";
 const check = {
   domain: "mini",
   environment: "simulated",
+  gateway: false,
   instances: [{ instance: "fan-01", origin: "simulated", kind: "fan" }],
   policies: [a, b],
 };

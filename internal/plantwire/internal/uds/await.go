@@ -101,3 +101,33 @@ func stopped(ctx context.Context) (domain.Inbound, bool, error) {
 }
 
 func (l *Link) WaitedMS() int64 { return l.waited }
+
+func (l *Link) Drain(ctx context.Context, wait time.Duration) ([]domain.Inbound, error) {
+	inbound, _, err := l.collect(ctx, neverMet, wait)
+	return inbound, err
+}
+
+func neverMet(domain.Message) bool { return false }
+
+type WallPacer struct {
+	schedule domain.WallSchedule
+	began    time.Time
+}
+
+func StartWallPacer() *WallPacer {
+	return NewWallPacer(domain.WallScheduleFrom(time.Now().UnixNano()))
+}
+
+func NewWallPacer(schedule domain.WallSchedule) *WallPacer {
+	return &WallPacer{schedule: schedule, began: time.Now()}
+}
+
+func (p *WallPacer) wallNow() int64 { return p.began.UnixNano() + int64(time.Since(p.began)) }
+
+func (p *WallPacer) StartNS() int64 { return p.schedule.WorldStartNS }
+
+func (p *WallPacer) WorldNowNS() int64 { return p.schedule.WorldAt(p.wallNow()) }
+
+func (p *WallPacer) WaitNS(worldNS int64) int64 {
+	return p.schedule.WaitNS(worldNS, p.wallNow())
+}

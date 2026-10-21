@@ -61,7 +61,7 @@ func TestANodeStopIsTimedFromTheGatewaysReceiptAndAHostCommandPurgedByTheNodeIsN
 	t.Parallel()
 	board := twTrace(twTemperature(100, 30), twTemperature(200, 31))
 	board.Receipts = map[string]BoardReceipt{"node-stop-1": {Status: "accepted", AtNS: 200}, "c-1": {Status: "accepted", AtNS: 150}}
-	sent := []HostCommand{{ID: "c-1", Device: "fan-01", Name: "set_pwm_lease"},
+	sent := []HostCommand{{ID: "c-1", Device: "fan-01", Name: "set_cooling"},
 		{ID: "node-stop-1", Device: "fan-01", Name: "stop_fan", Origin: OriginNode, Args: map[string]any{}}}
 	blocks := InterruptBlocks([]map[string]any{{"event": EventPurge, "command_id": "c-1", "reason": ReasonLocalControl}})
 	board.Devices = append(board.Devices, BoardDevice{Name: "fan-01", Kind: "fan", Board: "mega-01"})

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log/slog"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -15,11 +17,12 @@ type devices struct {
 	wireIDs  map[string]string
 	ids      map[string]string
 	withheld map[string]bool
+	faces    wire.Interfaces
 }
 
-func newDevices(r *run.Run, withheld []string) *devices {
+func newDevices(r *run.Run, withheld []string, faces wire.Interfaces) *devices {
 	d := &devices{run: r, spec: r.Domain(), born: map[string]bool{}, current: map[string]map[string]any{},
-		wireIDs: map[string]string{}, ids: map[string]string{}, withheld: map[string]bool{}}
+		wireIDs: map[string]string{}, ids: map[string]string{}, withheld: map[string]bool{}, faces: faces}
 	for _, id := range withheld {
 		d.withheld[id] = true
 	}
@@ -69,9 +72,20 @@ func (d *devices) entity(device string) (string, bool) {
 func (d *devices) kinds() []*model.Kind {
 	kinds := make([]*model.Kind, len(d.spec.Spec.Kinds))
 	for i := range d.spec.Spec.Kinds {
-		kinds[i] = &d.spec.Spec.Kinds[i]
+		kinds[i], _ = d.faces.Of(&d.spec.Spec.Kinds[i])
 	}
 	return kinds
+}
+
+func (d *devices) kindOf(id string) (*model.Kind, *wire.MappedKind) {
+	effective := d.spec.InstanceKind(d.spec.InstanceSetFor(id))
+	if effective == nil {
+		return nil, nil
+	}
+	if face, mapped := d.faces.Of(d.spec.Kind(effective.Name)); mapped != nil {
+		return face, mapped
+	}
+	return effective, nil
 }
 
 func (d *devices) births(atNS int64) []wire.Record {
@@ -84,9 +98,13 @@ func (d *devices) births(atNS int64) []wire.Record {
 
 func (d *devices) birth(id string, atNS int64) wire.Record {
 	d.born[id] = true
-	effective := d.spec.InstanceKind(d.spec.InstanceSetFor(id))
+	effective, mapped := d.kindOf(id)
+	base := d.spec.Kind(effective.Name)
+	if mapped != nil {
+		base = effective
+	}
 	identity := wire.DeviceIdentity{Device: d.wireOf(id), Kind: effective.Name, Board: d.board(id), BootID: d.boot(id), BirthTimeNS: atNS}
-	return wire.DeviceBirth(identity, d.spec.Kind(effective.Name), effective, d.current[id])
+	return wire.DeviceBirth(identity, base, effective, d.current[id])
 }
 
 func (d *devices) observe(event model.SimEvent) []wire.Record {
@@ -101,21 +119,34 @@ func (d *devices) carried(event model.SimEvent) []wire.Record {
 	if !d.born[event.EntityID] {
 		records = append(records, d.birth(event.EntityID, mustTime(event.EventTime)))
 	}
-	kind := d.spec.InstanceKind(d.spec.InstanceSetFor(event.EntityID))
-	alias := wire.Alias(kind, event.Channel)
-	if alias == 0 || event.Value == nil || !wire.Finite(event.Value) || !wire.Carried(kind.ChannelDecl(event.Channel)) {
+	kind, channel, value, carried := d.reading(event)
+	alias := wire.Alias(kind, channel)
+	if !carried || alias == 0 || value == nil || !wire.Finite(value) || !wire.Carried(kind.ChannelDecl(channel)) {
 		return records
 	}
-	d.remember(event)
-	sample := wire.Sample(alias, event.Value, event.Quality, mustTime(event.EventTime))
+	d.remember(event.EntityID, channel, value)
+	sample := wire.Sample(alias, value, event.Quality, mustTime(event.EventTime))
 	return append(records, wire.DeviceData(d.wireOf(event.EntityID), d.boot(event.EntityID), false, []map[string]any{sample}))
 }
 
-func (d *devices) remember(event model.SimEvent) {
-	if d.current[event.EntityID] == nil {
-		d.current[event.EntityID] = map[string]any{}
+func (d *devices) reading(event model.SimEvent) (*model.Kind, string, any, bool) {
+	kind, mapped := d.kindOf(event.EntityID)
+	if mapped == nil {
+		return kind, event.Channel, event.Value, kind != nil
 	}
-	d.current[event.EntityID][event.Channel] = event.Value
+	metric, value, carried := wire.SemanticReading(*mapped, event.Channel, event.Value)
+	if metric != "" && !carried {
+		slog.Warn("plantwire: a raw reading has no word in its board mapping and is not carried",
+			"device", event.EntityID, "raw", event.Channel, "value", event.Value)
+	}
+	return kind, metric, value, carried
+}
+
+func (d *devices) remember(id, channel string, value any) {
+	if d.current[id] == nil {
+		d.current[id] = map[string]any{}
+	}
+	d.current[id][channel] = value
 }
 
 func mustTime(text string) int64 {

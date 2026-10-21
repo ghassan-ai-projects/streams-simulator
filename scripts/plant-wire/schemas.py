@@ -41,6 +41,32 @@ kind_file = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "
                             "In a metric, a range needs min below max (checked by the simulator, which a schema cannot express).",
              **copy.deepcopy(kind)}
 kind_file["properties"]["kind_digest"] = {"not": {}, "description": "Forbidden in a kind file: the digest is computed from the file."}
+scalar = {"type": ["number", "integer", "boolean", "string"], "maxLength": 64}
+scale = {"type": "number", "exclusiveMinimum": 0, "description": "raw = semantic x scale, in both directions (a reading is the raw value divided by it)."}
+mapped_arg = {"type": "object", "additionalProperties": False, "properties": {"value": scalar, "from": ident, "scale": scale},
+    "oneOf": [{"required": ["value"]}, {"required": ["from"]}], "if": {"required": ["value"]}, "then": {"not": {"required": ["scale"]}},
+    "description": "One raw argument: a fixed value, or a semantic argument (from) times scale (default 1). A string value for a raw name in raw_enums is one of its words."}
+mapped_command = {"type": "object", "additionalProperties": False, "required": ["raw"], "properties": {
+    "raw": ident, "args": {"type": "object", "additionalProperties": mapped_arg},
+    "by": ident, "table": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": scalar}},
+    "lease": {"type": "object", "additionalProperties": False, "required": ["arg", "ms"], "properties": {"arg": ident, "ms": {"type": "integer", "minimum": 1, "maximum": 86400000}},
+              "description": "The board's lease: the raw argument that carries it and its fixed duration. The command's effect lapses after ms unless renewed."}},
+    "if": {"required": ["by"]}, "then": {"required": ["table"]}, "else": {"not": {"required": ["table"]}},
+    "description": "A kind command to one raw command. by names the semantic argument whose word selects a table row of raw arguments."}
+mapped_metric = {"type": "object", "additionalProperties": False, "required": ["raw"], "properties": {
+    "raw": ident, "scale": scale, "table": {"type": "object", "additionalProperties": ident, "description": "Raw word (one of raw_enums) to the kind's word."}},
+    "not": {"required": ["scale", "table"]}, "description": "A kind metric from one raw reading: copied, divided by scale, or translated by table."}
+mapped_kind = {"type": "object", "additionalProperties": False, "required": ["commands", "metrics"], "properties": {
+    "commands": {"type": "object", "additionalProperties": mapped_command}, "metrics": {"type": "object", "additionalProperties": mapped_metric},
+    "raw_enums": {"type": "object", "additionalProperties": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": True, "items": ident},
+                  "description": "The words of a raw enumerated value, in the order of their integer codes (a twin's code is the index)."}}}
+board_file = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:plant-wire:v1:BOARD", "title": "BOARD",
+    "description": "A board mapping: how one board type implements kinds, command and reading, in raw board values (SPEC section 15). "
+                   "Every member name is an id; a schema cannot say that, so a validator checks it with the other rules of section 15. "
+                   "board_digest is computed from the file, which must not carry it. A kind the mapping does not name passes through unchanged.",
+    "type": "object", "additionalProperties": False, "required": ["board_type", "kinds"], "properties": {
+    "board_type": ident, "kinds": {"type": "object", "additionalProperties": mapped_kind},
+    "board_digest": {"not": {}, "description": "Forbidden in a board mapping: the digest is computed from the file."}}}
 board = {"type": "object", "required": ["board", "environment", "members"], "properties": {"board": ident,
     "environment": {"enum": ["simulated", "hardware"], "description": "What this board is: the origin of every device born on it. A claim the host checks against the node's environment (SPEC section 2), never inferred."},
     "members": {"type": "array", "maxItems": 4096, "items": ident}}}
@@ -61,6 +87,7 @@ evidence = {"type": "object", "additionalProperties": False,
 
 schemas = {
  "KIND": kind_file,
+ "BOARD": board_file,
  "NBIRTH": envelope("NBIRTH", "control", ["protocol_min", "protocol_max", "contract_version", "contract_digest", "environment", "bd_seq", "prior_last_seq", "capability_digest", "kinds", "boards"], {
     "protocol_min": {"type": "integer", "minimum": 1}, "protocol_max": {"type": "integer", "minimum": 1},
     "contract_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}, "contract_digest": digest,

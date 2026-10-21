@@ -129,3 +129,37 @@ func TestABirthNamesTheEnvironmentOfEveryBoardAndADomainBoardIsSimulated(t *test
 		t.Fatalf("NBIRTH = %v, want a mixed node whose domain board is simulated and whose gateway board is hardware", record)
 	}
 }
+
+func TestTheAnnouncedEnvironmentFollowsTheBoardsActuallyAnnounced(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		boards map[string]bool
+		want   string
+	}{
+		{map[string]bool{EnvironmentSimulated: true}, EnvironmentSimulated},
+		{map[string]bool{EnvironmentHardware: true}, EnvironmentHardware},
+		{map[string]bool{EnvironmentSimulated: true, EnvironmentHardware: true}, EnvironmentMixed},
+		{map[string]bool{EnvironmentSimulated: false, EnvironmentHardware: true}, EnvironmentHardware},
+	} {
+		if got := AnnouncedEnvironment(tc.boards); got != tc.want {
+			t.Errorf("AnnouncedEnvironment(%v) = %q, want %q", tc.boards, got, tc.want)
+		}
+	}
+}
+
+func TestAMergedBirthClaimsOnlyTheEnvironmentsOfItsBoards(t *testing.T) {
+	t.Parallel()
+	hardware := map[string]any{"environment": EnvironmentHardware, "boards": []any{map[string]any{"board": "uno-07", "environment": EnvironmentHardware}}}
+	for _, tc := range []struct {
+		simulated []any
+		want      string
+	}{
+		{nil, EnvironmentHardware},
+		{[]any{map[string]any{"board": "mega-01", "environment": EnvironmentSimulated}}, EnvironmentMixed},
+	} {
+		merged := mergedBirth(hardware, map[string]any{"environment": EnvironmentSimulated, "boards": tc.simulated})
+		if merged["environment"] != tc.want || len(merged["boards"].([]any)) != 1+len(tc.simulated) {
+			t.Errorf("merged birth with simulated boards %v = %v, want a %s birth over every board", tc.simulated, merged, tc.want)
+		}
+	}
+}

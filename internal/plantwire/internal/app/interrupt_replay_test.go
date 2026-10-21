@@ -51,7 +51,11 @@ func controlledFolder(t *testing.T) recordedFolder {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := &controlled{t: t, port: NewControlPort(), run: r, sink: file, origins: true}
+	_, faces, err := loadInterfaces(spec.Spec, []string{testsupport.ThermalBoardKindsDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &controlled{t: t, port: NewControlPort(), run: r, sink: file, origins: true, faces: faces}
 	c.host = &scriptedHost{t: t, afterSync: controlScript(c)}
 	c.submit(t, approveFan)
 	c.play(t, 5)

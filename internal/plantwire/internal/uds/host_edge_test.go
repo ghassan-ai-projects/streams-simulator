@@ -141,3 +141,35 @@ func TestAFloodingHostIsCutOffAtOneBarrier(t *testing.T) {
 		t.Fatalf("await = %d records, %v, %v", len(records), met, err)
 	}
 }
+
+func TestAHostBeatsInWallTimeWhileTheNodeIsSilent(t *testing.T) {
+	t.Parallel()
+	path := testsupport.SocketPath(t)
+	peer := &stubPeer{accepted: true, beat: map[string]any{"type": "STATE"}}
+	served := serveInBackground(t, path, peer, Pacing{Handshake: time.Second, Heartbeat: 10 * time.Millisecond})
+	conn := dialHost(t, path)
+	if _, err := conn.Write([]byte("{\"type\":\"NBIRTH\"}\n")); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	for want := 1.0; want <= 3; want++ {
+		line, err := reader.ReadBytes('\n')
+		var beat map[string]any
+		if err != nil || json.Unmarshal(line, &beat) != nil || beat["type"] != "STATE" || beat["heartbeat"] != want {
+			t.Fatalf("beat %v = %q, %v", want, line, err)
+		}
+	}
+	_ = conn.Close()
+	if err := <-served; err != nil {
+		t.Fatalf("ServeHost = %v, want a clean end when the node hangs up", err)
+	}
+}
+
+func TestAHostWithoutAHeartbeatIntervalNeverBeats(t *testing.T) {
+	t.Parallel()
+	beats, stop := heartbeats(0)
+	defer stop()
+	if beats != nil {
+		t.Fatal("a zero interval made a ticker")
+	}
+}

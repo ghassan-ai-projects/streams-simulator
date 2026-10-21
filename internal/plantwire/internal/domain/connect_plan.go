@@ -17,6 +17,8 @@ const (
 
 type PlanInstance struct {
 	ID, Kind, Implements, KindDigest string
+	BoardType, BoardDigest           string
+	Faults                           []PlanFault
 }
 
 type PlannedInstance struct {
@@ -26,11 +28,15 @@ type PlannedInstance struct {
 	KindDigest string `json:"kind_digest,omitempty"`
 	Board      string `json:"board,omitempty"`
 	Device     string `json:"device,omitempty"`
+
+	BoardType   string `json:"board_type,omitempty"`
+	BoardDigest string `json:"board_digest,omitempty"`
 }
 
 type Bound struct {
 	Index                                     int
 	Instance, Board, Device, Kind, KindDigest string
+	BoardType, BoardDigest                    string
 }
 
 type ConnectPlan struct {
@@ -58,6 +64,7 @@ func CheckPlan(plan *model.SessionPlan, instances []PlanInstance) (ConnectPlan, 
 	for i, binding := range plan.Real {
 		issues = append(issues, check.binding(i, binding)...)
 	}
+	issues = append(issues, check.disturbanceIssues(plan)...)
 	allowed, listed := NewAllowList(plan.Policies, "/policies")
 	connect := check.outcome(plan, instances)
 	connect.Policies = allowed
@@ -146,14 +153,11 @@ func (c *planCheck) instanceIssue(at string, b model.RealBinding) (model.Issue, 
 func (c *planCheck) bind(i int, b model.RealBinding) {
 	instance := c.known[b.Instance]
 	c.bound = append(c.bound, Bound{Index: i, Instance: b.Instance, Board: b.Board, Device: b.Device,
-		Kind: instance.Implements, KindDigest: instance.KindDigest})
+		Kind: instance.Implements, KindDigest: instance.KindDigest, BoardType: instance.BoardType, BoardDigest: instance.BoardDigest})
 }
 
 func (c *planCheck) outcome(plan *model.SessionPlan, instances []PlanInstance) ConnectPlan {
-	environment := EnvironmentSimulated
-	if plan.GatewaySocket != "" {
-		environment = EnvironmentMixed
-	}
+	environment := c.environment(plan, len(instances))
 	planned := make([]PlannedInstance, len(instances))
 	for i, instance := range instances {
 		planned[i] = c.planned(instance)
@@ -162,10 +166,18 @@ func (c *planCheck) outcome(plan *model.SessionPlan, instances []PlanInstance) C
 		HostSocket: cleanSocket(plan.HostSocket), GatewaySocket: cleanSocket(plan.GatewaySocket)}
 }
 
+func (c *planCheck) environment(plan *model.SessionPlan, instances int) string {
+	if plan.GatewaySocket == "" {
+		return EnvironmentSimulated
+	}
+	return AnnouncedEnvironment(map[string]bool{EnvironmentHardware: true, EnvironmentSimulated: len(c.bound) < instances})
+}
+
 func (c *planCheck) planned(instance PlanInstance) PlannedInstance {
 	for _, b := range c.bound {
 		if b.Instance == instance.ID {
-			return PlannedInstance{Instance: instance.ID, Origin: PlannedReal, Kind: instance.Kind, KindDigest: b.KindDigest, Board: b.Board, Device: b.Device}
+			return PlannedInstance{Instance: instance.ID, Origin: PlannedReal, Kind: instance.Kind, KindDigest: b.KindDigest, Board: b.Board, Device: b.Device,
+				BoardType: b.BoardType, BoardDigest: b.BoardDigest}
 		}
 	}
 	return PlannedInstance{Instance: instance.ID, Origin: PlannedSimulated, Kind: instance.Kind}

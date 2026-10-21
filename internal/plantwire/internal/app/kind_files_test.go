@@ -157,7 +157,8 @@ func TestCheckImplementsFindsAKindFileByTheKindItDeclaresNotByItsFileName(t *tes
 func TestValidateKindFilesSummarisesEachFileAndNamesTheOneItCannotRead(t *testing.T) {
 	t.Parallel()
 	dir := kindsDirectoryWith(t, map[string]string{"pump.kind.json": pumpKindContent(t), "bad.kind.json": "{"})
-	summaries, err := ValidateKindFilesWith([]string{filepath.Join(dir, "pump.kind.json")}, nil)
+	validated, err := ValidateKindFilesWith([]string{filepath.Join(dir, "pump.kind.json")}, nil)
+	summaries := validated.Kinds
 	if err != nil || len(summaries) != 1 || summaries[0].Kind != "pump" || summaries[0].Metrics != 2 || summaries[0].Commands != 3 {
 		t.Fatalf("ValidateKindFilesWith = %+v, %v, want the pump kind file summarized", summaries, err)
 	}

@@ -32,7 +32,7 @@ func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
 	}
 	h.issued[id], h.issuedAt[id], h.order = step, now, append(h.order, id)
 	h.issuedBoot[id] = d.boot
-	key := domain.Command{Device: step.Device, Name: step.Command, Args: step.Args, Boot: d.boot}.Content()
+	key := domain.Command{Device: step.Device, Name: step.Command, Args: step.Args, Boot: d.boot}.IntentKey(id)
 	return control("DCMD", map[string]any{"command_id": id, "idempotency_key": key, "device": step.Device, "command": step.Command,
 		"args": step.Args, "expected_boot_id": d.boot, "deadline_ns": now + commandLifetimeNS, "not_before_ns": 0,
 		"authority_epoch": h.options.Epoch, "policy_digest": h.options.Policy, "fallback_on_lease_loss": "safe_off"}), true

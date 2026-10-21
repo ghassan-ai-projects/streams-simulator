@@ -151,14 +151,26 @@
             "first_observable_snr": 3.0,
             "unavoidable_snr": 10.0
           },
-          "onset": {"magnitude": 4.0, "shape": "step"},
+          "onset": {"magnitude": 1.0, "shape": "step"},
           "description": "The room warms by 4 degC. The zone follows it, and nothing on the board is wrong."
+        },
+        {
+          "id": "zone_heat_load",
+          "affects": [{"state": "heat_load", "delta": 8.0}],
+          "is_negative_class": false,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "temperature"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"},
+          "description": "A heat source inside the zone adds 8 degC of heat load. The zone settles 8 degC warmer while the room stays as it was, so cooling the zone is the right answer."
         }
       ]
     },
     {
       "name": "indicator",
-      "implements": "indicator",
+      "implements": "indicator", "board_type": "arduino-thermal",
       "state": [
         {
           "name": "led_brightness",
@@ -270,7 +282,7 @@
     },
     {
       "name": "fan",
-      "implements": "fan",
+      "implements": "fan", "board_type": "arduino-thermal",
       "state": [
         {
           "name": "fan_duty",

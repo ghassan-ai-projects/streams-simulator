@@ -1,12 +1,12 @@
 # Brief: the independent effect instrument
 
 - **For:** the owner, building the bench for the thermal LED/fan experiment (M5).
-- **From:** the streamsim physical-devices goal (R13).
+- **From:** the streamsim physical-devices goal (R13). Updated in fan S4c (2026-10-20): semantic kinds on the wire (D7), paced sessions (D2).
 - **Why it exists:** a command is not done because the board says so. SPEC section 9: receipt is not result is not observation is not verification. A `DRESULT` is self-reported and may lie. The effect of a command on the physical world counts only when something that does not depend on the board's own report observes it.
 
 ## Why the host's observation is not enough
 
-The reference host and Agentic Stream confirm an effect by reading a metric of the commanded device after it reported success, for example `duty_permille` on the fan after `set_pwm_lease`. That metric is the board's own report of its own state. If the firmware reports the commanded duty without driving the fan (a wiring fault, an unplugged supply, a stuck driver), the host sees a matching value and records the effect as observed. The live screen shows it as the host's decision; it is **recorded evidence, not independent proof** (PHYSICAL_DEVICES section 3, SPEC section 9). Only an instrument whose sensing, power, timekeeping and logging path shares nothing with the board and the gateway can say the fan really turned.
+The reference host and Agentic Stream confirm an effect by reading a metric of the commanded device after it reported success, for example `level_percent` on the fan after `set_cooling` (the gateway reports the firmware's duty through the board mapping). That metric is the board's own report of its own state. If the firmware reports the commanded duty without driving the fan (a wiring fault, an unplugged supply, a stuck driver), the host sees a matching value and records the effect as observed. The live screen shows it as the host's decision; it is **recorded evidence, not independent proof** (PHYSICAL_DEVICES section 3, SPEC section 9). Only an instrument whose sensing, power, timekeeping and logging path shares nothing with the board and the gateway can say the fan really turned.
 
 ## What the instrument must be
 
@@ -17,7 +17,7 @@ The reference host and Agentic Stream confirm an effect by reading a metric of t
 
 ## What to measure (thermal LED/fan bench)
 
-The bench is an ELEGOO Mega, a DHT11 on D2, an LED, and a fan driven through an L293D. Kinds and commands: `thermal_sensor` (`temperature` Cel 0 to 50, `humidity` % 20 to 90), `indicator` (`brightness_permille` 0 to 1000, `pattern` 0 to 2; `set_led`, `stop_led`), `fan` (`duty_permille` 0 to 600; `set_pwm_lease` with `duty_permille` 0 to 600 and `lease_ms` 5000 to 10000; `stop_fan`).
+The bench is an ELEGOO Mega, a DHT11 on D2, an LED, and a fan driven through an L293D. Kinds and commands on the plant wire: `thermal_sensor` (`temperature` Cel 0 to 50, `humidity` % 20 to 90), `indicator` (`state` `off`, `watch` or `alert`; `show_state`, `stop_led`), `fan` (`level_percent` 0 to 60; `set_cooling` with `level_percent` 0 to 60; `stop_fan`). The board mapping `examples/devices/thermal-board/arduino-thermal.board.json` turns them into the firmware's raw commands: `set_cooling` is `set_pwm_lease` with `duty_permille` = 10 × `level_percent` and `lease_ms` 5000; `show_state` is `set_led` with the brightness and pattern of that state.
 
 | Effect to confirm | Suggested instrument | Reading | Notes |
 | --- | --- | --- | --- |
@@ -34,10 +34,10 @@ Log format (suggested), one CSV per run: `utc_ns,channel,value,unit,instrument_i
 ## Timestamps and clock alignment with the run
 
 - The board's readings carry `event_time_ns` in UTC wall nanoseconds, stamped by the gateway, with `uncertainty_ms`. They are in `field-trace.jsonl`.
-- The host's commands are issued in the run's own clock; in a mixed session the simulated world's clock starts at the domain's start (2026-01-01T00:00:00Z by default) and runs faster than wall time, so **world time is not wall time**. Do not align the instrument to the command's `at_ns` or to the world clock.
+- The host's commands are issued in the run's own clock. A session paced to the wall clock (`pace: "wall"`, which the canvas always sets) starts the world at the session's wall time and runs one world second per wall second, so its world time is UTC up to the barrier's lag; an unpaced session starts at the domain's start (2026-01-01T00:00:00Z by default) and runs faster than wall time. Either way, do not align the instrument to the command's `at_ns` or to the world clock: use the gateway's log below.
 - Align with wall time on the gateway side: the gateway brief asks the gateway to log each command's `command_id` and the UTC time at which it handed the command to the firmware. Use that log as the time of the command. For a hardware device, the relay's `interrupts.jsonl` also records a wall-clock time (`node_ns`, clock `wall`) for each command it judged when the session ran with a control socket.
 - Measure the clock offset between the instrument host, the gateway host and the machine running streamsim (for example with `chronyc tracking` or `ntpq -p` on each, before and after), and allow it in the comparison window. State the offset in the evidence.
-- A `set_pwm_lease` holds for `lease_ms` (5 to 10 s) and then falls back; the expected effect window is the lease plus the fan's spin-up and spin-down.
+- A `set_cooling` holds for the board's lease (5 s in the mapping; the firmware's `set_pwm_lease` accepts 5 to 10 s) and then falls back; the expected effect window is the lease plus the fan's spin-up and spin-down.
 
 ## How the readings are used
 
@@ -60,7 +60,7 @@ Two limits of the design, recorded so nobody expects more (D-111, D-112): the li
 
 1. Baseline: with nothing commanded for 5 minutes, the fan channel stays at zero, the LED channel at its dark level, and the temperature drifts only as the room does. Record the noise.
 2. Positive control: the fan driven by hand at the bench (not through the board) shows the expected tachometer and current response.
-3. A lying result: with the fan supply disconnected, `set_pwm_lease` returns `accepted` and `succeeded` on the live screen while the instrument shows no fan response. The bench result is "fail"; the live screen's effect reads unknown or, if the reference host's `verify` of `duty_permille` is used, "observed" (the board's own report), which demonstrates why the host's observation is not independent.
+3. A lying result: with the fan supply disconnected, `set_cooling` returns `accepted` and `succeeded` on the live screen while the instrument shows no fan response. The bench result is "fail"; the live screen's effect reads unknown or, if the reference host's `verify` of `level_percent` is used, "observed" (the board's own report), which demonstrates why the host's observation is not independent.
 4. A held command (operator hold, `local_control`): no physical effect is seen, and the row says "refused at the node".
 5. An emergency stop during a fan run: the instrument shows the fan stop within the gateway's stop latency plus the fan's spin-down, and the gateway log shows a `node-stop-N` command for `stop_fan`.
 6. For each commanded effect in the M5 run, the table above has a measured effect, a time window and a pass or fail.

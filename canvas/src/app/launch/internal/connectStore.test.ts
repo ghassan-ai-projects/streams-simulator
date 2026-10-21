@@ -9,6 +9,7 @@ const draft = { ...firstSessionDraft, hostSocket: "/tmp/h.sock", gatewaySocket: 
 const check = {
   domain: "arduino-thermal",
   environment: "mixed",
+  gateway: true,
   instances: [{ instance: "zone-01", origin: "real", kind: "thermal_sensor", board: "uno-07", device: "zone-01" }],
   policies: [],
 };

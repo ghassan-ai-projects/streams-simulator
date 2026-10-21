@@ -2,9 +2,12 @@ package sockets
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -64,5 +67,20 @@ func TestNeitherAFileNorASharedDirectoryIsUsed(t *testing.T) {
 	}
 	if _, err := DialPrivate(t.Context(), filepath.Join(shared, "s.sock")); !errors.Is(err, ErrNotPrivate) {
 		t.Fatalf("dial in a shared directory = %v", err)
+	}
+}
+
+func TestAPeerIsGoneOnABrokenPipeOrAResetAndNotOnAnEndOrAClose(t *testing.T) {
+	t.Parallel()
+	gone := []error{syscall.EPIPE, &net.OpError{Op: "write", Err: os.NewSyscallError("write", syscall.ECONNRESET)}}
+	for _, err := range gone {
+		if !PeerGone(fmt.Errorf("host: %w", err)) {
+			t.Errorf("PeerGone(%v) = false, want true", err)
+		}
+	}
+	for _, err := range []error{nil, io.EOF, net.ErrClosed, os.ErrDeadlineExceeded, syscall.ENOENT} {
+		if PeerGone(err) {
+			t.Errorf("PeerGone(%v) = true, want false", err)
+		}
 	}
 }

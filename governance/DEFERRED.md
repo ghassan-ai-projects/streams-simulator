@@ -246,7 +246,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > sent a `STATE` with `heartbeat` above zero, because the reference host sends one `STATE` at the handshake and never a
 > heartbeat; a host that dies without closing its socket and never beat is not noticed until the stream ends. Trigger to fix:
 > a host that is silent but connected in a lab run; then the reference host gains heartbeats and the relay's watchdog arms at
-> the handshake.
+> the handshake. Narrowed by fan S10 (2026-10-20): the reference host sends `STATE` with an increasing `heartbeat` every
+> `heartbeat_interval_ms` of wall time while a session is live, so a hardware gateway behind it no longer declares it lost after
+> 3 s and the relay's watchdog arms at its first beat; the relay still arms only after a heartbeat above zero.
 > D-70 (relay: one gateway, no store-and-forward): the relay serves one gateway at a time (a second connection waits until
 > the first is gone), and a gateway record that arrives while no host session exists is dropped and counted, not held, because
 > store-and-forward with `historical: true` is the gateway's job (SPEC section 7). R8 kept this for the mixed node: it still
@@ -258,7 +260,10 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > for three barrier caps the world's session ends (its devices are reported `DDEATH offline`) and the relay keeps passing the
 > gateway's records. Trigger to fix: a lab run where the world and the board must be compared in real time; then a paced
 > session design (a wall-clock slice schedule owned by `run`, with the barrier as a cap and not as the pace) replaces the
-> free-running slices, and the world is reborn when the host returns.
+> free-running slices, and the world is reborn when the host returns. Narrowed by fan S1 (2026-10-20): `plantwire connect` with a
+> session plan member `pace: "wall"` starts the world at the wall time, records it in `run.json` and releases each slice on an
+> absolute wall schedule with the barrier as a cap, for a node and a mixed session alike; `plantwire node` and the gateway-less
+> `plantwire relay --domain` stay unpaced, and the world is still not reborn when the host returns.
 > D-72 (replay of a mixed recording): `plantwire replay-trace` plays the field trace, the gateway's side of a recording, to a
 > host as a simulated node; the simulated part of a mixed recording is reproduced and verified by `replay`/`verify` (domain,
 > seed, command log and trace digest), not streamed to a host beside the trace, and a replay answers no command (every
@@ -270,7 +275,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > with its serial or socket open in a lab run. **Fixed in R10:** the relay counts its ticks since the last admitted gateway
 > record (a stray, forged, malformed or repeated record does not count) and after 30 s of silence reports its devices
 > `DDEATH link_down`, closes the gateway link and records the gateway offline; the watchdog arms at admission, without a
-> host heartbeat (`relay_liveness.go`).
+> host heartbeat (`relay_liveness.go`). Changed by fan S10 (2026-10-20): the watchdog is suspended while the relay has no host
+> (before the first and during a host loss), when SPEC sections 7 and 8 make the gateway buffer and stay silent, and it starts
+> afresh when the host's first `STATE` reaches the gateway. Changed by fan S11b (review B finding 9): a returning host no
+> longer resets the silence, so a flapping host cannot keep a dead gateway; the gateway is closed only after the host has
+> been back 5 s (`rebirthGraceMS`), time for a live gateway to answer the rebirth request.
 > D-74 (relay: no rebirth rate limit): a gateway that sends a sequence gap on every record makes the relay ask it to rebirth
 > once per gap, and a host that sends a rebirth `NCMD` in a loop makes the mixed node rebirth the gateway and the world each
 > time. Each request is one record and the birth is bounded, but nothing limits the rate. Trigger to fix: a flapping link in a
@@ -482,10 +491,27 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > `matches: true` for the mixture. The canvas is safe (it claims a fresh `c-<8 hex>` folder, retrying a taken name). Trigger to
 > fix: any CLI bench with repeated attempts; then `connect --out` refuses a folder that already holds a `run.json` or any run
 > file (a product change, not made in R13; the docs say a new folder for every session). Found by the R13 documentation review.
+> **Fixed in fan S6:** before it reads the plan, `connect` refuses (`plantwire_failed`, `ErrRunFolderTaken`) a folder that
+> holds any run file, `sealed/journal.jsonl` and `interrupts.rejected.<n>.jsonl` included, and writes nothing into it; an absent
+> folder (the canvas's `c-<8 hex>`) or one without run files is accepted (`run_folder.go` in the plantwire domain and files edge).
 >
 > D-115 (**Low**; the reference host's exit behaviour when its node is stopped): `plantwire host` run with `--delay-ms` exits 1
 > with `plantwire host: write ...: broken pipe` and no report when `plantwire connect` is stopped during a barrier wait, and exits
 > 1 with `accept ...: use of closed network connection` when it is interrupted before any node arrived. A bench script that waits
 > for the report gets none; the evidence is in the node's `journal.jsonl`. Trigger to fix: a bench that relies on the host's
 > report; then a node that ends and an interrupt before a node arrives are both a clean end with the report printed. Found by the
-> R13 documentation review.
+> R13 documentation review. **Fixed in fan S7:** `ServeHost` ends cleanly with its report when the transport says the node is
+> gone (a broken pipe or a reset, `kernel.PeerGone`) or the host was interrupted (`uds.Interrupted`); any other error still fails.
+>
+> D-116 (**High**; a command after an actuator fault's onset cancels the fault): `stateOf` in
+> `internal/world/internal/domain/state.go` applies a state's faults only when the latest fault onset is later than the latest
+> command on that state (`lastFault > lastKick`, since 63b1f1c6). A `fan_stall` or `led_stuck_off` holds until the consumer
+> next commands the fan or the LED, then the fan runs and the LED lights as commanded, while the fault interval stays open in the
+> truth. A scripted stalled-fan or stuck-LED scenario therefore measures the wrong thing, silently. Trigger to fix: before any
+> scripted actuator fault in a live session (fan experiment S5 scenarios beyond `zone_heat_load`) and before the A/B/C
+> evaluation (fan experiment PLAN.md section 8.1 item 1); then a fault declares in the domain data whether it persists over
+> later commands, rather than a global flip of the precedence, and replay stays byte for byte deterministic. Found by the S3
+> actuator fault tests (`test/contract/thermal_actuator_faults_test.go` commands before the onset for this reason). Guarded by fan S11a
+> (2026-10-20): until it is fixed, `plantwire connect` refuses a planned disturbance whose fault acts on a state a command of
+> the instance's kind sets (`fault_on_commanded_state`, decided from the domain's effector effects), so no live session
+> scripts a fault the next command would cancel.

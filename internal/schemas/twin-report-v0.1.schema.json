@@ -54,7 +54,9 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["kind", "kind_digest"],
-            "properties": {"kind": {"$ref": "#/$defs/wire_id"}, "kind_digest": {"$ref": "#/$defs/digest"}}
+            "properties": {"kind": {"$ref": "#/$defs/wire_id"}, "kind_digest": {"$ref": "#/$defs/digest"},
+              "board_type": {"$ref": "#/$defs/wire_id", "description": "Present when the twin implements the kind through a board mapping: its board type."},
+              "board_digest": {"$ref": "#/$defs/digest", "description": "Present with board_type: the board_digest of the mapping the twin translated the board's commands through."}}
           }
         },
         "start_ns": {"type": "integer", "description": "Where the twin's world starts: the earliest reading time in the field trace (births are not read for it). The twin starts from the initial state its domain declares."}

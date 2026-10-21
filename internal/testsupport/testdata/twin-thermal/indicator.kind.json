@@ -1,0 +1,29 @@
+{
+  "kind": "indicator",
+  "metrics": [
+    {"name": "brightness_permille", "data_type": "integer", "unit": "permille", "eu_range": {"min": 0, "max": 1000}, "resolution": 1, "writable": true},
+    {"name": "pattern", "data_type": "integer", "unit": "code", "eu_range": {"min": 0, "max": 2}, "resolution": 1, "writable": true}
+  ],
+  "commands": [
+    {
+      "name": "set_led",
+      "args_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "brightness_permille": {"maximum": 1000, "minimum": 0, "type": "integer"},
+          "pattern": {"maximum": 2, "minimum": 0, "type": "integer"}
+        },
+        "required": ["brightness_permille", "pattern"],
+        "type": "object"
+      },
+      "risk_class": "low",
+      "safe_stop": false
+    },
+    {
+      "name": "stop_led",
+      "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+      "risk_class": "low",
+      "safe_stop": true
+    }
+  ]
+}

@@ -101,7 +101,7 @@ func TestCommandsAppliedButNoReadingComparedGivesNoReadingsCompared(t *testing.T
 
 func TestANotAppliedCommandIsNeverGivenToTheTwin(t *testing.T) {
 	t.Parallel()
-	refused := TwinCommand{ID: "c-2", Device: "fan-01", Name: "set_pwm_lease", AtNS: 120, Status: CommandNotApplied, Reason: NotAppliedRefusedByBoard}
+	refused := TwinCommand{ID: "c-2", Device: "fan-01", Name: "set_cooling", AtNS: 120, Status: CommandNotApplied, Reason: NotAppliedRefusedByBoard}
 	twin := newFakeTwin()
 	report := twEvaluate(t, twInput(twTrace(twTemperature(200, 30)), twApplied("c-1", 100), refused), twin)
 	if twin.position("apply c-2") >= 0 || twin.position("apply c-1") < 0 {

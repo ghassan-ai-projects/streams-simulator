@@ -16,7 +16,7 @@ func minimalTwinReport() map[string]any {
 		"run":            map[string]any{"field_trace_digest": digestA, "journal_digest": digestA, "evidence_bound": true},
 		"twin":           map[string]any{"domain": "arduino-thermal", "domain_digest": digestA, "kinds": []any{map[string]any{"kind": "fan", "kind_digest": digestA}}, "start_ns": 100},
 		"tolerance_rule": map[string]any{"default": "span_fraction", "span_fraction": 0.05, "description": "a fraction of the span"},
-		"commands":       []any{map[string]any{"command_id": "c-1", "device": "fan-01", "command": "set_pwm_lease", "status": "applied", "at_ns": 150}},
+		"commands":       []any{map[string]any{"command_id": "c-1", "device": "fan-01", "command": "set_cooling", "status": "applied", "at_ns": 150}},
 		"metrics": []any{map[string]any{"device": "zone-01", "kind": "thermal_sensor", "metric": "temperature", "unit": "Cel",
 			"tolerance": map[string]any{"value": 2.5, "source": "default_span"}, "verdict": "agrees",
 			"summary":              map[string]any{"compared": 2, "within": 2, "diverged": 0, "not_compared": 1},

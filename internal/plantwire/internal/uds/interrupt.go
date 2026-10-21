@@ -9,3 +9,7 @@ import (
 func UntilInterrupted(ctx context.Context) (context.Context, context.CancelFunc) {
 	return kernel.UntilInterrupted(ctx)
 }
+
+func PeerGone(err error) bool {
+	return kernel.PeerGone(err)
+}

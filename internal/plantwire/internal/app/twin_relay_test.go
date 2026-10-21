@@ -18,7 +18,7 @@ func benchGatewayPlaying(t *testing.T, steps []standin.Step) *standin.Node {
 		Kinds: []map[string]any{thermalKindFile(t, "thermal_sensor.kind.json"), thermalKindFile(t, "fan.kind.json")},
 		Devices: []standin.Device{{Name: "zone-01", Kind: "thermal_sensor", BootID: "boot-1", Initial: map[string]any{"temperature": twinOpenTemp}},
 			{Name: "fan-01", Kind: "fan", BootID: "boot-1"}},
-		Script: standin.Script{Steps: steps, Replies: []standin.Reply{{Command: "set_pwm_lease", Receipt: "accepted", Result: "succeeded"}}}})
+		Script: standin.Script{Steps: steps, Replies: []standin.Reply{{Command: "set_cooling", Receipt: "accepted", Result: "succeeded"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func benchTemperatures(value func(at int64) float64) []standin.Step {
 func recordBenchSession(t *testing.T, value func(at int64) float64) string {
 	t.Helper()
 	hostPath, out := testsupport.SocketPath(t), t.TempDir()
-	lease := host.Scripted{ID: "cmd-1", AtNS: 1, Device: "fan-01", Command: "set_pwm_lease", Args: map[string]any{"duty_permille": 300, "lease_ms": 10000}}
+	lease := host.Scripted{ID: "cmd-1", AtNS: 1, Device: "fan-01", Command: "set_cooling", Args: map[string]any{"level_percent": 30}}
 	started := startHost(t, hostPath, relayHostOptions("hardware", lease))
 	relay := startRelay(t, hostPath, out, nil)
 	node := benchGatewayPlaying(t, benchTemperatures(value))
@@ -68,7 +68,7 @@ func TestARelayedSessionThatFollowsTheTwinAgrees(t *testing.T) {
 	if report.Verdict != domain.VerdictAgrees || report.Summary.Compared != 10 || report.Summary.Within != 10 || report.Summary.NotCompared != 10 {
 		t.Fatalf("verdict %s summary %+v, want 10 readings compared and within, the 10 before the lease not compared", report.Verdict, report.Summary)
 	}
-	want := domain.TwinCommand{ID: "cmd-1", Device: "fan-01", Name: "set_pwm_lease", AtNS: twinStartNS + 55*twinTickNS, Status: domain.CommandApplied}
+	want := domain.TwinCommand{ID: "cmd-1", Device: "fan-01", Name: "set_cooling", AtNS: twinStartNS + 55*twinTickNS, Status: domain.CommandApplied}
 	if len(report.Commands) != 1 || report.Commands[0].ID != want.ID || report.Commands[0].Device != want.Device ||
 		report.Commands[0].Name != want.Name || report.Commands[0].AtNS != want.AtNS || report.Commands[0].Status != want.Status {
 		t.Fatalf("commands = %+v, want %+v: applied at the last reading before the gateway's receipt", report.Commands, want)

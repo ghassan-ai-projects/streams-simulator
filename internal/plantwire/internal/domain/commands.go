@@ -20,6 +20,11 @@ func (c Command) Content() string {
 	return digest
 }
 
+func (c Command) IntentKey(commandID string) string {
+	digest, _ := canonical.Digest(map[string]any{"command_id": commandID, "content": c.Content()})
+	return digest
+}
+
 func Freshness(c Command, nowNS int64) string {
 	switch {
 	case c.DeadlineNS < nowNS:

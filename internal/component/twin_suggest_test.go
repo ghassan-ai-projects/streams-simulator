@@ -13,7 +13,7 @@ import (
 
 func thermalKinds(t *testing.T) map[string]map[string]any {
 	t.Helper()
-	paths, err := filepath.Glob(filepath.Join(testsupport.ThermalBoardKindsDir(), "*.kind.json"))
+	paths, err := filepath.Glob(filepath.Join(testsupport.TwinThermalKindsDir(), "*.kind.json"))
 	if err != nil || len(paths) != 3 {
 		t.Fatalf("thermal kind files = %v, %v", paths, err)
 	}

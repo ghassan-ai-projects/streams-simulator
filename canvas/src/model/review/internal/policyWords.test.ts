@@ -8,7 +8,7 @@ const refused: SessionCommand = {
   commandId: "cmd-2",
   device: "fan",
   environment: "simulated",
-  command: "set_fan",
+  command: "set_cooling",
   bootId: "none",
   receipt: "refused",
   reason: "policy_not_allowed",

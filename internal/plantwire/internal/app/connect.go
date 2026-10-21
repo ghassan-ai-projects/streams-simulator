@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"time"
 
 	simdomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -36,6 +38,7 @@ type ConnectOptions struct {
 type ConnectCheck struct {
 	Domain            string                    `json:"domain"`
 	Environment       string                    `json:"environment"`
+	Gateway           bool                      `json:"gateway"`
 	Instances         []domain.PlannedInstance  `json:"instances"`
 	ImplementsChecked []model.ImplementsChecked `json:"implements_checked"`
 	Policies          []string                  `json:"policies"`
@@ -53,6 +56,8 @@ type connectPlan struct {
 	adapter *model.Adapter
 	plan    domain.ConnectPlan
 	checked []model.ImplementsChecked
+	pacer   *uds.WallPacer
+	faces   domain.Interfaces
 }
 
 func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
@@ -64,7 +69,7 @@ func CheckConnect(options ConnectOptions) (ConnectCheck, error) {
 }
 
 func (p *connectPlan) result() ConnectCheck {
-	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Instances: p.plan.Instances,
+	return ConnectCheck{Domain: p.spec.Spec.ID, Environment: p.plan.Environment, Gateway: p.plan.GatewaySocket != "", Instances: p.plan.Instances,
 		ImplementsChecked: p.checked, Policies: p.plan.Policies.Digests()}
 }
 
@@ -110,30 +115,52 @@ func loadConnectInputs(options ConnectOptions, session *model.SessionPlan) (conn
 	if err != nil {
 		return connectPlan{}, fmt.Errorf("plantwire connect: %w", err)
 	}
-	checked, err := CheckImplements(spec.Spec, options.KindsDirs)
+	checked, faces, err := loadInterfaces(spec.Spec, options.KindsDirs)
 	if err != nil {
 		return connectPlan{}, fmt.Errorf("plantwire connect: %w", model.WithSource(err, spec.Spec.ID))
 	}
-	return connectPlan{session: session, spec: spec, adapter: adapterSpec, checked: checked}, nil
+	return connectPlan{session: session, spec: spec, adapter: adapterSpec, checked: checked, faces: faces}, nil
 }
 
-func kindFileDigests(checked []model.ImplementsChecked) map[string]string {
-	digests := map[string]string{}
+func checkedByKind(checked []model.ImplementsChecked) map[string]model.ImplementsChecked {
+	byKind := map[string]model.ImplementsChecked{}
 	for _, entry := range checked {
-		digests[entry.Kind] = entry.KindDigest
+		byKind[entry.Kind] = entry
 	}
-	return digests
+	return byKind
 }
 
 func planInstances(spec *simdomain.Compiled, checked []model.ImplementsChecked) []domain.PlanInstance {
-	digests := kindFileDigests(checked)
+	byKind := checkedByKind(checked)
 	ids := world.PopulationIDs(spec, 0)
 	instances := make([]domain.PlanInstance, len(ids))
 	for i, id := range ids {
 		kind := spec.InstanceKind(spec.InstanceSetFor(id))
-		instances[i] = domain.PlanInstance{ID: id, Kind: kind.Name, Implements: kind.Implements, KindDigest: digests[kind.Implements]}
+		entry := byKind[kind.Implements]
+		instances[i] = domain.PlanInstance{ID: id, Kind: kind.Name, Implements: kind.Implements, KindDigest: entry.KindDigest,
+			BoardType: entry.BoardType, BoardDigest: entry.BoardDigest, Faults: planFaults(kind)}
 	}
 	return instances
+}
+
+func planFaults(kind *model.Kind) []domain.PlanFault {
+	commanded := commandedStates(kind)
+	faults := make([]domain.PlanFault, len(kind.Faults))
+	for i, fault := range kind.Faults {
+		faults[i] = domain.PlanFault{ID: fault.ID, Pulse: fault.Onset.Shape == model.ShapePulse,
+			Commanded: slices.ContainsFunc(fault.Affects, func(e model.FaultEffect) bool { return commanded[e.State] })}
+	}
+	return faults
+}
+
+func commandedStates(kind *model.Kind) map[string]bool {
+	states := map[string]bool{}
+	for _, effector := range kind.Effectors {
+		for _, delta := range effector.Effect.StateDeltas {
+			states[delta.State] = true
+		}
+	}
+	return states
 }
 
 func planViolation(source string, issues []model.Issue) error {

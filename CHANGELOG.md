@@ -4,6 +4,76 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Review fixes, the Lows (fan S11b).** `kind validate` accepts board mappings (`*.board.json`) and lists each with its
+  `board_digest` in `boards`. The check document says `gateway` (the canvas reads it instead of the environment word). The
+  wall pacer counts on the monotonic clock. A scaled raw value within floating-point error of a whole number is that number,
+  and a mapping that can feed a whole raw argument a fraction is refused. The relay's gateway watchdog is no longer reset by
+  a returning host (a flapping host cannot keep a dead gateway); a gateway has 5 s after the host's return to answer the
+  rebirth. A disturbance shorter than a nanosecond (`duration_too_short`) and a mapped kind that an instance set overrides are
+  refused; several board types may map one kind. Tests close the mutants M41, M48 and M49; the limitations name the sealed
+  journal's plain-text window.
+
+- **Review fixes for the semantic kinds and paced sessions (fan S11a).** The board mapping a run translates through is named
+  in everything the run produces: `implements_checked` and the check's real instances carry `board_type` and `board_digest`,
+  `run.json` gains `board_digests`, the `binding` note names the mapping the gateway was expected to hold, and the twin report
+  names the twin's (the wire does not, which would be contract 1.5.0). New board rules: `board_readback_mismatch`,
+  `board_table_incomplete`, `board_raw_shared`. A command argument the mapping does not consume is refused, not dropped. A paced
+  session anchors its world and its disturbances when the host attaches, keeps reading the host during a slice's wait and
+  refuses a command whose deadline passed on the wall clock. The reference host's `idempotency_key` names one command
+  (command id and content), so lease renewals execute; the fixtures follow (SPEC section 9). A disturbance on a state a command
+  sets is refused (`fault_on_commanded_state`) until D-116 is fixed.
+
+- **Fan experiment plans and a dress rehearsal (fan S8, S9).** `examples/devices/thermal-board/fan-experiment/` holds
+  `simulate.plan.json` (every instance simulated, a zone heat load from 120 s for 900 s) and `real.plan.json` (the three
+  instances bound to the gateway's board `mega-01`, no disturbances), both paced to the wall clock, with a README that says
+  what differs and how to run each. Tests check both plans, rehearse the simulated one against the reference host (the heat
+  load raises the zone; `show_state alert` and `set_cooling {level_percent: 45}` are accepted and read back) and drive the
+  real one with the stand-in gateway.
+
+- **The canvas paces its connected sessions and speaks the semantic kinds (fan S4c).** The session plan the canvas builds
+  carries `pace: "wall"` (D2), so a connected session started from the canvas runs in wall time (world time is UTC from its
+  start). The canvas test fixtures and the end-to-end benches use the wire vocabulary (`set_cooling {level_percent}`, readings
+  in the kinds' units), and the scripted reference-host commands of the end-to-end tests are timed from the wall clock. The
+  briefs and guides describe the semantic commands, the board mapping and paced sessions.
+
+- **The thermal example speaks semantic kinds (fan S4b, part 2).** `examples/devices/thermal-board/` now holds the semantic fan
+  (`set_cooling {level_percent}`, `level_percent`) and indicator (`show_state {state}`, `state`) kind files beside the board
+  mapping; the twin domain's fan and indicator declare `board_type: "arduino-thermal"`, so a node, a relay's simulated node and
+  `plantwire twin-report` speak the kind files on the wire and run the raw twin underneath (the twin report translates each
+  command and reading through the mapping). The scaffolded twin choices `thermal-board.twin.json` left the example: the
+  scaffolder cannot reproduce semantic kinds (a word metric, a lease the board owns), so the hand-written raw domain is the
+  thermal twin. The scaffolder keeps its tests on the former raw thermal kind files and choices, now fixtures in
+  `internal/testsupport/testdata/twin-thermal/`. A canvas workspace accepts a board mapping in `kinds/` (`kinds/<type>.board.json`),
+  which `--kinds-dir` passes to the binary with the kind files.
+
+- **Semantic kinds through the board mapping (fan S4b, part 1).** A domain kind may declare `board_type` (in place in
+  `domain-spec-v0.2`): it is then the board's raw model and implements its kind file through `<board_type>.board.json`, read
+  from the kind directories. The `implements` check projects the raw kind through the mapping and compares it with the kind
+  file (names, words, scaled ranges, raw arguments, risk class, safe stop); a plant wire node of such a domain announces the
+  kind file, translates commands into raw commands at its boundary and reports raw readings as the kind's metrics.
+
+- **Scripted disturbances (fan S5).** The session plan gains optional `disturbances` (in place in `session-plan-v0.1`):
+  `{at_s, instance, fault, duration_s?, severity?}`, injected into the simulated world when a connected session starts (and
+  cleared after `duration_s`) through the run's fault path, so the command log and the sealed journal record them and replay
+  needs nothing from the plan. The check, the observer journal and the wire never carry the schedule. New plan rules:
+  `unknown_fault`, `disturbance_on_real_instance`, `duration_with_pulse_fault` (and `unknown_instance`).
+
+- **Paced live sessions (fan S1).** The session plan gains optional `pace: "wall"` (in place in `session-plan-v0.1`).
+  `plantwire connect` then starts the world at the wall time the session starts (recorded in `run.json`, so `replay` and
+  `verify` are unchanged) and releases each slice when the wall clock reaches its world time, on an absolute schedule; the
+  barrier stays a cap. The node's `NBIRTH` (and a mixed session's merged birth) announces `clock_mode: wall`. Without `pace`
+  nothing changes. D-71 is narrowed: `plantwire node` and `plantwire relay --domain` stay unpaced.
+
+- **Plant wire contract 1.4.0: the board mapping (fan S4a).** The contract folder gains `schemas/BOARD.schema.json` (a board
+  type's raw values for its kinds: raw command and arguments as a fixed value, a scaled kind argument or a table row chosen by
+  a kind word; the board's lease; raw readings copied, scaled or translated; the raw words of enumerated values; no expression
+  forms), SPEC section 15 with the rules a schema cannot say and `board_digest`, a `VERSION` file, and a SPEC section 9 sentence
+  on fresh idempotency keys for a command a host repeats on purpose. No record changed; `DIGEST` and every `NBIRTH` fixture
+  moved. New fixtures `valid/BOARD.json`, eight `invalid/BOARD-*`, a `rules/` folder; `exchanges/reboot-reconcile` now expects
+  the boot its own `DBIRTH` names, and a contract test checks every expectation's device, command and boot against its
+  exchange. `internal/plantwire` parses and validates board mappings (not used by the node yet);
+  `examples/devices/thermal-board/arduino-thermal.board.json` is the Arduino thermal board's mapping.
+
 - **Physical devices: public documentation (R13).** New guide `documentation/guides/physical-devices.md` and architecture page
   `documentation/architecture/physical-devices.md`; a "Physical devices" section in the limitations page, the roadmap, the
   security model and the claims matrix; `streamsim canvas` documented in the CLI reference; the twin-choices contract, the

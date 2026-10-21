@@ -21,6 +21,7 @@ type Kind struct {
 	Name       string     `json:"name"`
 	System     bool       `json:"system,omitempty"`
 	Implements string     `json:"implements,omitempty"`
+	BoardType  string     `json:"board_type,omitempty"`
 	State      []State    `json:"state,omitempty"`
 	Dynamics   []Dynamics `json:"dynamics,omitempty"`
 	Flows      []Flow     `json:"flows,omitempty"`

@@ -64,11 +64,11 @@ var ioEdges = map[string]ioEdge{
 	"internal/device/internal/uds/uds.go":         {uses: []string{"go-statement", "import:net"}, why: "unix socket listener, accept loop and session"},
 	"internal/device/internal/uds/serve.go":       {uses: []string{"import:net", "import:os"}, why: "device socket served until the process is interrupted"},
 	"internal/plantwire/internal/uds/link.go":     {uses: []string{"call:time.Now", "go-statement", "import:net"}, why: "plant wire node: dial the host's owner-only socket (owner checked), read its records, write with a deadline"},
-	"internal/plantwire/internal/uds/await.go":    {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since"}, why: "wall-time cap of the plant wire barrier and the wait it measured"},
-	"internal/plantwire/internal/uds/listen.go":   {uses: []string{"call:time.After", "call:time.Now", "import:net", "import:os"}, why: "reference host: owner-only socket published by rename, one node session, a handshake deadline, delayed barrier answers"},
+	"internal/plantwire/internal/uds/await.go":    {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since"}, why: "wall-time cap of the plant wire barrier and the wait it measured; the wall pacer of a paced session, on the monotonic clock"},
+	"internal/plantwire/internal/uds/listen.go":   {uses: []string{"call:time.After", "import:net", "import:os"}, why: "reference host: owner-only socket published by rename, one node session, a handshake deadline, delayed barrier answers"},
 	"internal/plantwire/internal/uds/gateways.go": {uses: []string{"go-statement", "import:net", "import:os"}, why: "relay: the gateway's owner-only socket published by the relay and accepted until closed, one link per connection"},
 	"internal/plantwire/internal/uds/control.go":  {uses: []string{"call:context.WithTimeout", "go-statement", "import:net", "import:os"}, why: "running node: the owner-only control socket an operator's controls arrive on, one goroutine per connection, each request bounded in wall time"},
-	"internal/plantwire/internal/uds/ticks.go":    {uses: []string{"call:time.NewTicker"}, why: "relay: wall-clock ticks that count missed heartbeats and pace the redial of a lost host"},
+	"internal/plantwire/internal/uds/ticks.go":    {uses: []string{"call:time.NewTicker"}, why: "relay and reference host: wall-clock ticks that count missed heartbeats, pace the redial of a lost host and pace the host's own heartbeats"},
 	"internal/plantwire/internal/uds/sim.go":      {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since", "go-statement"}, why: "mixed relay: the in-process link to the simulated node, its wall-time barrier cap and the goroutine that runs the node's session"},
 }
 

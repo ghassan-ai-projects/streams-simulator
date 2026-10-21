@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -191,5 +192,21 @@ func TestANodeOrMixedRelayWithABrokenPolicyFlagIsRefusedAsBadOptionsBeforeItConn
 				t.Fatalf("exit %d with %v, want plantwire_failed saying what a policy digest is", got.code, body)
 			}
 		})
+	}
+}
+
+func TestAPlantWireHostWhoseNodeStopsDuringABarrierWaitPrintsItsReport(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "h.sock")
+	hosted := make(chan outcome, 1)
+	go func() { hosted <- invoke(t, "plantwire", "host", "--socket", path, "--delay-ms", "250") }()
+	waitForSocket(t, path)
+	ctx, stop := context.WithTimeout(t.Context(), 600*time.Millisecond)
+	defer stop()
+	options := plantwire.Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: 1767225600000000000 + 3600e9}
+	_ = plantwire.Serve(ctx, pumpBoardRun(t), path, 5*time.Second, options)
+	got := <-hosted
+	if doc := got.mustSucceed(t).document(t, "plantwire_host"); doc["refused"] != nil {
+		t.Fatalf("report %v, want the accepted session's report", doc)
 	}
 }

@@ -123,7 +123,7 @@ func TestEveryContractMapsToAStableFailureCode(t *testing.T) {
 		ContractRunArtifact: "artifact_invalid", ContractConsumerVerdict: "artifact_invalid", ContractGroundTruth: "artifact_invalid",
 		ContractDeliveryLedger: "artifact_invalid", ContractStateHistory: "artifact_invalid",
 		ContractComponent: "component_invalid", ContractInstrument: "component_invalid", ContractVocabulary: "component_invalid",
-		ContractComposition: "composition_invalid", ContractKindFile: "kind_failed", ContractTwinChoices: "kind_failed",
+		ContractComposition: "composition_invalid", ContractKindFile: "kind_failed", ContractTwinChoices: "kind_failed", ContractBoardFile: "kind_failed",
 		ContractSessionPlan: "plantwire_failed", ContractNodeControl: "plantwire_failed", ContractInterruptLog: "plantwire_failed",
 	}
 	for contract, want := range cases {

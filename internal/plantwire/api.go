@@ -34,6 +34,8 @@ type WireFault = domain.WireFault
 
 type KindSummary = domain.KindSummary
 
+type DeviceFiles = domain.DeviceFiles
+
 type TwinRules = domain.TwinRules
 
 type TwinReportOptions = app.TwinReportOptions
@@ -49,6 +51,7 @@ var (
 	ErrTwinRequirements  = domain.ErrTwinRequirements
 	ErrDuplicateMember   = domain.ErrDuplicateMember
 	ErrRefused           = domain.ErrRefused
+	ErrRunFolderTaken    = domain.ErrRunFolderTaken
 	ErrNoBirth           = domain.ErrNoBirth
 	ErrBirthRefused      = domain.ErrBirthRefused
 	ErrSealedStream      = domain.ErrSealedStream

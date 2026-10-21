@@ -15,7 +15,7 @@ func dcmd(id, device, command, boot string) map[string]any {
 
 func repliesScript() Script {
 	return Script{Replies: []Reply{
-		{Command: "set_pwm_lease", Receipt: "accepted", Result: "succeeded"},
+		{Command: "set_cooling", Receipt: "accepted", Result: "succeeded"},
 		{CommandID: "c-9", Receipt: "accepted", Result: "failed"},
 		{CommandID: "c-q", Receipt: "queued"},
 		{CommandID: "c-u", Receipt: "accepted", Result: "unknown"},
@@ -41,13 +41,13 @@ func TestACommandIsAnsweredByTheBoardOrByItsScript(t *testing.T) {
 		command map[string]any
 		want    []map[string]any
 	}{
-		{"an unknown device", dcmd("c-1", "pump-01", "set_pwm_lease", "boot-7"), []map[string]any{receipt("c-1", "refused", "unknown_device", "boot-7")}},
-		{"another boot", dcmd("c-1", "fan-01", "set_pwm_lease", "boot-0"), []map[string]any{receipt("c-1", "refused", "wrong_boot", "boot-1")}},
+		{"an unknown device", dcmd("c-1", "pump-01", "set_cooling", "boot-7"), []map[string]any{receipt("c-1", "refused", "unknown_device", "boot-7")}},
+		{"another boot", dcmd("c-1", "fan-01", "set_cooling", "boot-0"), []map[string]any{receipt("c-1", "refused", "wrong_boot", "boot-1")}},
 		{"a command the kind does not have", dcmd("c-1", "fan-01", "spin", "boot-1"), []map[string]any{receipt("c-1", "refused", "unknown_command", "boot-1")}},
 		{"a command nothing scripted", dcmd("c-1", "fan-01", "stop_fan", "boot-1"), []map[string]any{receipt("c-1", "refused", "not_ready", "boot-1")}},
-		{"a scripted name", dcmd("c-1", "fan-01", "set_pwm_lease", "boot-1"),
+		{"a scripted name", dcmd("c-1", "fan-01", "set_cooling", "boot-1"),
 			[]map[string]any{receipt("c-1", "accepted", "", "boot-1"), result("c-1", "succeeded", "boot-1")}},
-		{"a scripted id over a scripted name", dcmd("c-9", "fan-01", "set_pwm_lease", "boot-1"),
+		{"a scripted id over a scripted name", dcmd("c-9", "fan-01", "set_cooling", "boot-1"),
 			[]map[string]any{receipt("c-9", "accepted", "", "boot-1"), result("c-9", "failed", "boot-1")}},
 		{"a scripted id without a result", dcmd("c-q", "fan-01", "stop_fan", "boot-1"), []map[string]any{receipt("c-q", "queued", "", "boot-1")}},
 		{"a result nobody can vouch for", dcmd("c-u", "fan-01", "stop_fan", "boot-1"),
@@ -85,7 +85,7 @@ func assertAnswer(t *testing.T, got, want map[string]any) {
 func TestOnlyAValidCommandRecordIsAnswered(t *testing.T) {
 	t.Parallel()
 	node := boardNode(t, repliesScript())
-	invalid := dcmd("c-1", "fan-01", "set_pwm_lease", "boot-1")
+	invalid := dcmd("c-1", "fan-01", "set_cooling", "boot-1")
 	delete(invalid, "deadline_ns")
 	release := map[string]any{"type": "HSYNC", "lane": "control", "protocol_version": 1, "session_id": "s-1", "seq": 3, "through_seq": 1}
 	if got := node.Handle(invalid); got != nil {
@@ -100,7 +100,7 @@ func TestAnswersFollowTheBoardsOwnSequence(t *testing.T) {
 	t.Parallel()
 	b := newBench(t, boardNode(t, repliesScript()), hostOptions("hardware"))
 	b.handshake()
-	answered := b.node.Handle(dcmd("c-9", "fan-01", "set_pwm_lease", "boot-1"))
+	answered := b.node.Handle(dcmd("c-9", "fan-01", "set_cooling", "boot-1"))
 	if answered[0]["seq"] != uint64(3) || answered[1]["seq"] != uint64(4) {
 		t.Fatalf("answers carry seq %v and %v, want 3 and 4 right after the births", answered[0]["seq"], answered[1]["seq"])
 	}

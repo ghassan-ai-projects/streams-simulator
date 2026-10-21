@@ -23,7 +23,7 @@ It does not make the board part of the simulator's truth. A simulated device has
 | Term | Meaning |
 | --- | --- |
 | Kind file | `<name>.kind.json`: one plant wire kind, which is the interface of a device (metrics with type, unit and range; commands with argument bounds, risk class and safe stop). Its identity is `kind_digest`. A kind file never carries that member. |
-| `implements` | A domain kind that declares `implements: "<kind>"` is a simulated implementation of that kind file. The binary refuses a domain whose interface differs from the file and names the first differing member. |
+| `implements` | A domain kind that declares `implements: "<kind>"` is a simulated implementation of that kind file. The binary refuses a domain whose interface differs from the file and names the first differing member. With `board_type`, the kind is the board's raw model and implements the file through that board type's mapping (`<board_type>.board.json`). |
 | Twin | The simulated implementation of a kind: a domain that implements the kind files of a board. `kind twin` scaffolds one from kind files and a choices document. |
 | Gateway | The program in front of the hardware. It speaks the plant wire as a node and keeps the hardware protocol to itself. It is outside this repository. |
 | Plant wire node | A program that dials a host's owner-only Unix socket and announces devices. `plantwire node` is the simulated one. |
@@ -31,7 +31,7 @@ It does not make the board part of the simulator's truth. A simulated device has
 | Mixed session | A relay (or `plantwire connect` with a gateway) that also runs the simulated world, so the host sees real and simulated boards in one node whose environment is `mixed`. |
 | Field trace | `field-trace.jsonl`: every record the gateway sent in a session, in order. It is an input of the run, so a mixed run is a function of the simulator's usual inputs and of the trace. |
 | Origin | `simulated` or `hardware`, the environment of the board a device was born on. It is never inferred from a name or a kind. The canvas marks it by shape, colour and words, and says "Origin unknown" when it cannot tell. |
-| Session plan | `session-plan-v0.1`: which plant, which sockets, which instances are real boards, and which policy digests simulated devices accept. |
+| Session plan | `session-plan-v0.1`: which plant, which sockets, which instances are real boards, which policy digests simulated devices accept, which faults strike simulated instances when (`disturbances`), and whether the session is paced to the wall clock (`pace`). |
 | Live mode | The review of a session that is still running; it follows the newest record. Scrubbing back pauses it; "Back to live" resumes. |
 | Command stages | A command has four stages, kept apart: **sent** (the host issued it), **receipt** (`pending`, `accepted`, or `refused` with the reason), **board report** (`pending`, `succeeded`, `failed`, `unknown`; self-reported) and **effect** (`unknown`, or `observed` when the host's own evidence says so). A receipt or a board report never stands for an effect. |
 | Connection health | Host link, gateway link, per-device health, boot id and reboot count, and a state for each reading: `good`, `stale`, `disconnected`, `invalid`, `untrusted` or, for a simulated device, `simulated`. A reading that is not `good` is shown as its state, never as a value. |
@@ -43,7 +43,7 @@ It does not make the board part of the simulator's truth. A simulated device has
 ## What you need
 
 - A plant wire host (your consumer's host, or `plantwire host` as the reference host) that creates an owner-only Unix socket.
-- For a real board: a gateway that speaks the plant wire version 1.3.0 and announces the same kind files. Its requirements are in the [plant wire contract](../../contracts/plant-wire/SPEC.md); the simulator accepts only the contract version and digest it was built with.
+- For a real board: a gateway that speaks the plant wire version 1.4.0 and announces the same kind files. Its requirements are in the [plant wire contract](../../contracts/plant-wire/SPEC.md); the simulator accepts only the contract version and digest it was built with.
 - A workspace folder: `domains/`, `kinds/`, `components/`, `twins/`, `settings/` and `runs/`. The canvas creates what it needs. Keep a workspace outside the repository when it holds customer data.
 - All sockets in owner-only directories (mode `0700`). The wire has no authentication; the directory is the access control, and the simulator refuses a socket others can reach.
 
@@ -59,21 +59,31 @@ A device is an interface (kind files) plus, if you want to simulate it, a behavi
 
 **Canvas.** Open **Devices**, choose **New device**, and fill the interface: each reading (name, type, unit, range, resolution) and each command (arguments, risk class, safe stop). The Interface step shows what a twin still needs before you reach **Behaviour**. In Behaviour, choose the library instrument for each reading and one response for each command that is not a safe stop (`direct`, `first_order` or `none`), then **Check**. Saving writes the kind files and the twin; a definition the binary refuses is never written.
 
-**Command line.** The thermal bench ships as an example (`examples/devices/thermal-board/`: sensor, indicator and fan kind files, a choices file and a twin domain).
+**Command line.** The thermal bench ships as an example in `examples/devices/thermal-board/`: the sensor, indicator and fan
+kind files the plant wire speaks (the fan takes `set_cooling {level_percent}` and reports `level_percent`; the indicator takes
+`show_state {state}` and reports `state`), the board mapping `arduino-thermal.board.json` with the board's raw values (duty,
+pattern, the 5 s fan lease), and the hand-written twin domain `thermal-board.domain.json`, the board's raw model, whose fan and
+indicator declare `board_type: "arduino-thermal"` and implement their kind files through the mapping. A twin is scaffolded with
+`kind twin` only from kind files whose metrics are numbers set by their commands; the thermal kinds are semantic (a word, a level
+with a board lease), so their twin is the raw domain, checked through the mapping:
 
 ```bash
 go run ./cmd/streamsim kind validate examples/devices/thermal-board/*.kind.json
-go run ./cmd/streamsim kind twin examples/devices/thermal-board/*.kind.json --suggest
-W=$(mktemp -d)
-mkdir -p "$W/domains" "$W/kinds" "$W/runs"
-cp examples/devices/thermal-board/*.kind.json "$W/kinds/"
-go run ./cmd/streamsim kind twin "$W"/kinds/*.kind.json \
-  --choices examples/devices/thermal-board/thermal-board.twin.json \
-  --out "$W/domains/arduino-thermal-twin.domain.json"
-go run ./cmd/streamsim domain validate "$W/domains/arduino-thermal-twin.domain.json" --kinds-dir "$W/kinds"
+go run ./cmd/streamsim domain validate examples/devices/thermal-board/thermal-board.domain.json \
+  --kinds-dir examples/devices/thermal-board
 ```
 
 `domain validate` prints `implements_checked` with the `kind_digest` of each kind file the twin was checked against. A twin that drifts from its kind file fails with `domain_invalid` and an issue at `/kinds/<i>/implements`.
+
+The steps below work in a workspace `$W` that holds the example: the kind files and the board mapping in `kinds/`, the twin
+domain (id `arduino-thermal`) in `domains/`, and the runs in `runs/`:
+
+```bash
+W=$(mktemp -d)
+mkdir -p "$W/domains" "$W/kinds" "$W/runs"
+cp examples/devices/thermal-board/*.kind.json examples/devices/thermal-board/arduino-thermal.board.json "$W/kinds/"
+cp examples/devices/thermal-board/thermal-board.domain.json "$W/domains/arduino-thermal.domain.json"
+```
 
 ### 2. Capture a device from a board
 
@@ -93,7 +103,7 @@ Only the observer journal is read, never the sealed one. The command recomputes 
 
 The plan says which instances of the plant are real boards behind the gateway. Every other instance is simulated.
 
-**Canvas.** On a plant, open the Run panel, choose **Connected session**, give the host socket and the gateway socket, **Add a real board** for each real instance (instance, board, device), list the **Allowed policy digests**, **Check the plan**, then **Start the session**. A refused plan names the field and the rule. Only one session runs at a time.
+**Canvas.** On a plant, open the Run panel, choose **Connected session**, give the host socket and the gateway socket, **Add a real board** for each real instance (instance, board, device), list the **Allowed policy digests**, **Check the plan**, then **Start the session**. A refused plan names the field and the rule. Only one session runs at a time. The canvas paces every connected session to the wall clock (`pace: "wall"` in the plan it writes): the world starts at the session's wall time and advances one world second per wall second.
 
 **Command line.** Write the plan, check it, then start the node.
 
@@ -101,8 +111,8 @@ The plan says which instances of the plant are real boards behind the gateway. E
 D=$(mktemp -d)
 POLICY=sha256:$(printf 'b%.0s' $(seq 64))
 cat > "$D/plan.json" <<EOF
-{"schema_version": "0.1", "domain": "arduino-thermal-twin", "seed": 1,
- "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock",
+{"schema_version": "0.1", "domain": "arduino-thermal", "seed": 1,
+ "host_socket": "$D/host.sock", "gateway_socket": "$D/gateway.sock", "pace": "wall",
  "real": [{"instance": "zone-01", "board": "uno-07", "device": "zone-01"}],
  "policies": ["$POLICY"]}
 EOF
@@ -120,11 +130,14 @@ go run ./cmd/streamsim plantwire connect --plan "$D/plan.json" \
 
 The gateway dials `gateway_socket`. The simulator checks it against the plan at its handshake: the bound board and device must be announced, as the kind the plan expects, with the kind file's `kind_digest`. A gateway that does not match is refused `inventory_mismatch` with the first failing rule as the reason, and the simulator keeps listening. A refused binding shows as "Not bound", and the world does not announce that instance to the host either.
 
-Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. The simulated world advances barrier by barrier as fast as the host answers; it is not paced to the wall clock.
+The fan experiment ships ready-made plans for both cases, a simulated rehearsal and the real board, in
+[`examples/devices/thermal-board/fan-experiment/`](../../examples/devices/thermal-board/fan-experiment/README.md).
 
-**Give the reference host `--delay-ms`.** Against the reference host with no `--delay-ms` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
+Without `gateway_socket` the session is a simulated node only; with it, a mixed relay. With `pace: "wall"` the world is anchored when the host attaches (a late host or gateway gets no burst of past slices) and each slice is released when the wall clock reaches it, so world time is UTC and a 10 minute session takes 10 minutes; the barrier stays a cap. Without `pace` (offline tests and benchmarks) the world advances barrier by barrier as fast as the host answers.
 
-`connect` needs the host's socket: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). The reference host prints its report when the session ends cleanly; if you stop `connect` while the host is waiting out a `--delay-ms`, the host may exit 1 (`write ... broken pipe`) without a report, and a host interrupted before any node arrived exits 1 (`accept ... use of closed network connection`). Take the evidence from `journal.jsonl` (D-115).
+**Give the reference host `--delay-ms` in an unpaced session.** Against the reference host with no `--delay-ms` and no `pace` the world free-runs: a 6 second run wrote about 450 MB (about 75 MB of run folder per second). A run folder that large cannot be reported on: `plantwire twin-report` refuses a run whose `journal.jsonl` is larger than 64 MiB, and a field trace or an interrupt log is capped at 64 MiB as well. Use `--delay-ms 250` (or more), and stop sessions in minutes, not hours (see the [limitations](../limitations.md#physical-devices), D-77).
+
+`connect` needs the host's socket: without it the command fails `file_not_found` after it has created the run folder (`journal.jsonl`, `ledger.jsonl`, `run.json`) and any missing parent directories (mode `0700`). The reference host prints its report and exits 0 when its node ends, also when you stop `connect` while the host is waiting out a `--delay-ms`, and when it is interrupted before any node arrived (then with an empty report).
 
 ### 4. Run live
 
@@ -136,7 +149,7 @@ In the canvas, **Open live view** shows the session as it runs.
 - The commands table shows each command with its stages. A command the node refused locally reads "Refused at the node: local control", distinct from a refusal of the board or the host.
 - Scrubbing back pauses following. **Back to live** resumes. The history is bounded to 2000 snapshots in the browser, and the bar says when it has trimmed.
 
-A real board that stays connected but sends no admitted record for 30 seconds is treated as lost: its devices are reported `link_down` and the gateway link is shown offline.
+A real board that stays connected but sends no admitted record for 30 seconds while the host is present is treated as lost: its devices are reported `link_down` and the gateway link is shown offline. While the host is away the board is told so and may stay silent, and that time does not count; when the host returns the board is asked to rebirth and has at least 5 seconds to answer.
 
 ### 5. Interrupts: hold, approve, emergency stop
 
@@ -178,7 +191,7 @@ The request vocabulary is in [`node-control-v0.1`](../../contracts/node-control-
 
 **Canvas.** **Stop and save** interrupts the session; the bridge waits up to 30 seconds for the run to close before it ends the process group. The run opens as an ordinary review labelled "Connected session". **Set up another run** keeps the policy list and clears the sockets and boards.
 
-**Command line.** Interrupt `plantwire connect` (Ctrl-C or `SIGTERM`). It prints `{out, stopped, relay?}`, and the run folder is complete. **`--out` must be a new folder for every session.** Reusing one silently replaces `run.json`, the journals and the traces and leaves a stale `interrupts.jsonl` beside them, and `verify` can then print `matches: true` for a mixture (D-114). Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks a unique `c-<8 hex>` name itself.
+**Command line.** Interrupt `plantwire connect` (Ctrl-C or `SIGTERM`). It prints `{out, stopped, relay?}`, and the run folder is complete. **`--out` must be a new folder for every session.** A folder that already holds a run file is refused (`plantwire_failed`) and left as it was. Name each attempt (`m5-session-1`, `m5-session-2`) and keep the failed ones; the canvas picks a unique `c-<8 hex>` name itself.
 
 ```text
 run.json  trace.jsonl  ledger.jsonl  world_state_history.jsonl  journal.jsonl  sealed/journal.jsonl
@@ -211,7 +224,7 @@ A replay is not a board. It announces the node and every board as `simulated`, s
 
 ```bash
 go run ./cmd/streamsim plantwire twin-report "$W/runs/c-lab1" \
-  --domain arduino-thermal-twin --domains-dir "$W/domains" --kinds-dir "$W/kinds" \
+  --domain arduino-thermal --domains-dir "$W/domains" --kinds-dir "$W/kinds" \
   --tolerance zone-01.temperature=2
 ```
 
@@ -242,7 +255,7 @@ Every `DCMD` carries a `policy_digest`, a label for the policy the host says it 
 | Symptom | Likely cause | First check |
 | --- | --- | --- |
 | Gateway refused `inventory_mismatch` | A bound board, device or kind is not announced as the plan expects, or a kind digest differs | The `reason` in the relay document; `plantwire connect --check` shows the digest the plan expects |
-| Gateway refused `contract_unsupported` | The gateway speaks another contract version or digest | The gateway must announce version 1.3.0 and the digest in `contracts/plant-wire/DIGEST` |
+| Gateway refused `contract_unsupported` | The gateway speaks another contract version or digest | The gateway must announce version 1.4.0 and the digest in `contracts/plant-wire/DIGEST` |
 | Gateway refused `environment_mismatch` | The node or a board is not `hardware`, or the host's setting does not accept `mixed` | The `reason`; a gateway must announce `hardware` |
 | Every command to a simulated device is `policy_not_allowed` | The plan lists no policy digest, or not the host's | The commands table row shows the host's digest |
 | A real board's command is `policy_not_allowed` | The gateway's own list lacks the host's digest | The gateway's configuration |

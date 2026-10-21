@@ -4,7 +4,7 @@ import type { Bench } from "./support/session";
 import { addThermalBench, openScriptedBench, planOneRealBoard, startGateway } from "./support/session";
 import { guard } from "./support/audit";
 import { nodesOutsideCanvas } from "./support/fitAudit";
-import { boxOf, controlsOf, lease, runOfSession, startedSession } from "./support/interruptBench";
+import { boxOf, controlsOf, cooling, runOfSession, startedSession } from "./support/interruptBench";
 
 test.setTimeout(240_000);
 
@@ -60,7 +60,7 @@ test("the interrupt bar stays inside a 1280 by 800 window in one row, and the pl
   await insideTheWindow(controls);
   await oneRow(controls);
   await plantInView(page);
-  const waiting = controls.getByRole("listitem").filter({ hasText: "ref-a" }).getByText("set_pwm_lease on fan-01");
+  const waiting = controls.getByRole("listitem").filter({ hasText: "ref-a" }).getByText("set_cooling on fan-01");
   await expect.poll(() => waiting.evaluate((line) => line.scrollWidth <= line.clientWidth)).toBe(true);
 
   const stop = controls.getByRole("button", { name: "Emergency stop", exact: true });
@@ -160,7 +160,7 @@ test("a second session starts with none of the first session's holds, scope or o
 
   await panel.getByRole("button", { name: "Set up another run" }).click();
   const next = openScriptedBench(lab.binary, [
-    { id: "ref-c", afterS: 300, device: "fan-01", command: "set_pwm_lease", args: lease },
+    { id: "ref-c", afterS: 300, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   benches.push(next);
   await expect(panel.getByLabel("Host socket", { exact: true })).toHaveValue("");

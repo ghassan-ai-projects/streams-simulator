@@ -32,9 +32,17 @@ func Directories(dirs []string) ([]domain.KindSource, error) {
 }
 
 func Scan(dirs []string) ([]domain.KindSource, error) {
+	return scanFor(dirs, domain.KindFileSuffix)
+}
+
+func ScanBoards(dirs []string) ([]domain.KindSource, error) {
+	return scanFor(dirs, domain.BoardFileSuffix)
+}
+
+func scanFor(dirs []string, suffix string) ([]domain.KindSource, error) {
 	var sources []domain.KindSource
 	for _, dir := range dirs {
-		paths, err := kindPaths(dir)
+		paths, err := pathsWith(dir, suffix)
 		if err != nil {
 			return nil, err
 		}
@@ -71,14 +79,14 @@ func readEach(paths []string) []domain.KindSource {
 }
 
 func directory(dir string) ([]domain.KindSource, error) {
-	paths, err := kindPaths(dir)
+	paths, err := pathsWith(dir, domain.KindFileSuffix)
 	if err != nil {
 		return nil, err
 	}
 	return Paths(paths)
 }
 
-func kindPaths(dir string) ([]string, error) {
+func pathsWith(dir, suffix string) ([]string, error) {
 	names, err := kernel.Names(dir)
 	if err != nil {
 		return nil, fmt.Errorf("plantwire: list %s: %w", dir, err)
@@ -86,7 +94,7 @@ func kindPaths(dir string) ([]string, error) {
 	slices.Sort(names)
 	var paths []string
 	for _, name := range names {
-		if strings.HasSuffix(name, domain.KindFileSuffix) {
+		if strings.HasSuffix(name, suffix) {
 			paths = append(paths, filepath.Join(dir, name))
 		}
 	}

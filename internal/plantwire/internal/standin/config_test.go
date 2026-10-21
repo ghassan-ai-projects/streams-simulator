@@ -28,7 +28,7 @@ func TestAConfigurationThatCouldNotSpeakTheWireIsRefusedWithTheReason(t *testing
 		{"a step for a device off the board", func(c *Config) { c.Script.Steps = []Step{{Device: "pump-01", Samples: sample("x")}} }, ErrConfig, `device "pump-01" is not on the board`},
 		{"a step that does nothing", func(c *Config) { c.Script.Steps = []Step{{Device: "fan-01"}} }, ErrConfig, "not both and not neither"},
 		{"a step that does two things", func(c *Config) {
-			c.Script.Steps = []Step{{Device: "fan-01", Link: LinkDown, Samples: sample("duty_permille")}}
+			c.Script.Steps = []Step{{Device: "fan-01", Link: LinkDown, Samples: sample("level_percent")}}
 		}, ErrConfig, "not both and not neither"},
 		{"a link that is neither down nor up", func(c *Config) { c.Script.Steps = []Step{{Device: "fan-01", Link: "sideways"}} }, ErrConfig, `link "sideways"`},
 		{"a boot that is no wire id", func(c *Config) { c.Script.Steps = []Step{{Device: "fan-01", Link: LinkUp, BootID: "boot 2"}} }, ErrConfig, `boot "boot 2"`},

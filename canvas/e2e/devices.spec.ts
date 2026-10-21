@@ -13,10 +13,10 @@ interface KindFile {
 
 async function addReadingAndCommand(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Add a reading" }).click();
-  await page.getByLabel("Name", { exact: true }).fill("duty_permille");
-  await page.getByLabel("Unit", { exact: true }).fill("1");
+  await page.getByLabel("Name", { exact: true }).fill("level_percent");
+  await page.getByLabel("Unit", { exact: true }).fill("%");
   await page.getByRole("button", { name: "Add a command" }).click();
-  await page.getByLabel("Name", { exact: true }).fill("set_duty");
+  await page.getByLabel("Name", { exact: true }).fill("set_cooling");
   await page.getByLabel("Risk class").selectOption({ label: "Medium" });
 }
 
@@ -35,20 +35,20 @@ test("a device with one reading and one command is created, saved, listed after 
   const written = JSON.parse(readFileSync(file, "utf8")) as KindFile;
   expect(written).toMatchObject({
     kind: "e2e-fan",
-    metrics: [{ name: "duty_permille", data_type: "number" }],
-    commands: [{ name: "set_duty" }],
+    metrics: [{ name: "level_percent", data_type: "number" }],
+    commands: [{ name: "set_cooling" }],
   });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.reload();
-  await expect(outline(page).getByRole("button", { name: /^duty_permille/ })).toBeVisible();
+  await expect(outline(page).getByRole("button", { name: /^level_percent/ })).toBeVisible();
   await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
   const devices = page.getByRole("region", { name: "Devices", exact: true });
   await expect(devices.getByText("1 reading · 1 command")).toBeVisible();
   await devices.getByRole("button", { name: "Edit e2e-fan" }).click();
 
   await outline(page)
-    .getByRole("button", { name: /^duty_permille/ })
+    .getByRole("button", { name: /^level_percent/ })
     .click();
   const name = page.getByLabel("Name", { exact: true });
   await name.fill("bad name");
@@ -57,9 +57,9 @@ test("a device with one reading and one command is created, saved, listed after 
   await expect(verdict(page, /Not saved: the binary refuses it/)).toBeVisible();
   await expect(page.getByRole("region", { name: "Issues" }).getByText("Reading bad name · Name")).toBeVisible();
   const onDisk = JSON.parse(readFileSync(file, "utf8")) as KindFile;
-  expect(onDisk.metrics.map((metric) => metric.name)).toEqual(["duty_permille"]);
+  expect(onDisk.metrics.map((metric) => metric.name)).toEqual(["level_percent"]);
 
-  await name.fill("duty_permille");
+  await name.fill("level_percent");
   await expect(name).not.toHaveAttribute("aria-invalid", "true");
   await expect(verdict(page, "Saved and valid.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveAttribute("aria-disabled", "true");

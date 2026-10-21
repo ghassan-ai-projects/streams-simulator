@@ -49,6 +49,7 @@ type Config struct {
 	JournalDir string
 
 	SessionRecord map[string]any
+	BoardDigests  map[string]string
 
 	Explore bool
 

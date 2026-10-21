@@ -7,7 +7,7 @@ func twBoardWith(receipts map[string]BoardReceipt) BoardTrace {
 }
 
 func twFanCommand(id string) HostCommand {
-	return HostCommand{ID: id, Device: "fan-01", Name: "set_pwm_lease"}
+	return HostCommand{ID: id, Device: "fan-01", Name: "set_cooling"}
 }
 
 func TestEveryCommandIsClassifiedByWhatTheBoardAndInterruptsSaidOfIt(t *testing.T) {
@@ -56,7 +56,7 @@ func TestEveryCommandIsClassifiedByWhatTheBoardAndInterruptsSaidOfIt(t *testing.
 
 func TestACommandToAnUnknownDeviceIsDropped(t *testing.T) {
 	t.Parallel()
-	got := ClassifyCommands([]HostCommand{{ID: "c-9", Device: "ghost-9", Name: "set_pwm_lease"}}, twBoardWith(nil), nil)
+	got := ClassifyCommands([]HostCommand{{ID: "c-9", Device: "ghost-9", Name: "set_cooling"}}, twBoardWith(nil), nil)
 	if len(got) != 0 {
 		t.Fatalf("ClassifyCommands = %+v, want the command to an unknown device dropped", got)
 	}
@@ -64,9 +64,9 @@ func TestACommandToAnUnknownDeviceIsDropped(t *testing.T) {
 
 func TestACommandKeepsItsIdentityAndArguments(t *testing.T) {
 	t.Parallel()
-	command := HostCommand{ID: "c-1", Device: "fan-01", Name: "set_pwm_lease", Args: map[string]any{"duty_permille": 300}}
+	command := HostCommand{ID: "c-1", Device: "fan-01", Name: "set_cooling", Args: map[string]any{"level_percent": 30}}
 	got := ClassifyCommands([]HostCommand{command}, twBoardWith(nil), nil)
-	if len(got) != 1 || got[0].ID != "c-1" || got[0].Device != "fan-01" || got[0].Name != "set_pwm_lease" || got[0].Args["duty_permille"] != 300 {
+	if len(got) != 1 || got[0].ID != "c-1" || got[0].Device != "fan-01" || got[0].Name != "set_cooling" || got[0].Args["level_percent"] != 30 {
 		t.Fatalf("ClassifyCommands = %+v, want the identity and arguments of the host command", got)
 	}
 }

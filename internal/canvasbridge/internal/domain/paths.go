@@ -15,6 +15,7 @@ const (
 	ClassScenario    FileClass = "scenario"
 	ClassLayout      FileClass = "layout"
 	ClassKind        FileClass = "kind"
+	ClassBoard       FileClass = "board"
 	ClassTwin        FileClass = "twin"
 	ClassEquipment   FileClass = "equipment"
 	ClassInstrument  FileClass = "instrument"
@@ -50,6 +51,8 @@ var definitionFolders = map[string]struct {
 const policyDefaultRel = "settings/default.policies.json"
 
 var stemFolders = map[FileClass]string{ClassKind: "kinds"}
+
+var boardFolders = map[string]string{"kinds": ".board.json"}
 
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
 	"field-trace.jsonl", "interrupts.jsonl", "verdict.json", "label.json", "sealed/journal.jsonl"}
@@ -102,12 +105,18 @@ func badSegment(part string) bool {
 }
 
 func definitionPath(rel string, parts []string) (WorkspacePath, bool) {
-	name := parts[len(parts)-1]
-	folder, known := definitionFolders[strings.Join(parts[:len(parts)-1], "/")]
-	if !known || !strings.HasSuffix(name, folder.suffix) || name == folder.suffix {
-		return WorkspacePath{}, false
+	name, dir := parts[len(parts)-1], strings.Join(parts[:len(parts)-1], "/")
+	if folder, known := definitionFolders[dir]; known && named(name, folder.suffix) {
+		return WorkspacePath{Rel: rel, Class: folder.class}, true
 	}
-	return WorkspacePath{Rel: rel, Class: folder.class}, true
+	if suffix, known := boardFolders[dir]; known && named(name, suffix) {
+		return WorkspacePath{Rel: rel, Class: ClassBoard}, true
+	}
+	return WorkspacePath{}, false
+}
+
+func named(name, suffix string) bool {
+	return strings.HasSuffix(name, suffix) && name != suffix
 }
 
 func runPath(rel string, parts []string) (WorkspacePath, bool) {

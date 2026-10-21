@@ -14,15 +14,12 @@ export const emptyState: InterruptState = { holds: [], approve: [], pending: [],
 export const fanWaits: PendingApproval = {
   commandId: "cmd-7",
   device: "fan",
-  command: "set_fan",
+  command: "set_cooling",
   deadlineNs: 130e9,
   queuedAtNs: 10e9,
   clock: "world",
   contentDigest: `sha256:${"a".repeat(64)}`,
-  args: [
-    { name: "duty_permille", value: "300" },
-    { name: "lease_ms", value: "5000" },
-  ],
+  args: [{ name: "level_percent", value: "30" }],
   argsTruncated: false,
 };
 

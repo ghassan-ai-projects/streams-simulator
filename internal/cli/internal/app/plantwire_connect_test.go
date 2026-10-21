@@ -166,3 +166,19 @@ func TestAConnectPlanWithABrokenPolicyListIsRefusedAtTheEntryOrTheList(t *testin
 		})
 	}
 }
+
+func TestAConnectIntoAFolderThatHoldsARunFailsAndKeepsTheEarlierRun(t *testing.T) {
+	t.Parallel()
+	out := t.TempDir()
+	testsupport.WriteFileIn(t, out, "run.json", []byte("{}\n"))
+	plan := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/tmp/h.sock"}`
+	got := invokeWithInput(t, plan, "plantwire", "connect", "--stdin", "--out", out, "--domains-dir", thermalDomains(t),
+		"--adapters-dir", testsupport.AdaptersDir(), "--kinds-dir", testsupport.ThermalBoardKindsDir())
+	body := got.failure(t)
+	if message, _ := body["message"].(string); got.code != 1 || body["code"] != "plantwire_failed" || !strings.Contains(message, "already holds a run") {
+		t.Fatalf("exit %d with %v, want plantwire_failed saying the folder already holds a run", got.code, body)
+	}
+	if raw, err := os.ReadFile(filepath.Join(out, "run.json")); err != nil || string(raw) != "{}\n" {
+		t.Fatalf("run.json after the refusal = %q, %v, want the earlier run kept", raw, err)
+	}
+}

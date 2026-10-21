@@ -75,7 +75,21 @@ func (r *Relay) noteBinding(m *Moves, in Inbound, refusal, reason string) {
 	if len(r.plan.bound) == 0 {
 		return
 	}
-	m.Notes = append(m.Notes, bindingNote(refusal, reason, BindingIssues(in.Message, r.plan.bound)))
+	note := bindingNote(refusal, reason, BindingIssues(in.Message, r.plan.bound))
+	if digests := boundBoardDigests(r.plan.bound); len(digests) > 0 {
+		note.Fields["board_digests"] = digests
+	}
+	m.Notes = append(m.Notes, note)
+}
+
+func boundBoardDigests(bound []Bound) map[string]any {
+	digests := map[string]any{}
+	for _, b := range bound {
+		if b.BoardType != "" {
+			digests[b.BoardType] = b.BoardDigest
+		}
+	}
+	return digests
 }
 
 func bindingNote(refusal, reason string, issues []model.Issue) Note {

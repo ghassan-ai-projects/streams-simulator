@@ -113,7 +113,7 @@ func TestAnAllowListThatBreaksTheRuleIsBadNodeOptionsAndTheSessionNeverStarts(t 
 
 func TestAHostThatIssuesCommandsMustCarryAWellFormedPolicyDigest(t *testing.T) {
 	t.Parallel()
-	script := []host.Scripted{{ID: "c-1", AtNS: 1, Device: "fan-01", Command: "set_pwm_lease"}}
+	script := []host.Scripted{{ID: "c-1", AtNS: 1, Device: "fan-01", Command: "set_cooling"}}
 	cases := []struct {
 		name    string
 		options host.Options
@@ -138,7 +138,7 @@ func TestAHostThatIssuesCommandsMustCarryAWellFormedPolicyDigest(t *testing.T) {
 
 func TestServingAScriptedHostWithoutAPolicyIsRefusedBeforeItListens(t *testing.T) {
 	t.Parallel()
-	options := host.Options{Environment: "simulated", Script: []host.Scripted{{ID: "c-1", AtNS: 1, Device: "fan-01", Command: "set_pwm_lease"}}}
+	options := host.Options{Environment: "simulated", Script: []host.Scripted{{ID: "c-1", AtNS: 1, Device: "fan-01", Command: "set_cooling"}}}
 	report, err := ServeHost(t.Context(), t.TempDir()+"/h.sock", 0, options)
 	if !errors.Is(err, ErrHostPolicy) || len(report.Commands) != 0 {
 		t.Fatalf("ServeHost = %+v, %v, want ErrHostPolicy and a host that never listened", report, err)

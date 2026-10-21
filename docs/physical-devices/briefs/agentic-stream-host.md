@@ -1,7 +1,7 @@
 # Brief: Agentic Stream's plant wire host
 
 - **For:** the Agentic Stream team (the plant wire host), M2 to M5.
-- **From:** the streamsim physical-devices goal (R13). Written against streamsim at the end of R13, plant wire contract 1.3.0.
+- **From:** the streamsim physical-devices goal (R13). Written against streamsim at the end of R13, plant wire contract 1.3.0. Updated in fan S4c (2026-10-20) for contract 1.4.0: semantic kinds on the wire through the board mapping (D7), paced sessions (D2).
 - **Read first:** `contracts/plant-wire/SPEC.md`; `docs/design/PHYSICAL_DEVICES.md` sections 2 and 4.2; `docs/physical-devices/POLICY-ALLOW-LIST.md`.
 - **Streamsim needs no operator interface from you.** It handles the operator's controls itself, at the node, and reaches you only through ordinary plant wire records. Your changes are the ones below.
 
@@ -11,6 +11,7 @@ In the lab, streamsim stands between the Arduino gateway and you. You see one no
 
 - `environment` `mixed` when simulated boards run beside the real one, or `hardware` for a relay with no simulated world. Your setting must accept it (a host set to `mixed` accepts all three environments; one set to `hardware` accepts only `hardware`). Each board in `NBIRTH.boards` carries its own `environment`; the **origin** of a device is the environment of the board its `DBIRTH` names, and nothing else. A node whose environment contradicts its boards is refused by the reference host `environment_mismatch`, with the broken rule in the report; do the same.
 - `kinds` with a `kind_digest` each. Recompute it from the entry and refuse the session `inventory_mismatch` when it does not hold, or when a kind is announced twice. The digest of a real board's kind equals the digest of the kind file the twin implements; that equality is what lets one commissioning cover the board and its twin.
+- **Semantic kinds and paced time.** The thermal kinds are semantic (D7): the fan takes `set_cooling {level_percent}` (0 to 60) and reports `level_percent`, the indicator takes `show_state {state}` (`off`, `watch`, `alert`) and reports `state`. Send no board value (duty, pattern, lease); the gateway and the twin translate through the board mapping. The canvas paces every connected session to the wall clock (`pace: "wall"`, D2), so the simulated world's `NSYNC` world time is UTC and a command's `deadline_ns` is read against it.
 - A simulated board and a real board of the same model announce the same kind with the same digest. A session that binds a plan instance to the real device withholds that instance from the simulated side, so no device id appears twice.
 
 Commission read-only first (SPEC section 5): births are claims, not grants, and the real board's commands stay denied in your inventory until M5.
@@ -71,7 +72,7 @@ Verification of an effect is yours (SPEC section 9: receipt is not result is not
 - It never perturbs, delays or fault-injects a real device's records or commands. A simulated device's records are the simulated world's and carry that world's faults.
 - A side answers only its own commands: a gateway's receipt or result for a command routed to the simulated side (and the reverse), or for a command never routed, is dropped and counted as forged.
 - A recording can be replayed to you: `plantwire replay-trace` announces the node and **every board `simulated`**, so a host set to `hardware` refuses it and no consumer can take it for hardware. It refuses every command (`not_ready`) and never reaches a gateway.
-- Bounds you can rely on: a record is at most 64 KiB (1 MiB for births); the latest 128 commands are shown; the relay's links have a 2 s write deadline, so a host that does not read for 2 s is treated as lost and redialled; a gateway silent for 30 s is reported `link_down`.
+- Bounds you can rely on: a record is at most 64 KiB (1 MiB for births); the latest 128 commands are shown; the relay's links have a 2 s write deadline, so a host that does not read for 2 s is treated as lost and redialled; a gateway silent for 30 s while a host is attached is reported `link_down` (the timer is suspended while the relay has no host).
 
 ## Acceptance checks
 

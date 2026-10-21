@@ -54,6 +54,12 @@ func driftedKinds(t *testing.T, file, from, to string) string {
 		}
 		testsupport.WriteFileIn(t, dir, filepath.Base(path), []byte(content))
 	}
+	mapping := filepath.Join(testsupport.ThermalBoardKindsDir(), "arduino-thermal.board.json")
+	raw, err := os.ReadFile(mapping)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testsupport.WriteFileIn(t, dir, filepath.Base(mapping), raw)
 	return dir
 }
 
@@ -81,9 +87,9 @@ func TestAKindFileThatDriftsFromTheTwinIsRefusedAtTheMemberItNames(t *testing.T)
 	spec := arduinoSpec(t)
 	cases := []struct{ name, file, from, to, pointer, at string }{
 		{"a sensor unit", "thermal_sensor.kind.json", `"Cel"`, `"degC"`, "/kinds/0/implements", "/metrics/0/unit"},
-		{"a command bound", "indicator.kind.json", `"maximum": 1000`, `"maximum": 1023`, "/kinds/1/implements", "/commands/0/args_schema/properties/brightness_permille/maximum"},
-		{"the duty range", "fan.kind.json", `"max": 600}`, `"max": 700}`, "/kinds/2/implements", "/metrics/0/eu_range/max"},
-		{"the lease floor", "fan.kind.json", `"minimum": 5000`, `"minimum": 1000`, "/kinds/2/implements", "/commands/0/args_schema/properties/lease_ms/minimum"},
+		{"a state word", "indicator.kind.json", `["off", "watch", "alert"], "type"`, `["off", "watch", "panic"], "type"`, "/kinds/1/implements", "/commands/show_state/table"},
+		{"the level range", "fan.kind.json", `"max": 60}`, `"max": 70}`, "/kinds/2/implements", "/metrics/level_percent/eu_range"},
+		{"a level the duty cannot hold", "fan.kind.json", `"maximum": 60, "minimum": 0`, `"maximum": 70, "minimum": 0`, "/kinds/2/implements", "/commands/set_cooling/args/duty_permille"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -155,7 +161,8 @@ func recordSession(listener net.Listener, received chan<- []map[string]any) {
 
 func kindDigests(t *testing.T) map[string]string {
 	t.Helper()
-	summaries, err := ValidateKindFilesWith(arduinoKindFiles(t), nil)
+	validated, err := ValidateKindFilesWith(arduinoKindFiles(t), nil)
+	summaries := validated.Kinds
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,8 +25,8 @@ func logRecords(entries ...domain.InterruptEntry) []map[string]any {
 }
 
 func fanCommandIn(id string) domain.Inbound {
-	message := domain.Message{Type: "DCMD", CommandID: id, Device: "fan-01", Command: "set_pwm_lease", ExpectedBootID: "boot-1",
-		Args: map[string]any{"duty_permille": 300, "lease_ms": 10000}, DeadlineNS: twinEndNS}
+	message := domain.Message{Type: "DCMD", CommandID: id, Device: "fan-01", Command: "set_cooling", ExpectedBootID: "boot-1",
+		Args: map[string]any{"level_percent": 30}, DeadlineNS: twinEndNS}
 	message.IdempotencyKey = domain.CommandOf(message).Content()
 	return domain.Inbound{Message: message}
 }

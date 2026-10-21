@@ -176,7 +176,7 @@ func TestADeadSimulatedNodeIsReapedOnceAndItsDevicesAreReportedAtOnce(t *testing
 
 func TestThePlanOfASessionFindsTheKindFileDigestOfEveryRealInstance(t *testing.T) {
 	t.Parallel()
-	if got := kindFileDigests([]model.ImplementsChecked{{Kind: "pump", KindDigest: "sha256:p"}})["pump"]; got != "sha256:p" {
+	if got := checkedByKind([]model.ImplementsChecked{{Kind: "pump", KindDigest: "sha256:p"}})["pump"].KindDigest; got != "sha256:p" {
 		t.Fatalf("digest of pump = %q, want the one checked", got)
 	}
 	check, err := CheckConnect(connectOptions(t, planText("/tmp/h.sock", "/tmp/g.sock", "zone-01", "uno-07", "zone-01"), ""))

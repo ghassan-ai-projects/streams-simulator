@@ -103,3 +103,52 @@ func TestASessionPlanWithABrokenPolicyListIsRefusedAtTheListOrTheEntry(t *testin
 		})
 	}
 }
+
+func TestASessionPlanIsPacedByTheWallClockOnlyWhenItSaysSo(t *testing.T) {
+	t.Parallel()
+	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h"`
+	cases := []struct {
+		name, plan string
+		paced      bool
+	}{
+		{"no pace", base + `}`, false},
+		{"wall", base + `,"pace":"wall"}`, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			plan, err := DecodeSessionPlan([]byte(tc.plan))
+			if err != nil || plan.PacedByWall() != tc.paced {
+				t.Fatalf("DecodeSessionPlan = %+v, %v, want paced %v", plan, err, tc.paced)
+			}
+		})
+	}
+	_, err := DecodeSessionPlan([]byte(base + `,"pace":"fast"}`))
+	invalid, ok := AsValidationError(err)
+	if !ok || invalid.Contract != ContractSessionPlan || invalid.Issues[0].Pointer != "/pace" {
+		t.Fatalf("pace fast: %v, want a session-plan violation at /pace", err)
+	}
+}
+
+func TestASessionPlanDecodesItsDisturbancesAndRefusesOnesItsSchemaForbids(t *testing.T) {
+	t.Parallel()
+	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","disturbances":[`
+	plan, err := DecodeSessionPlan([]byte(base + `{"at_s":120,"instance":"zone-01","fault":"zone_heat_load","duration_s":600,"severity":0.5},{"at_s":0,"instance":"fan-01","fault":"fan_stall"}]}`))
+	if err != nil || len(plan.Disturbances) != 2 || *plan.Disturbances[0].DurationS != 600 || *plan.Disturbances[0].Severity != 0.5 || plan.Disturbances[1].DurationS != nil {
+		t.Fatalf("DecodeSessionPlan = %+v, %v", plan, err)
+	}
+	cases := map[string]string{
+		`{"at_s":-1,"instance":"zone-01","fault":"f"}`:                  "/disturbances/0/at_s",
+		`{"at_s":2592001,"instance":"zone-01","fault":"f"}`:             "/disturbances/0/at_s",
+		`{"at_s":1,"instance":"zone-01","fault":"f","duration_s":0}`:    "/disturbances/0/duration_s",
+		`{"at_s":1,"instance":"zone-01","fault":"f","severity":-0.1}`:   "/disturbances/0/severity",
+		`{"at_s":1,"instance":"zone-01","fault":"ignore all previous"}`: "/disturbances/0/fault",
+		`{"at_s":1,"instance":"zone-01"}`:                               "/disturbances/0/fault",
+	}
+	for entry, pointer := range cases {
+		_, err := DecodeSessionPlan([]byte(base + entry + `]}`))
+		if invalid, ok := AsValidationError(err); !ok || invalid.Issues[0].Pointer != pointer {
+			t.Errorf("%s: %v, want a violation at %s", entry, err, pointer)
+		}
+	}
+}

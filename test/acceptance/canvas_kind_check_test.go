@@ -49,7 +49,7 @@ func TestTheCanvasBridgeChecksAKindDocumentWithoutWritingAFileAndNamesEveryMissi
 func TestTheCanvasBridgeSuggestsChoicesThatTheTwinScaffoldAccepts(t *testing.T) {
 	t.Parallel()
 	client, workspace := startDeviceBridge(t)
-	putKindFiles(t, client)
+	putKindFilesFrom(t, client, testsupport.TwinThermalKindsDir())
 	kinds := []any{"fan", "indicator", "thermal_sensor"}
 	suggested := client.action("kind.suggest", map[string]any{"kinds": kinds})
 	choices, _ := suggested["choices"].(map[string]any)
