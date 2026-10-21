@@ -1,0 +1,337 @@
+{
+  "id": "cc2640r2f-ble-node",
+  "version": "0.1.0",
+  "title": "CC2640R2F Bluetooth sensor node twin",
+  "description": "The twin of a CC2640R2F board that reports five one-byte sensors over Bluetooth Low Energy. The kind implements the kind file beside this domain, so the simulated board and the physical board present one model. The sensors are placeholders until their meaning is known: each holds a steady level and reads it with one byte of noise.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "observe_only",
+    "cadence": [
+      "periodic"
+    ],
+    "cardinality": "small",
+    "consequence": [
+      "cost"
+    ],
+    "correlation": [
+      "independent"
+    ],
+    "fidelity": [
+      "F1"
+    ],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": [
+      "none"
+    ],
+    "time_reference": "wall",
+    "value_shape": [
+      "counter"
+    ]
+  },
+  "stresses": "A read-only wireless node: the link can drop and come back, and a sensor that sticks reads plausibly while its level moves.",
+  "kinds": [
+    {
+      "name": "ble_sensor_node",
+      "implements": "ble_sensor_node",
+      "state": [
+        {
+          "name": "level_1",
+          "unit": "1",
+          "initial": 60.0,
+          "min": 0.0,
+          "max": 255.0,
+          "description": "The true value behind sensor 1. No dynamics: moved by faults only."
+        },
+        {
+          "name": "level_2",
+          "unit": "1",
+          "initial": 90.0,
+          "min": 0.0,
+          "max": 255.0,
+          "description": "The true value behind sensor 2. No dynamics: moved by faults only."
+        },
+        {
+          "name": "level_3",
+          "unit": "1",
+          "initial": 120.0,
+          "min": 0.0,
+          "max": 255.0,
+          "description": "The true value behind sensor 3. No dynamics: moved by faults only."
+        },
+        {
+          "name": "level_4",
+          "unit": "1",
+          "initial": 150.0,
+          "min": 0.0,
+          "max": 255.0,
+          "description": "The true value behind sensor 4. No dynamics: moved by faults only."
+        },
+        {
+          "name": "level_5",
+          "unit": "1",
+          "initial": 180.0,
+          "min": 0.0,
+          "max": 255.0,
+          "description": "The true value behind sensor 5. No dynamics: moved by faults only."
+        }
+      ],
+      "channels": [
+        {
+          "name": "sensor_1",
+          "unit": "1",
+          "absence": "signal",
+          "availability": {
+            "mttr_s": 6,
+            "uptime": 0.995
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 2
+          },
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {
+            "mean_s": 0.1,
+            "model": "constant"
+          },
+          "noise": {
+            "model": "gaussian",
+            "sigma": 1.0
+          },
+          "observes": "level_1",
+          "range": {
+            "min": 0.0,
+            "max": 255.0
+          },
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "Sensor 1 as one byte, 0 to 255, as the board reports it over Bluetooth."
+        },
+        {
+          "name": "sensor_2",
+          "unit": "1",
+          "absence": "signal",
+          "availability": {
+            "mttr_s": 6,
+            "uptime": 0.995
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 2
+          },
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {
+            "mean_s": 0.1,
+            "model": "constant"
+          },
+          "noise": {
+            "model": "gaussian",
+            "sigma": 1.0
+          },
+          "observes": "level_2",
+          "range": {
+            "min": 0.0,
+            "max": 255.0
+          },
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "Sensor 2 as one byte, 0 to 255, as the board reports it over Bluetooth."
+        },
+        {
+          "name": "sensor_3",
+          "unit": "1",
+          "absence": "signal",
+          "availability": {
+            "mttr_s": 6,
+            "uptime": 0.995
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 2
+          },
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {
+            "mean_s": 0.1,
+            "model": "constant"
+          },
+          "noise": {
+            "model": "gaussian",
+            "sigma": 1.0
+          },
+          "observes": "level_3",
+          "range": {
+            "min": 0.0,
+            "max": 255.0
+          },
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "Sensor 3 as one byte, 0 to 255, as the board reports it over Bluetooth."
+        },
+        {
+          "name": "sensor_4",
+          "unit": "1",
+          "absence": "signal",
+          "availability": {
+            "mttr_s": 6,
+            "uptime": 0.995
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 2
+          },
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {
+            "mean_s": 0.1,
+            "model": "constant"
+          },
+          "noise": {
+            "model": "gaussian",
+            "sigma": 1.0
+          },
+          "observes": "level_4",
+          "range": {
+            "min": 0.0,
+            "max": 255.0
+          },
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "Sensor 4 as one byte, 0 to 255, as the board reports it over Bluetooth."
+        },
+        {
+          "name": "sensor_5",
+          "unit": "1",
+          "absence": "signal",
+          "availability": {
+            "mttr_s": 6,
+            "uptime": 0.995
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 2
+          },
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {
+            "mean_s": 0.1,
+            "model": "constant"
+          },
+          "noise": {
+            "model": "gaussian",
+            "sigma": 1.0
+          },
+          "observes": "level_5",
+          "range": {
+            "min": 0.0,
+            "max": 255.0
+          },
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "Sensor 5 as one byte, 0 to 255, as the board reports it over Bluetooth."
+        }
+      ],
+      "faults": [
+        {
+          "id": "sensor_1_stuck",
+          "observability": {
+            "detector": {
+              "form": "single_channel_snr",
+              "channel": "sensor_1"
+            },
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "observation": {
+            "form": "stuck",
+            "channel": "sensor_1",
+            "quality": "suspect",
+            "value": 0.0
+          },
+          "onset": {
+            "magnitude": 1.0,
+            "shape": "step"
+          },
+          "description": "Sensor 1 sticks at 0 while its true level keeps its value. The reading is plausible and flagged suspect."
+        },
+        {
+          "id": "sensor_1_shift",
+          "affects": [
+            {
+              "state": "level_1",
+              "delta": 40.0
+            }
+          ],
+          "is_negative_class": false,
+          "observability": {
+            "detector": {
+              "form": "single_channel_snr",
+              "channel": "sensor_1"
+            },
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {
+            "magnitude": 1.0,
+            "shape": "step"
+          },
+          "description": "The level behind sensor 1 rises by 40."
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "kind": "ble_sensor_node",
+      "names": [
+        "node-01"
+      ],
+      "area": "ble-bench"
+    }
+  ],
+  "boards": [
+    {
+      "name": "cc2640r2f-01",
+      "members": [
+        "node-01"
+      ],
+      "description": "The CC2640R2F LaunchPad: five one-byte sensors over Bluetooth Low Energy."
+    }
+  ],
+  "profiles": [
+    {
+      "name": "nominal",
+      "duration_s": 3600,
+      "description": "One node at rest: every sensor at its level."
+    },
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "One node has no peers to trip together, so there is no alarm flood to reproduce.",
+      "description": "Not applicable."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 3600,
+      "fault_weights": {
+        "sensor_1_stuck": 1.0
+      },
+      "description": "Sensor 1 sticks while its level is unchanged."
+    }
+  ],
+  "ground_truth": {
+    "min_per_label": 10,
+    "min_scenarios": 100,
+    "negative_class_fraction": 0.4,
+    "pre_degraded_fraction": 0.1
+  },
+  "site": {
+    "name": "bench",
+    "areas": [
+      {
+        "name": "ble-bench"
+      }
+    ]
+  }
+}
