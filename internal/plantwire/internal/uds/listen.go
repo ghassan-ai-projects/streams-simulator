@@ -13,7 +13,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-const hangUpGrace = time.Second
+const hangUpGrace = 200 * time.Millisecond
 
 type Peer interface {
 	Receive(domain.Inbound) []map[string]any
@@ -106,21 +106,23 @@ func turn(ctx context.Context, link *Link, peer Peer, beats <-chan time.Time, de
 
 func beat(ctx context.Context, link *Link, peer Peer) (heard, open bool, err error) {
 	if err := answer(ctx, link, peer.Beat(), 0); err != nil {
-		return false, false, endOrFail(link, err)
+		heard, err = endOrFail(link, err)
+		return heard, false, err
 	}
 	return false, true, nil
 }
 
-func endOrFail(link *Link, writeErr error) error {
+func endOrFail(link *Link, writeErr error) (heard bool, err error) {
 	deadline := time.After(hangUpGrace)
 	for {
 		select {
 		case _, open := <-link.Incoming():
 			if !open {
-				return readEnd(link.failed)
+				return heard, readEnd(link.failed)
 			}
+			heard = true
 		case <-deadline:
-			return writeErr
+			return heard, writeErr
 		}
 	}
 }
