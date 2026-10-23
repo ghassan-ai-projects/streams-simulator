@@ -1,0 +1,10 @@
+{
+  "schema_version": "0.1",
+  "domain": "cc2640r2f-ble-node",
+  "seed": 1,
+  "host_socket": "/tmp/ble-experiment/host.sock",
+  "gateway_socket": "/tmp/ble-experiment/gateway.sock",
+  "pace": "wall",
+  "policies": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+  "real": [{"instance": "node-01", "board": "cc2640r2f-01", "device": "node-01"}]
+}

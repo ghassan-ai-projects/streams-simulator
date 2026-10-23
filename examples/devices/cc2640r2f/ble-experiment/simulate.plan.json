@@ -1,0 +1,9 @@
+{
+  "schema_version": "0.1",
+  "domain": "cc2640r2f-ble-node",
+  "seed": 1,
+  "host_socket": "/tmp/ble-experiment/host.sock",
+  "pace": "wall",
+  "policies": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+  "disturbances": [{"at_s": 60, "instance": "node-01", "fault": "sensor_1_shift", "duration_s": 120}]
+}
