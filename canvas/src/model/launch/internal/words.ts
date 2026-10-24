@@ -30,7 +30,7 @@ export function planSummary(plan: LaunchPlan, length: string): string {
 }
 
 export function modeWords(explore: boolean): string {
-  return explore ? "The truth is visible after the run; not for scoring." : evaluateRule;
+  return explore ? "The truth is visible while the run is going; this run is not for scoring." : evaluateRule;
 }
 
 export function problemWords(problems: readonly PlanProblem[]): string {

@@ -13,7 +13,7 @@ const called = (count: number): LaunchPlan["calls"] =>
 
 describe("launch words", () => {
   it("tells what each mode does with the true results", () => {
-    expect(modeWords(true)).toBe("The truth is visible after the run; not for scoring.");
+    expect(modeWords(true)).toBe("The truth is visible while the run is going; this run is not for scoring.");
     expect(modeWords(false)).toMatch(/^The true results stay hidden from the outside system while it runs/);
   });
 
