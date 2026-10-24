@@ -133,6 +133,14 @@ func TestAnInvalidJobPlanIsRefusedAndLeavesNoRun(t *testing.T) {
 		{"a call past the end", "invalid_args", func(plan map[string]any) { plan["calls"].([]any)[0].(map[string]any)["at_s"] = 9999 }},
 		{"no duration", "director_refused", func(plan map[string]any) { delete(plan, "duration_s") }},
 		{"an unknown plan key", "bad_arguments", func(plan map[string]any) { plan["sink"] = "file" }},
+		{"a clear before the fault begins", "invalid_args", func(plan map[string]any) { plan["faults"].([]any)[0].(map[string]any)["until_s"] = 0 }},
+		{"an unknown perturbation kind", "scenario_invalid", func(plan map[string]any) {
+			plan["perturbations"] = []any{map[string]any{"kind": "no_such_kind", "at_s": 5}}
+		}},
+		{"a perturbation parameter out of range", "scenario_invalid", func(plan map[string]any) {
+			plan["perturbations"] = []any{map[string]any{"kind": "drop", "params": map[string]any{"rate": 4}, "at_s": 5}}
+		}},
+		{"a name with a control character", "invalid_args", func(plan map[string]any) { plan["name"] = "two\nlines" }},
 		{"an unknown domain", "domain_invalid", func(plan map[string]any) { plan["domain"] = "no-such-domain" }},
 		{"a nested unknown key", "director_refused", func(plan map[string]any) { plan["faults"].([]any)[0].(map[string]any)["token"] = "t-x" }},
 	}

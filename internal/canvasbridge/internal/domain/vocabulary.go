@@ -52,6 +52,7 @@ func expandedCount(sets []instanceSet) int {
 
 type RunEntry struct {
 	WorldID             string          `json:"world_id"`
+	Name                string          `json:"name,omitempty"`
 	Ended               bool            `json:"ended"`
 	Complete            bool            `json:"complete"`
 	IncompleteReason    string          `json:"incomplete_reason"`

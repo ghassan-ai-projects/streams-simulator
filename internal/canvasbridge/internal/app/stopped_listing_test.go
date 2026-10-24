@@ -36,3 +36,14 @@ func TestTheListingCarriesTheLengthTheRunWasAskedForAndHowItTerminated(t *testin
 		})
 	}
 }
+
+func TestTheListingCarriesTheNameOfARunThatKeptOne(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	h.write(t, "runs/w-1/journal.jsonl", startedAt+closedLine)
+	h.write(t, "runs/w-1/run.json", `{"seed":7,"plan":{"requested_end_ns":1800000000100,"name":"Cooling loss","purpose":"Observe the chiller."}}`)
+	listing, err := h.bridge.Workspace(context.Background())
+	if err != nil || len(listing.Runs) != 1 || listing.Runs[0].Name != "Cooling loss" {
+		t.Fatalf("listing = %+v, %v, want the run listed under its name", listing, err)
+	}
+}

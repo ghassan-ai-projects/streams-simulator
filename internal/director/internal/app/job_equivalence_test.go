@@ -12,9 +12,10 @@ import (
 
 func plans() map[string]rules.JobRequest {
 	return map[string]rules.JobRequest{
-		"pond with a fault and a call":   pondJob(),
-		"pond as fast as possible":       func() rules.JobRequest { r := pondJob(); r.Rate = 0; return r }(),
-		"line with an interlock refusal": lineJob(),
+		"pond with a fault and a call":                          pondJob(),
+		"pond as fast as possible":                              func() rules.JobRequest { r := pondJob(); r.Rate = 0; return r }(),
+		"line with an interlock refusal":                        lineJob(),
+		"pond with a recovery, a delivery condition and a name": recoveryPondJob(),
 	}
 }
 

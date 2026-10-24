@@ -36,6 +36,7 @@ func endedRun(art *model.RunArtifact) Run {
 		TimeMode: art.TimeMode, StartTimeNS: art.WorldConfig.StartTimeNS, EntityCount: len(art.WorldConfig.EntityIDs)}
 	run.EndTimeNS = lastAdvance(art.CommandLog)
 	run.RequestedEndNS, run.Rate, run.Termination = intentOf(art)
+	run.Name, run.Purpose = authoredTextOf(art)
 	run.Complete, run.IncompleteReason = completion(art)
 	return run
 }
@@ -45,6 +46,13 @@ func intentOf(art *model.RunArtifact) (int64, float64, *model.Termination) {
 		return 0, 0, art.Termination
 	}
 	return art.Plan.RequestedEndNS, art.Plan.Rate, art.Termination
+}
+
+func authoredTextOf(art *model.RunArtifact) (string, string) {
+	if art.Plan == nil {
+		return "", ""
+	}
+	return art.Plan.Name, art.Plan.Purpose
 }
 
 func completion(art *model.RunArtifact) (bool, string) {

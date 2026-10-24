@@ -10,6 +10,8 @@ const (
 type RunPlan struct {
 	RequestedEndNS int64   `json:"requested_end_ns"`
 	Rate           float64 `json:"rate,omitempty"`
+	Name           string  `json:"name,omitempty"`
+	Purpose        string  `json:"purpose,omitempty"`
 }
 
 type Termination struct {

@@ -126,3 +126,20 @@ func wireOf(t *testing.T, entry RunEntry) map[string]any {
 	}
 	return fields
 }
+
+func TestARunEntryCarriesTheNameTheOperatorGaveTheRunAndOmitsItWhenThereIsNone(t *testing.T) {
+	t.Parallel()
+	named := ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":9,"name":"Cooling loss","purpose":"Observe the chiller."}}`))
+	if named.Name() != "Cooling loss" {
+		t.Fatalf("Name = %q", named.Name())
+	}
+	entry := wireOf(t, NewRunEntry("w", RunSummary{Closed: true}, false, named))
+	if entry["name"] != "Cooling loss" {
+		t.Fatalf("entry = %v, want the name", entry)
+	}
+	for _, artifact := range []RunArtifact{{}, ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":9}}`))} {
+		if _, has := wireOf(t, NewRunEntry("w", RunSummary{Closed: true}, false, artifact))["name"]; has {
+			t.Fatal("an unnamed run lists a name")
+		}
+	}
+}

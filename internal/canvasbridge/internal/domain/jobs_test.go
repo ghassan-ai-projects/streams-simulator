@@ -7,6 +7,20 @@ import (
 	"testing"
 )
 
+func TestThePerturbationCatalogIsAReadOnlyDirectorAction(t *testing.T) {
+	t.Parallel()
+	action, err := Lookup("catalog.perturbations")
+	if err != nil || action.Kind != KindMCP || action.Tool != "sim.catalog.perturbations" || action.Mutating {
+		t.Fatalf("catalog.perturbations = %+v, %v", action, err)
+	}
+	if got, err := action.ToolArguments(map[string]any{}); err != nil || len(got) != 0 {
+		t.Fatalf("ToolArguments = %v, %v", got, err)
+	}
+	if _, err := action.ToolArguments(map[string]any{"world_id": "w-1"}); !errors.Is(err, ErrBadArguments) {
+		t.Fatalf("an argument the catalog does not take: %v", err)
+	}
+}
+
 func TestJobActionsMapToTheDirectorsJobTools(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -39,9 +53,11 @@ func TestJobStartCarriesItsNestedPlanAndNothingElse(t *testing.T) {
 	t.Parallel()
 	start, _ := Lookup("job.start")
 	plan := map[string]any{
+		"name": "Loss and recovery", "purpose": "Does it recover?",
 		"domain": "d", "seed": 3.0, "explore": true, "duration_s": 60.0, "rate": 0.0,
-		"faults": []any{map[string]any{"entity_id": "CT-1", "fault": "f", "at_s": 10.0}},
-		"calls":  []any{map[string]any{"entity_id": "CT-1", "effector": "e", "args": map[string]any{"speed": 0.8}, "at_s": 5.0}},
+		"faults":        []any{map[string]any{"entity_id": "CT-1", "fault": "f", "at_s": 10.0, "until_s": 30.0}},
+		"perturbations": []any{map[string]any{"kind": "drop", "params": map[string]any{"rate": 0.3}, "at_s": 5.0, "until_s": 40.0}},
+		"calls":         []any{map[string]any{"entity_id": "CT-1", "effector": "e", "args": map[string]any{"speed": 0.8}, "at_s": 5.0}},
 	}
 	if got, err := start.ToolArguments(plan); err != nil || !reflect.DeepEqual(got, plan) {
 		t.Fatalf("ToolArguments = %v, %v", got, err)

@@ -28,6 +28,7 @@ func (policy refusalPolicy) keeps(err error) bool {
 
 type StepResult struct {
 	Acknowledgement *model.EffectorAcknowledgement
+	FaultID         string
 }
 
 func executeCommand(ctx context.Context, r *Run, cmd *model.Command, policy refusalPolicy) error {
@@ -36,9 +37,13 @@ func executeCommand(ctx context.Context, r *Run, cmd *model.Command, policy refu
 }
 
 func executeObserved(ctx context.Context, r *Run, cmd *model.Command, policy refusalPolicy) (StepResult, error) {
-	if cmd.Op == model.OpEffectorInvoke {
+	switch cmd.Op {
+	case model.OpEffectorInvoke:
 		ack, err := applyInvocation(r, cmd.Args, policy)
 		return StepResult{Acknowledgement: ack}, err
+	case model.OpFaultInject:
+		id, err := applyInjection(r, cmd.Args)
+		return StepResult{FaultID: id}, err
 	}
 	return StepResult{}, executeOther(ctx, r, cmd)
 }
@@ -47,8 +52,8 @@ func executeOther(ctx context.Context, r *Run, cmd *model.Command) error {
 	switch cmd.Op {
 	case model.OpClockAdvance:
 		return applyAdvance(ctx, r, cmd.Args)
-	case model.OpFaultInject, model.OpFaultClear:
-		return applyFault(r, cmd)
+	case model.OpFaultClear:
+		return r.ClearFault(rules.CommandString(cmd.Args, "fault_id"), rules.CommandTime(cmd.Args, "at_ns"))
 	case model.OpPerturbApply, model.OpPerturbClear:
 		return applyPerturbation(r, cmd)
 	default:
@@ -61,13 +66,9 @@ func applyAdvance(ctx context.Context, r *Run, args map[string]any) error {
 	return wrapExecutionError(err)
 }
 
-func applyFault(r *Run, cmd *model.Command) error {
-	args := cmd.Args
-	if cmd.Op == model.OpFaultClear {
-		return r.ClearFault(rules.CommandString(args, "fault_id"), rules.CommandTime(args, "at_ns"))
-	}
-	_, err := r.InjectFault(rules.CommandString(args, "entity_id"), rules.CommandString(args, "fault"), rules.CommandTime(args, "onset_ns"), rules.AsMap(args["params"]))
-	return wrapExecutionError(err)
+func applyInjection(r *Run, args map[string]any) (string, error) {
+	id, err := r.InjectFault(rules.CommandString(args, "entity_id"), rules.CommandString(args, "fault"), rules.CommandTime(args, "onset_ns"), rules.AsMap(args["params"]))
+	return id, wrapExecutionError(err)
 }
 
 func applyPerturbation(r *Run, cmd *model.Command) error {

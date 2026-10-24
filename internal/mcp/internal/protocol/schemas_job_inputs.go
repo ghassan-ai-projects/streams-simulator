@@ -1,17 +1,21 @@
 package protocol
 
 func jobStartInput() toolInput {
-	return toolInput{
-		Properties: map[string]any{
-			"domain":     stringSchema(),
-			"seed":       seedSchema(),
-			"explore":    booleanSchema(),
-			"duration_s": map[string]any{"type": "integer", "minimum": 1},
-			"rate":       map[string]any{"type": "number", "minimum": 0},
-			"faults":     map[string]any{"type": "array", "items": jobFaultSchema()},
-			"calls":      map[string]any{"type": "array", "items": jobCallSchema()},
-		},
-		Required: []string{"domain", "seed", "duration_s"},
+	return toolInput{Properties: jobStartProperties(), Required: []string{"domain", "seed", "duration_s"}}
+}
+
+func jobStartProperties() map[string]any {
+	return map[string]any{
+		"name":          map[string]any{"type": "string", "maxLength": 80},
+		"purpose":       map[string]any{"type": "string", "maxLength": 500},
+		"domain":        stringSchema(),
+		"seed":          seedSchema(),
+		"explore":       booleanSchema(),
+		"duration_s":    map[string]any{"type": "integer", "minimum": 1},
+		"rate":          map[string]any{"type": "number", "minimum": 0},
+		"faults":        map[string]any{"type": "array", "items": jobFaultSchema()},
+		"perturbations": map[string]any{"type": "array", "items": jobPerturbationSchema()},
+		"calls":         map[string]any{"type": "array", "items": jobCallSchema()},
 	}
 }
 
@@ -20,7 +24,17 @@ func jobFaultSchema() map[string]any {
 		"entity_id": stringSchema(),
 		"fault":     stringSchema(),
 		"at_s":      map[string]any{"type": "integer", "minimum": 0},
+		"until_s":   map[string]any{"type": "integer", "minimum": 0},
 	}, "entity_id", "fault", "at_s")
+}
+
+func jobPerturbationSchema() map[string]any {
+	return closedObject(map[string]any{
+		"kind":    stringSchema(),
+		"params":  objectSchema(),
+		"at_s":    map[string]any{"type": "integer", "minimum": 0},
+		"until_s": map[string]any{"type": "integer", "minimum": 0},
+	}, "kind", "at_s")
 }
 
 func jobCallSchema() map[string]any {

@@ -123,3 +123,17 @@ func TestFlushReleasesRecordsHeldByAFlap(t *testing.T) {
 		t.Fatalf("flush released %+v", released)
 	}
 }
+
+func TestDescribeIsTheCatalogWithItsParameterContracts(t *testing.T) {
+	t.Parallel()
+	kinds := perturb.Describe()
+	names := perturb.Names()
+	if len(kinds) != len(names) {
+		t.Fatalf("%d kinds described, want the %d of the catalog", len(kinds), len(names))
+	}
+	for i, kind := range kinds {
+		if kind.Kind != names[i] || kind.Category != perturb.CategoryDelivery {
+			t.Fatalf("kind %d = %+v, want %s as a delivery perturbation", i, kind, names[i])
+		}
+	}
+}

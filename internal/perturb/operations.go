@@ -32,3 +32,7 @@ func CheckWindow(name string, fromNS, untilNS int64) error {
 func Names() []string {
 	return layer.CatalogNames()
 }
+
+func Describe() []KindInfo {
+	return layer.Describe()
+}

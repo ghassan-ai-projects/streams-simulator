@@ -87,3 +87,23 @@ func TestAnInterlockRefusalIsARecordedOutcomeAndTheScenarioGoesOn(t *testing.T) 
 		t.Fatalf("End = %d commands, %v; refused calls stay in the command log", len(art.CommandLog), err)
 	}
 }
+
+func TestTheAfterHookSeesTheIdTheWorldGaveAnInjectedFault(t *testing.T) {
+	t.Parallel()
+	scenario := interlockScenario()
+	start := model.DefaultStartTimeNS
+	scenario.Commands = append(scenario.Commands,
+		model.ScenarioCommand{Op: model.OpFaultInject, Args: map[string]any{"entity_id": "line-1", "fault": "guard_trigger", "onset_ns": start + 120e9, "params": map[string]any{}}},
+		model.ScenarioCommand{Op: model.OpFaultClear, Args: map[string]any{"fault_id": "f-0", "at_ns": start + 120e9}})
+	r := lineRun(t, scenario)
+	ids := map[int]string{}
+	hooks := ScenarioHooks{After: func(_ context.Context, index int, _ model.ScenarioCommand, result StepResult) {
+		ids[index] = result.FaultID
+	}}
+	if _, err := r.ExecuteScenarioWith(t.Context(), scenario, hooks); err != nil {
+		t.Fatal(err)
+	}
+	if ids[0] != "f-0" || ids[6] != "f-1" || ids[7] != "" || ids[1] != "" {
+		t.Fatalf("fault ids by step = %v, want f-0 at 0, f-1 at 6 and none elsewhere", ids)
+	}
+}

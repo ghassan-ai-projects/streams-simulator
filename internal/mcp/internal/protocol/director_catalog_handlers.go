@@ -13,6 +13,9 @@ func (d directorTools) handleCatalogDescribe(_ context.Context, args map[string]
 func (d directorTools) handleCatalogCoverage(_ context.Context, args map[string]any) (any, error) {
 	return d.CatalogCoverage(), nil
 }
+func (d directorTools) handleCatalogPerturbations(_ context.Context, _ map[string]any) (any, error) {
+	return d.PerturbationCatalog(), nil
+}
 func (d directorTools) handleComponentList(_ context.Context, _ map[string]any) (any, error) {
 	return d.ComponentList()
 }

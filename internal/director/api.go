@@ -15,6 +15,10 @@ type JobFault = rules.JobFault
 
 type JobCall = rules.JobCall
 
+type JobPerturbation = rules.JobPerturbation
+
+type JobFaultView = rules.JobFaultView
+
 type JobStatus = rules.JobStatus
 
 type JobCallOutcome = rules.JobCallOutcome

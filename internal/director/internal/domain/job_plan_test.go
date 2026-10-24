@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -113,5 +114,85 @@ func TestPlannedArgumentsAreExactlyTheCommandLogShape(t *testing.T) {
 	wantCall := map[string]any{"effector": "start_aerator", "entity_id": "pond-1", "command_id": "job-1", "args": map[string]any{"pond_id": "pond-1"}, "at_ns": planStart + 1200e9}
 	if !reflect.DeepEqual(fault.Args, wantFault) || !reflect.DeepEqual(call.Args, wantCall) {
 		t.Fatalf("fault args %v, call args %v", fault.Args, call.Args)
+	}
+}
+
+func recoveryJob() JobRequest {
+	return JobRequest{Domain: "aquaculture-pond", Seed: 3, DurationS: 100, Rate: 0,
+		Faults:        []JobFault{{EntityID: "p-1", Fault: "late", AtS: 60}, {EntityID: "p-1", Fault: "early", AtS: 10, UntilS: at(35)}, {EntityID: "p-2", Fault: "open", AtS: 10}},
+		Perturbations: []JobPerturbation{{Kind: "drop", Params: map[string]any{"rate": 0.3}, AtS: 20, UntilS: at(70)}, {Kind: "malformed", AtS: 100}}}
+}
+
+func TestAFaultsPlannedIdIsItsRankInInjectionOrder(t *testing.T) {
+	t.Parallel()
+	want := []string{"f-2", "f-0", "f-1"}
+	if got := FaultIDs(recoveryJob().Faults); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ids = %v, want %v: ranked by time, then by position in the request", got, want)
+	}
+}
+
+func TestARecoveredFaultIsClearedByIdAtItsEndAndADeliveryConditionIsAWindow(t *testing.T) {
+	t.Parallel()
+	scenario := PlanScenario(recoveryJob(), "native-jsonl", planStart)
+	var inject, clear, apply []model.ScenarioCommand
+	for _, command := range scenario.Commands {
+		switch command.Op {
+		case model.OpFaultInject:
+			inject = append(inject, command)
+		case model.OpFaultClear:
+			clear = append(clear, command)
+		case model.OpPerturbApply:
+			apply = append(apply, command)
+		}
+	}
+	if len(inject) != 3 || len(clear) != 1 || len(apply) != 2 {
+		t.Fatalf("%d injections, %d clears, %d applications, want 3, 1, 2", len(inject), len(clear), len(apply))
+	}
+	if want := map[string]any{"fault_id": "f-0", "at_ns": planStart + 35e9}; !reflect.DeepEqual(clear[0].Args, want) {
+		t.Fatalf("clear = %v, want %v", clear[0].Args, want)
+	}
+	wantDrop := map[string]any{"perturbation": "drop", "params": map[string]any{"rate": 0.3}, "from_ns": planStart + 20e9, "until_ns": planStart + 70e9}
+	wantOpen := map[string]any{"perturbation": "malformed", "params": map[string]any{}, "from_ns": planStart + 100e9, "until_ns": int64(0)}
+	if !reflect.DeepEqual(apply[0].Args, wantDrop) || !reflect.DeepEqual(apply[1].Args, wantOpen) {
+		t.Fatalf("applications = %v, %v", apply[0].Args, apply[1].Args)
+	}
+}
+
+func TestTheClockStopsAtTheMomentOfARecoveryAndOfTheEndOfAWindow(t *testing.T) {
+	t.Parallel()
+	got := ops(PlanScenario(recoveryJob(), "native-jsonl", planStart).Commands)
+	for _, want := range []string{"clock.advance to+35", "clock.advance to+70"} {
+		if !slices.Contains(got, want) {
+			t.Errorf("no %q in %v", want, got)
+		}
+	}
+	at35 := slices.Index(got, "clock.advance to+35")
+	if next := got[at35+1]; next != "fault.clear" {
+		t.Fatalf("after reaching 35 s the plan runs %q, want the clear", next)
+	}
+}
+
+func TestAPlanWithRecoveriesAndConditionsStillSatisfiesTheScenarioContract(t *testing.T) {
+	t.Parallel()
+	raw, err := json.Marshal(PlanScenario(recoveryJob(), "native-jsonl", planStart))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := model.ValidateScenario(raw); err != nil {
+		t.Fatalf("the scenario does not satisfy scenario-v0.1: %v", err)
+	}
+}
+
+func TestAtTheSameMomentAPlanInjectsThenClearsThenPerturbsThenCalls(t *testing.T) {
+	t.Parallel()
+	request := JobRequest{Domain: "d", DurationS: 40,
+		Faults:        []JobFault{{EntityID: "p", Fault: "a", AtS: 10, UntilS: at(20)}, {EntityID: "p", Fault: "b", AtS: 20}},
+		Perturbations: []JobPerturbation{{Kind: "drop", AtS: 20}},
+		Calls:         []JobCall{{EntityID: "p", Effector: "e", AtS: 20}}}
+	got := ops(PlanScenario(request, "native-jsonl", planStart).Commands)
+	start := slices.Index(got, "clock.advance to+20")
+	want := []string{"fault.inject p b @+20", "fault.clear", "perturb.apply", "effector.invoke job-1 e @+20"}
+	if !reflect.DeepEqual(got[start+1:start+5], want) {
+		t.Fatalf("at 20 s: %v, want %v", got[start+1:start+5], want)
 	}
 }

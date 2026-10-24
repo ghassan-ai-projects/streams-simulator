@@ -4,6 +4,21 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A run plan can be named, recover a fault and carry delivery conditions (control-plane round 4a, audit F12 and F13).** `sim.job.start`
+  gains optional `name` (80 characters) and `purpose` (500), plain text kept in the run's `plan` (`plan.name`, `plan.purpose`),
+  the job status, the run report (`run.name`, `run.purpose`, markdown included) and the workspace listing entry (`name`); they
+  are authored text and never enter the trace or the truth. A planned fault gains `until_s`: the plan clears it at that time
+  with the run's own `fault.clear`, naming the fault by the id the world gives it (`world.FaultID`); when an immediate fault was
+  injected first, the job retargets the clear to the planned fault's real id so it never reaches another one. The plan gains
+  `perturbations[]` (`kind`, `params`, `at_s`, `until_s`), each one `perturb.apply` with its window. The set of kinds and their
+  parameter bounds is the delivery layer's own: `sim.catalog.perturbations` (bridge action `catalog.perturbations`) lists them
+  with category `delivery`, a description, `requires_end` and the parameter contract, which now also drives validation (integer
+  parameters refuse a fraction). `sim.catalog.describe` adds `fault_categories` (`world`, `measurement`,
+  `world_and_measurement`). The job status lists the planned `faults` (with `fault_id` once injected) and `perturbations`.
+  Impossible plans (clear or window ending before it starts, unknown kind, parameter out of range) are refused before any
+  world exists. A job with clears and perturbations has the same trace, world and command log as `RunScenario` of its built
+  scenario, replays, verifies, and rebuilds exactly from its report.
+
 - **A running job can be paused, stepped, re-rated and given commands now (control-plane round 3b, audit F08).** The director's
   job gains the simulator-owned controls `sim.job.pause`, `sim.job.resume`, `sim.job.step`, `sim.job.rate`,
   `sim.job.inject_fault` and `sim.job.invoke_effector`, and the canvas bridge the matching `job.*` actions. A paused job

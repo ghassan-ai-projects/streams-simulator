@@ -42,6 +42,7 @@ func mcp(name, tool string, mutating bool, keys ...string) Action {
 var registry = []Action{
 	mcp("catalog.list", "sim.catalog.list", false, "group"),
 	mcp("catalog.describe", "sim.catalog.describe", false, "domain"),
+	mcp("catalog.perturbations", "sim.catalog.perturbations", false),
 	mcp("adapter.list", "sim.adapter.list", false),
 	withholding(mcp("world.create", "sim.world.create", true, "domain", "seed", "entities", "scenario_profile", "adapter", "time_mode",
 		"start_time", "label", "explore"), "token", "operator_endpoint"),
@@ -60,7 +61,7 @@ var registry = []Action{
 	mcp("run.end", "sim.run.end", true, "world_id"),
 	mcp("truth.reveal", "sim.truth.reveal", false, "run_id"),
 	mcp("truth.status", "sim.truth.seal_status", false, "run_id"),
-	withholding(mcp("job.start", "sim.job.start", true, "domain", "seed", "explore", "duration_s", "rate", "faults", "calls"),
+	withholding(mcp("job.start", "sim.job.start", true, "name", "purpose", "domain", "seed", "explore", "duration_s", "rate", "faults", "perturbations", "calls"),
 		"token", "operator_endpoint"),
 	mcp("job.status", "sim.job.status", false, "world_id"),
 	mcp("job.stop", "sim.job.stop", true, "world_id"),

@@ -31,13 +31,14 @@ type job struct {
 	stopRequested bool
 	gate          gate
 	immediate     immediateGate
+	faults        *faultLedger
 }
 
-func newJob(parent context.Context, r *run.Run, status rules.JobStatus, scenario model.Scenario, pacer Pacer) *job {
+func newJob(parent context.Context, r *run.Run, status rules.JobStatus, scenario model.Scenario, pacer Pacer, faults []rules.JobFault) *job {
 	ctx, cancel := context.WithCancel(parent)
 	waitCtx, stopWait := context.WithCancel(ctx)
 	return &job{worldID: status.WorldID, run: r, scenario: scenario, pacer: pacer, ctx: ctx, cancel: cancel,
-		waitCtx: waitCtx, stopWait: stopWait, done: make(chan struct{}), status: status, gate: newGate(waitCtx)}
+		waitCtx: waitCtx, stopWait: stopWait, done: make(chan struct{}), status: status, gate: newGate(waitCtx), faults: newFaultLedger(faults)}
 }
 
 func (j *job) snapshot() rules.JobStatus {
@@ -47,9 +48,7 @@ func (j *job) snapshot() rules.JobStatus {
 }
 
 func (j *job) copyStatus() rules.JobStatus {
-	status := j.status
-	status.Calls = append([]rules.JobCallOutcome{}, j.status.Calls...)
-	return status
+	return rules.CloneJobStatus(j.status)
 }
 
 func (j *job) requestStop() rules.JobStatus {

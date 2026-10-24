@@ -13,7 +13,8 @@ observer got.
 | Delivery reason | Why a record looks as it does: ok, dropped, duplicated, delayed, mangled, rewritten, reordered | `model.Delivery*` | `delivery_reason` |
 | Window | The `[from, until)` world-time interval in which a perturbation acts | `FromNS`, `UntilNS` | `from_ns`, `until_ns` |
 | Flush | Release of records a windowed perturbation held back | `Layer.Flush` | – |
-| Parameter contract | The closed set of options each perturbation accepts | `paramRules` | `params` |
+| Parameter contract | The closed set of options each perturbation accepts, each with its type and bounds | `paramSpecs` | `params` |
+| Kind description | One catalog entry: the kind, its category (`delivery`), what it does, whether its window needs an end, and its parameter contract | `Describe`, `KindInfo`, `ParamInfo` | `sim.catalog.perturbations` |
 
 ## Retired words
 

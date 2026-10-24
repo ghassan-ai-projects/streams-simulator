@@ -56,3 +56,7 @@ func NewWireTrace(dir string) (*WireTrace, error) {
 	}
 	return &WireTrace{impl: inner}, nil
 }
+
+func Perturbations() []PerturbationKind {
+	return layer.Perturbations()
+}

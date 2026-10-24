@@ -120,6 +120,8 @@ func (d *Director) CatalogDescribe(domainID string) (map[string]any, error) {
 
 func (d *Director) CatalogCoverage() any { return d.impl.CatalogCoverage() }
 
+func (d *Director) PerturbationCatalog() map[string]any { return d.impl.PerturbationCatalog() }
+
 func (d *Director) DomainSpec(domainID string) (any, error) { return d.impl.DomainSpec(domainID) }
 
 func (d *Director) ListAdapters() map[string]any { return d.impl.ListAdapters() }

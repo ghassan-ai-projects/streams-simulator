@@ -23,7 +23,8 @@ func NewDirectorServer(dir *director.Director) *mcp.Server {
 
 func registerCatalogTools(s *mcp.Server, d directorTools) {
 	addTool(s, toolDef{name: "sim.catalog.list", description: "List the installed domains with their property vectors and stresses.", schema: toolSchema("sim.catalog.list"), handler: d.handleCatalogList})
-	addTool(s, toolDef{name: "sim.catalog.describe", description: "Describe a domain: channels, faults, effectors, profiles, fidelity tiers.", schema: toolSchema("sim.catalog.describe"), handler: d.handleCatalogDescribe})
+	addTool(s, toolDef{name: "sim.catalog.describe", description: "Describe a domain: channels, faults, effectors, profiles, fidelity tiers, and the category of each fault.", schema: toolSchema("sim.catalog.describe"), handler: d.handleCatalogDescribe})
+	addTool(s, toolDef{name: "sim.catalog.perturbations", description: "List the delivery perturbation kinds a run may apply, with their parameters and bounds.", schema: toolSchema("sim.catalog.perturbations"), handler: d.handleCatalogPerturbations})
 	addTool(s, toolDef{name: "sim.catalog.coverage", description: "The axis-coverage matrix; which axes are thin.", schema: toolSchema("sim.catalog.coverage"), handler: d.handleCatalogCoverage})
 	addTool(s, toolDef{name: "sim.adapter.list", description: "Installed output adapters.", schema: toolSchema("sim.adapter.list"), handler: d.handleAdapterList})
 	registerComponentTools(s, d)
@@ -63,7 +64,7 @@ func registerRunTools(s *mcp.Server, d directorTools) {
 }
 
 func registerJobTools(s *mcp.Server, d directorTools) {
-	addTool(s, toolDef{name: "sim.job.start", description: "Start a run plan as a paced, stoppable job on a new world; returns at once.", schema: toolSchema("sim.job.start"), handler: d.handleJobStart})
+	addTool(s, toolDef{name: "sim.job.start", description: "Start a run plan (optionally named, with fault recoveries and delivery perturbations) as a paced, stoppable job on a new world; returns at once.", schema: toolSchema("sim.job.start"), handler: d.handleJobStart})
 	addTool(s, toolDef{name: "sim.job.status", description: "The job on a world: state, simulated time reached, requested end, effector call outcomes.", schema: toolSchema("sim.job.status"), handler: d.handleJobStatus})
 	addTool(s, toolDef{name: "sim.job.stop", description: "Ask a job to end early; the run is closed with the commands executed so far.", schema: toolSchema("sim.job.stop"), handler: d.handleJobStop})
 	addTool(s, toolDef{name: "sim.job.pause", description: "Freeze a job at its next command boundary; returns once its simulated clock stands still.", schema: toolSchema("sim.job.pause"), handler: d.handleJobPause})

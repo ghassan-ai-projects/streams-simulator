@@ -14,6 +14,9 @@ func CheckRunPlan(plan model.RunPlan) error {
 	if plan.Rate < 0 || math.IsNaN(plan.Rate) || math.IsInf(plan.Rate, 0) {
 		return fmt.Errorf("run: plan rate %v must be a finite number, 0 or more", plan.Rate)
 	}
+	if err := model.CheckPlanText(plan.Name, plan.Purpose); err != nil {
+		return fmt.Errorf("run: plan %w", err)
+	}
 	return nil
 }
 

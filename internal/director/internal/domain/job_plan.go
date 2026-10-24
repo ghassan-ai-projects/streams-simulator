@@ -19,7 +19,7 @@ func PlanScenario(req JobRequest, adapterID string, startNS int64) model.Scenari
 	return model.Scenario{
 		SchemaVersion: model.ScenarioSchemaVersion,
 		ID:            fmt.Sprintf("job-seed-%d-%ds", req.Seed, req.DurationS),
-		Description:   fmt.Sprintf("Planned run of %s: %d s, %d faults, %d effector calls", req.Domain, req.DurationS, len(req.Faults), len(req.Calls)),
+		Description:   planDescription(req),
 		Domain:        req.Domain,
 		Adapter:       adapterID,
 		Seed:          uint64(max(0, req.Seed)),
@@ -28,11 +28,17 @@ func PlanScenario(req JobRequest, adapterID string, startNS int64) model.Scenari
 	}
 }
 
+func planDescription(req JobRequest) string {
+	return fmt.Sprintf("Planned run of %s: %d s, %d faults, %d delivery perturbations, %d effector calls",
+		req.Domain, req.DurationS, len(req.Faults), len(req.Perturbations), len(req.Calls))
+}
+
 func planCommands(req JobRequest, startNS int64) []model.ScenarioCommand {
-	commands := actionsAt(req, startNS, 0)
+	ids := FaultIDs(req.Faults)
+	commands := actionsAt(req, ids, startNS, 0)
 	for _, at := range boundaries(req) {
 		advance := model.ScenarioCommand{Op: model.OpClockAdvance, Args: map[string]any{"to_ns": startNS + at*nsPerSecond}}
-		commands = append(append(commands, advance), actionsAt(req, startNS, at)...)
+		commands = append(append(commands, advance), actionsAt(req, ids, startNS, at)...)
 	}
 	return commands
 }
@@ -57,11 +63,23 @@ func actionMarks(req JobRequest) []int64 {
 	var marks []int64
 	for _, fault := range req.Faults {
 		marks = append(marks, fault.AtS)
+		marks = appendEnd(marks, fault.UntilS)
+	}
+	for _, perturbation := range req.Perturbations {
+		marks = append(marks, perturbation.AtS)
+		marks = appendEnd(marks, perturbation.UntilS)
 	}
 	for _, call := range req.Calls {
 		marks = append(marks, call.AtS)
 	}
 	return marks
+}
+
+func appendEnd(marks []int64, untilS *int64) []int64 {
+	if untilS == nil {
+		return marks
+	}
+	return append(marks, *untilS)
 }
 
 func chunkCount(req JobRequest) int64 {
@@ -75,13 +93,25 @@ func ceilDiv(n, d int64) int64 {
 	return (n + d - 1) / d
 }
 
-func actionsAt(req JobRequest, startNS, atS int64) []model.ScenarioCommand {
+func actionsAt(req JobRequest, ids []string, startNS, atS int64) []model.ScenarioCommand {
+	commands := injectionsAt(req, startNS, atS)
+	commands = append(commands, clearsAt(req, ids, startNS, atS)...)
+	commands = append(commands, perturbationsAt(req, startNS, atS)...)
+	return append(commands, invocationsAt(req, startNS, atS)...)
+}
+
+func injectionsAt(req JobRequest, startNS, atS int64) []model.ScenarioCommand {
 	var commands []model.ScenarioCommand
 	for _, fault := range req.Faults {
 		if fault.AtS == atS {
 			commands = append(commands, injectCommand(fault, startNS))
 		}
 	}
+	return commands
+}
+
+func invocationsAt(req JobRequest, startNS, atS int64) []model.ScenarioCommand {
+	var commands []model.ScenarioCommand
 	for index, call := range req.Calls {
 		if call.AtS == atS {
 			commands = append(commands, invokeCommand(call, index, startNS))

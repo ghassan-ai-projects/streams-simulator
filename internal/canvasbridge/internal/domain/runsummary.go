@@ -51,7 +51,8 @@ type RunArtifact struct {
 		Op string `json:"op"`
 	} `json:"command_log"`
 	Plan *struct {
-		RequestedEndNs int64 `json:"requested_end_ns"`
+		RequestedEndNs int64  `json:"requested_end_ns"`
+		Name           string `json:"name"`
 	} `json:"plan"`
 	Termination *struct {
 		Reason string `json:"reason"`
@@ -82,6 +83,13 @@ func (a RunArtifact) RequestedEndNs() int64 {
 		return 0
 	}
 	return a.Plan.RequestedEndNs
+}
+
+func (a RunArtifact) Name() string {
+	if a.Plan == nil {
+		return ""
+	}
+	return a.Plan.Name
 }
 
 func (a RunArtifact) TerminationReason() string {
@@ -131,7 +139,7 @@ func NewRunEntry(worldID string, summary RunSummary, running bool, artifact RunA
 	complete := summary.Complete(running)
 	entry := RunEntry{WorldID: worldID, Ended: summary.State(running).Ended, Complete: complete, Running: running, Seed: artifact.Seed,
 		Explore: summary.Explore, Plant: summary.Plant, DurationNs: summary.DurationNs, Faults: artifact.Faults(),
-		RequestedDurationNs: requestedDuration(artifact, summary), TerminationReason: artifact.TerminationReason()}
+		RequestedDurationNs: requestedDuration(artifact, summary), TerminationReason: artifact.TerminationReason(), Name: artifact.Name()}
 	if !complete {
 		entry.IncompleteReason = artifact.Error
 	}

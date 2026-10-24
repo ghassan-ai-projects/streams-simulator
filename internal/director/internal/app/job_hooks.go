@@ -16,6 +16,7 @@ func (j *job) hooks() run.ScenarioHooks {
 }
 
 func (j *job) before(_ context.Context, _ int, command model.ScenarioCommand) (bool, error) {
+	j.retargetClear(command)
 	for {
 		j.awaitRelease()
 		if j.mustStop() {
@@ -102,6 +103,8 @@ func (j *job) after(_ context.Context, _ int, command model.ScenarioCommand, res
 		j.status.ReachedNS = timeArgument(command, "to_ns")
 	case model.OpEffectorInvoke:
 		j.status.Calls = append(j.status.Calls, j.callOutcome(command, result.Acknowledgement))
+	case model.OpFaultInject:
+		j.noteInjection(result.FaultID)
 	}
 }
 

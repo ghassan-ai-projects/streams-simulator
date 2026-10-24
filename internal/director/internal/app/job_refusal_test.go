@@ -15,13 +15,28 @@ func TestARequestThatCannotRunIsRefusedBeforeAnyWorldExists(t *testing.T) {
 		change func(*rules.JobRequest)
 		want   string
 	}{
-		"bad duration":      {func(r *rules.JobRequest) { r.DurationS = 0 }, "duration_s"},
-		"unknown fault":     {func(r *rules.JobRequest) { r.Faults[0].Fault = "no-such-fault" }, "no-such-fault"},
-		"unknown entity":    {func(r *rules.JobRequest) { r.Faults[0].EntityID = "site-z/none" }, "site-z/none"},
-		"unknown effector":  {func(r *rules.JobRequest) { r.Calls[0].Effector = "no-such-effector" }, "no-such-effector"},
-		"bad effector args": {func(r *rules.JobRequest) { r.Calls[0].Args = map[string]any{"level": 9} }, "start_aerator"},
-		"unknown domain":    {func(r *rules.JobRequest) { r.Domain = "no-such-domain" }, "no-such-domain"},
-		"beyond 30 days":    {func(r *rules.JobRequest) { r.DurationS = 31 * 86400; r.Calls[0].AtS = 0; r.Faults[0].AtS = 0 }, "30 days"},
+		"bad duration":                  {func(r *rules.JobRequest) { r.DurationS = 0 }, "duration_s"},
+		"unknown fault":                 {func(r *rules.JobRequest) { r.Faults[0].Fault = "no-such-fault" }, "no-such-fault"},
+		"unknown entity":                {func(r *rules.JobRequest) { r.Faults[0].EntityID = "site-z/none" }, "site-z/none"},
+		"unknown effector":              {func(r *rules.JobRequest) { r.Calls[0].Effector = "no-such-effector" }, "no-such-effector"},
+		"bad effector args":             {func(r *rules.JobRequest) { r.Calls[0].Args = map[string]any{"level": 9} }, "start_aerator"},
+		"unknown domain":                {func(r *rules.JobRequest) { r.Domain = "no-such-domain" }, "no-such-domain"},
+		"clear before start":            {func(r *rules.JobRequest) { r.Faults[0].UntilS = secs(-1) }, "faults[0].until_s"},
+		"clear before the fault begins": {func(r *rules.JobRequest) { r.Faults[0].UntilS = secs(r.Faults[0].AtS - 1) }, "faults[0].until_s"},
+		"unknown perturbation": {func(r *rules.JobRequest) {
+			r.Perturbations = []rules.JobPerturbation{{Kind: "no_such_kind", AtS: 10}}
+		}, "no_such_kind"},
+		"perturbation parameter out of range": {func(r *rules.JobRequest) {
+			r.Perturbations = []rules.JobPerturbation{{Kind: "drop", Params: map[string]any{"rate": 2}, AtS: 10}}
+		}, "rate"},
+		"perturbation with an undeclared parameter": {func(r *rules.JobRequest) {
+			r.Perturbations = []rules.JobPerturbation{{Kind: "drop", Params: map[string]any{"bogus": 1}, AtS: 10}}
+		}, "bogus"},
+		"perturbation window ends before it starts": {func(r *rules.JobRequest) {
+			r.Perturbations = []rules.JobPerturbation{{Kind: "drop", AtS: 100, UntilS: secs(50)}}
+		}, "perturbations[0].until_s"},
+		"name with a control character": {func(r *rules.JobRequest) { r.Name = "bad\x07name" }, "name"},
+		"beyond 30 days":                {func(r *rules.JobRequest) { r.DurationS = 31 * 86400; r.Calls[0].AtS = 0; r.Faults[0].AtS = 0 }, "30 days"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

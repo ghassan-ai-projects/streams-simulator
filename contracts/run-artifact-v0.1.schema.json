@@ -304,7 +304,9 @@
       "description": "Optional. What the operator asked of the run: the simulated instant it was meant to end at and the pace it was meant to run at. Written by a run that was driven toward an end (a job). It is intent, not evidence: nothing replays or verifies it, and the command log, not the plan, reproduces the run.",
       "properties": {
         "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0, "description": "The simulated instant the run was asked to reach, in nanoseconds since the Unix epoch (the same axis as the clock.advance targets)."},
-        "rate": {"type": "number", "minimum": 0, "description": "Simulated seconds per wall second. 0 or absent means as fast as possible."}
+        "rate": {"type": "number", "minimum": 0, "description": "Simulated seconds per wall second. 0 or absent means as fast as possible."},
+        "name": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f]*$", "description": "The operator's name for the run: plain text, authored, not evidence."},
+        "purpose": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f]*$", "description": "The question the run is meant to answer: plain text, authored, not evidence."}
       }
     },
     "termination": {

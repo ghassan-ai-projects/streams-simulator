@@ -108,3 +108,7 @@ func violationText(err error) string {
 	}
 	return err.Error()
 }
+
+func Perturbations() []perturb.KindInfo {
+	return perturb.Describe()
+}

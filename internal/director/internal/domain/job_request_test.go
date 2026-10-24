@@ -25,6 +25,23 @@ func TestACompleteJobRequestIsAccepted(t *testing.T) {
 	}
 }
 
+func at(seconds int64) *int64 { return &seconds }
+
+func TestARunPlanWithRecoveriesDeliveryConditionsAndANameIsAccepted(t *testing.T) {
+	t.Parallel()
+	request := validJob()
+	request.Name, request.Purpose = "Cooling loss, staged response", "Observe the chiller with the tower sensor out."
+	request.Faults[0].UntilS = at(900)
+	request.Perturbations = []JobPerturbation{
+		{Kind: "drop", Params: map[string]any{"rate": 0.3}, AtS: 300, UntilS: at(1500)},
+		{Kind: "producer_flap", AtS: 0, UntilS: at(request.DurationS)},
+		{Kind: "malformed", AtS: request.DurationS},
+	}
+	if err := CheckJob(request); err != nil {
+		t.Fatalf("a valid plan was refused: %v", err)
+	}
+}
+
 func TestAJobRequestThatCannotRunIsRefusedByName(t *testing.T) {
 	t.Parallel()
 	for name, tc := range map[string]struct {
@@ -47,6 +64,33 @@ func TestAJobRequestThatCannotRunIsRefusedByName(t *testing.T) {
 		"call without effector": {func(r *JobRequest) { r.Calls[0].Effector = "" }, "calls[0].effector"},
 		"call before start":     {func(r *JobRequest) { r.Calls[0].AtS = -1 }, "calls[0].at_s"},
 		"call after the end":    {func(r *JobRequest) { r.Calls[0].AtS = r.DurationS + 1 }, "calls[0].at_s"},
+		"name too long":         {func(r *JobRequest) { r.Name = strings.Repeat("n", 81) }, "name"},
+		"name with a newline":   {func(r *JobRequest) { r.Name = "a\nb" }, "name"},
+		"purpose too long":      {func(r *JobRequest) { r.Purpose = strings.Repeat("p", 501) }, "purpose"},
+		"purpose with a tab":    {func(r *JobRequest) { r.Purpose = "a\tb" }, "purpose"},
+		"clear before start":    {func(r *JobRequest) { r.Faults[0].UntilS = at(-5) }, "faults[0].until_s"},
+		"clear at the start":    {func(r *JobRequest) { r.Faults[0].UntilS = at(r.Faults[0].AtS) }, "faults[0].until_s"},
+		"clear before onset":    {func(r *JobRequest) { r.Faults[0].UntilS = at(r.Faults[0].AtS - 1) }, "faults[0].until_s"},
+		"clear after the end":   {func(r *JobRequest) { r.Faults[0].UntilS = at(r.DurationS + 1) }, "faults[0].until_s"},
+		"clear of a fault at 0": {func(r *JobRequest) { r.Faults[0].AtS, r.Faults[0].UntilS = 0, at(0) }, "faults[0].until_s"},
+		"perturbation without a kind": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{AtS: 10}}
+		}, "perturbations[0].kind"},
+		"perturbation before start": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{Kind: "drop", AtS: -1}}
+		}, "perturbations[0].at_s"},
+		"perturbation after the end": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{Kind: "drop", AtS: r.DurationS + 1}}
+		}, "perturbations[0].at_s"},
+		"perturbation ending before it starts": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{Kind: "drop", AtS: 100, UntilS: at(50)}}
+		}, "perturbations[0].until_s"},
+		"empty perturbation window": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{Kind: "drop", AtS: 100, UntilS: at(100)}}
+		}, "perturbations[0].until_s"},
+		"perturbation ending after the run": {func(r *JobRequest) {
+			r.Perturbations = []JobPerturbation{{Kind: "drop", AtS: 100, UntilS: at(r.DurationS + 1)}}
+		}, "perturbations[0].until_s"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

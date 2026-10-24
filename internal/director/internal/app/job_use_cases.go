@@ -58,18 +58,12 @@ func (d *Director) openJob(req rules.JobRequest, plan jobPlan) (*job, error) {
 	}
 	worldID, _ := created["world_id"].(string)
 	r := d.RunOf(worldID)
-	status := newJobStatus(worldID, r.ID, req, plan.scenario.World.StartTimeNS)
-	if err := r.SetPlan(model.RunPlan{RequestedEndNS: status.RequestedEndNS, Rate: req.Rate}); err != nil {
+	status := rules.NewJobStatus(worldID, r.ID, req, plan.scenario.World.StartTimeNS)
+	if err := r.SetPlan(model.RunPlan{RequestedEndNS: status.RequestedEndNS, Rate: req.Rate, Name: req.Name, Purpose: req.Purpose}); err != nil {
 		_, _ = d.DestroyWorld(worldID)
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	return newJob(d.ctx, r, status, plan.scenario, d.jobs.newPacer(req.Rate)), nil
-}
-
-func newJobStatus(worldID, runID string, req rules.JobRequest, startNS int64) rules.JobStatus {
-	return rules.JobStatus{WorldID: worldID, RunID: runID, Domain: req.Domain, Seed: req.Seed, State: rules.JobRunning,
-		StartNS: startNS, ReachedNS: startNS, RequestedEndNS: startNS + req.DurationS*nsPerSecond,
-		Rate: req.Rate, Explore: req.Explore, Calls: []rules.JobCallOutcome{}}
+	return newJob(d.ctx, r, status, plan.scenario, d.jobs.newPacer(req.Rate), req.Faults), nil
 }
 
 func (d *Director) JobStatus(worldID string) (rules.JobStatus, error) {

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -16,6 +17,9 @@ func TestCheckRunPlan(t *testing.T) {
 	}{
 		{"as fast as possible", model.RunPlan{RequestedEndNS: 1}, true},
 		{"paced", model.RunPlan{RequestedEndNS: 60e9, Rate: 120}, true},
+		{"named", model.RunPlan{RequestedEndNS: 1, Name: "Cooling loss", Purpose: "Observe the chiller."}, true},
+		{"a name with a newline", model.RunPlan{RequestedEndNS: 1, Name: "a\nb"}, false},
+		{"a purpose over the limit", model.RunPlan{RequestedEndNS: 1, Purpose: strings.Repeat("a", model.MaxPlanPurposeChars+1)}, false},
 		{"no end", model.RunPlan{}, false},
 		{"negative end", model.RunPlan{RequestedEndNS: -1}, false},
 		{"negative rate", model.RunPlan{RequestedEndNS: 1, Rate: -0.5}, false},

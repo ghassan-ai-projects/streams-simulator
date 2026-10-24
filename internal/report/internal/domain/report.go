@@ -27,6 +27,8 @@ type Report struct {
 
 type Run struct {
 	RunID            string             `json:"run_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Purpose          string             `json:"purpose,omitempty"`
 	Mode             string             `json:"mode"`
 	Complete         bool               `json:"complete"`
 	IncompleteReason string             `json:"incomplete_reason,omitempty"`

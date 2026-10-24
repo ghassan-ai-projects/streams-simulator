@@ -12,6 +12,7 @@ module composes `run` (artifact loading), `journal` (stream reading and digests)
 | Document | One file of the folder: its bytes and whether it exists | `Document` | – |
 | Ended | The run ended and wrote `run.json`, so its truth may be read | `Run.Ended` | `run.ended` |
 | Complete | The run ended and its artifact is not marked incomplete | `Run.Complete` | `run.complete`, `run.incomplete_reason` |
+| Name and purpose | The operator's authored plain text for the run, read from the artifact's `plan`; shown beside the run's identity, never a measurement or a verdict | `Run.Name`, `Run.Purpose` | `run.name`, `run.purpose` |
 | Truth | What was done to the run (faults, perturbations, environment, effector calls with real outcomes); present only for a sealed or Explore run | `Truth` | `truth` |
 | Verification | Whether the folder's files agree with the digests the run recorded; not a replay | `Verification`, `Check` | `verification.status`: `files_match`, `files_differ`, `not_checked` |
 | Consumer | Who submitted the verdict; its `config_digest` appears only when the verdict recorded one | `Consumer` | `consumer` |

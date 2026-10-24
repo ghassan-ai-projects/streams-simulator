@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 func (d *Director) CatalogList(group string) map[string]any {
@@ -15,7 +16,11 @@ func (d *Director) CatalogDescribe(domainID string) (map[string]any, error) {
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	return map[string]any{"spec": c.Spec, "digest": c.Digest}, nil
+	return map[string]any{"spec": c.Spec, "digest": c.Digest, "fault_categories": rules.FaultCategories(c.Spec)}, nil
+}
+
+func (d *Director) PerturbationCatalog() map[string]any {
+	return map[string]any{"perturbations": run.Perturbations()}
 }
 
 func (d *Director) CatalogCoverage() any {

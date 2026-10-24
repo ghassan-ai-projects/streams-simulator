@@ -47,3 +47,41 @@ func TestAnImmediateCallOutcomeIsFlaggedAndKeepsTheTimeItWasApplied(t *testing.T
 		t.Fatalf("outcome = %+v, want %+v", got, want)
 	}
 }
+
+func TestANewJobStatusEchoesTheNamePurposeAndTheDisturbancesOfThePlan(t *testing.T) {
+	t.Parallel()
+	request := recoveryJob()
+	request.Name, request.Purpose, request.Explore = "Loss and recovery", "Does the pond recover?", true
+	status := NewJobStatus("w-1", "r-1", request, planStart)
+	if status.Name != request.Name || status.Purpose != request.Purpose || status.State != JobRunning || !status.Explore {
+		t.Fatalf("status = %+v, want the plan's name, purpose and mode of a running job", status)
+	}
+	if status.RequestedEndNS != planStart+100e9 || status.ReachedNS != planStart || len(status.Calls) != 0 {
+		t.Fatalf("status times = %+v", status)
+	}
+	if len(status.Faults) != 3 || status.Faults[1].Fault != "early" || *status.Faults[1].UntilS != 35 || status.Faults[1].FaultID != "" {
+		t.Fatalf("faults = %+v, want the planned faults, none injected yet", status.Faults)
+	}
+	if len(status.Perturbations) != 2 || status.Perturbations[0].Kind != "drop" || *status.Perturbations[0].UntilS != 70 {
+		t.Fatalf("perturbations = %+v", status.Perturbations)
+	}
+}
+
+func TestAStatusCloneSharesNothingWithItsSource(t *testing.T) {
+	t.Parallel()
+	status := NewJobStatus("w-1", "r-1", recoveryJob(), planStart)
+	status.Calls = append(status.Calls, JobCallOutcome{Effector: "e"})
+	clone := CloneJobStatus(status)
+	status.Calls[0].Effector, status.Faults[0].FaultID, status.Perturbations[0].Kind = "x", "f-9", "x"
+	if clone.Calls[0].Effector != "e" || clone.Faults[0].FaultID != "" || clone.Perturbations[0].Kind != "drop" {
+		t.Fatalf("clone = %+v changed with its source", clone)
+	}
+}
+
+func TestAJobWithoutDisturbancesHasEmptyListsNotNulls(t *testing.T) {
+	t.Parallel()
+	status := NewJobStatus("w-1", "r-1", JobRequest{Domain: "d", DurationS: 10}, planStart)
+	if status.Faults == nil || status.Perturbations == nil || status.Calls == nil {
+		t.Fatalf("status = %+v, want empty lists", status)
+	}
+}
