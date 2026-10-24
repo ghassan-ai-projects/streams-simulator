@@ -12,9 +12,9 @@ import (
 func (b *Bridge) RunAction(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
 	result, err := b.dispatch(ctx, name, args)
 	if err != nil {
-		return nil, redact(err, b.settings.WorkspaceDir)
+		return nil, redact(err, b.workspaceRoots())
 	}
-	return json.RawMessage(domain.Scrub(string(result), b.settings.WorkspaceDir)), nil
+	return json.RawMessage(domain.Scrub(string(result), b.workspaceRoots())), nil
 }
 
 func (b *Bridge) dispatch(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {

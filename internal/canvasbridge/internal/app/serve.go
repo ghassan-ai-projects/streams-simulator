@@ -64,7 +64,7 @@ func settingsOf(cfg Config) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	return Settings{WorkspaceDir: dir, AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: entropy.PairingCode()}, nil
+	return Settings{WorkspaceDir: dir, WorkspaceAliases: files.Aliases(dir), AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: entropy.PairingCode()}, nil
 }
 
 func wire(workspace *files.Workspace, executable string, settings Settings) *Bridge {
