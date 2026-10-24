@@ -1,3 +1,4 @@
+import { withUnit } from "../../shared/units";
 import { counted } from "../../shared/words";
 import type { Connection } from "./origins";
 import { runClock } from "./timeline";
@@ -29,7 +30,7 @@ export function twinOffer(connection: Connection, domain: string): TwinOffer {
 export function toleranceWords(tolerance: TwinTolerance, unit: string): string {
   const source = toleranceSourceWords[tolerance.source];
   if (tolerance.value === null) return `No tolerance (${source})`;
-  return `±${[numberWords(tolerance.value), unit].filter((part) => part !== "").join(" ")} (${source})`;
+  return `±${withUnit(numberWords(tolerance.value), unit)} (${source})`;
 }
 
 export function ruleWords(report: TwinReport): string {
@@ -82,7 +83,7 @@ export function metricLine(metric: TwinMetric): string {
 
 export function divergenceLine(divergence: TwinDivergence, unit: string, startNs: number): string {
   const at = (ns: number) => runClock(ns, startNs);
-  const size = (value: number) => [numberWords(value), unit].filter((part) => part !== "").join(" ");
+  const size = (value: number) => withUnit(numberWords(value), unit);
   const span =
     divergence.firstNs === divergence.lastNs
       ? at(divergence.firstNs)

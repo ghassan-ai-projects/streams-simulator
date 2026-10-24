@@ -12,7 +12,7 @@ function DeviceReadings({ device }: { readonly device: ConnectedDevice }) {
           {device.readings.map((reading) => (
             <div key={reading.name}>
               <dt>{reading.name}</dt>
-              <dd>
+              <dd title={reading.unitTitle === "" ? undefined : reading.unitTitle}>
                 {reading.valueText} · {reading.stateWords}
               </dd>
             </div>
@@ -23,23 +23,6 @@ function DeviceReadings({ device }: { readonly device: ConnectedDevice }) {
   );
 }
 
-function ShownReadings({ connected, entity }: { readonly connected: Connected; readonly entity: string }) {
-  const live = connected.live(entity);
-  if (live.shown.length === 0) return <p>Waiting for readings…</p>;
-  return (
-    <dl>
-      {live.shown.map((reading) => (
-        <div key={reading.channel}>
-          <dt>{reading.channel}</dt>
-          <dd>
-            {reading.value} {reading.unit}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
 export function ConnectedReadings({ connected, entity }: { readonly connected: Connected; readonly entity: string }) {
   const device = connected.device(entity);
   const interrupt = connected.live(entity).interrupt;
@@ -47,7 +30,7 @@ export function ConnectedReadings({ connected, entity }: { readonly connected: C
     <section aria-label="Live instance">
       <OriginMark origin={connected.origins.get(entity) ?? null} />
       {interrupt !== null && <p data-interrupt={interrupt.latched ? "latched" : interrupt.mode}>{interrupt.words}</p>}
-      {device === null ? <ShownReadings connected={connected} entity={entity} /> : <DeviceReadings device={device} />}
+      {device === null ? connected.observed(entity) : <DeviceReadings device={device} />}
     </section>
   );
 }

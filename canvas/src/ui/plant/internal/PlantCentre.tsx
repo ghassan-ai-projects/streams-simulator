@@ -100,13 +100,13 @@ function Bar(props: PlantCentreProps & { readonly running: string | null }) {
       <Crumbs state={state} hall={hall} navigation={navigation} />
       <span className={styles.summary}>{summary(state, hall)}</span>
       <EditButton composition={state.composition} running={running} navigation={navigation} />
-      {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
+      {connected?.kind === "session" && <LiveViewButton connected={connected} navigation={navigation} />}
       <RunButton
         launching={run.launching}
         running={running}
         button={run.button}
         onToggle={run.toggle}
-        secondary={connected !== undefined}
+        secondary={connected?.kind === "session"}
       />
       <ZoomBar />
     </div>
@@ -119,10 +119,10 @@ export function PlantCentre(props: PlantCentreProps) {
   const bar = <Bar {...props} running={running} />;
   return (
     <section
-      className={cx(screen.center, connected !== undefined && styles.withInterrupts)}
+      className={cx(screen.center, connected?.kind === "session" && styles.withInterrupts)}
       aria-label={`Plant ${state.plant.id}`}
     >
-      {connected === undefined ? (
+      {connected?.kind !== "session" ? (
         bar
       ) : (
         <div className={styles.top}>

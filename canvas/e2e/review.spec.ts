@@ -113,10 +113,10 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   const ports = Number(inputs) + Number(outputs);
   const rows = await chiller.locator("dl > div").count();
   expect([ports, ports + 1]).toContain(rows);
-  await expect(chiller.locator("dl")).toContainText("not observed");
+  await expect(chiller.locator("dl")).toContainText("Never observed in this run");
   await expect(chiller.locator("dl")).not.toContainText("–");
   await page.getByRole("button", { name: "Legend" }).click();
-  await expect(page.getByText("Not reported by this run")).toBeVisible();
+  await expect(page.getByText("No reading from this run for this row (its words say why)")).toBeVisible();
   await expect(page.getByText("No reading yet at this time")).toBeVisible();
   await page.getByRole("button", { name: "Legend" }).click();
   const graph = page.getByRole("application", { name: "Plant graph" });

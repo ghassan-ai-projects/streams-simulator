@@ -4,6 +4,7 @@ import { report } from "./runFixture";
 export function reviewState(overrides: Partial<ReviewState>): ReviewState {
   return {
     worldId: "w-1",
+    watching: false,
     report: { phase: "ready", value: report },
     verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
     playback: { phase: "ready", records: report.counts.delivered ?? 0 },

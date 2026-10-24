@@ -3,20 +3,13 @@ export { directionOf, firstOf, nearest } from "./internal/graphKeys";
 export { fitId, idCap, idRoom } from "./internal/headerFit";
 export { describeNode } from "./internal/nodeWords";
 export { groups, matchWords, marked, belowCount } from "./internal/outline";
+export { mergeMarks } from "./internal/mergeMarks";
+export { sameValue } from "./internal/sameValue";
 export { planMarks } from "./internal/planMarks";
 export { areaCounts } from "./internal/areas";
 export { hallCount, hallMembers, hallOf, hallsOf } from "./internal/halls";
 export { groupCounts, headerHeight, idExtra, noteHeight, plantView } from "./internal/plantView";
-export {
-  abnormalFirst,
-  attentionOf,
-  channelWords,
-  pinWords,
-  sharedTimes,
-  showReading,
-  statusWords,
-  worstOf,
-} from "./internal/readout";
+export { attentionOf, channelWords, pinWords, showReading, statusWords, worstOf } from "./internal/readout";
 export {
   centreOf,
   cutSide,

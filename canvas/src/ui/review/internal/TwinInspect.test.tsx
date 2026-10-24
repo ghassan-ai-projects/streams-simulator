@@ -65,8 +65,8 @@ describe("the twin overlay in Inspect", () => {
     expect(legend.getByText("Board reading")).toBeInTheDocument();
     expect(legend.getByText("Twin prediction")).toBeInTheDocument();
     expect(legend.getByText("Where they part ways")).toBeInTheDocument();
-    expect(within(region()).getByText("temperature (Cel)")).toBeInTheDocument();
-    expect(within(region()).getByText(/5 readings compared · 2 beyond tolerance · ±2.5 Cel/)).toBeInTheDocument();
+    expect(within(region()).getByText("temperature (°C)")).toHaveAttribute("title", "unit code: Cel");
+    expect(within(region()).getByText(/5 readings compared · 2 beyond tolerance · ±2.5 °C/)).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 

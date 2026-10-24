@@ -26,6 +26,8 @@ function row(overrides: Partial<ReadoutRow>): ReadoutRow {
     attention: null,
     outside: "",
     observed: true,
+    quality: "",
+    absent: "",
     ...overrides,
   };
 }
@@ -123,14 +125,15 @@ describe("a graph drawn from a run", () => {
     expect(within(chiller).getByText("Fault: fouling")).toBeInTheDocument();
   });
 
-  it("tells a channel the run never reported from one that has not reported yet", () => {
+  it("says in words why a row has no reading, and never what broke", () => {
     draw({
       live: () =>
         live({
           readout: {
             rows: [
-              row({ key: "a", label: "cop", present: false, observed: false }),
-              row({ key: "b", label: "flow", present: false, observed: true }),
+              row({ key: "a", label: "cop", present: false, observed: false, absent: "Awaiting first reading" }),
+              row({ key: "b", label: "flow", present: false, observed: true, absent: "No reading yet at this time" }),
+              row({ key: "d", label: "gain", present: false, observed: false, absent: "No measured channel" }),
               row({ key: "c", label: "temp", value: "41", unit: "", attention: "warn", outside: "above 40" }),
             ],
             hidden: 0,
@@ -139,9 +142,27 @@ describe("a graph drawn from a run", () => {
         }),
     });
     const chiller = node("CH-1");
-    expect(within(chiller).getByText("not observed")).toBeInTheDocument();
-    expect(within(chiller).getByText("no reading yet")).toBeInTheDocument();
+    expect(within(chiller).getByText("Awaiting first reading")).toBeInTheDocument();
+    expect(within(chiller).getByText("No reading yet at this time")).toBeInTheDocument();
+    expect(within(chiller).getByText("No measured channel")).toBeInTheDocument();
     expect(within(chiller).getByText("41")).toBeInTheDocument();
+  });
+
+  it("names the quality of a reading the instrument does not vouch for", () => {
+    draw({
+      live: () =>
+        live({
+          readout: {
+            rows: [row({ key: "q", label: "temp", value: "41", unit: "°C", quality: "suspect" })],
+            hidden: 0,
+            hiddenAttention: null,
+          },
+        }),
+    });
+    const value = within(node("CH-1")).getByText("41").closest("dd");
+    expect(value).toHaveAttribute("data-quality", "suspect");
+    expect(value).toHaveAttribute("title", "Reported as suspect");
+    expect(value).toHaveTextContent("41°C, suspect");
   });
 
   it("folds channels that do not fit and says how many are in Inspect", () => {

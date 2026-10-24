@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { abnormalFirst, attentionOf, channelWords, pinWords, sharedTimes, showReading, worstOf } from "./readout";
+import { attentionOf, channelWords, pinWords, showReading, worstOf } from "./readout";
 import { displayUnit } from "../../shared/units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
@@ -35,6 +35,7 @@ describe("readouts", () => {
       attention: null,
       word: false,
       outside: "",
+      quality: "",
     });
     expect(showReading(at("meter.power", 852.4, "kW"), null)).toMatchObject({ value: "852", unit: "kW" });
     expect(showReading(at("x.cop", 5.954), null)).toMatchObject({ value: "5.95", unit: "" });
@@ -58,6 +59,7 @@ describe("readouts", () => {
       attention,
       word: true,
       outside: "",
+      quality: "",
     });
     expect(attentionOf([shown(null), shown("warn")])).toBe("warn");
     expect(attentionOf([shown("warn"), shown("alarm")])).toBe("alarm");
@@ -68,17 +70,7 @@ describe("readouts", () => {
     expect(["degC", "m3/h", "kWh/m3", "kPa"].map(displayUnit)).toEqual(["°C", "m³/h", "kWh/m³", "kPa"]);
   });
 
-  it("puts alarmed and warned channels first and names channels in words", () => {
-    const entry = (channel: string, attention: "alarm" | "warn" | null) => ({
-      channel,
-      value: "1",
-      unit: "",
-      attention,
-      word: false,
-      outside: "",
-    });
-    const order = abnormalFirst([entry("a", null), entry("b", "warn"), entry("c", "alarm"), entry("d", null)]);
-    expect(order.map((shown) => shown.channel)).toEqual(["c", "b", "a", "d"]);
+  it("names channels and ports in words", () => {
     expect(channelWords("chw_supply_temp")).toBe("chw supply temp");
     expect(pinWords("cond_water_in", "in")).toEqual({ full: "cond water in", short: "cond water" });
     expect(pinWords("power_out", "out")).toEqual({ full: "power out", short: "power" });
@@ -90,12 +82,5 @@ describe("readouts", () => {
     expect(worstOf(["warn", null, "fault", "alarm", "alarm"])).toEqual({ status: "alarm", count: 2 });
     expect(worstOf(["warn", "fault"])).toEqual({ status: "fault", count: 1 });
     expect(worstOf([null, null])).toEqual({ status: null, count: 0 });
-  });
-});
-
-describe("shared observation times", () => {
-  it("gives the latest time once and only the rows that differ their own time", () => {
-    expect(sharedTimes([20e9, 20e9])).toEqual({ latest: 20e9, own: [null, null] });
-    expect(sharedTimes([15e9, 20e9, 15e9])).toEqual({ latest: 20e9, own: [15e9, null, 15e9] });
   });
 });

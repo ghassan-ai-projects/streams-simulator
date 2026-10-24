@@ -110,6 +110,8 @@ export {
 } from "./internal/sessionWords";
 export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
+export { observedRows } from "./internal/observedRows";
+export { trendFrame } from "./internal/trend";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
 export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
@@ -155,9 +157,12 @@ export type {
   KpiRow,
   MarkKind,
   Opening,
+  ObservedRow,
+  Quality,
   Replay,
   Report,
   Rerun,
   TimedBinding,
+  Trend,
   VerifyState,
 } from "./contract";

@@ -1,12 +1,13 @@
 import { Background, Panel, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { routeView, screenPixel, textFloorPx, tierOf } from "../../../model/graph";
 import type { FlowNode } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { connection, fixedProps, graphNames, graphWords } from "./flowConfig";
 import { enterHall } from "./enterHall";
+import { NodeMemory, reshaped, shapesOf } from "./nodeMemory";
 import { PanCue } from "./PanCue";
 import styles from "./graph.module.css";
 import { tierClass } from "./tierClass";
@@ -17,10 +18,21 @@ export type FlowProps = PlantGraphProps & { readonly active: string | null; read
 
 function useFlowContent({ view, selected, live, flagged, onConnect, active, marks }: FlowProps) {
   const editable = onConnect !== undefined;
+  const memory = useMemo(() => new NodeMemory(), []);
   const nodes = useMemo(
     () =>
-      flowNodes(view, selected, live ?? null, active, flagged ?? null, editable ? "connect" : "inspect", marks ?? null),
-    [view, selected, live, active, flagged, editable, marks],
+      memory.stable(
+        flowNodes(
+          view,
+          selected,
+          live ?? null,
+          active,
+          flagged ?? null,
+          editable ? "connect" : "inspect",
+          marks ?? null,
+        ),
+      ),
+    [memory, view, selected, live, active, flagged, editable, marks],
   );
   const zoom = useStore((state) => state.transform[2]);
   const tier = tierOf(zoom);
@@ -34,8 +46,16 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active, mark
 
 function useRemeasuredHandles(nodes: readonly FlowNode[], tier: string) {
   const update = useUpdateNodeInternals();
+  const measured = useRef<{ readonly shapes: ReadonlyMap<string, string>; readonly tier: string }>({
+    shapes: new Map(),
+    tier,
+  });
   useEffect(() => {
-    update(nodes.map((node) => node.id));
+    const before = measured.current;
+    const shapes = shapesOf(nodes);
+    measured.current = { shapes, tier };
+    const ids = before.tier === tier ? reshaped(before.shapes, shapes) : nodes.map((node) => node.id);
+    if (ids.length > 0) update([...ids]);
   }, [update, nodes, tier]);
 }
 

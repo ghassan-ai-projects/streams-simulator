@@ -66,7 +66,11 @@ export function Pins({
   readonly zoom: number;
 }) {
   if (ins.length + outs.length === 0) {
-    return <div className={pins.none}>no port data</div>;
+    return (
+      <div className={pins.none} title="The component file lists no ports, so none can be drawn">
+        no port metadata
+      </div>
+    );
   }
   return (
     <div className={pins.pins}>

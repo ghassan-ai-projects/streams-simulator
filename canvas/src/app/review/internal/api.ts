@@ -16,6 +16,7 @@ export interface ReviewSession extends Store<ReviewState> {
   readonly twin: TwinSession;
   open(worldId: string, known?: RunEntry): void;
   openLive(worldId: string, known?: RunEntry): void;
+  watch(worldId: string, known?: RunEntry): void;
   refreshCompleted(worldId: string, known: RunEntry | undefined): void;
   close(): void;
   badgeFor(worldId: string): Badge | null;

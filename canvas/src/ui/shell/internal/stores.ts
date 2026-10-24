@@ -16,6 +16,7 @@ export interface Stores {
   readonly plants: PlantSession;
   readonly review: ReviewSession;
   readonly liveReview: ReviewSession;
+  readonly watchReview: ReviewSession;
   readonly launch: LaunchStore;
   readonly scheduler: Scheduler;
   readonly editor: EditorSession;

@@ -1,6 +1,7 @@
 import type { Attention, ChannelSpec, NodeStatus, ReadingValue, Shown } from "./types";
 import type { ChannelRange, ChannelState } from "../../plant";
 import { shortChannel, spaced } from "../../shared/words";
+import { qualityWords } from "../../shared/quality";
 import { displayUnit } from "../../shared/units";
 
 export const statusWords: Readonly<Record<NonNullable<NodeStatus>, string>> = {
@@ -25,15 +26,20 @@ function number(value: number): string {
 function namedState(channel: string, value: number, states: readonly ChannelState[]): Shown {
   const state = states.find((entry) => entry.value === value);
   const name = state?.name ?? `state ${String(value)}`;
-  return { channel, value: name, unit: "", attention: state?.attention ?? null, word: true, outside: "" };
+  return { channel, value: name, unit: "", attention: state?.attention ?? null, word: true, outside: "", quality: "" };
 }
 
 function measured(channel: string, value: number, rawUnit: string, range: ChannelRange | null): Shown {
   const unit = displayUnit(rawUnit);
-  return { channel, value: number(value), unit, attention: null, word: false, outside: outsideOf(value, range, unit) };
+  const outside = outsideOf(value, range, unit);
+  return { channel, value: number(value), unit, attention: null, word: false, outside, quality: "" };
 }
 
 export function showReading(reading: ReadingValue, spec: ChannelSpec | null): Shown {
+  return { ...valueShown(reading, spec), quality: qualityWords(reading.quality ?? "") };
+}
+
+function valueShown(reading: ReadingValue, spec: ChannelSpec | null): Shown {
   const { states, range } = spec ?? noSpec;
   const channel = shortChannel(reading.channel);
   if (typeof reading.value === "number") {
@@ -42,21 +48,12 @@ export function showReading(reading: ReadingValue, spec: ChannelSpec | null): Sh
       : measured(channel, reading.value, reading.unit, range);
   }
   const value = typeof reading.value === "boolean" ? (reading.value ? "on" : "off") : reading.value;
-  return { channel, value, unit: "", attention: null, word: true, outside: "" };
+  return { channel, value, unit: "", attention: null, word: true, outside: "", quality: "" };
 }
 
 export function attentionOf(shown: readonly Shown[]): Attention {
   if (shown.some((entry) => entry.attention === "alarm")) return "alarm";
   return shown.some((entry) => entry.attention === "warn") ? "warn" : null;
-}
-
-const attentionRank = { alarm: 0, warn: 1 } as const;
-
-export function abnormalFirst(shown: readonly Shown[]): readonly Shown[] {
-  return [...shown].sort(
-    (a, b) =>
-      (a.attention === null ? 2 : attentionRank[a.attention]) - (b.attention === null ? 2 : attentionRank[b.attention]),
-  );
 }
 
 export const channelWords = spaced;
@@ -77,12 +74,4 @@ export function worstOf(statuses: readonly NodeStatus[]): { readonly status: Nod
     null,
   );
   return { status: worst, count: ranked.filter((status) => status === worst).length };
-}
-
-export function sharedTimes(times: readonly number[]): {
-  readonly latest: number;
-  readonly own: readonly (number | null)[];
-} {
-  const latest = Math.max(...times);
-  return { latest, own: times.map((time) => (time === latest ? null : time)) };
 }

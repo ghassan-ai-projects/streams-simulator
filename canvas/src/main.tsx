@@ -28,6 +28,7 @@ if (root) {
   const clipboard = browserClipboard(window.navigator.clipboard);
   const review = createReviewSession(adapters.review, time, time, clipboard);
   const liveReview = createReviewSession(adapters.review, time, time, clipboard);
+  const watchReview = createReviewSession(adapters.review, time, time, clipboard);
   createRoot(root).render(
     <StrictMode>
       <App
@@ -39,6 +40,7 @@ if (root) {
           plants,
           review,
           liveReview,
+          watchReview,
           launch: createLaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,

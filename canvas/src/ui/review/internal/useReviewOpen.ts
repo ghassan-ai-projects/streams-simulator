@@ -8,7 +8,7 @@ function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined
   return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
 }
 
-export type OpenMode = "review" | "live";
+export type OpenMode = "review" | "live" | "watch";
 
 export function useReviewOpen(
   review: ReviewSession,
@@ -26,6 +26,7 @@ export function useReviewOpen(
   useEffect(() => {
     if (!settled) return undefined;
     if (mode === "live") review.openLive(worldId, known.current);
+    else if (mode === "watch") review.watch(worldId, known.current);
     else review.open(worldId, known.current);
     return () => {
       review.close();

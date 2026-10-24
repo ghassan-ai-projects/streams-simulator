@@ -1,0 +1,80 @@
+.caption {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+
+.value {
+  white-space: normal;
+}
+
+.unit {
+  margin-left: 3px;
+  font: 500 var(--text-xs) var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.value-alarm {
+  color: var(--status-alarm);
+}
+
+.value-warn {
+  color: var(--status-warn);
+}
+
+.quality {
+  display: block;
+  width: fit-content;
+  margin-top: 2px;
+  margin-left: auto;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+  font: 600 var(--text-xs) var(--font-ui);
+}
+
+.when {
+  width: 1%;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.age {
+  display: block;
+  color: var(--text-tertiary);
+  font: var(--text-xs) var(--font-ui);
+}
+
+.trendCell {
+  width: 1%;
+  min-width: 96px;
+}
+
+.trend {
+  display: block;
+  width: 96px;
+  height: 24px;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  fill: var(--accent);
+}
+
+.absent {
+  color: var(--text-secondary);
+  font-style: italic;
+}

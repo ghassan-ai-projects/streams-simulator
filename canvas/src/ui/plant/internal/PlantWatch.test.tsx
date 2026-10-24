@@ -1,0 +1,170 @@
+import { act, fireEvent, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { stubFlowDom } from "../../../test/dom";
+import { elapse } from "../../../test/launchFixture";
+import { attributeValues, canary, namedBy, roles, runningPlant } from "../../../test/runningPlant";
+import type { FakeBridge } from "../../../test/fakeBridge";
+import { chillerPorts, componentShown } from "../../../test/plantFixture";
+import { success } from "../../../test/outcome";
+import { observation } from "../../../test/runFixture";
+
+beforeEach(() => {
+  stubFlowDom();
+});
+
+const startNs = 1_767_225_600e9;
+const at = (second: number) => startNs + second * 1e9;
+
+const opened = {
+  stream: "observer",
+  type: "run.opened",
+  seq: 0,
+  at_ns: startNs,
+  mode: "explore",
+  adapter: { id: "a" },
+};
+const clock = (second: number) => ({
+  stream: "observer",
+  type: "clock.advanced",
+  seq: 99,
+  at_ns: at(second),
+  to_ns: at(second),
+});
+
+function reading(second: number, value: number, extra: object = {}) {
+  const wire = observation(second, at(second), "CT-1", "tower.basin_temp", value, "degC");
+  return { ...wire, line: JSON.stringify({ ...JSON.parse(wire.line), ...extra }) };
+}
+
+function mapBasinTemp(bridge: FakeBridge) {
+  const basin = {
+    name: "basin_out",
+    type: "cooling_water_temp",
+    direction: "out",
+    channel: "basin_temp",
+  } as const;
+  bridge.handlers.set("component.show", ({ ref }) =>
+    success(componentShown(ref === "lib/tower" ? { ports: [basin] } : chillerPorts)),
+  );
+}
+
+async function watching(explore: boolean, ...entries: object[]) {
+  const app = await runningPlant(explore, mapBasinTemp);
+  fireEvent.click(screen.getByRole("button", { name: "Close the run panel" }));
+  const outline = screen.getByRole("navigation", { name: "Outline" });
+  fireEvent.click(within(outline).getByRole("button", { name: /CT-1/ }));
+  await feed(app, ...entries);
+  return app;
+}
+
+async function feed(app: Awaited<ReturnType<typeof runningPlant>>, ...entries: object[]) {
+  await act(async () => {
+    app.bridge.stream("w-7", entries, null);
+    await elapse(app.timers, 500);
+  });
+}
+
+const inspector = () => screen.getByRole("complementary", { name: "Inspector" });
+const observed = () => within(inspector()).getByRole("region", { name: "Observed readings" });
+
+const steady = [opened, ...[10, 20, 30, 40, 50, 60].map((second) => reading(second, 26 + second / 100)), clock(75)];
+
+describe("the inspector while a run is going", () => {
+  it("shows the value with its unit symbol, when it was observed and how old it is", async () => {
+    await watching(true, ...steady);
+    const row = within(observed()).getByRole("row", { name: /basin temp/ });
+    expect(row).toHaveTextContent("26.6");
+    expect(row).toHaveTextContent("°C");
+    expect(within(row).getByText("00:01:00")).toHaveAttribute("data-part", "observed-at");
+    expect(within(row).getByText("15 s old")).toBeInTheDocument();
+    expect(within(row).getByText("°C")).toHaveAttribute("title", "unit code: degC");
+  });
+
+  it("draws a small trend for the channel, described in words with how its gaps are inferred", async () => {
+    await watching(true, ...steady);
+    const trend = within(observed()).getByRole("img", { name: /basin temp trend/ });
+    expect(trend).toHaveAttribute("data-part", "trend");
+    expect(trend).toHaveAccessibleName(/Last 30 min of simulated time, from 26.1 to 26.6 °C\. No gaps\./);
+    expect(trend.querySelectorAll("polyline")).toHaveLength(1);
+  });
+
+  it("breaks the trend where the channel went quiet and says how it knows", async () => {
+    const gap = [10, 20, 30, 40, 50, 300, 310, 320].map((second) => reading(second, 20 + second / 100));
+    await watching(true, opened, ...gap, clock(330));
+    const trend = within(observed()).getByRole("img", { name: /basin temp trend/ });
+    expect(trend.querySelectorAll("polyline")).toHaveLength(2);
+    expect(trend).toHaveAccessibleName(/1 gap left blank.*inferred from the observed intervals/);
+  });
+
+  it("says a channel that has not reported yet is awaiting its first reading, and claims no cause", async () => {
+    await watching(true, opened, clock(5));
+    const row = within(observed()).getByRole("row", { name: /basin temp/ });
+    expect(row).toHaveTextContent("Awaiting first reading");
+    expect(observed().textContent).not.toMatch(/broken|failed|offline|sensor|fault/i);
+  });
+
+  it("names the quality the instrument gave a reading in plain words", async () => {
+    await watching(true, opened, reading(10, 26, { quality: "out_of_range" }), clock(12));
+    const row = within(observed()).getByRole("row", { name: /basin temp/ });
+    expect(within(row).getByText("out of range")).toHaveAttribute("data-part", "quality");
+  });
+
+  it("measures the age from the run clock, so a run that paused does not look stale", async () => {
+    const app = await watching(true, opened, reading(10, 26), clock(10));
+    await feed(app);
+    expect(within(observed()).getByText("just now")).toBeInTheDocument();
+    await feed(app, clock(190));
+    expect(within(observed()).getByText("3 min old")).toBeInTheDocument();
+  });
+
+  it("puts the same reading on the graph node", async () => {
+    await watching(true, ...steady);
+    const node = screen.getByRole("group", { name: /^CT-1, tower/ });
+    expect(node).toHaveTextContent("26.6");
+    expect(node).toHaveTextContent("°C");
+  });
+
+  it("keeps the model's channel list below the readings, folded", async () => {
+    await watching(true, ...steady);
+    const channels = within(inspector()).getByRole("region", { name: "Channels" });
+    expect(channels.querySelector("details")).not.toHaveAttribute("open");
+    const html = inspector().innerHTML;
+    expect(html.indexOf("Observed now")).toBeLessThan(html.indexOf("Links in"));
+  });
+
+  it("says nothing was observed once the journal has closed on a channel that never reported", async () => {
+    const app = await watching(true, opened, clock(5));
+    await act(async () => {
+      app.bridge.stream("w-7", [{ stream: "observer", type: "run.closed", seq: 100, at_ns: at(6), incomplete: false }]);
+      await elapse(app.timers, 500);
+    });
+    expect(within(observed()).getByText("Never observed in this run")).toBeInTheDocument();
+  });
+
+  it("stops following the run when it is over", async () => {
+    const app = await watching(true, ...steady);
+    expect(app.bridge.openFollows("w-7")).toBe(1);
+    await act(async () => {
+      await elapse(app.timers, 40_000);
+    });
+    expect(app.bridge.openFollows("w-7")).toBe(0);
+  });
+});
+
+describe("the same inspector in Evaluate", () => {
+  it("reads only the observer journal: no report, verification or file from the run", async () => {
+    const app = await watching(false, ...steady);
+    expect(app.bridge.calls.map((call) => call.name).filter((name) => name.startsWith("run."))).toEqual([]);
+    expect(app.bridge.reads.filter((path) => path.startsWith("runs/"))).toEqual([]);
+  });
+
+  it("shows the readings and still no planned fault anywhere, in text, attributes, names or trend titles", async () => {
+    await watching(false, ...steady);
+    expect(observed()).toHaveTextContent("26.6");
+    expect(document.body.textContent).not.toMatch(canary);
+    expect(attributeValues().filter((value) => canary.test(value))).toEqual([]);
+    expect(roles.map(namedBy)).toEqual(roles.map(() => 0));
+    expect(document.body.innerHTML).not.toMatch(canary);
+    expect(document.body.textContent).not.toContain("Fault ·");
+  });
+});

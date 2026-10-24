@@ -1,5 +1,8 @@
 export type { BannerWarning } from "./internal/banners";
 export type { JournalEntry, Opening } from "./internal/playback";
+export type { Quality } from "../shared/quality";
+export type { ObservedRow } from "./internal/observedRows";
+export type { Trend } from "./internal/trend";
 export type { AlarmActivation, Badge, KpiRow, Replay, Report, VerifyState } from "./internal/report";
 export type { ChipPlace } from "./internal/timeLayout";
 export type { EventMark, MarkKind, TimedBinding } from "./internal/timeline";

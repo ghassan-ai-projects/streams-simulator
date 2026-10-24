@@ -3,13 +3,18 @@ import type { BindingNote } from "../../launch";
 import { shortChannel } from "../../shared/words";
 import type { InterruptRecord } from "./interrupts";
 import type { SessionLive } from "./sessionLive";
+import type { Quality } from "../../shared/quality";
+import type { SampleValue, Series } from "./series";
+import { append, firstAtOrAfter, lastAtOrBefore, newSeries } from "./series";
 
-interface Observation {
+export interface Observation {
   readonly atNs: number;
   readonly entity: string;
   readonly channel: string;
-  readonly value: number | string | boolean;
+  readonly value: SampleValue;
   readonly unit: string;
+  readonly quality?: Quality;
+  readonly lagNs?: number;
 }
 
 export type JournalEntry =
@@ -29,13 +34,8 @@ export type JournalEntry =
   | { readonly kind: "closed"; readonly atNs: number; readonly incomplete: boolean }
   | { readonly kind: "origin"; readonly atNs: number; readonly origin: InstanceOrigin }
   | { readonly kind: "binding"; readonly atNs: number; readonly binding: BindingNote }
+  | { readonly kind: "clock"; readonly atNs: number }
   | { readonly kind: "other"; readonly atNs: number };
-
-interface Series {
-  readonly times: number[];
-  readonly values: (number | string | boolean)[];
-  readonly unit: string;
-}
 
 export interface Opening {
   readonly atNs: number;
@@ -44,37 +44,94 @@ export interface Opening {
 
 export interface Reading {
   readonly channel: string;
-  readonly value: number | string | boolean;
+  readonly value: SampleValue;
   readonly unit: string;
   readonly atNs: number;
+  readonly quality: Quality;
+  readonly lagNs: number;
+}
+
+export interface Window {
+  readonly times: readonly number[];
+  readonly values: readonly SampleValue[];
+}
+
+interface IndexOptions {
+  readonly capacity?: number;
 }
 
 export class PlaybackIndex {
   private readonly series = new Map<string, Map<string, Series>>();
+  private readonly capacity: number;
   private first = Number.POSITIVE_INFINITY;
   private last = 0;
   private total = 0;
+  private clock = 0;
+  private opened = 0;
+
+  constructor(options: IndexOptions = {}) {
+    this.capacity = options.capacity ?? Number.POSITIVE_INFINITY;
+  }
 
   add(observation: Observation): void {
-    let channels = this.series.get(observation.entity);
-    if (channels === undefined) {
-      channels = new Map();
-      this.series.set(observation.entity, channels);
-    }
-    let series = channels.get(observation.channel);
-    if (series === undefined) {
-      series = { times: [], values: [], unit: observation.unit };
-      channels.set(observation.channel, series);
-    }
-    series.times.push(observation.atNs);
-    series.values.push(observation.value);
-    this.first = Math.min(this.first, observation.atNs);
+    const series = this.seriesFor(observation);
+    const sample = {
+      atNs: observation.atNs,
+      value: observation.value,
+      quality: observation.quality ?? "",
+      lagNs: observation.lagNs ?? 0,
+    };
+    const trimmed = append(series, sample, this.capacity);
+    this.first = trimmed ? this.earliest() : Math.min(this.first, observation.atNs);
     this.last = Math.max(this.last, observation.atNs);
     this.total += 1;
   }
 
+  private seriesFor(observation: Observation): Series {
+    const channels = this.series.get(observation.entity) ?? new Map<string, Series>();
+    this.series.set(observation.entity, channels);
+    const series = channels.get(observation.channel) ?? newSeries(observation.unit);
+    channels.set(observation.channel, series);
+    return series;
+  }
+
+  private earliest(): number {
+    return Math.min(...this.firstReadings());
+  }
+
+  get clockNs(): number {
+    return this.clock;
+  }
+
+  get openedNs(): number {
+    return this.opened;
+  }
+
+  markOpened(atNs: number): void {
+    this.opened = atNs;
+  }
+
+  advanceClock(atNs: number): void {
+    this.clock = Math.max(this.clock, atNs);
+  }
+
+  samples(entity: string, channel: string, fromNs: number, toNs: number): Window | null {
+    const series = this.series.get(entity)?.get(channel);
+    if (series === undefined) return null;
+    const start = firstAtOrAfter(series.times, fromNs);
+    const end = lastAtOrBefore(series.times, toNs) + 1;
+    return { times: series.times.slice(start, end), values: series.values.slice(start, end) };
+  }
+
   get size(): number {
     return this.total;
+  }
+
+  get held(): number {
+    return [...this.series.values()].reduce(
+      (sum, channels) => sum + [...channels.values()].reduce((own, series) => own + series.times.length, 0),
+      0,
+    );
   }
 
   bounds(): { readonly startNs: number; readonly endNs: number } | null {
@@ -110,25 +167,11 @@ export class PlaybackIndex {
       const index = lastAtOrBefore(series.times, atNs);
       const value = series.values[index];
       const at = series.times[index];
-      return value === undefined || at === undefined ? [] : [{ channel, value, unit: series.unit, atNs: at }];
+      if (value === undefined || at === undefined) return [];
+      const quality = series.qualities[index] ?? "";
+      return [{ channel, value, unit: series.unit, atNs: at, quality, lagNs: series.lags[index] ?? 0 }];
     });
   }
-}
-
-function lastAtOrBefore(times: readonly number[], atNs: number): number {
-  let low = 0;
-  let high = times.length - 1;
-  let found = -1;
-  while (low <= high) {
-    const middle = (low + high) >> 1;
-    if ((times[middle] ?? Number.POSITIVE_INFINITY) <= atNs) {
-      found = middle;
-      low = middle + 1;
-    } else {
-      high = middle - 1;
-    }
-  }
-  return found;
 }
 
 export const playbackSpeeds = [1, 10, 60, 600] as const;

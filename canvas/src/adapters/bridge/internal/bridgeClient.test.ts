@@ -86,7 +86,7 @@ describe("bridge adapter wiring", () => {
     const source = t.sources[0];
     const record = { stream: "observer", type: "clock.advanced", seq: 1, at_ns: 30e9 };
     source?.record(record);
-    expect(follower.entry.mock.calls).toEqual([[{ kind: "other", atNs: 30e9 }]]);
+    expect(follower.entry.mock.calls).toEqual([[{ kind: "clock", atNs: 30e9 }]]);
     source?.end("caught_up");
     expect(follower.caughtUp).toHaveBeenCalledOnce();
     source?.dispatchEvent(new MessageEvent("record", { data: "not json" }));

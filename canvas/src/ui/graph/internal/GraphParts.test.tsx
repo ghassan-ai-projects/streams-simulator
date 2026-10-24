@@ -6,6 +6,7 @@ import { useCanvasAspect } from "./canvasAspect";
 import { enterHall } from "./enterHall";
 import { connection } from "./flowConfig";
 import { IdText } from "./IdText";
+import { Pins } from "./Pins";
 
 describe("an instance id on the graph", () => {
   it("is written whole at full zoom", () => {
@@ -109,5 +110,14 @@ describe("the canvas aspect", () => {
     const watchers = stubResizeObserver();
     render(<Aspect box={rect(10, 10)} />).unmount();
     expect(watchers[0]?.disconnected).toBe(true);
+  });
+});
+
+describe("an instance with no ports on the graph", () => {
+  it("says its component file lists none, rather than that data is missing from the plant", () => {
+    render(<Pins ins={[]} outs={[]} editable={false} zoom={1} />);
+    const note = screen.getByText("no port metadata");
+    expect(note).toHaveAttribute("title", "The component file lists no ports, so none can be drawn");
+    expect(screen.queryByText(/no port data/)).not.toBeInTheDocument();
   });
 });
