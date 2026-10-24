@@ -39,6 +39,7 @@ const (
 	CodeJobActive        = rules.CodeJobActive
 	CodeJobNotRunning    = rules.CodeJobNotRunning
 	CodeJobNotPaused     = rules.CodeJobNotPaused
+	CodeEvaluateBlind    = rules.CodeEvaluateBlind
 
 	JobRunning   = rules.JobRunning
 	JobPaused    = rules.JobPaused

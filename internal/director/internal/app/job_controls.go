@@ -49,6 +49,9 @@ func (d *Director) JobInjectFault(worldID, entityID, fault string) (rules.JobImm
 	if err != nil {
 		return rules.JobImmediate{}, err
 	}
+	if err := rules.CheckInjectionAllowed(worldID, j.status.Explore); err != nil {
+		return rules.JobImmediate{}, err
+	}
 	return j.injectNow(entityID, fault)
 }
 

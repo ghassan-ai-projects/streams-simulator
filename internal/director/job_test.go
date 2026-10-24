@@ -75,7 +75,9 @@ func TestFacadeStopsAPacedJobOnTheWallPacer(t *testing.T) {
 func TestFacadeControlsAJobOnTheWallPacer(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	started, err := d.StartJob(pondJob(1))
+	request := pondJob(1)
+	request.Explore = true
+	started, err := d.StartJob(request)
 	if err != nil {
 		t.Fatal(err)
 	}

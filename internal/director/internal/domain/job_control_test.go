@@ -55,3 +55,14 @@ func TestImmediateCommandIdsAreNumberedBesideThePlannedOnes(t *testing.T) {
 		t.Fatalf("ImmediateCommandID(3) = %q, want job-now-3", got)
 	}
 }
+
+func TestAFaultCannotBeInjectedByHandIntoAnEvaluateJob(t *testing.T) {
+	t.Parallel()
+	for explore, wantCode := range map[bool]Code{false: CodeEvaluateBlind, true: ""} {
+		err := CheckInjectionAllowed("w-1", explore)
+		var tool *ToolError
+		if wantCode == "" && err != nil || wantCode != "" && (!errors.As(err, &tool) || tool.Code != wantCode) {
+			t.Fatalf("explore=%v: err = %v, want code %q", explore, err, wantCode)
+		}
+	}
+}

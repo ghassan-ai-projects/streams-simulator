@@ -7,6 +7,13 @@ func CheckJobRate(rate float64) error {
 	return nil
 }
 
+func CheckInjectionAllowed(worldID string, explore bool) error {
+	if explore {
+		return nil
+	}
+	return ToolErrorf(CodeEvaluateBlind, "job %s is an Evaluate job: a fault injected by hand would be a cause the run's author already knows, so plan it or start an Explore job", worldID)
+}
+
 func CheckImmediateFault(entityID, fault string) error {
 	return checkImmediate(entityID, "fault", fault)
 }

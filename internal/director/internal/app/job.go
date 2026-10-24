@@ -48,7 +48,7 @@ func (j *job) snapshot() rules.JobStatus {
 }
 
 func (j *job) copyStatus() rules.JobStatus {
-	return rules.CloneJobStatus(j.status)
+	return rules.JobStatusView(j.status)
 }
 
 func (j *job) requestStop() rules.JobStatus {

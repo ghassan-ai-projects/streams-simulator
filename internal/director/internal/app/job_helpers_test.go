@@ -93,6 +93,12 @@ func pondJob() rules.JobRequest {
 		Calls:  []rules.JobCall{{EntityID: pondEntity, Effector: "start_aerator", Args: map[string]any{"pond_id": pondEntity}, AtS: 1800}}}
 }
 
+func explorePond() rules.JobRequest {
+	req := pondJob()
+	req.Explore = true
+	return req
+}
+
 func startJob(t *testing.T, d *Director, req rules.JobRequest) rules.JobStatus {
 	t.Helper()
 	status, err := d.StartJob(req)

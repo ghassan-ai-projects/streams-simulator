@@ -101,8 +101,12 @@ func orEmpty(perturbations []JobPerturbation) []JobPerturbation {
 	return perturbations
 }
 
-func CloneJobStatus(status JobStatus) JobStatus {
+func JobStatusView(status JobStatus) JobStatus {
 	status.Calls = slices.Clone(status.Calls)
+	if !status.Explore && JobActive(status.State) {
+		status.Faults, status.Perturbations, status.Failure = []JobFaultView{}, []JobPerturbation{}, ""
+		return status
+	}
 	status.Faults = slices.Clone(status.Faults)
 	status.Perturbations = slices.Clone(status.Perturbations)
 	return status

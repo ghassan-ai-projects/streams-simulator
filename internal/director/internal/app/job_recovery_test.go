@@ -56,7 +56,9 @@ func TestAnImmediateFaultDoesNotMakeAPlannedClearHitTheWrongFault(t *testing.T) 
 	t.Parallel()
 	pacer := newGatedPacer()
 	d := pacedBy(shippedDirector(t, t.Context()), pacer)
-	started := pausedAt(t, d, pacer, recoveryPondJob(), 2)
+	req := recoveryPondJob()
+	req.Explore = true
+	started := pausedAt(t, d, pacer, req, 2)
 	immediate, err := d.JobInjectFault(started.WorldID, pondEntity, "do_probe_fouling")
 	if err != nil || immediate.FaultID != "f-0" {
 		t.Fatalf("JobInjectFault = %+v, %v, want the first fault of the world", immediate, err)
