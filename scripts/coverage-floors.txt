@@ -30,6 +30,6 @@ internal/canvasbridge                     100
 internal/canvasbridge/internal/app        99
 internal/canvasbridge/internal/domain     97
 internal/canvasbridge/internal/entropy    100
-internal/canvasbridge/internal/files      90
+internal/canvasbridge/internal/files      92
 internal/canvasbridge/internal/process    93
 internal/canvasbridge/internal/transport  95
