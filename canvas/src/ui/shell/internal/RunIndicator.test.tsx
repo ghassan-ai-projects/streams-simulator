@@ -5,7 +5,7 @@ import { createNavigationStore } from "../../../app/shell";
 import { failure as failed, success } from "../../../test/outcome";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
-import { launchBridge } from "../../../test/launchFixture";
+import { elapse, launchBridge } from "../../../test/launchFixture";
 import { memoryLocation } from "../../../test/location";
 import { RunIndicator } from "./RunIndicator";
 
@@ -17,17 +17,19 @@ function setup(status?: object) {
   if (status !== undefined) bridge.actions.set("session.status", success(status));
   const location = memoryLocation();
   const timers = fakeClock();
+  bridge.jobs.drive(timers);
   const launch = createLaunchStore(bridge.launch, timers, timers);
   render(<RunIndicator launch={launch} navigation={createNavigationStore(location)} />);
-  return { bridge, launch, location };
+  return { bridge, launch, location, timers };
 }
 
 describe("run indicator", () => {
   it("is absent without a run and opens the review of a finished run", async () => {
-    const { launch, location } = setup();
+    const { launch, location, timers } = setup();
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
     await act(async () => {
       await launch.start(origin, plan);
+      await elapse(timers, 500);
     });
     expect(screen.getByRole("status")).toHaveTextContent("The review of run w-5 is ready");
     fireEvent.click(screen.getByRole("button", { name: "Run w-5 finished · Open review" }));
@@ -37,7 +39,7 @@ describe("run indicator", () => {
 
   it("shows progress, links back to the plant's run panel, and lets a failure be dismissed", async () => {
     const { bridge, launch, location } = setup();
-    bridge.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad")));
+    bridge.actions.set("job.start", failed(cannedFailure("domain_invalid", 422, "bad")));
     let running = Promise.resolve();
     act(() => {
       running = launch.start(origin, plan);

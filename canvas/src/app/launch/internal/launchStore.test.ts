@@ -1,214 +1,168 @@
-import { describe, expect, it, vi } from "vitest";
-import { failure as failed, success } from "../../ports";
-import type { FakeBridge } from "../../../test/fakeBridge";
+import { describe, expect, it } from "vitest";
+import { failure as failed } from "../../ports";
 import { cannedFailure } from "../../../test/fakeBridge";
-import { fakeClock } from "../../../test/fakeClock";
+import { flushPromises } from "../../../test/deferred";
 import { launchBridge } from "../../../test/launchFixture";
-import { LaunchStore } from "./launchStore";
+import { launch, origin, plan, start, started } from "../../../test/launchRun";
 
-const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
-const plan = {
-  seed: 3,
-  durationS: 40,
-  explore: false,
-  faults: [{ entity: "CT-1", fault: "fan", atS: 10 }],
-  calls: [],
-};
+describe("launch store: starting a job", () => {
+  it("asks the binary for the whole plan at once, paced as the watch pace says, and does no stepping itself", async () => {
+    const { fake, store } = await started();
+    expect(fake.calls.map((call) => call.name)).toEqual(["job.start"]);
+    expect(fake.calls[0]?.args).toEqual({
+      domain: "factory",
+      seed: 3,
+      explore: false,
+      duration_s: 1800,
+      rate: 60,
+      faults: [{ entity_id: "CT-1", fault: "fan", at_s: 600 }],
+      calls: [],
+    });
+    expect(store.snapshot()).toMatchObject({ phase: "running", worldId: "w-4", atS: 0, durationS: 1800, rate: 60 });
+  });
 
-function launch(fake: FakeBridge): LaunchStore {
-  const timers = fakeClock();
-  return new LaunchStore(fake.launch, timers, timers);
-}
-
-describe("launch store", () => {
-  it("creates the world, injects at the fault's time, advances to the end and ends the run", async () => {
+  it("shows the run as starting, without a world, until the binary answers", async () => {
     const fake = launchBridge("w-4");
-    const store = launch(fake);
+    const gate = fake.holdAction("job.start");
+    const { store } = launch(fake);
+    const starting = store.start(origin, plan);
+    expect(store.snapshot()).toMatchObject({ phase: "running", worldId: null, atS: 0, stopping: false, calls: [] });
+    gate.release();
+    await starting;
+    expect(store.snapshot()).toMatchObject({ phase: "running", worldId: "w-4" });
+  });
+
+  it("asks for rate 0, as fast as it can, when the plan has no pace", async () => {
+    const { fake, store } = await started(launchBridge("w-4"), { ...plan, pace: "fast" });
+    expect(fake.calls[0]?.args.rate).toBe(0);
+    expect(store.snapshot()).toMatchObject({ phase: "running", rate: null });
+  });
+
+  it("ignores a second start while a run is going", async () => {
+    const { fake, store } = await started();
     await store.start(origin, plan);
+    expect(fake.calls.filter((call) => call.name === "job.start")).toHaveLength(1);
+  });
+
+  it("fails without a world, in the director's words, when the job is refused", async () => {
+    const fake = launchBridge("w-4");
+    fake.actions.set("job.start", failed(cannedFailure("job_active", 409, "a job is already running or stopping")));
+    const { store, timers } = launch(fake);
+    await store.start(origin, plan);
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      origin,
+      failure: { kind: "rejected", step: "start", diagnostic: { displayCode: "job_active" } },
+      words: "a job is already running or stopping. Check the plan and start again.",
+      kept: null,
+    });
+    expect(timers.pending()).toBe(0);
+  });
+});
+
+describe("launch store: following the job", () => {
+  it("polls the status twice a second and shows the simulated time the binary has reached", async () => {
+    const { fake, store, tick } = await started();
+    await tick(500);
+    expect(fake.jobs.statusReads).toBe(1);
+    expect(store.snapshot()).toMatchObject({ phase: "running", atS: 30, durationS: 1800, rate: 60, startedMs: 0 });
+    await tick(500);
+    expect(fake.jobs.statusReads).toBe(2);
+    expect(store.snapshot()).toMatchObject({ atS: 60, atMs: 1000 });
+    expect(fake.calls.find((call) => call.name === "job.status")?.args).toEqual({ world_id: "w-4" });
+  });
+
+  it("finishes with the run's own numbers when the job completes, and stops polling", async () => {
+    const { fake, store, tick, timers } = await started();
+    await tick(30_000);
     expect(store.snapshot()).toEqual({
       phase: "done",
       origin,
       worldId: "w-4",
       early: false,
       plan,
-      reachedS: plan.durationS,
+      reachedS: 1800,
       calls: [],
     });
-    const names = fake.calls.map((call) => call.name);
-    expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
-    const advanced = (calls: typeof fake.calls) =>
-      calls.filter((call) => call.name === "clock.advance").reduce((sum, call) => sum + Number(call.args.by_ns), 0);
-    const inject = names.indexOf("fault.inject");
-    expect(advanced(fake.calls.slice(0, inject))).toBe(10e9);
-    expect(advanced(fake.calls)).toBe(40e9);
-    expect(fake.calls[0]?.args).toEqual({ domain: "factory", seed: 3, explore: false });
-    expect(fake.calls[inject]?.args).toEqual({ world_id: "w-4", entity_id: "CT-1", fault: "fan" });
+    const reads = fake.jobs.statusReads;
+    await tick(10_000);
+    expect(fake.jobs.statusReads).toBe(reads);
+    expect(timers.pending()).toBe(0);
   });
 
-  it("invokes an effector at its minute, keeps a refusal as an outcome and goes on", async () => {
+  it("finishes at once when a run as fast as it can is already over at the first poll", async () => {
+    const { store, tick } = await started(launchBridge("w-4"), { ...plan, pace: "fast" });
+    await tick(500);
+    expect(store.snapshot()).toMatchObject({ phase: "done", early: false, reachedS: 1800 });
+  });
+
+  it("keeps a refused effector call as an outcome, stamped with the wall time it was first seen", async () => {
     const fake = launchBridge("w-4");
-    fake.handlers.set("effector.invoke", (args) =>
-      args.effector === "chiller__stop"
-        ? success({ accepted: false, reason: "interlock_refused", world_id: "w-4", command_id: "director-2" })
-        : success({ accepted: true, effect_eta_ns: 30e9, world_id: "w-4", command_id: "director-1" }),
-    );
-    const start = { entity: "CH-1", effector: "chiller__start", atS: 10, args: { chiller_id: "CH-1" } };
-    const stop = { ...start, effector: "chiller__stop", atS: 20 };
-    const store = launch(fake);
-    await store.start(origin, { ...plan, faults: [], calls: [stop, start] });
-    const state = store.snapshot();
-    expect(state).toMatchObject({ phase: "done", early: false });
-    expect(state.phase === "done" ? state.calls : []).toEqual([
+    fake.jobs.refuse("chiller__stop", "interlock_refused");
+    const stop = { ...start, effector: "chiller__stop", atS: 900 };
+    const { store, tick } = await started(fake, { ...plan, faults: [], calls: [stop, start] });
+    await tick(5000);
+    expect(store.snapshot()).toMatchObject({ phase: "running", calls: [] });
+    await tick(5000);
+    const running = store.snapshot();
+    expect(running.phase === "running" ? running.calls : []).toEqual([
       {
         entity: "CH-1",
         effector: "chiller__start",
-        atS: 10,
+        atS: 600,
         accepted: true,
         reason: "",
         effectEtaNs: 30e9,
-        atMs: expect.any(Number) as number,
+        atMs: 10_000,
+      },
+    ]);
+    await tick(20_000);
+    const done = store.snapshot();
+    expect(done).toMatchObject({ phase: "done", early: false });
+    expect(done.phase === "done" ? done.calls : []).toEqual([
+      {
+        entity: "CH-1",
+        effector: "chiller__start",
+        atS: 600,
+        accepted: true,
+        reason: "",
+        effectEtaNs: 30e9,
+        atMs: 10_000,
       },
       {
         entity: "CH-1",
         effector: "chiller__stop",
-        atS: 20,
+        atS: 900,
         accepted: false,
         reason: "interlock_refused",
         effectEtaNs: null,
-        atMs: expect.any(Number) as number,
+        atMs: 15_000,
       },
     ]);
-    const invoked = fake.calls.filter((call) => call.name === "effector.invoke");
-    expect(invoked.map((call) => call.args)).toEqual([
-      { world_id: "w-4", entity_id: "CH-1", effector: "chiller__start", args: { chiller_id: "CH-1" } },
-      { world_id: "w-4", entity_id: "CH-1", effector: "chiller__stop", args: { chiller_id: "CH-1" } },
-    ]);
-    const at = fake.calls.findIndex((call) => call.name === "effector.invoke");
-    const before = fake.calls.slice(0, at).filter((call) => call.name === "clock.advance");
-    expect(before.reduce((sum, call) => sum + Number(call.args.by_ns), 0)).toBe(10e9);
   });
 
-  it("publishes the call the moment it is made, stamped with the wall clock, so the plant can hold its mark", async () => {
+  it("never has more than one status request outstanding", async () => {
     const fake = launchBridge("w-4");
-    fake.actions.set("effector.invoke", success({ accepted: true, effect_eta_ns: 1e9 }));
-    let now = 1000;
-    const timers = fakeClock();
-    const store = new LaunchStore(fake.launch, { nowMs: () => (now += 250) }, timers);
-    const seen: { atS: number; calls: number; atMs: number }[] = [];
-    store.subscribe(() => {
-      const state = store.snapshot();
-      if (state.phase === "running") seen.push({ atS: state.atS, calls: state.calls.length, atMs: state.atMs });
-    });
-    const call = { entity: "CH-1", effector: "chiller__start", atS: 20, args: {} };
-    await store.start(origin, { ...plan, faults: [], calls: [call] });
-    const first = seen.findIndex((state) => state.calls === 1);
-    expect(seen[first]?.atS).toBe(20);
-    expect(seen[first - 1]?.calls).toBe(0);
-    expect(seen[first]?.atMs).toBeGreaterThan(seen[first - 1]?.atMs ?? 0);
+    const { store, tick } = await started(fake);
+    const gate = fake.holdAction("job.status");
+    await tick(500);
+    await tick(5000);
+    expect(fake.calls.filter((call) => call.name === "job.status")).toHaveLength(1);
+    gate.release();
+    await flushPromises();
+    await tick(500);
+    expect(fake.calls.filter((call) => call.name === "job.status")).toHaveLength(2);
+    expect(store.snapshot()).toMatchObject({ phase: "running" });
   });
+});
 
-  it("abandons the run when the bridge fails an effector call", async () => {
+describe("launch store: proposals", () => {
+  it("clears the proposal when a run starts", async () => {
     const fake = launchBridge("w-4");
-    fake.actions.set("effector.invoke", failed(cannedFailure("invalid_args", 422, "setpoint out of range")));
-    const store = launch(fake);
-    const call = { entity: "CH-1", effector: "chiller__start", atS: 0, args: {} };
-    await store.start(origin, { ...plan, faults: [], calls: [call] });
-    expect(store.snapshot()).toMatchObject({
-      phase: "failed",
-      failure: { kind: "rejected", step: "invoke", diagnostic: { displayCode: "invalid_args" } },
-      kept: "w-4",
-    });
-    expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
-  });
-
-  it("reports the binary's refusal and discards the world", async () => {
-    const fake = launchBridge("w-4");
-    fake.actions.set("fault.inject", failed(cannedFailure("unknown_fault", 422, "no such fault")));
-    const store = launch(fake);
+    const { store } = launch(fake);
+    store.propose("factory", plan);
+    expect(store.proposal("factory")).not.toBeNull();
     await store.start(origin, plan);
-    expect(store.snapshot()).toMatchObject({
-      phase: "failed",
-      failure: { kind: "rejected", step: "inject", diagnostic: { displayCode: "unknown_fault" } },
-    });
-    expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
-  });
-
-  it("stops early after at least one step, keeps the shorter run and can be reset", async () => {
-    const fake = launchBridge("w-4");
-    const store = launch(fake);
-    const running = store.start(origin, { ...plan, faults: [], calls: [] });
-    await store.start(origin, plan);
-    store.stopEarly();
-    expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
-    await running;
-    expect(store.snapshot()).toMatchObject({ phase: "done", worldId: "w-4", early: true, calls: [] });
-    expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "clock.advance", "run.end"]);
-    store.reset();
-    store.stopEarly();
-    expect(store.snapshot()).toEqual({ phase: "idle" });
-  });
-
-  it("fails without a world when the world cannot be created", async () => {
-    const fake = launchBridge("w-4");
-    fake.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad domain")));
-    const store = launch(fake);
-    await store.start(origin, plan);
-    expect(store.snapshot()).toMatchObject({
-      phase: "failed",
-      failure: { kind: "rejected", step: "create", diagnostic: { displayCode: "domain_invalid" } },
-    });
-    expect(fake.calls.map((call) => call.name)).toEqual(["world.create"]);
-  });
-
-  it("paces a watched run to the simulated time reached and reports the speed of the last seconds", async () => {
-    const fake = launchBridge("w-4");
-    const timers = fakeClock();
-    const waits: number[] = [];
-    const scheduler = {
-      schedule: (delayMs: number, task: () => void) => timers.schedule(delayMs, task),
-      delay: (ms: number) => {
-        waits.push(ms);
-        timers.advance(ms);
-        return Promise.resolve();
-      },
-    };
-    const store = new LaunchStore(fake.launch, timers, scheduler);
-    const rates: (number | null)[] = [];
-    store.subscribe(() => {
-      const state = store.snapshot();
-      if (state.phase === "running") rates.push(state.rate);
-    });
-    await store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
-    expect(waits.reduce((sum, ms) => sum + ms, 0)).toBe(30_000);
-    expect(waits).toHaveLength(30);
-    expect(rates.at(-1)).toBe(60);
-    expect(store.snapshot()).toMatchObject({ phase: "done", early: false });
-  });
-
-  it("runs a plan without a pace as fast as the binary answers", async () => {
-    const waits: number[] = [];
-    const timers = fakeClock();
-    const scheduler = {
-      schedule: (delayMs: number, task: () => void) => timers.schedule(delayMs, task),
-      delay: (ms: number) => {
-        waits.push(ms);
-        return Promise.resolve();
-      },
-    };
-    const store = new LaunchStore(launchBridge("w-4").launch, timers, scheduler);
-    await store.start(origin, plan);
-    expect(waits).toEqual([]);
-  });
-
-  it("wakes a waiting run the moment Stop now is pressed", async () => {
-    const timers = fakeClock();
-    const store = new LaunchStore(launchBridge("w-4").launch, timers, timers);
-    const running = store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
-    await vi.waitFor(() => {
-      expect(store.snapshot()).toMatchObject({ phase: "running", atS: 60 });
-    });
-    store.stopEarly();
-    await running;
-    expect(store.snapshot()).toMatchObject({ phase: "done", early: true, reachedS: 60 });
+    expect(store.proposal("factory")).toBeNull();
   });
 });

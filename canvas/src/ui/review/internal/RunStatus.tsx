@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
 import type { Badge, Report } from "../../../model/review";
 import { badgeLabels, badgeOf, bindingLine, connectionWords, modeWords } from "../../../model/review";
-import { integrityLine, reportFacts, runIdentity } from "../../../model/review";
+import { integrityLine, reportFacts, runIdentity, terminationWords } from "../../../model/review";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunStatus.module.css";
@@ -103,6 +103,7 @@ function Mode({ report, state }: { readonly report: Report; readonly state: Revi
     );
   }
   const explore = report.mode === "explore";
+  const ending = terminationWords(report);
   return (
     <>
       <span className={explore ? styles.truth : styles.chip} title={explore ? modeWords.explore : modeWords.evaluate}>
@@ -110,6 +111,7 @@ function Mode({ report, state }: { readonly report: Report; readonly state: Revi
         {explore ? "Explore" : "Evaluate"}
       </span>
       <span className={styles.facts}>{reportFacts(report)}</span>
+      {ending !== "" && <span className={styles.facts}>{ending}</span>}
       <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
   );

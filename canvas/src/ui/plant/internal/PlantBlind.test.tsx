@@ -1,10 +1,8 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mountApp } from "../../../test/appHarness";
-import { deferred } from "../../../test/deferred";
 import { stubFlowDom } from "../../../test/dom";
-import type { Canned } from "../../../test/fakeFailures";
-import { success } from "../../../test/outcome";
+import { elapse } from "../../../test/launchFixture";
 import { miniBridge, planHash } from "../../../test/screenFixture";
 
 beforeEach(() => {
@@ -20,6 +18,7 @@ function plan(explore: boolean) {
     seed: 1,
     durationS: 3600,
     explore,
+    pace: "watch" as const,
     faults: [{ entity: "CH-1", fault: "chiller__CANARY_TRUTH_9f3a", atS: 0 }],
     calls: [{ entity: "CT-1", effector: "start", atS: 0, args: {} }],
   };
@@ -27,15 +26,15 @@ function plan(explore: boolean) {
 
 async function running(explore: boolean) {
   const bridge = miniBridge();
-  const gate = deferred<Canned<unknown>>();
-  bridge.handlers.set("clock.advance", () => gate.promise);
-  bridge.actions.set("effector.invoke", success({ accepted: true }));
   const app = mountApp(bridge, planHash());
   await screen.findByRole("region", { name: /^Plant / });
   act(() => {
     void app.stores.launch.start(origin, plan(explore));
   });
   await screen.findByRole("button", { name: /^Running · / });
+  await act(async () => {
+    await elapse(app.timers, 500);
+  });
   fireEvent.click(screen.getByRole("button", { name: /^Running · / }));
   await screen.findByLabelText("Simulated time");
   return app;

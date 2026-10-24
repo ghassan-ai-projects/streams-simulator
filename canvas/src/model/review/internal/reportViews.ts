@@ -1,5 +1,5 @@
 import type { LaunchPlan } from "../../launch";
-import { durationOf } from "../../shared/duration";
+import { clockOf, durationOf } from "../../shared/duration";
 import { counted, seedWords } from "../../shared/words";
 import type { KpiRow, Report, VerifyState } from "./report";
 import { badgeOf, replayLine, wallClock } from "./report";
@@ -64,6 +64,17 @@ export function runIdentity(report: Report): string {
 export function reportFacts(report: Report): string {
   return [seedWords(report.seed), durationOf(spanSeconds(report))].filter((part) => part !== "").join(" · ");
 }
+
+export function terminationWords(report: Report): string {
+  const { termination, requestedEndNs, startNs } = report;
+  if (termination?.reason !== "stopped_by_operator") return "";
+  const at = clockOf((termination.atNs - startNs) / 1e9);
+  if (requestedEndNs === null) return `Stopped by operator at ${at}`;
+  return `Stopped by operator at ${at} of ${clockOf((requestedEndNs - startNs) / 1e9)}`;
+}
+
+export const unfinishedTruthWords =
+  "This run did not finish. These are the plant's recorded values up to where it stopped, not the result of a completed run.";
 
 export interface Rerun {
   readonly plan: LaunchPlan;

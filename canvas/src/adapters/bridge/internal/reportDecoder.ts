@@ -51,7 +51,17 @@ function runFacts(run: Record<string, unknown>) {
     simVersion: text(run.sim_version),
     startNs: number(run.start_time_ns),
     endNs: number(run.end_time_ns),
+    requestedEndNs: typeof run.requested_end_ns === "number" ? run.requested_end_ns : null,
+    termination: termination(run.termination),
   };
+}
+
+const terminationReasons = ["completed", "stopped_by_operator"] as const;
+
+function termination(value: unknown): Report["termination"] {
+  const reason = terminationReasons.find((known) => known === record(value).reason);
+  const atNs = record(value).at_ns;
+  return reason === undefined || typeof atNs !== "number" ? null : { reason, atNs };
 }
 
 function faults(truth: Record<string, unknown>) {

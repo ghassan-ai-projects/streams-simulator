@@ -13,7 +13,7 @@ export function Failure({
   return (
     <div className={cx(panel.body, styles.failure)} role="alert">
       <p>
-        <strong>The run did not finish.</strong> {state.words}
+        <strong>{state.kept === null ? "The run did not start." : "The run did not finish."}</strong> {state.words}
         {state.kept !== null && ` What ran before the failure is kept as run ${state.kept}.`}
       </p>
       <details className={styles.detail}>

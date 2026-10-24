@@ -156,4 +156,18 @@ describe("report panel", () => {
     expect(screen.getByText(/^Connected session: the true results below/)).toBeInTheDocument();
     expect(screen.queryByText(/^Evaluate run/)).toBeNull();
   });
+
+  it.each([undefined, "kpi"] as const)(
+    "says in the true results that a run which did not finish shows values up to where it stopped (%s view)",
+    (only) => {
+      const props = { unit: () => "", entity: null, ...(only === undefined ? {} : { only }) };
+      const { rerender } = render(<ReportPanel report={{ ...report, complete: false }} {...props} />);
+      const results = screen.getByRole("region", { name: "True results" });
+      expect(results).toHaveTextContent(
+        "This run did not finish. These are the plant's recorded values up to where it stopped, not the result of a completed run.",
+      );
+      rerender(<ReportPanel report={report} {...props} />);
+      expect(screen.getByRole("region", { name: "True results" })).not.toHaveTextContent("did not finish");
+    },
+  );
 });

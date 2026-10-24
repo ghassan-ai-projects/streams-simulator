@@ -2,8 +2,6 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
 import { mountApp } from "../../../test/appHarness";
-import { deferred } from "../../../test/deferred";
-import type { Canned } from "../../../test/fakeFailures";
 import { stubFlowDom } from "../../../test/dom";
 import { campusBridge, campusHash, miniBridge, miniWorkspace, planHash } from "../../../test/screenFixture";
 
@@ -218,14 +216,12 @@ describe("a plant with a run going", () => {
 
   async function running() {
     const bridge = miniBridge();
-    const gate = deferred<Canned<unknown>>();
-    bridge.handlers.set("clock.advance", () => gate.promise);
     const app = await opened(planHash(), bridge);
     act(() => {
       void app.stores.launch.start(origin, plan);
     });
     await screen.findByRole("button", { name: /^Running · / });
-    return { ...app, gate };
+    return app;
   }
 
   it("shows the run's clock on the Run button and marks the instances its faults hit", async () => {

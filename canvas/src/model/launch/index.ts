@@ -1,4 +1,17 @@
-export { failureWords, keepKnownFaults, outcomeOf, paceOf, stepsFor, watchWords } from "./internal/launch";
+export { keepKnownFaults, watchWords } from "./internal/launch";
+export {
+  jobActive,
+  jobFailureWords,
+  jobRequestOf,
+  lostWords,
+  observedCalls,
+  pacedRate,
+  plannedS,
+  reachedS,
+  recoveredPlanOf,
+  startFailureWords,
+  unobserved,
+} from "./internal/job";
 export { planProblems } from "./internal/planProblems";
 export { effectorShownS, showingMarks } from "./internal/showing";
 export { draftOf, firstDraft, pickedOnGraph, planOf } from "./internal/draft";
@@ -46,14 +59,14 @@ export {
   staleCheckWords,
 } from "./internal/sessionWords";
 export type {
-  Acknowledgement,
   BindingNote,
   CallOutcome,
   Draft,
   DraftCall,
   DraftFault,
+  JobRequest,
+  JobStatus,
   LaunchPlan,
-  LaunchStep,
   CallProblem,
   PlanIssue,
   PlanMember,

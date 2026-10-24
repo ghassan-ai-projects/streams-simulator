@@ -54,6 +54,11 @@ export interface KpiRow {
   readonly max: number;
 }
 
+interface Termination {
+  readonly reason: "completed" | "stopped_by_operator";
+  readonly atNs: number;
+}
+
 export interface Report {
   readonly runId: string;
   readonly mode: string;
@@ -68,6 +73,8 @@ export interface Report {
   readonly simVersion: string;
   readonly startNs: number;
   readonly endNs: number;
+  readonly requestedEndNs: number | null;
+  readonly termination: Termination | null;
   readonly verification: string;
   readonly checks: readonly Check[];
   readonly counts: Readonly<Record<string, number>>;

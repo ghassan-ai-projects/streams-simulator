@@ -1,4 +1,4 @@
-import type { Acknowledgement, ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
+import type { ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
 import type { Workspace } from "../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../model/plant";
@@ -215,33 +215,6 @@ export function composeSummary(value: unknown): ComposeSummary | null {
 
 function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-export function acknowledgement(value: unknown): Acknowledgement | null {
-  if (!isRecord(value) || typeof value.accepted !== "boolean") return null;
-  if (value.reason !== undefined && typeof value.reason !== "string") return null;
-  if (value.effect_eta_ns !== undefined && typeof value.effect_eta_ns !== "number") return null;
-  return {
-    accepted: value.accepted,
-    reason: text(value.reason),
-    effectEtaNs: typeof value.effect_eta_ns === "number" ? value.effect_eta_ns : null,
-  };
-}
-
-export function advanceResult(value: unknown): true | null {
-  return isRecord(value) && typeof value.clock === "string" && finiteNumber(value.emitted) !== null ? true : null;
-}
-
-export function faultInjected(value: unknown): true | null {
-  return isRecord(value) && text(value.fault_id) !== "" && value.simulated === true ? true : null;
-}
-
-export function runEnded(value: unknown): true | null {
-  return isRecord(value) && text(value.run_artifact_path) !== "" ? true : null;
-}
-
-export function destroyed(value: unknown): true | null {
-  return isRecord(value) && value.destroyed === true ? true : null;
 }
 
 export function report(value: unknown): Report | null {

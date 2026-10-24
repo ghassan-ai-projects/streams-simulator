@@ -18,13 +18,12 @@ export function disturbanceWords(plan: LaunchPlan): string {
   return calls === "" ? faults : `${faults} and ${calls}`;
 }
 
+function disturbanceParts(plan: LaunchPlan): readonly string[] {
+  return plan.recovered === true ? [] : [faultCountWords(plan), callCountWords(plan)];
+}
+
 export function planSummary(plan: LaunchPlan, length: string): string {
-  return [
-    `${length} of simulated time`,
-    plan.explore ? "Explore" : "Evaluate",
-    faultCountWords(plan),
-    callCountWords(plan),
-  ]
+  return [`${length} of simulated time`, plan.explore ? "Explore" : "Evaluate", ...disturbanceParts(plan)]
     .filter((part) => part !== "")
     .join(" · ");
 }

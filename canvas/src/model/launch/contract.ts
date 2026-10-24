@@ -1,5 +1,6 @@
 export type { Draft, DraftCall, DraftFault } from "./internal/draft";
-export type { Acknowledgement, CallOutcome, LaunchPlan, LaunchStep } from "./internal/launch";
+export type { CallOutcome, LaunchPlan } from "./internal/launch";
+export type { JobRequest, JobStatus } from "./internal/job";
 export type { CallProblem, PlanProblem } from "./internal/planProblems";
 export type {
   BindingNote,

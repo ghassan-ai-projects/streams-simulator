@@ -15,65 +15,6 @@ function lastCall(t: ReturnType<typeof bridgeTransport>): { url: unknown; body: 
 
 const compose = { composition: "plants/p.composition.json", output: "plants/p.json", etag: "e1" };
 
-describe("launch gateway", () => {
-  it("creates a world and reads its id", async () => {
-    const t = answering({ world_id: "w-9" });
-    const outcome = await bridgeAdapter(t).launch.createWorld({ domain: "plants/p.json", seed: 7, explore: true });
-    expect(outcome).toEqual({ ok: true, value: { worldId: "w-9" } });
-    expect(lastCall(t)).toEqual({
-      url: "/api/actions/world.create",
-      body: { args: { domain: "plants/p.json", seed: 7, explore: true } },
-    });
-  });
-
-  it.each([[{}], [{ world_id: "" }], [{ world_id: 4 }], [null]])("refuses a created world shaped %j", async (bad) => {
-    const outcome = await bridgeAdapter(answering(bad)).launch.createWorld({ domain: "d", seed: 1, explore: false });
-    expect(outcome).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
-  });
-
-  it("injects a fault, ends a run and destroys a world with the wire names", async () => {
-    const injected = answering({ fault_id: "f1", simulated: true });
-    expect(await bridgeAdapter(injected).launch.inject("w-1", "CH-1", "stuck")).toEqual({
-      ok: true,
-      value: undefined,
-    });
-    expect(lastCall(injected)).toEqual({
-      url: "/api/actions/fault.inject",
-      body: { args: { world_id: "w-1", entity_id: "CH-1", fault: "stuck" } },
-    });
-    const ended = answering({ run_artifact_path: "runs/w-1/run.json" });
-    expect(await bridgeAdapter(ended).launch.endRun("w-1")).toEqual({ ok: true, value: undefined });
-    expect(lastCall(ended)).toEqual({ url: "/api/actions/run.end", body: { args: { world_id: "w-1" } } });
-    const destroyed = answering({ destroyed: true });
-    await bridgeAdapter(destroyed).launch.destroyWorld("w-1");
-    expect(lastCall(destroyed)).toEqual({ url: "/api/actions/world.destroy", body: { args: { world_id: "w-1" } } });
-  });
-
-  it("reports an unsimulated fault and a failed end as failures", async () => {
-    const notInjected = answering({ fault_id: "f1", simulated: false });
-    expect(await bridgeAdapter(notInjected).launch.inject("w", "e", "stuck")).toMatchObject({
-      ok: false,
-      failure: { kind: "unreadable" },
-    });
-    const unended = bridgeTransport(() => respond(404, { error: { code: "unknown_world", message: "gone" } }));
-    expect(await bridgeAdapter(unended).launch.endRun("w")).toMatchObject({ ok: false });
-  });
-
-  it("invokes an effector and reads the acknowledgement", async () => {
-    const t = answering({ accepted: true, reason: "", effect_eta_ns: 2e9 });
-    const outcome = await bridgeAdapter(t).launch.invoke("w-1", "CH-1", "setpoint", { value: 6 });
-    expect(outcome).toEqual({ ok: true, value: { accepted: true, reason: "", effectEtaNs: 2e9 } });
-    expect(lastCall(t).body).toEqual({
-      args: { world_id: "w-1", entity_id: "CH-1", effector: "setpoint", args: { value: 6 } },
-    });
-  });
-
-  it("swallows a failed destroy rather than throwing", async () => {
-    const t = bridgeTransport(() => Promise.reject(new Error("down")));
-    await expect(bridgeAdapter(t).launch.destroyWorld("w-1")).resolves.toBeUndefined();
-  });
-});
-
 describe("plant and editor gateways", () => {
   it.each([
     ["plant", (a: ReturnType<typeof bridgeAdapter>) => a.plant.compose(compose)],

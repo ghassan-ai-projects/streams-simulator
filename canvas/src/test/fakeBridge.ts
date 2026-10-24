@@ -5,6 +5,7 @@ import type { Workspace } from "../model/workspace";
 import type { Deferred } from "./deferred";
 import { deferred } from "./deferred";
 import { cannedFailure } from "./fakeFailures";
+import { FakeJobs } from "./fakeJobs";
 import type { Canned } from "./fakeFailures";
 import { FakeSource, answer, workspaceWire } from "./fakeWire";
 import { sampleWorkspace } from "./workspaceFixture";
@@ -44,6 +45,7 @@ export class FakeBridge {
   files = new Map<string, Canned<FileContent>>();
   actions = new Map<string, Canned<unknown>>();
   handlers = new Map<string, Handler>();
+  jobs = new FakeJobs();
   calls: { name: string; args: Args }[] = [];
   reads: string[] = [];
   writes: { path: string; content: string; etag: string }[] = [];
@@ -71,6 +73,21 @@ export class FakeBridge {
 
   addFile(path: string, content: unknown, etag = "e"): void {
     this.files.set(path, cannedFile(path, content, etag));
+  }
+
+  holdAction(name: string): { release(): void } {
+    const gate = deferred<true>();
+    this.handlers.set(name, (args) =>
+      gate.promise.then(() => {
+        this.handlers.delete(name);
+        return this.canned(name, args);
+      }),
+    );
+    return {
+      release: () => {
+        gate.resolve(true);
+      },
+    };
   }
 
   persistWrites(): void {
@@ -199,13 +216,15 @@ export class FakeBridge {
 
   private action(name: string, args: Args): Promise<Canned<unknown>> {
     this.calls.push({ name, args });
-    const reply = this.handlers.get(name)?.(args) ?? this.canned(name);
+    const reply = this.handlers.get(name)?.(args) ?? this.canned(name, args);
     return Promise.resolve(reply).then((outcome) => (outcome.ok ? success({ result: outcome.value }) : outcome));
   }
 
-  private canned(name: string): Canned<unknown> {
+  private canned(name: string, args: Args): Canned<unknown> {
     const canned = this.actions.get(name);
     if (canned !== undefined) return canned;
+    const job = this.jobs.answer(name, args);
+    if (job !== undefined) return job;
     return failed(cannedFailure("unknown_action", 404));
   }
 }

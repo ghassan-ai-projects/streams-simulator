@@ -4,7 +4,7 @@ import type { ConnectState } from "./connectState";
 import type { LaunchState } from "./launchState";
 import type { PolicyDefaultState } from "./policyDefault";
 import type { Proposal } from "./proposalSlot";
-import type { LaunchOrigin } from "./runCursor";
+import type { LaunchOrigin } from "./trackedRun";
 
 export type { ConnectState } from "./connectState";
 export type { LaunchState } from "./launchState";
@@ -43,6 +43,7 @@ export interface LaunchStore extends Store<LaunchState> {
   nowMs(): number;
   watch(plant: string): RunWatch;
   start(origin: LaunchOrigin, plan: LaunchPlan): Promise<void>;
+  resume(originOf: (domain: string) => LaunchOrigin | null): Promise<void>;
   stopEarly(): void;
   reset(): void;
 }

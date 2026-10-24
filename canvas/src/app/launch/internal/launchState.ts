@@ -1,6 +1,6 @@
 import type { CallOutcome, LaunchPlan } from "../../../model/launch";
 import type { LaunchFailure } from "../../ports";
-import type { LaunchOrigin } from "./runCursor";
+import type { LaunchOrigin } from "./trackedRun";
 
 export type LaunchState =
   | { readonly phase: "idle" }

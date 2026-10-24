@@ -87,4 +87,19 @@ describe("run status", () => {
     });
     expect(new Set(looks).size).toBe(4);
   });
+
+  it("says where the operator stopped a run, out of what was requested, and nothing for one that completed", () => {
+    const stopped = {
+      ...parsed,
+      requestedEndNs: 3_600e9,
+      endNs: 1_680e9,
+      termination: { reason: "stopped_by_operator", atNs: 1_680e9 },
+    } as const;
+    const { unmount } = render(<Status state={state({ report: { phase: "ready", value: stopped } })} now={now} />);
+    expect(screen.getByText("Stopped by operator at 00:28:00 of 01:00:00")).toBeInTheDocument();
+    unmount();
+    const completed = { ...parsed, termination: { reason: "completed", atNs: 3_600e9 } } as const;
+    render(<Status state={state({ report: { phase: "ready", value: completed } })} now={now} />);
+    expect(screen.queryByText(/Stopped by operator/)).toBeNull();
+  });
 });

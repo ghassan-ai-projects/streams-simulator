@@ -55,14 +55,6 @@ describe("bridge adapter wiring", () => {
   });
 
   it("narrows one field at a time, and refuses a response it cannot decode", async () => {
-    const partial = await bridgeAdapter(
-      bridgeTransport(() => respond(200, { result: { clock: "c", emitted: 3, extra: true } })),
-    ).launch.advance("w-1", 10);
-    expect(partial).toEqual({ ok: true, value: undefined });
-    const unreadable = await bridgeAdapter(
-      bridgeTransport(() => respond(200, { result: { emitted: 3 } })),
-    ).launch.advance("w-1", 10);
-    expect(unreadable).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
     const corrupt = await bridgeAdapter(bridgeTransport(() => respond(200, { path: "x" }))).editor.readFile("x");
     expect(corrupt).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
   });

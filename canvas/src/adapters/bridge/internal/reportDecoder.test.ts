@@ -46,6 +46,32 @@ describe("the run report", () => {
     expect(parsed.scoring).toBeNull();
   });
 
+  it("reads the plan and the ending a job-run recorded, and nothing for a run that recorded none", () => {
+    const stopped = {
+      ...reportWire,
+      run: {
+        ...reportWire.run,
+        requested_end_ns: 7_200e9,
+        termination: { reason: "stopped_by_operator", at_ns: 1_680e9 },
+      },
+    };
+    expect(parseReportPayload(stopped)).toMatchObject({
+      requestedEndNs: 7_200e9,
+      termination: { reason: "stopped_by_operator", atNs: 1_680e9 },
+    });
+    expect(parseReportPayload(reportWire)).toMatchObject({ requestedEndNs: null, termination: null });
+  });
+
+  it.each([
+    ["an unknown reason", { reason: "abandoned", at_ns: 5 }],
+    ["a text instant", { reason: "completed", at_ns: "5" }],
+    ["no instant", { reason: "completed" }],
+    ["a text object", "completed"],
+  ])("ignores a termination with %s", (_name, termination) => {
+    const wire = { ...reportWire, run: { ...reportWire.run, requested_end_ns: "soon", termination } };
+    expect(parseReportPayload(wire)).toMatchObject({ requestedEndNs: null, termination: null });
+  });
+
   it("refuses a report without the sections a reader needs", () => {
     expect(parseReportPayload(null)).toBeNull();
     expect(parseReportPayload({})).toBeNull();

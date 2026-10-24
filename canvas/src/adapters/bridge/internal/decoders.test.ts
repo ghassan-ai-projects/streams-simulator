@@ -1,18 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  acknowledgement,
-  advanceResult,
-  composeSummary,
-  composition,
-  destroyed,
-  faultInjected,
-  fileContent,
-  paired,
-  runDomain,
-  runEnded,
-  workspace,
-  written,
-} from "./decoders";
+import { composeSummary, composition, fileContent, paired, runDomain, workspace, written } from "./decoders";
 
 const notRecords: readonly unknown[] = [null, undefined, "text", 7, ["a"]];
 
@@ -40,41 +27,12 @@ describe("simple payloads", () => {
     expect(decode(wire)).toBeNull();
   });
 
-  it.each([paired, fileContent, written, composeSummary, acknowledgement, workspace, composition, runDomain])(
+  it.each([paired, fileContent, written, composeSummary, workspace, composition, runDomain])(
     "refuses a payload that is not an object",
     (decode) => {
       for (const value of notRecords) expect(decode(value)).toBeNull();
     },
   );
-});
-
-describe("acknowledgement", () => {
-  it.each([
-    [
-      { accepted: true, reason: "ok", effect_eta_ns: 5e9 },
-      { accepted: true, reason: "ok", effectEtaNs: 5e9 },
-    ],
-    [
-      { accepted: false, reason: "busy" },
-      { accepted: false, reason: "busy", effectEtaNs: null },
-    ],
-    [{ accepted: true }, { accepted: true, reason: "", effectEtaNs: null }],
-    [
-      { accepted: true, effect_eta_ns: 0 },
-      { accepted: true, reason: "", effectEtaNs: 0 },
-    ],
-  ])("reads %j", (wire, expected) => {
-    expect(acknowledgement(wire)).toEqual(expected);
-  });
-
-  it.each([
-    [{ reason: "no flag" }],
-    [{ accepted: "true" }],
-    [{ accepted: true, reason: 3 }],
-    [{ accepted: true, effect_eta_ns: "soon" }],
-  ])("refuses %j", (wire) => {
-    expect(acknowledgement(wire)).toBeNull();
-  });
 });
 
 describe("workspace payload", () => {
@@ -237,21 +195,6 @@ describe("run domain", () => {
     ["domain_spec a list", { content: JSON.stringify({ domain_spec: [] }) }],
   ])("refuses a run whose %s", (_name, wire) => {
     expect(runDomain(wire)).toBeNull();
-  });
-});
-
-describe("confirmations", () => {
-  it.each([
-    [advanceResult, { clock: "c", emitted: 3 }, { clock: "c" }],
-    [advanceResult, { clock: "c", emitted: 0 }, { clock: "c", emitted: Infinity }],
-    [faultInjected, { fault_id: "f1", simulated: true }, { fault_id: "f1", simulated: false }],
-    [faultInjected, { fault_id: "f1", simulated: true }, { simulated: true }],
-    [runEnded, { run_artifact_path: "runs/w/run.json" }, { run_artifact_path: "" }],
-    [destroyed, { destroyed: true }, { destroyed: "true" }],
-  ])("accepts the confirmation and refuses its malformed twin", (decode, good, bad) => {
-    expect(decode(good)).toBe(true);
-    expect(decode(bad)).toBeNull();
-    expect(decode(null)).toBeNull();
   });
 });
 

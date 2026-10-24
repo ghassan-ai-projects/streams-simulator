@@ -24,6 +24,7 @@ function themes() {
 function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
   const location = memoryLocation(hash);
   const timers = fakeClock();
+  bridge.jobs.drive(timers);
   const shown: string[] = [];
   const stores = {
     themes: themes(),

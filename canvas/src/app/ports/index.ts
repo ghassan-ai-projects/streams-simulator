@@ -13,11 +13,12 @@ export type {
 } from "./devices";
 export type { EditorFailure, EditorGateway } from "./editor";
 export type {
-  Acknowledgement,
   ConnectFailure,
   ConnectGateway,
   ConnectStatus,
   LaunchFailure,
+  JobRequest,
+  JobStatus,
   LaunchGateway,
   PlannedInstance,
   PolicyDefaultFailure,

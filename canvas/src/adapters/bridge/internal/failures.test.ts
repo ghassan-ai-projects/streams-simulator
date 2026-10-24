@@ -75,14 +75,15 @@ describe("protocol failures mapped to the owning feature", () => {
   });
 
   it("says which launch step the binary refused", () => {
-    expect(launchFailure("create")(http("domain_invalid", 422))).toMatchObject({
+    expect(launchFailure("start")(http("domain_invalid", 422))).toMatchObject({
       kind: "rejected",
-      step: "create",
+      step: "start",
       diagnostic: { displayCode: "domain_invalid", message: "refused" },
     });
-    expect(launchFailure("invoke")(http("invalid_args", 422))).toMatchObject({ kind: "rejected", step: "invoke" });
-    expect(launchFailure("end")({ kind: "transport" })).toMatchObject({ kind: "unavailable" });
-    expect(launchFailure("end")({ kind: "unreadable" })).toMatchObject({ kind: "unreadable" });
+    expect(launchFailure("stop")(http("job_active", 422))).toMatchObject({ kind: "rejected", step: "stop" });
+    expect(launchFailure("status")(http("bridge_failed", 503))).toMatchObject({ kind: "unavailable" });
+    expect(launchFailure("status")({ kind: "transport" })).toMatchObject({ kind: "unavailable" });
+    expect(launchFailure("status")({ kind: "unreadable" })).toMatchObject({ kind: "unreadable" });
   });
 
   it("tells a review which part of a run is missing, and which answer it could not read", () => {

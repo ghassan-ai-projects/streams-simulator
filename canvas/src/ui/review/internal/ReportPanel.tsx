@@ -1,6 +1,6 @@
 import type { Connection, Report, VerifyState } from "../../../model/review";
 import { alarmRow, badgeOf, replayLine } from "../../../model/review";
-import { fileLine, integrityLine, kpisOf } from "../../../model/review";
+import { fileLine, integrityLine, kpisOf, unfinishedTruthWords } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
 import { spaced } from "../../../model/shared/words";
 import { KpiTable } from "./KpiTable";
@@ -142,6 +142,7 @@ function KpiTruth({ report, unit, entity, lead = true }: TruthProps & { readonly
   return (
     <Section title="True results" note={entity ?? undefined}>
       {lead && <p className={parts.muted}>{truthLead}</p>}
+      {!report.complete && <p className={parts.muted}>{unfinishedTruthWords}</p>}
       {kpis.length === 0 ? (
         <p className={parts.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
       ) : (

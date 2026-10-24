@@ -8,9 +8,12 @@ import { launchBridge, launchHarness } from "../../../test/launchFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
 describe("a run that stops on a fault", () => {
-  it("names the fault and the instance in one sentence and keeps the binary message in a disclosure", async () => {
+  it("says the run did not start, in the director's words, and keeps its message in a disclosure", async () => {
     const fake = launchBridge("w-8");
-    fake.actions.set("fault.inject", failed(cannedFailure("unknown_fault", 422, 'unknown fault "chiller__fouling"')));
+    fake.actions.set(
+      "job.start",
+      failed(cannedFailure("invalid_args", 422, 'job: faults[0]: unknown fault "chiller__fouling" on CH-1')),
+    );
     const { launch } = launchHarness(fake);
     launch.propose("mini", {
       seed: 1,
@@ -32,8 +35,9 @@ describe("a run that stops on a fault", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
-      'The run did not finish. The fault "fouling" could not be added to CH-1. Check that this plant still has it, choose a fault, and start again.',
+      'The run did not start. job: faults[0]: unknown fault "chiller__fouling" on CH-1. Check the plan and start again.',
     );
     expect(alert.querySelector("details")).toHaveTextContent('unknown fault "chiller__fouling"');
+    expect(alert).not.toHaveTextContent("kept as run");
   });
 });

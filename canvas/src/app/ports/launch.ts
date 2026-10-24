@@ -1,13 +1,13 @@
-import type { Acknowledgement, PlanIssue, SessionCheck } from "../../model/launch";
+import type { JobRequest, JobStatus, PlanIssue, SessionCheck } from "../../model/launch";
 import type { RunFollower } from "./review";
 import type { Diagnostic, Outcome } from "./shared";
 
-export type { Acknowledgement, PlannedInstance, SessionCheck } from "../../model/launch";
+export type { JobRequest, JobStatus, PlannedInstance, SessionCheck } from "../../model/launch";
 
 export type LaunchFailure =
   | {
       readonly kind: "rejected";
-      readonly step: "create" | "advance" | "inject" | "invoke" | "end";
+      readonly step: "start" | "status" | "stop" | "list" | "run";
       readonly diagnostic: Diagnostic;
     }
   | { readonly kind: "unavailable" | "unreadable"; readonly diagnostic: Diagnostic };
@@ -56,19 +56,8 @@ export interface ConnectGateway {
 }
 
 export interface LaunchGateway extends ConnectGateway {
-  createWorld(input: {
-    readonly domain: string;
-    readonly seed: number;
-    readonly explore: boolean;
-  }): Promise<Outcome<{ readonly worldId: string }, LaunchFailure>>;
-  advance(worldId: string, byNs: number): Promise<Outcome<void, LaunchFailure>>;
-  inject(worldId: string, entity: string, fault: string): Promise<Outcome<void, LaunchFailure>>;
-  invoke(
-    worldId: string,
-    entity: string,
-    effector: string,
-    args: Readonly<Record<string, unknown>>,
-  ): Promise<Outcome<Acknowledgement, LaunchFailure>>;
-  endRun(worldId: string): Promise<Outcome<void, LaunchFailure>>;
-  destroyWorld(worldId: string): Promise<void>;
+  startJob(request: JobRequest): Promise<Outcome<JobStatus, LaunchFailure>>;
+  jobStatus(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
+  stopJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
+  listJobs(): Promise<Outcome<readonly JobStatus[], LaunchFailure>>;
 }

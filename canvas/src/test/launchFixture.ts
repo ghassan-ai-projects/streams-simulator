@@ -1,28 +1,24 @@
 import { createLaunchStore } from "../app/launch";
-import { success } from "../app/ports";
 import { FakeBridge } from "./fakeBridge";
-import type { Canned } from "./fakeFailures";
+import { flushPromises } from "./deferred";
+import type { FakeClock } from "./fakeClock";
 import { fakeClock } from "./fakeClock";
-
-export const advanced = success({ clock: "2026-01-01T00:30:00Z", emitted: 12 });
-
-export function launchActions(worldId = "w-7"): ReadonlyMap<string, Canned<unknown>> {
-  return new Map<string, Canned<unknown>>([
-    ["world.create", success({ world_id: worldId })],
-    ["clock.advance", advanced],
-    ["fault.inject", success({ fault_id: "f-0", simulated: true })],
-    ["run.end", success({ run_artifact_path: `runs/${worldId}/run.json` })],
-    ["world.destroy", success({ destroyed: true })],
-  ]);
-}
 
 export function launchBridge(worldId = "w-7") {
   const fake = new FakeBridge();
-  launchActions(worldId).forEach((outcome, name) => fake.actions.set(name, outcome));
+  fake.jobs.worldId = worldId;
   return fake;
 }
 
 export function launchHarness(bridge: FakeBridge) {
   const timers = fakeClock();
+  bridge.jobs.drive(timers);
   return { launch: createLaunchStore(bridge.launch, timers, timers), timers };
+}
+
+export async function elapse(timers: FakeClock, ms: number): Promise<void> {
+  for (let elapsed = 0; elapsed < ms; elapsed += 500) {
+    timers.advance(500);
+    await flushPromises();
+  }
 }

@@ -124,6 +124,8 @@ export {
   rerunOf,
   reportFacts,
   runIdentity,
+  terminationWords,
+  unfinishedTruthWords,
 } from "./internal/reportViews";
 export { firstEventNode } from "./internal/reviewAnchor";
 export { reviewView } from "./internal/reviewRows";
