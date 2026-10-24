@@ -63,14 +63,7 @@ func (d *Director) openJob(req rules.JobRequest, plan jobPlan) (*job, error) {
 		_, _ = d.DestroyWorld(worldID)
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	return newJob(d.ctx, r, status, plan.scenario, d.pacerFor(req.Rate)), nil
-}
-
-func (d *Director) pacerFor(rate float64) Pacer {
-	if rate <= 0 {
-		return nil
-	}
-	return d.jobs.newPacer(rate)
+	return newJob(d.ctx, r, status, plan.scenario, d.jobs.newPacer(req.Rate)), nil
 }
 
 func newJobStatus(worldID, runID string, req rules.JobRequest, startNS int64) rules.JobStatus {
@@ -80,17 +73,17 @@ func newJobStatus(worldID, runID string, req rules.JobRequest, startNS int64) ru
 }
 
 func (d *Director) JobStatus(worldID string) (rules.JobStatus, error) {
-	j := d.jobs.find(worldID)
-	if j == nil {
-		return rules.JobStatus{}, rules.ToolErrorf(rules.CodeWorldNotFound, "no job for world %q", worldID)
+	j, err := d.jobOf(worldID)
+	if err != nil {
+		return rules.JobStatus{}, err
 	}
 	return j.snapshot(), nil
 }
 
 func (d *Director) StopJob(worldID string) (rules.JobStatus, error) {
-	j := d.jobs.find(worldID)
-	if j == nil {
-		return rules.JobStatus{}, rules.ToolErrorf(rules.CodeWorldNotFound, "no job for world %q", worldID)
+	j, err := d.jobOf(worldID)
+	if err != nil {
+		return rules.JobStatus{}, err
 	}
 	return j.requestStop(), nil
 }

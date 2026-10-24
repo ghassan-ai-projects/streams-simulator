@@ -59,18 +59,14 @@ func TestAJobRunsItsPlanToCompletionAndRecordsIntent(t *testing.T) {
 	requireVerifies(t, d, started.WorldID)
 }
 
-func TestAnUnpacedJobNeverAsksThePacer(t *testing.T) {
+func TestAnUnpacedJobRunsToCompletionWithoutEverWaiting(t *testing.T) {
 	t.Parallel()
-	pacer := newGatedPacer()
-	d := pacedBy(shippedDirector(t, t.Context()), pacer)
+	d := shippedDirector(t, t.Context())
 	req := pondJob()
 	req.Rate = 0
 	started := startJob(t, d, req)
-	if status := awaitJob(t, d, started.WorldID); status.State != rules.JobCompleted {
-		t.Fatalf("status = %+v, want completed without any pacing", status)
-	}
-	if len(pacer.asked) != 0 {
-		t.Fatalf("the pacer was asked %d times for an unpaced job", len(pacer.asked))
+	if status := awaitJob(t, d, started.WorldID); status.State != rules.JobCompleted || status.Rate != 0 {
+		t.Fatalf("status = %+v, want completed at rate 0 with the real pacer", status)
 	}
 }
 

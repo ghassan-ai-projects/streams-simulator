@@ -71,3 +71,41 @@ func TestFacadeStopsAPacedJobOnTheWallPacer(t *testing.T) {
 		t.Fatalf("status = %+v, %v, want a stopped job that ran part of its plan", status, err)
 	}
 }
+
+func TestFacadeControlsAJobOnTheWallPacer(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	started, err := d.StartJob(pondJob(1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := started.WorldID
+	paused, err := d.PauseJob(id)
+	if err != nil || paused.State != director.JobPaused {
+		t.Fatalf("PauseJob = %+v, %v, want a paused job", paused, err)
+	}
+	stepped, err := d.StepJob(id)
+	if err != nil || stepped.State != director.JobPaused || stepped.ReachedNS <= paused.ReachedNS {
+		t.Fatalf("StepJob = %+v, %v, want one more chunk reached while paused", stepped, err)
+	}
+	fault, err := d.JobInjectFault(id, "site-a/pond-1", "do_probe_fouling")
+	if err != nil || fault.FaultID == "" {
+		t.Fatalf("JobInjectFault = %+v, %v", fault, err)
+	}
+	call, err := d.JobInvokeEffector(id, "site-a/pond-1", "start_aerator", map[string]any{"pond_id": "site-a/pond-1"})
+	if err != nil || call.Call == nil || !call.Call.Immediate {
+		t.Fatalf("JobInvokeEffector = %+v, %v, want an immediate outcome", call, err)
+	}
+	if rated, err := d.SetJobRate(id, 0); err != nil || rated.Rate != 0 {
+		t.Fatalf("SetJobRate = %+v, %v", rated, err)
+	}
+	if resumed, err := d.ResumeJob(id); err != nil || resumed.State != director.JobRunning {
+		t.Fatalf("ResumeJob = %+v, %v", resumed, err)
+	}
+	if status := settled(t, d, id); status.State != director.JobCompleted {
+		t.Fatalf("status = %+v, want the controlled job completed at rate 0", status)
+	}
+	if _, err := d.StepJob(id); err == nil || !strings.HasPrefix(err.Error(), string(director.CodeJobNotRunning)) {
+		t.Fatalf("StepJob after the end = %v, want a job_not_running refusal", err)
+	}
+}

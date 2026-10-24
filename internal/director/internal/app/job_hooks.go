@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -15,17 +16,64 @@ func (j *job) hooks() run.ScenarioHooks {
 }
 
 func (j *job) before(_ context.Context, _ int, command model.ScenarioCommand) (bool, error) {
-	if j.mustStop() {
-		return true, nil
+	for {
+		j.awaitRelease()
+		if j.mustStop() {
+			return true, nil
+		}
+		if command.Op != model.OpClockAdvance {
+			return false, nil
+		}
+		if err := j.pace(command); !errors.Is(err, errPaused) {
+			return j.settlePace(err)
+		}
 	}
-	if command.Op != model.OpClockAdvance || j.pacer == nil {
-		return false, nil
-	}
-	return j.pace(command)
 }
 
-func (j *job) pace(command model.ScenarioCommand) (bool, error) {
-	err := j.pacer.WaitUntil(j.waitCtx, timeArgument(command, "to_ns")-j.status.StartNS)
+func (j *job) awaitRelease() {
+	for {
+		wake, hold := j.holdState()
+		if !hold {
+			return
+		}
+		select {
+		case <-wake:
+		case <-j.ctx.Done():
+			return
+		}
+	}
+}
+
+func (j *job) holdState() (<-chan struct{}, bool) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	hold := j.gate.paused && !j.gate.stepping && !j.stopRequested
+	if hold && j.gate.parked != nil {
+		close(j.gate.parked)
+		j.gate.parked = nil
+	}
+	return j.gate.wake, hold
+}
+
+func (j *job) pace(command model.ScenarioCommand) error {
+	ctx, skip := j.paceContext()
+	if skip {
+		return nil
+	}
+	err := j.pacer.WaitUntil(ctx, timeArgument(command, "to_ns")-j.status.StartNS)
+	if err != nil && errors.Is(context.Cause(ctx), errPaused) {
+		return errPaused
+	}
+	return err
+}
+
+func (j *job) paceContext() (context.Context, bool) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.gate.paceCtx, j.gate.stepping
+}
+
+func (j *job) settlePace(err error) (bool, error) {
 	if err == nil || j.stopWasRequested() {
 		return j.mustStop(), nil
 	}
@@ -50,6 +98,7 @@ func (j *job) after(_ context.Context, _ int, command model.ScenarioCommand, res
 	switch command.Op {
 	case model.OpClockAdvance:
 		j.advances++
+		j.gate.stepping = false
 		j.status.ReachedNS = timeArgument(command, "to_ns")
 	case model.OpEffectorInvoke:
 		j.status.Calls = append(j.status.Calls, j.callOutcome(command, result.Acknowledgement))

@@ -17,6 +17,12 @@ func TestJobActionsMapToTheDirectorsJobTools(t *testing.T) {
 		{"job.status", "sim.job.status", false},
 		{"job.stop", "sim.job.stop", true},
 		{"job.list", "sim.job.list", false},
+		{"job.pause", "sim.job.pause", true},
+		{"job.resume", "sim.job.resume", true},
+		{"job.step", "sim.job.step", true},
+		{"job.rate", "sim.job.rate", true},
+		{"job.inject_fault", "sim.job.inject_fault", true},
+		{"job.invoke_effector", "sim.job.invoke_effector", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -103,6 +109,33 @@ func TestOnlyAFinishedJobIsNotActive(t *testing.T) {
 	for state, active := range map[string]bool{"running": true, "stopping": true, "completed": false, "stopped": false, "failed": false, "paused": true} {
 		if got := (JobView{WorldID: "w-1", State: state}).Active(); got != active {
 			t.Errorf("%s active = %v, want %v", state, got, active)
+		}
+	}
+}
+
+func TestJobControlsTakeTheirClosedKeyListsAndNothingElse(t *testing.T) {
+	t.Parallel()
+	cases := map[string]map[string]any{
+		"job.pause":           {"world_id": "w-1"},
+		"job.resume":          {"world_id": "w-1"},
+		"job.step":            {"world_id": "w-1"},
+		"job.rate":            {"world_id": "w-1", "rate": 2.5},
+		"job.inject_fault":    {"world_id": "w-1", "entity_id": "e", "fault": "f"},
+		"job.invoke_effector": {"world_id": "w-1", "entity_id": "e", "effector": "x", "args": map[string]any{"level": 1.0}},
+	}
+	for name, args := range cases {
+		action, err := Lookup(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, err := action.ToolArguments(args); err != nil || !reflect.DeepEqual(got, map[string]any(args)) {
+			t.Errorf("%s: ToolArguments = %v, %v", name, got, err)
+		}
+		for _, key := range []string{"token", "command_id", "onset_ns", "params"} {
+			bad := map[string]any{key: "x"}
+			if _, err := action.ToolArguments(bad); !errors.Is(err, ErrBadArguments) {
+				t.Errorf("%s took %q: %v", name, key, err)
+			}
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 type Pacer interface {
 	WaitUntil(ctx context.Context, simElapsedNS int64) error
+	Reanchor(simElapsedNS int64, rate float64)
 }
 
 type job struct {
@@ -28,18 +29,24 @@ type job struct {
 	status        rules.JobStatus
 	advances      int
 	stopRequested bool
+	gate          gate
+	immediate     immediateGate
 }
 
 func newJob(parent context.Context, r *run.Run, status rules.JobStatus, scenario model.Scenario, pacer Pacer) *job {
 	ctx, cancel := context.WithCancel(parent)
 	waitCtx, stopWait := context.WithCancel(ctx)
 	return &job{worldID: status.WorldID, run: r, scenario: scenario, pacer: pacer, ctx: ctx, cancel: cancel,
-		waitCtx: waitCtx, stopWait: stopWait, done: make(chan struct{}), status: status}
+		waitCtx: waitCtx, stopWait: stopWait, done: make(chan struct{}), status: status, gate: newGate(waitCtx)}
 }
 
 func (j *job) snapshot() rules.JobStatus {
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	return j.copyStatus()
+}
+
+func (j *job) copyStatus() rules.JobStatus {
 	status := j.status
 	status.Calls = append([]rules.JobCallOutcome{}, j.status.Calls...)
 	return status
@@ -47,8 +54,9 @@ func (j *job) snapshot() rules.JobStatus {
 
 func (j *job) requestStop() rules.JobStatus {
 	j.mu.Lock()
-	if j.status.State == rules.JobRunning {
+	if j.status.State == rules.JobRunning || j.status.State == rules.JobPaused {
 		j.status.State, j.stopRequested = rules.JobStopping, true
+		j.gate.release()
 		j.stopWait()
 	}
 	j.mu.Unlock()

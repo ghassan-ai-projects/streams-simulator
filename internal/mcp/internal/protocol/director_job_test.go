@@ -20,7 +20,7 @@ func settledJob(t *testing.T, cs *mcp.ClientSession, worldID string) map[string]
 	deadline := time.After(time.Minute)
 	for {
 		status := mustCall(t, cs, "sim.job.status", map[string]any{"world_id": worldID})
-		if state := status["state"]; state != "running" && state != "stopping" {
+		if state := status["state"]; state != "running" && state != "stopping" && state != "paused" {
 			return status
 		}
 		select {
@@ -104,7 +104,8 @@ func TestJobToolsAreOnTheDirectorSurfaceOnly(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	directorTools, operator := toolNames(t, NewDirectorServer(d)), toolNames(t, NewOperatorServerResolver(d))
-	for _, name := range []string{"sim.job.start", "sim.job.status", "sim.job.stop", "sim.job.list"} {
+	for _, name := range []string{"sim.job.start", "sim.job.status", "sim.job.stop", "sim.job.list", "sim.job.pause", "sim.job.resume",
+		"sim.job.step", "sim.job.rate", "sim.job.inject_fault", "sim.job.invoke_effector"} {
 		if !directorTools[name] || operator[name] {
 			t.Errorf("%s: director %v operator %v, want the director only", name, directorTools[name], operator[name])
 		}

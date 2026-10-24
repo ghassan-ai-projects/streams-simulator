@@ -6,6 +6,7 @@ type JobState string
 
 const (
 	JobRunning   JobState = "running"
+	JobPaused    JobState = "paused"
 	JobStopping  JobState = "stopping"
 	JobCompleted JobState = "completed"
 	JobStopped   JobState = "stopped"
@@ -13,7 +14,7 @@ const (
 )
 
 func JobActive(state JobState) bool {
-	return state == JobRunning || state == JobStopping
+	return state == JobRunning || state == JobPaused || state == JobStopping
 }
 
 type JobCallOutcome struct {
@@ -23,6 +24,7 @@ type JobCallOutcome struct {
 	Accepted    bool   `json:"accepted"`
 	Reason      string `json:"reason,omitempty"`
 	EffectETANS int64  `json:"effect_eta_ns,omitempty"`
+	Immediate   bool   `json:"immediate,omitempty"`
 }
 
 type JobStatus struct {
@@ -55,5 +57,11 @@ func NewJobCallOutcome(atS int64, entityID, effector string, ack *model.Effector
 			outcome.Reason = noReasonGiven
 		}
 	}
+	return outcome
+}
+
+func NewImmediateCallOutcome(atS int64, entityID, effector string, ack *model.EffectorAcknowledgement) JobCallOutcome {
+	outcome := NewJobCallOutcome(atS, entityID, effector, ack)
+	outcome.Immediate = true
 	return outcome
 }

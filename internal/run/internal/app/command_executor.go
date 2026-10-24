@@ -82,6 +82,10 @@ func applyPerturbation(r *Run, cmd *model.Command) error {
 func applyInvocation(r *Run, args map[string]any, policy refusalPolicy) (*model.EffectorAcknowledgement, error) {
 	commandID := rules.CommandString(args, "command_id")
 	result, err := r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), commandID, rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
+	return acknowledgement(r, commandID, result, err, policy)
+}
+
+func acknowledgement(r *Run, commandID string, result *world.InvokeResult, err error, policy refusalPolicy) (*model.EffectorAcknowledgement, error) {
 	if err == nil || policy.keeps(err) {
 		return invocationAcknowledgement(r, commandID, result, err), nil
 	}

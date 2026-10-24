@@ -97,6 +97,14 @@ func (r *Run) InvokeEffectorNow(effector, entityID, commandID string, args map[s
 	return r.run.InvokeEffectorNow(effector, entityID, commandID, args)
 }
 
+func (r *Run) InjectFaultNow(entityID, faultID string, params map[string]any) (string, int64, error) {
+	return r.run.InjectFaultNow(entityID, faultID, params)
+}
+
+func (r *Run) InvokeAcknowledgedNow(effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, int64, error) {
+	return r.run.InvokeAcknowledgedNow(effector, entityID, commandID, args)
+}
+
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	return r.run.RetireEntity(entityID, reason, atNS)
 }

@@ -12,6 +12,7 @@ const (
 	pacedChunks    = int64(30)
 	unpacedChunks  = int64(20)
 	jobCommandBase = "job-"
+	nowCommandBase = "job-now-"
 )
 
 func PlanScenario(req JobRequest, adapterID string, startNS int64) model.Scenario {
@@ -104,4 +105,8 @@ func invokeCommand(call JobCall, index int, startNS int64) model.ScenarioCommand
 		"effector": call.Effector, "entity_id": call.EntityID, "command_id": fmt.Sprintf("%s%d", jobCommandBase, index+1),
 		"args": args, "at_ns": startNS + call.AtS*nsPerSecond,
 	}}
+}
+
+func ImmediateCommandID(n int) string {
+	return fmt.Sprintf("%s%d", nowCommandBase, n)
 }

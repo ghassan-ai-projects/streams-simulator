@@ -29,12 +29,21 @@ func TestACallOutcomeKeepsTheReasonOnlyForARefusal(t *testing.T) {
 	}
 }
 
-func TestOnlyRunningAndStoppingJobsAreActive(t *testing.T) {
+func TestOnlyRunningPausedAndStoppingJobsAreActive(t *testing.T) {
 	t.Parallel()
-	active := map[JobState]bool{JobRunning: true, JobStopping: true, JobCompleted: false, JobStopped: false, JobFailed: false}
+	active := map[JobState]bool{JobRunning: true, JobPaused: true, JobStopping: true, JobCompleted: false, JobStopped: false, JobFailed: false}
 	for state, want := range active {
 		if JobActive(state) != want {
 			t.Fatalf("%s active = %v, want %v", state, JobActive(state), want)
 		}
+	}
+}
+
+func TestAnImmediateCallOutcomeIsFlaggedAndKeepsTheTimeItWasApplied(t *testing.T) {
+	t.Parallel()
+	got := NewImmediateCallOutcome(42, "e", "f", &model.EffectorAcknowledgement{Accepted: true, EffectETANS: 7})
+	want := JobCallOutcome{AtS: 42, EntityID: "e", Effector: "f", Accepted: true, EffectETANS: 7, Immediate: true}
+	if got != want {
+		t.Fatalf("outcome = %+v, want %+v", got, want)
 	}
 }

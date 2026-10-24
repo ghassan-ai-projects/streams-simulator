@@ -21,6 +21,8 @@ type JobCallOutcome = rules.JobCallOutcome
 
 type JobState = rules.JobState
 
+type JobImmediate = rules.JobImmediate
+
 type Nameplate = rules.Nameplate
 
 type EffectorInfo = rules.EffectorInfo
@@ -31,8 +33,11 @@ const (
 	CodeCapabilityDenied = rules.CodeCapabilityDenied
 	CodeNotImplemented   = rules.CodeNotImplemented
 	CodeJobActive        = rules.CodeJobActive
+	CodeJobNotRunning    = rules.CodeJobNotRunning
+	CodeJobNotPaused     = rules.CodeJobNotPaused
 
 	JobRunning   = rules.JobRunning
+	JobPaused    = rules.JobPaused
 	JobStopping  = rules.JobStopping
 	JobCompleted = rules.JobCompleted
 	JobStopped   = rules.JobStopped

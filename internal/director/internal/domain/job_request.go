@@ -28,7 +28,10 @@ type JobRequest struct {
 	Calls     []JobCall  `json:"calls"`
 }
 
-const maxPlanSeconds = int64(1) << 32
+const (
+	maxPlanSeconds = int64(1) << 32
+	rateProblem    = "rate must be a finite number, 0 or more"
+)
 
 func CheckJob(req JobRequest) error {
 	for _, problem := range []string{req.checkHeader(), req.checkFaults(), req.checkCalls()} {
@@ -47,8 +50,8 @@ func (req JobRequest) checkHeader() string {
 		return "seed must be 0 or more"
 	case req.DurationS <= 0 || req.DurationS > maxPlanSeconds:
 		return "duration_s must be a positive number of seconds"
-	case req.Rate < 0 || math.IsNaN(req.Rate) || math.IsInf(req.Rate, 0):
-		return "rate must be a finite number, 0 or more"
+	case !validRate(req.Rate):
+		return rateProblem
 	}
 	return ""
 }
@@ -81,4 +84,8 @@ func (req JobRequest) checkAction(entityID, nameField, name string, atS int64) s
 		return "at_s must be within the run, 0 to duration_s"
 	}
 	return ""
+}
+
+func validRate(rate float64) bool {
+	return rate >= 0 && !math.IsNaN(rate) && !math.IsInf(rate, 0)
 }

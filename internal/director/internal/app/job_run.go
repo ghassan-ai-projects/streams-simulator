@@ -12,6 +12,7 @@ func (d *Director) runJob(j *job) {
 	defer close(j.done)
 	defer j.cancel()
 	outcome, err := j.run.ExecuteScenarioWith(j.ctx, &j.scenario, j.hooks())
+	j.closeImmediate()
 	if err != nil {
 		d.failJob(j, fmt.Errorf("job failed: %w", err))
 		return

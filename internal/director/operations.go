@@ -28,6 +28,24 @@ func (d *Director) StopJob(worldID string) (JobStatus, error) { return d.impl.St
 
 func (d *Director) ListJobs() []JobStatus { return d.impl.ListJobs() }
 
+func (d *Director) PauseJob(worldID string) (JobStatus, error) { return d.impl.PauseJob(worldID) }
+
+func (d *Director) ResumeJob(worldID string) (JobStatus, error) { return d.impl.ResumeJob(worldID) }
+
+func (d *Director) StepJob(worldID string) (JobStatus, error) { return d.impl.StepJob(worldID) }
+
+func (d *Director) SetJobRate(worldID string, rate float64) (JobStatus, error) {
+	return d.impl.SetJobRate(worldID, rate)
+}
+
+func (d *Director) JobInjectFault(worldID, entityID, fault string) (JobImmediate, error) {
+	return d.impl.JobInjectFault(worldID, entityID, fault)
+}
+
+func (d *Director) JobInvokeEffector(worldID, entityID, effector string, args map[string]any) (JobImmediate, error) {
+	return d.impl.JobInvokeEffector(worldID, entityID, effector, args)
+}
+
 func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, await bool) (map[string]any, error) {
 	return d.impl.Advance(ctx, worldID, toNS, await)
 }

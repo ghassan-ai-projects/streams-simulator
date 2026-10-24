@@ -14,6 +14,7 @@ import (
 
 const (
 	jobRunning   = `{"world_id":"w-1","run_id":"r-1","state":"running","calls":[]}`
+	jobPaused    = `{"world_id":"w-1","run_id":"r-1","state":"paused","calls":[]}`
 	jobStopping  = `{"world_id":"w-1","run_id":"r-1","state":"stopping","calls":[]}`
 	jobCompleted = `{"world_id":"w-1","run_id":"r-1","state":"completed","calls":[]}`
 	jobFailed    = `{"world_id":"w-1","run_id":"r-1","state":"failed","failure":"job failed","calls":[]}`
@@ -32,8 +33,15 @@ func jobHarness(t *testing.T) *harness {
 }
 
 func jobArguments(action string) map[string]any {
-	if action == "job.list" {
+	switch action {
+	case "job.list":
 		return nil
+	case "job.rate":
+		return map[string]any{"world_id": "w-1", "rate": 2.0}
+	case "job.inject_fault":
+		return map[string]any{"world_id": "w-1", "entity_id": "e", "fault": "f"}
+	case "job.invoke_effector":
+		return map[string]any{"world_id": "w-1", "entity_id": "e", "effector": "x"}
 	}
 	return map[string]any{"world_id": "w-1"}
 }
@@ -70,6 +78,14 @@ func TestEveryJobResultSettlesTheRunningFlagOfItsWorld(t *testing.T) {
 	}{
 		{"status of a running job", "job.status", jobRunning, true},
 		{"status of a stopping job", "job.status", jobStopping, true},
+		{"status of a paused job", "job.status", jobPaused, true},
+		{"pause of a running job", "job.pause", jobPaused, true},
+		{"resume of a paused job", "job.resume", jobRunning, true},
+		{"step of a paused job", "job.step", jobPaused, true},
+		{"a rate change", "job.rate", jobRunning, true},
+		{"an immediate fault", "job.inject_fault", `{"world_id":"w-1","state":"paused","fault_id":"f-1","calls":[]}`, true},
+		{"an immediate call on a job that had just finished", "job.invoke_effector", jobCompleted, false},
+		{"a pause that found the job finished", "job.pause", jobCompleted, false},
 		{"status of a completed job", "job.status", jobCompleted, false},
 		{"status of a stopped job", "job.status", jobStopped, false},
 		{"status of a failed job", "job.status", jobFailed, false},

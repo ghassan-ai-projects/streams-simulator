@@ -66,6 +66,12 @@ func registerJobTools(s *mcp.Server, d directorTools) {
 	addTool(s, toolDef{name: "sim.job.start", description: "Start a run plan as a paced, stoppable job on a new world; returns at once.", schema: toolSchema("sim.job.start"), handler: d.handleJobStart})
 	addTool(s, toolDef{name: "sim.job.status", description: "The job on a world: state, simulated time reached, requested end, effector call outcomes.", schema: toolSchema("sim.job.status"), handler: d.handleJobStatus})
 	addTool(s, toolDef{name: "sim.job.stop", description: "Ask a job to end early; the run is closed with the commands executed so far.", schema: toolSchema("sim.job.stop"), handler: d.handleJobStop})
+	addTool(s, toolDef{name: "sim.job.pause", description: "Freeze a job at its next command boundary; returns once its simulated clock stands still.", schema: toolSchema("sim.job.pause"), handler: d.handleJobPause})
+	addTool(s, toolDef{name: "sim.job.resume", description: "Let a paused job go on at its rate from now; pacing does not catch up for the paused time.", schema: toolSchema("sim.job.resume"), handler: d.handleJobResume})
+	addTool(s, toolDef{name: "sim.job.step", description: "Release a paused job through exactly one clock chunk, then pause it again.", schema: toolSchema("sim.job.step"), handler: d.handleJobStep})
+	addTool(s, toolDef{name: "sim.job.rate", description: "Set a job's pacing rate (simulated seconds per wall second, 0 as fast as possible) from the instant it has reached.", schema: toolSchema("sim.job.rate"), handler: d.handleJobRate})
+	addTool(s, toolDef{name: "sim.job.inject_fault", description: "Inject a fault into a running or paused job now, at its current simulated clock; recorded in the command log.", schema: toolSchema("sim.job.inject_fault"), handler: d.handleJobInjectFault})
+	addTool(s, toolDef{name: "sim.job.invoke_effector", description: "Invoke an effector in a running or paused job now, at its current simulated clock; the outcome is recorded as an immediate call.", schema: toolSchema("sim.job.invoke_effector"), handler: d.handleJobInvokeEffector})
 	addTool(s, toolDef{name: "sim.job.list", description: "Every job started since the director began, finished ones included.", schema: toolSchema("sim.job.list"), handler: d.handleJobList})
 }
 

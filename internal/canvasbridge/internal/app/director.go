@@ -103,7 +103,7 @@ func (b *Bridge) track(action string, args map[string]any, structured json.RawMe
 		delete(b.running, id)
 	case "world.destroy":
 		delete(b.running, id)
-	case "job.start", "job.status", "job.stop", "job.list":
+	case "job.start", "job.status", "job.stop", "job.list", "job.pause", "job.resume", "job.step", "job.rate", "job.inject_fault", "job.invoke_effector":
 		b.settleJobs(structured)
 	}
 }

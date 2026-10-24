@@ -28,6 +28,8 @@ const (
 	CodeCompositionInvalid  Code = "composition_invalid"
 	CodeNoLibrary           Code = "no_component_library"
 	CodeJobActive           Code = "job_active"
+	CodeJobNotRunning       Code = "job_not_running"
+	CodeJobNotPaused        Code = "job_not_paused"
 )
 
 type ToolError struct {

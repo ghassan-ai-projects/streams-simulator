@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A running job can be paused, stepped, re-rated and given commands now (control-plane round 3b, audit F08).** The director's
+  job gains the simulator-owned controls `sim.job.pause`, `sim.job.resume`, `sim.job.step`, `sim.job.rate`,
+  `sim.job.inject_fault` and `sim.job.invoke_effector`, and the canvas bridge the matching `job.*` actions. A paused job
+  (`paused` is a new job state and counts as active) parks at its next command boundary; resuming re-anchors the wall pacer so
+  simulated time continues at the configured rate instead of catching up; a step releases one clock chunk; a rate change
+  re-anchors at the reached instant. The immediate commands run at the run's current clock through the run's own command
+  methods (new `InjectFaultNow` and `InvokeAcknowledgedNow`), so they enter the command log in execution order and replay;
+  a refused immediate effector call is a recorded `calls[]` outcome flagged `immediate`. Pause, step and rate never reach the
+  world: a plain run and a run with pauses, steps and rate changes have the same trace digest and command log. New refusal
+  codes are `job_not_running` and `job_not_paused`.
+
 - **The canvas bridge exposes the jobs (control-plane round 2.3).** `job.start`, `job.status`, `job.stop` and `job.list` map to the
   director's `sim.job.*` tools. A started job's world is tracked as running like a created world, every job result settles the
   running flag of its world, and the workspace listing asks a running director for its jobs, so a job that finished while no

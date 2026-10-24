@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
@@ -16,13 +17,33 @@ import (
 
 const pondEntity = "site-a/pond-1"
 
+type anchor struct {
+	elapsedNS int64
+	rate      float64
+}
+
 type gatedPacer struct {
 	asked chan int64
 	gate  chan struct{}
+
+	mu      sync.Mutex
+	anchors []anchor
 }
 
 func newGatedPacer() *gatedPacer {
 	return &gatedPacer{asked: make(chan int64, 1024), gate: make(chan struct{}, 1024)}
+}
+
+func (p *gatedPacer) Reanchor(simElapsedNS int64, rate float64) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.anchors = append(p.anchors, anchor{simElapsedNS, rate})
+}
+
+func (p *gatedPacer) reanchored() []anchor {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return append([]anchor{}, p.anchors...)
 }
 
 func (p *gatedPacer) WaitUntil(ctx context.Context, simElapsedNS int64) error {
@@ -42,6 +63,8 @@ func (p *gatedPacer) release(n int) {
 }
 
 type freePacer struct{}
+
+func (freePacer) Reanchor(int64, float64) {}
 
 func (freePacer) WaitUntil(ctx context.Context, _ int64) error {
 	if err := ctx.Err(); err != nil {
@@ -127,4 +150,20 @@ func requireVerifies(t *testing.T, d *Director, worldID string) {
 	if err != nil || res["matches"] != true {
 		t.Fatalf("verify = %v, %v, want the run to replay to the same trace", res, err)
 	}
+}
+
+func requireReplaysFromTheRunFile(t *testing.T, d *Director, worldID string) *model.RunArtifact {
+	t.Helper()
+	path := filepath.Join(d.OutDir, worldID, model.FileRunArtifact)
+	res, err := run.ReplayFile(t.Context(), path, run.Directories{Domains: testsupport.DomainsDir(), Adapters: testsupport.AdaptersDir()})
+	art := loadRunArtifact(t, d, worldID)
+	if err != nil || !res.Matches || res.GotDigest != art.ExpectedTraceDigest {
+		t.Fatalf("replay from run.json = %+v, %v, want the recorded trace digest %s", res, err, art.ExpectedTraceDigest)
+	}
+	return art
+}
+
+func contextWithCancel(t *testing.T) (context.Context, context.CancelFunc) {
+	t.Helper()
+	return context.WithCancel(t.Context())
 }
