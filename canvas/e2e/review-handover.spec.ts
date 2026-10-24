@@ -112,8 +112,8 @@ test("a run that is still going cannot be compared or exported, and the binary s
   const asked = body.result.open_questions.find((question) =>
     ["evaluate_unsealed", "run_not_ended"].includes(question.code),
   );
-  expect(asked?.message).toBeTruthy();
-  await expect(compare).toHaveAttribute("title", asked?.message ?? "");
+  expect(asked?.message).toMatch(/^The run has not ended/);
+  await expect(compare).toHaveAttribute("title", /^The run has not ended/);
   await expect(page.getByRole("button", { name: "Export handover" })).toHaveAttribute("aria-disabled", "true");
   const refused = await page.request.post("/api/actions/run.compare", { data: { args: { a: world, b: world } } });
   expect(refused.ok()).toBe(false);
