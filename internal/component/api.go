@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/files"
 	specs "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -21,6 +22,16 @@ type Fit = layer.Fit
 type ExampleSummary = layer.ExampleSummary
 
 type NewPlant = layer.NewPlant
+
+type DomainAssumptions = layer.Assumptions
+
+type AssumptionsInput = layer.AssumptionsInput
+
+type TwinFiles = layer.TwinFiles
+
+type DomainLineage = layer.Lineage
+
+type WorkspaceDirs = files.WorkspaceDirs
 
 var (
 	ErrUnknownExample = layer.ErrUnknownExample

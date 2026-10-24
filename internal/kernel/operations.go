@@ -34,6 +34,10 @@ func Names(dir string) ([]string, error) {
 	return files.Names(dir)
 }
 
+func DirectoryNames(dir string) ([]string, error) {
+	return files.DirectoryNames(dir)
+}
+
 func PrivateDir(dir string) error {
 	return files.PrivateDir(dir)
 }

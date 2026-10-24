@@ -130,8 +130,18 @@ func (b *Bridge) domainFlags(action domain.Action) []string {
 		return []string{"--domains-dir", dir, "--adapters-dir", b.settings.AdaptersDir}
 	case action.Domains:
 		return []string{"--domains-dir", dir}
+	case action.Folders:
+		return b.folderFlags(dir)
 	}
 	return nil
+}
+
+func (b *Bridge) folderFlags(domainsDir string) []string {
+	flags := []string{"--domains-dir", domainsDir}
+	for _, folder := range [][2]string{{"--kinds-dir", "kinds"}, {"--twins-dir", "twins"}, {"--compositions-dir", "compositions"}, {"--runs-dir", "runs"}} {
+		flags = append(flags, b.workspaceDirFlag(folder[0], folder[1])...)
+	}
+	return flags
 }
 
 func (b *Bridge) libraryFlags() []string {

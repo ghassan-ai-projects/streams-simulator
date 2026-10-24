@@ -70,6 +70,10 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliLint = Action{Name: "domain.lint", Kind: KindCLI, Command: []string{"domain", "lint"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "hours", Flag: "--hours", Shape: ShapeNum}}}
+	cliAssumptions = Action{Name: "domain.assumptions", Kind: KindCLI, Command: []string{"domain", "assumptions"}, Library: true, Kinds: true,
+		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "twin", Flag: "--twin", Shape: ShapePath, Class: ClassTwin}}}
+	cliLineage = Action{Name: "domain.lineage", Kind: KindCLI, Command: []string{"domain", "lineage"}, Library: true, Folders: true,
+		CLIArgs: []CLIArg{{Key: "domain", Flag: "--domain", Shape: ShapeText}}}
 	cliVerify = Action{Name: "run.verify", Kind: KindCLI, Command: []string{"verify"}, Catalog: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}
 	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"}, Catalog: true,

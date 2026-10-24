@@ -4,6 +4,20 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Where a plant comes from and what it assumes (control-plane round R2, audit F22, F24, F25, F26, OP08).** Two read-only
+  commands, both validated against a new embedded contract before they print. `streamsim domain assumptions <domain>
+  [--twin <choices> --kinds-dir <dir>]` (`domain-assumptions-v0.1`) states per reading its instrument (id, version, digest),
+  range, resolution, noise and cadence and per command its response, gain and time constant, where each fact is recorded
+  (`composition`, `twin_choices`, `domain_file`), whether a twin choice equals what `kind twin --suggest` proposes, and a
+  `not_modeled` list of stable codes (the twin allow-lists, first-order responses only, no clamp, no calibration evidence).
+  Twin choices that no longer produce the domain are reported `out_of_sync` and nothing is taken from them. `streamsim
+  domain lineage --domains-dir <dir> [--kinds-dir --twins-dir --compositions-dir --runs-dir] [--domain <id>]`
+  (`domain-lineage-v0.1`) says per plant which composition or twin produces it and whether it still does (both are
+  composed or scaffolded again in memory and their digest compared), the kind files it implements with their digests, the
+  runs that used it and whether they used its current version (`run.json` and the first observer journal line only), and a
+  computed edit verdict with the route the owner offers; per kind file it lists `twins_including` and `has_own_twin`. The
+  bridge gains `domain.assumptions` and `domain.lineage`. `kernel` gains `DirectoryNames`. No gate was changed.
+
 - **An Evaluate job no longer shows its plan while it runs (truth boundary fix).** Round 4a's job status listed the planned
   `faults` and `perturbations`, which for an Evaluate job (`explore` false) are the injected cause and reached the browser
   through the bridge before the run was sealed. Every job status the director returns (`sim.job.start`, `status`, `list`,

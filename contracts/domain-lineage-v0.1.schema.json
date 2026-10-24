@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/domain-lineage-v0.1.schema.json",
+  "title": "Streams Simulator Domain Lineage v0.1",
+  "description": "The document `streamsim domain lineage` prints: for each plant (domain) of a workspace, the composition or twin choices that produce it and whether they still produce this exact domain, the device kind files it implements, the runs that used it and whether they used its current version, and which route the owner offers to edit it. Also, for each device kind file, the twins that include it. A pure function of the workspace folders; it reads run.json and the first observer journal line of a run, never a sealed file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plants", "device_kinds", "unreadable"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "plants": {"type": "array", "items": {"$ref": "#/$defs/plant"}},
+    "device_kinds": {"type": "array", "items": {"$ref": "#/$defs/device_kind"}},
+    "unreadable": {
+      "type": "array",
+      "description": "Files of the optional folders the binary could not use. They are named, never dropped silently.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "code", "message"],
+        "properties": {
+          "file": {"type": "string", "minLength": 1},
+          "code": {"enum": ["kind_file_unreadable", "twin_file_unreadable", "composition_file_unreadable", "run_unreadable"]},
+          "message": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "plant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "device_kinds", "runs", "editable"],
+      "properties": {
+        "domain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "title", "digest", "file"],
+          "properties": {
+            "id": {"type": "string", "minLength": 1},
+            "version": {"type": "string", "minLength": 1},
+            "title": {"type": "string"},
+            "digest": {"$ref": "#/$defs/digest"},
+            "file": {"type": "string", "minLength": 1, "description": "Workspace-relative path, domains/<name>."}
+          }
+        },
+        "composition": {"$ref": "#/$defs/source"},
+        "twin": {"$ref": "#/$defs/source"},
+        "device_kinds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "status"],
+            "properties": {
+              "kind": {"type": "string", "minLength": 1, "description": "The kind name the domain implements."},
+              "status": {"enum": ["found", "missing"]},
+              "file": {"type": "string"},
+              "digest": {"$ref": "#/$defs/digest"}
+            }
+          }
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "recorded", "domain_version", "domain_digest", "same_as_current"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "mode": {"type": "string"},
+              "recorded": {"type": "boolean", "description": "run.json exists; otherwise the domain comes from the first line of the observer journal."},
+              "domain_version": {"type": "string"},
+              "domain_digest": {"$ref": "#/$defs/digest"},
+              "same_as_current": {"type": "boolean", "description": "false: the run used an older or different version of this plant."}
+            }
+          }
+        },
+        "editable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["verdict", "reason", "route"],
+          "properties": {
+            "verdict": {"enum": ["editable", "read_only"]},
+            "reason": {"enum": ["composition", "composition_out_of_sync", "twin", "twin_out_of_sync", "example", "hand_authored"]},
+            "route": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "sentence"],
+              "properties": {
+                "code": {"enum": ["edit_composition", "recompose", "open_device_behavior", "rescaffold_twin", "create_from_example", "copy_domain_file"]},
+                "sentence": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "id", "version", "status"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string"},
+        "status": {"enum": ["in_sync", "out_of_sync", "does_not_compose", "does_not_scaffold", "kind_files_missing"]},
+        "produces_digest": {"$ref": "#/$defs/digest"},
+        "reason": {"type": "string"}
+      }
+    },
+    "device_kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "file", "digest", "twins_including", "has_own_twin", "implemented_by"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "file": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"},
+        "twins_including": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["twin", "file", "kinds"],
+            "properties": {
+              "twin": {"type": "string", "minLength": 1},
+              "file": {"type": "string", "minLength": 1},
+              "kinds": {"type": "integer", "minimum": 1, "description": "How many kinds that twin holds."}
+            }
+          }
+        },
+        "has_own_twin": {"type": "boolean", "description": "A twin holds this kind alone. False with a non-empty twins_including: only included in another twin."},
+        "implemented_by": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

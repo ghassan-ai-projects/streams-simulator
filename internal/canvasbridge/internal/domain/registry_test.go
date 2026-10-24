@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestEveryActionNamesItsToolOrCommandOnce(t *testing.T) {
@@ -226,5 +228,45 @@ func TestRunCompareRefusesAMissingSideAnUnknownKeyAndARunThatClimbs(t *testing.T
 		if _, err := compare.Argv(args); !errors.Is(err, ErrBadArguments) {
 			t.Errorf("%s: %v, want ErrBadArguments", name, err)
 		}
+	}
+}
+
+func TestDomainAssumptionsAndLineageAreReadOnlyCommandsWithTheirOwnArguments(t *testing.T) {
+	t.Parallel()
+	assumptions, err := Lookup("domain.assumptions")
+	if err != nil || assumptions.Kind != KindCLI || assumptions.Mutating || assumptions.Etag || !reflect.DeepEqual(assumptions.Command, []string{"domain", "assumptions"}) {
+		t.Fatalf("domain.assumptions = %+v, %v, want a read-only CLI action on domain assumptions", assumptions, err)
+	}
+	got, err := assumptions.Argv(map[string]any{"path": testsupport.WorkspaceDomain("fan"), "twin": "twins/fan.twin.json"})
+	want := []ArgvPart{{Literal: "domain"}, {Literal: "assumptions"}, {Path: testsupport.WorkspaceDomain("fan")}, {Literal: "--twin"}, {Path: "twins/fan.twin.json"}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("assumptions argv = %+v, %v, want %+v", got, err, want)
+	}
+	lineage, err := Lookup("domain.lineage")
+	if err != nil || lineage.Mutating || !lineage.Folders || !lineage.Library {
+		t.Fatalf("domain.lineage = %+v, %v, want a read-only action over every workspace folder", lineage, err)
+	}
+	if got, err := lineage.Argv(map[string]any{"domain": "factory-utilities"}); err != nil ||
+		!reflect.DeepEqual(got, []ArgvPart{{Literal: "domain"}, {Literal: "lineage"}, {Literal: "--domain"}, {Literal: "factory-utilities"}}) {
+		t.Fatalf("lineage argv = %+v, %v", got, err)
+	}
+}
+
+func TestDomainAssumptionsRefuseAMissingDomainAWrongClassOfTwinAndAnUnknownKey(t *testing.T) {
+	t.Parallel()
+	assumptions, _ := Lookup("domain.assumptions")
+	for name, args := range map[string]map[string]any{
+		"no domain":             {"twin": "twins/fan.twin.json"},
+		"a twin that is a kind": {"path": testsupport.WorkspaceDomain("fan"), "twin": "kinds/fan.kind.json"},
+		"a domain that climbs":  {"path": testsupport.WorkspaceFile("domains", "../x.domain.json")},
+		"an unknown key":        {"path": testsupport.WorkspaceDomain("fan"), "out": "x"},
+	} {
+		if _, err := assumptions.Argv(args); !errors.Is(err, ErrBadArguments) {
+			t.Errorf("%s: %v, want ErrBadArguments", name, err)
+		}
+	}
+	lineage, _ := Lookup("domain.lineage")
+	if _, err := lineage.Argv(map[string]any{"domain": "--out"}); !errors.Is(err, ErrBadArguments) {
+		t.Errorf("a flag as a domain id: %v, want ErrBadArguments", err)
 	}
 }

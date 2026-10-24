@@ -98,6 +98,12 @@
       "$ref": "#/$defs/run_comparison"
     },
     {
+      "$ref": "#/$defs/domain_assumptions"
+    },
+    {
+      "$ref": "#/$defs/domain_lineage"
+    },
+    {
       "$ref": "#/$defs/plantwire_node"
     },
     {
@@ -914,6 +920,37 @@
         "markdown": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "domain_assumptions": {
+      "type": "object",
+      "description": "domain assumptions: what a domain or twin declares about each reading and command and what it does not model; its full shape is the domain-assumptions-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "domain",
+        "origin",
+        "kinds",
+        "not_modeled"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "domain_lineage": {
+      "type": "object",
+      "description": "domain lineage: for each plant of a workspace its composition or twin, device kind files, runs and edit route; its full shape is the domain-lineage-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "plants",
+        "device_kinds",
+        "unreadable"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
         }
       }
     },

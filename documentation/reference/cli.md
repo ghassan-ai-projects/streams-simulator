@@ -184,6 +184,44 @@ streamsim domain compose <composition.json> [--out <file>] [--components-dir <di
 
 It prints `{id, digest, channels, faults, effectors}` as `domain validate` does, plus `composed` (the file written). A composition that breaks a library rule fails with `composition_invalid`, each issue at its pointer in the composition (`/equipment/0/preset`, `/connections/1`); a composed domain that fails its own contract fails with `domain_invalid`.
 
+### `domain assumptions`
+
+States what a domain, or a twin scaffolded from kind files, assumes, so a reader can judge a default before trusting it. It reads files only and prints one deterministic document ([`domain-assumptions-v0.1`](../../contracts/domain-assumptions-v0.1.schema.json)), validated against that contract before it is printed.
+
+```text
+streamsim domain assumptions <domain.json> [--twin <choices.json> --kinds-dir <dir>...] [--components-dir <dir>]...
+```
+
+- `--twin <choices.json>` — the twin choices the domain was scaffolded from (`kind twin --choices`), with the kind files they name from `--kinds-dir` (without `--twin`, `--kinds-dir` is ignored). The choices are scaffolded again in memory: only if they produce this exact domain (same digest) is the twin `in_sync` and does the document take anything from them; otherwise the origin stays `domain`, the twin is reported `out_of_sync` and nothing is borrowed from it.
+- `--components-dir <dir>` — a customer library directory, repeatable (see `domain compose`).
+
+The document holds `domain` (`id`, `version`, `digest`), `origin` (`kind` is `twin`, `composition` when the instances carry component provenance, or `domain`), `kinds[]` and `not_modeled[]`.
+
+- **Readings** (`kinds[].readings[]`): `channel`, `unit`, `value_type`, `range`, `resolution`, `initial` (the true value the observed state starts at), `noise` (`model`, `sigma`), `cadence` (`mode`, `period_s`, `deadband`), `availability`, `absence`, `tag`, the `instrument` (`id`, `version`, `ref`, `digest`) and its `basis`: `library_instrument` (an instrument of the component library), `plain_channel` (a twin choice of `none`: the reading reaches the consumer as the true value) or `domain_declared` (the file declares the channel and records no instrument). `recorded_in` says where the fact is written: `composition` (the instance provenance of a composed domain), `twin_choices` or `domain_file`.
+- **Suggestions.** `equals_binary_suggestion` appears on a reading and on a command only for a twin in sync, and says the recorded choice equals what `kind twin --suggest` proposes for the kind files. The choices file does not record whether a person chose or merely accepted a default, so the document never says which; it states the comparison, which is a fact.
+- **Commands** (`kinds[].commands[]`): `name`, `risk_class`, `safe_stop`, `arguments[]` (`name`, `type`, `minimum`, `maximum`), `response` (`direct`, `first_order`, `none` or `fixed_safe_stop` from twin choices; `declared` when the domain file is the only source), `sets` (argument and state), `drives` (twin choices only: the driven `kind` and `metric`, `gain` and `time_constant_s`), `effect` (`dead_time_s`, `time_constant_s`, `state_changes`), `acknowledgement` (latency and failure modes), `lease` and a `statement` sentence. `dynamics[]` states each first-order lag with its `gain`, `time_constant_s`, `inputs` and `clamp`; `faults[]` the declared faults.
+- **Not modeled** (`not_modeled[]`: `code`, `scope`, `sentence`). Domain-wide for a twin: `kind_file_members_not_reproduced` (a twin reproduces only a kind file's `kind`, `metrics` (`name`, `data_type`, `unit`, `eu_range`, `resolution`, `writable`) and `commands` (`name`, `args_schema`, `risk_class`, `safe_stop`)), `first_order_response_only` and `device_behavior_not_modeled` (firmware, scheduling, wire timing); for any domain with a library instrument `instrument_semantics_unchecked` (an instrument is checked for unit and range only) and always `no_calibration_evidence`. Per reading, dynamics or command (scope `kind.name`): `no_measurement_noise`, `saturation_not_declared` (a first-order lag with no `clamp`), `command_changes_nothing`, `safe_stop_is_a_step` and `acknowledgement_never_fails`. A conformance check, a plausibility check (`domain lint`), a calibration and a hardware validation are different claims; this document makes none of the last two.
+
+A domain that is not JSON or breaks its schema fails with `domain_invalid`; twin choices or a kind file that break theirs fail with `kind_failed` (`twin_kind_missing` when a kind file is not found), a missing file with `file_not_found`.
+
+### `domain lineage`
+
+Says how each plant of a workspace is produced and what depends on it. It reads the workspace folders and prints one deterministic document ([`domain-lineage-v0.1`](../../contracts/domain-lineage-v0.1.schema.json)): no wall time, plants ordered by id, kind files by file name, runs by run id.
+
+```text
+streamsim domain lineage --domains-dir <dir> [--kinds-dir <dir>] [--twins-dir <dir>] [--compositions-dir <dir>] [--runs-dir <dir>] [--domain <id>] [--components-dir <dir>]...
+```
+
+A folder that is not given is not read; one that is given and missing fails with `file_not_found`. `--domain <id>` keeps one plant (and the kind files it implements); an id no domain file holds fails with `domain_not_found`. A domain file that breaks its schema fails with `domain_invalid`.
+
+- **Plant** (`plants[]`): `domain` (`id`, `version`, `title`, `digest`, `file` as `domains/<name>`). `composition` and `twin` are the file of the same id in `compositions/` or `twins/`, with `status`: `in_sync` (it produces this exact domain digest now: the composition is composed, the twin scaffolded again in memory), `out_of_sync` (it produces another digest, `produces_digest`), `does_not_compose` or `does_not_scaffold` (it is refused, `reason` says why) or, for a twin, `kind_files_missing` (the kind files it names are not in `kinds/`). `device_kinds[]` lists each kind the domain implements with its kind file and digest (the digest `kind validate` prints as `kind_digest`) or `status: missing`.
+- **Runs** (`plants[].runs[]`): the runs whose recorded domain id is this plant, with `domain_version`, `domain_digest`, `recorded` (the domain comes from `run.json`; otherwise from the first line of the observer journal, for a run that has not ended) and `same_as_current`: `false` means the run used an older or different version of the plant. Only `run.json` and the first line of `journal.jsonl` are read; no sealed file is opened.
+- **Editable** (`plants[].editable`): `verdict` (`editable`, `read_only`), `reason` and the `route` the owner offers, `{code, sentence}`. `composition` (editable, `edit_composition`), `composition_out_of_sync` (editable, `recompose`), `twin` (read only, `open_device_behavior`), `twin_out_of_sync` (`rescaffold_twin`), `example` (the domain equals a shipped example composition composed now: `create_from_example`) and `hand_authored` (`copy_domain_file`). A domain keeps the first reason that holds, in that order.
+- **Device kinds** (`device_kinds[]`): each kind file with `twins_including` (every twin whose choices name the kind, with `kinds`, how many kinds that twin holds), `has_own_twin` (a twin of this kind alone exists) and `implemented_by` (domain ids). "Included in another twin" is a list entry; "has its own twin" is a separate flag.
+- **Unreadable** (`unreadable[]`: `file`, `code`, `message`): a kind, twin or composition file or a run folder the binary could not use (`kind_file_unreadable`, `twin_file_unreadable`, `composition_file_unreadable`, `run_unreadable`) is named, never dropped. A twin or composition whose id matches no domain file is not listed as a plant.
+
+Both commands are canvas bridge actions, read-only, answering with the CLI's document: `domain.assumptions` takes `{path, twin?}` (the workspace domain file and its `twins/` choices file; the workspace `kinds/` folder and component folders are passed) and `domain.lineage` takes `{domain?}` (every workspace folder that exists).
+
 ### `component`
 
 Lists, shows and validates the component library: equipment, instruments and vocabulary.

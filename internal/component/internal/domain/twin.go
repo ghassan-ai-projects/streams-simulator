@@ -39,18 +39,26 @@ type coupling struct {
 }
 
 func ScaffoldTwin(lib *Library, files map[string]map[string]any, raw []byte, source string) (*Composed, error) {
+	t, err := resolveTwin(lib, files, raw, source)
+	if err != nil {
+		return nil, err
+	}
+	return t.compose()
+}
+
+func resolveTwin(lib *Library, files map[string]map[string]any, raw []byte, source string) (*twinBuild, error) {
 	choices, err := parseTwinChoices(lib.contracts.twin, raw, source)
 	if err != nil {
 		return nil, err
 	}
 	t := &twinBuild{lib: lib, source: source, choices: choices, byName: map[string]*twinKind{}}
-	return t.compose(files)
-}
-
-func (t *twinBuild) compose(files map[string]map[string]any) (*Composed, error) {
 	if err := t.resolve(files); err != nil {
 		return nil, err
 	}
+	return t, nil
+}
+
+func (t *twinBuild) compose() (*Composed, error) {
 	composed, err := render(t.document(), t.source)
 	if err != nil {
 		return nil, err

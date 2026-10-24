@@ -138,6 +138,11 @@ Commands:
                                         kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
+  domain assumptions <domain> [--twin <choices> --kinds-dir]
+                                        What a domain or twin assumes (instruments, ranges, noise, responses)
+                                        and what it does not model; reads files only
+  domain lineage --domains-dir <dir>    How each plant is produced (composition or twin), its kind files,
+                                        runs and edit route (--kinds-dir --twins-dir --compositions-dir --runs-dir)
   kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
                                         against the plant wire kind schema (--twin: also what a twin needs)
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library

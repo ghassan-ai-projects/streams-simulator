@@ -38,6 +38,16 @@ var runComparison []byte
 
 func RunComparison() []byte { return runComparison }
 
+//go:embed domain-assumptions-v0.1.schema.json
+var domainAssumptions []byte
+
+//go:embed domain-lineage-v0.1.schema.json
+var domainLineage []byte
+
+func DomainAssumptions() []byte { return domainAssumptions }
+
+func DomainLineage() []byte { return domainLineage }
+
 func DomainSpec() []byte { return domainSpec }
 
 func OutputAdapter() []byte { return outputAdapter }
