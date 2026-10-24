@@ -79,7 +79,7 @@ test("a reload in the middle of a run brings back the banner, the progress and S
   await expect(panel.getByRole("button", { name: "Stop now" })).toBeVisible();
   await panel.getByRole("button", { name: "Stop now" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText(/^Stopped by operator at \d\d:\d\d:\d\d of 00:30:00$/)).toBeVisible();
+  await expect(page.getByText(/^Stopped by operator at \d\d:\d\d:\d\d of 00:30:00$/).first()).toBeVisible();
 });
 
 test("a run left running across a reload still ends by itself and opens as a complete run", async ({ page }) => {
@@ -119,7 +119,10 @@ test("Stop now before the end keeps a shorter run that says it was stopped, and 
   await expect(panel.getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await panel.getByRole("button", { name: "Stop now" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText(/^Stopped by operator at 00:[01]\d:\d\d of 00:30:00$/)).toBeVisible();
+  await expect(page.getByText(/^Stopped by operator at 00:[01]\d:\d\d of 00:30:00$/).first()).toBeVisible();
+  await expect(page.locator("[data-part='execution']")).toContainText(
+    /Stopped by operator at 00:[01]\d:\d\d of 00:30:00/,
+  );
   await expect(page.getByText("Did not finish", { exact: true })).toHaveCount(0);
   const slider = page.getByRole("slider", { name: "Playback time" });
   const longest = Number(await slider.getAttribute("max"));

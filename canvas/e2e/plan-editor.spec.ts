@@ -60,7 +60,8 @@ test("a named plan with a fault that recovers, a delivery condition and a call r
   const heading = page.getByRole("heading", { level: 1, name: /^Run w-/ });
   await expect(heading).toBeVisible();
   await expect(heading).toHaveAccessibleDescription(name);
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expect(page.getByTitle(name)).toBeVisible();
+  await expect(page.getByRole("region", { name: "This run" })).toContainText(name);
   await expect(page.getByRole("slider", { name: "Playback time" })).toHaveAttribute("max", "300", { timeout: 60_000 });
 
   await page.getByRole("button", { name: "Set up another run" }).click();

@@ -29,6 +29,7 @@ interface EffectorCall {
   readonly effector: string;
   readonly args: Readonly<Record<string, ArgValue>>;
   readonly outcome: string;
+  readonly applied: boolean;
   readonly immediate: boolean;
 }
 
@@ -60,6 +61,18 @@ export interface KpiRow {
   readonly mean: number;
   readonly min: number;
   readonly max: number;
+}
+
+export type ReplayStatus = "not_checked" | "reproduces" | "does_not_reproduce" | "incomplete";
+
+export interface ReportReplay {
+  readonly status: ReplayStatus;
+  readonly detail: string;
+}
+
+export interface OpenQuestion {
+  readonly code: string;
+  readonly message: string;
 }
 
 interface Termination {
@@ -97,6 +110,8 @@ export interface Report {
   readonly alarmActivations: readonly AlarmActivation[];
   readonly scoring: { readonly status: string; readonly reason: string } | null;
   readonly truthUnavailable: string;
+  readonly replay: ReportReplay;
+  readonly openQuestions: readonly OpenQuestion[];
 }
 
 export interface Replay {

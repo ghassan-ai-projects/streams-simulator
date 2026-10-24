@@ -45,6 +45,17 @@ export class RunLoads {
     this.refreshIfLive(worldId, session);
   }
 
+  async checkReplay(worldId: string, session: Operation): Promise<void> {
+    const outcome = await this.gateway.report(worldId, { replay: true });
+    if (!session.live()) return;
+    const state = this.host.snapshot();
+    if (!outcome.ok) {
+      this.host.set({ ...state, replayCheck: { phase: "failed", message: outcome.failure.diagnostic.message } });
+      return;
+    }
+    this.host.set({ ...state, replayCheck: { phase: "idle" }, report: { phase: "ready", value: outcome.value } });
+  }
+
   refreshIfLive(worldId: string, session: Operation): void {
     const state = this.host.snapshot();
     if (this.finals.refreshed || state.report.phase !== "ready" || state.report.value.ended) return;

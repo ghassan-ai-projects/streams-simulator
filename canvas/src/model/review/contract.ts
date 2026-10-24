@@ -3,7 +3,17 @@ export type { JournalEntry, Opening } from "./internal/playback";
 export type { Quality } from "../shared/quality";
 export type { ObservedRow } from "./internal/observedRows";
 export type { Trend } from "./internal/trend";
-export type { AlarmActivation, Badge, KpiRow, Replay, Report, VerifyState } from "./internal/report";
+export type {
+  AlarmActivation,
+  Badge,
+  KpiRow,
+  OpenQuestion,
+  Replay,
+  ReplayStatus,
+  Report,
+  ReportReplay,
+  VerifyState,
+} from "./internal/report";
 export type { ChipPlace } from "./internal/timeLayout";
 export type { EventMark, MarkKind, TimedBinding } from "./internal/timeline";
 export type { Rerun } from "./internal/rerun";
@@ -48,3 +58,25 @@ export type { TrendSpan, WindowChoice } from "./internal/trendWindow";
 export type { Plot } from "./internal/trendPlot";
 export type { Readout } from "./internal/trendReadout";
 export type { OverlayEvent, PlannedFault } from "./internal/trendOverlay";
+export type {
+  AlarmStats,
+  ComparabilityLimit,
+  ComparedAlarm,
+  ComparedAlarmSystem,
+  ComparedCall,
+  ComparedEnvironment,
+  ComparedFault,
+  ComparedKpi,
+  ComparedPerturbation,
+  ComparedRun,
+  Comparison,
+  Diff,
+  KpiStats,
+  Paired,
+  Presence,
+  Scope,
+  SystemCounts,
+} from "./internal/comparison";
+export type { ActionStory } from "./internal/actionStory";
+export type { PlanLane, PlanRow } from "./internal/comparePlan";
+export type { AlarmLine, KpiLine, SystemLine, Table } from "./internal/compareTables";

@@ -7,6 +7,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     watching: false,
     report: { phase: "ready", value: report },
     verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
+    replayCheck: { phase: "idle" },
     playback: { phase: "ready", records: report.counts.delivered ?? 0 },
     positionNs: 0,
     selected: null,

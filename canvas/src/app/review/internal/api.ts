@@ -4,6 +4,8 @@ import type { Store } from "../../shared";
 import type { ControlSession } from "./controlStore";
 import type { TwinSession } from "./twinStore";
 import type { WatchSession } from "./watchStore";
+import type { CompareSession } from "./compareStore";
+import type { HandoverSession } from "./handoverStore";
 import type { ReviewState } from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
@@ -11,12 +13,17 @@ export type { ReviewPlant } from "./reviewPlant";
 export type { ControlSession, ControlState } from "./controlStore";
 export type { TwinState } from "./twinStore";
 export type { WatchSession } from "./watchStore";
+export type { CompareState } from "./compareStore";
+export type { HandoverState } from "./handoverStore";
+export type { ReplayCheck } from "./reviewState";
 
 export interface ReviewSession extends Store<ReviewState> {
   readonly index: PlaybackIndex;
   readonly controls: ControlSession;
   readonly twin: TwinSession;
   readonly watchList: WatchSession;
+  readonly compare: CompareSession;
+  readonly handover: HandoverSession;
   open(worldId: string, known?: RunEntry): void;
   openLive(worldId: string, known?: RunEntry): void;
   watch(worldId: string, known?: RunEntry): void;
@@ -31,5 +38,6 @@ export interface ReviewSession extends Store<ReviewState> {
   select(entity: string | null): void;
   reveal(positionNs: number, entity: string): void;
   showTab(tab: ReviewState["tab"]): void;
+  checkReplay(): void;
   copyText(text: string): Promise<boolean>;
 }

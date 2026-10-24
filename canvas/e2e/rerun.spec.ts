@@ -74,7 +74,7 @@ test("another run set up from a stopped run repeats the length it was asked for,
   await panel.getByRole("button", { name: "Start the run" }).click();
   await expect(panel.getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByText(/^Stopped by operator at 00:[01]\d:\d\d of 00:30:00$/)).toBeVisible({
+  await expect(page.getByText(/^Stopped by operator at 00:[01]\d:\d\d of 00:30:00$/).first()).toBeVisible({
     timeout: 60_000,
   });
 

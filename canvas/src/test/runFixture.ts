@@ -123,6 +123,7 @@ export const report: Report = {
       effector: "start",
       args: { chiller_id: "CH-1", level: 0.5 },
       outcome: "applied · 300 ms",
+      applied: true,
       immediate: false,
     },
     {
@@ -131,6 +132,7 @@ export const report: Report = {
       effector: "stop",
       args: { chiller_id: "CH-1" },
       outcome: "refused: interlock",
+      applied: false,
       immediate: false,
     },
     {
@@ -139,15 +141,18 @@ export const report: Report = {
       effector: "stop",
       args: {},
       outcome: "accepted, no effect · silent_no_effect",
+      applied: false,
       immediate: false,
     },
-    { atNs: 1_500e9, entity: "CH-1", effector: "stop", args: {}, outcome: "refused", immediate: false },
+    { atNs: 1_500e9, entity: "CH-1", effector: "stop", args: {}, outcome: "refused", applied: false, immediate: false },
   ],
   kpis: [{ entity: "CH-1", state: "cop", mean: 5.95, min: 4.65, max: 8.85 }],
   alarms: { activations: 1, standing_at_end: 0 },
   alarmActivations: [],
   scoring: null,
   truthUnavailable: "",
+  replay: { status: "not_checked", detail: "" },
+  openQuestions: [],
 };
 
 export function blankReport(overrides: Partial<Report> = {}): Report {
@@ -181,6 +186,8 @@ export function blankReport(overrides: Partial<Report> = {}): Report {
     alarmActivations: [],
     scoring: null,
     truthUnavailable: "",
+    replay: { status: "not_checked", detail: "" },
+    openQuestions: [],
     ...overrides,
   };
 }

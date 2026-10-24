@@ -33,11 +33,11 @@ export type {
   SessionCheck,
 } from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";
-export type { ControlFailure, ReviewFailure, ReviewGateway, RunFollower, TwinFailure } from "./review";
+export type { ControlFailure, DocumentFailure, ReviewFailure, ReviewGateway, RunFollower, TwinFailure } from "./review";
 export type { SessionFailure, SessionGateway } from "./session";
 export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
 export type { Clock, Scheduler } from "./clock";
-export type { Clipboard, Location, PreferenceStore, SystemTheme } from "./browser";
+export type { Clipboard, FileSaver, Location, PreferenceStore, SystemTheme } from "./browser";
 export { failure, success } from "./shared";
 export type { ComposeSummary, Diagnostic, DomainDocument, FileContent, Outcome, PlantSource } from "./shared";
 

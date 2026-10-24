@@ -3,6 +3,7 @@ import type {
   ControlFailure,
   DeviceFailure,
   Diagnostic,
+  DocumentFailure,
   EditorFailure,
   LaunchFailure,
   LaunchStep,
@@ -121,6 +122,12 @@ export function controlFailure(error: RequestFailure): ControlFailure {
 }
 
 export function twinFailure(error: RequestFailure): TwinFailure {
+  if (error.kind !== "http") return unreached(error);
+  const kind = error.problem.status >= 500 ? "unavailable" : "refused";
+  return { kind, diagnostic: diagnostic(error.problem) };
+}
+
+export function documentFailure(error: RequestFailure): DocumentFailure {
   if (error.kind !== "http") return unreached(error);
   const kind = error.problem.status >= 500 ? "unavailable" : "refused";
   return { kind, diagnostic: diagnostic(error.problem) };

@@ -22,6 +22,7 @@ const setpoint = {
   effector: "set_setpoint",
   args: { tower_id: "CT-1", setpoint: 7 },
   outcome: "applied · 300 ms",
+  applied: true,
   immediate: false,
 };
 
@@ -31,6 +32,7 @@ const refused = {
   effector: "set_mode",
   args: { chiller_id: "CH-1", mode: "eco", forced: true },
   outcome: "refused: interlock",
+  applied: false,
   immediate: false,
 };
 

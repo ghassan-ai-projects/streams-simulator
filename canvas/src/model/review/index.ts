@@ -135,6 +135,20 @@ export {
   unfinishedTruthWords,
 } from "./internal/reportViews";
 export { rerunOf } from "./internal/rerun";
+export { storyOf, storyWindow } from "./internal/actionStory";
+export { planLanes } from "./internal/comparePlan";
+export { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "./internal/compareTables";
+export { referenceChoices, referenceRole, thisRunRole } from "./internal/compareChoices";
+export {
+  endedGate,
+  evidenceWords,
+  executionWords,
+  openedReplayWords,
+  purposeWords,
+  replayStatusWords,
+  scoringWords,
+  visibilityWords,
+} from "./internal/thisRun";
 export { firstEventNode } from "./internal/reviewAnchor";
 export { reviewView } from "./internal/reviewRows";
 export { alarmRow, modeWords } from "./internal/words";
@@ -153,6 +167,30 @@ export {
   runClock,
 } from "./internal/timeline";
 export type {
+  ActionStory,
+  AlarmLine,
+  KpiLine,
+  PlanLane,
+  PlanRow,
+  SystemLine,
+  Table,
+  AlarmStats,
+  ComparabilityLimit,
+  ComparedAlarm,
+  ComparedAlarmSystem,
+  ComparedCall,
+  ComparedEnvironment,
+  ComparedFault,
+  ComparedKpi,
+  ComparedPerturbation,
+  ComparedRun,
+  Comparison,
+  Diff,
+  KpiStats,
+  Paired,
+  Presence,
+  Scope,
+  SystemCounts,
   OverlayEvent,
   PlannedFault,
   Plot,
@@ -170,11 +208,14 @@ export type {
   JournalEntry,
   KpiRow,
   MarkKind,
+  OpenQuestion,
   Opening,
   ObservedRow,
   Quality,
   Replay,
+  ReplayStatus,
   Report,
+  ReportReplay,
   Rerun,
   TimedBinding,
   Trend,

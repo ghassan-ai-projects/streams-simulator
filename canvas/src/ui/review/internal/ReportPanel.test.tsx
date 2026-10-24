@@ -78,9 +78,7 @@ describe("report panel", () => {
     expect(within(screen.getByRole("region", { name: "True results" })).getByText("4.65 – 8.85")).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "True results" })).getByText("5.95")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        "Not scored: no outside system is connected to this run.",
-      ),
+      within(screen.getByRole("region", { name: "This run" })).getByText("Not scored: no outside system is connected"),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
@@ -92,6 +90,7 @@ describe("report panel", () => {
       effector: "start",
       args: {},
       outcome: "applied · 20 ms",
+      applied: true,
       immediate: true,
     };
     render(
@@ -115,7 +114,7 @@ describe("report panel", () => {
       />,
     );
     expect(within(screen.getByRole("region", { name: "Effector calls" })).getByText("None")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Scoring" })).getByText("scored")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "This run" })).getByText("Scored")).toBeInTheDocument();
   });
 
   it("marks the disturbance row the picked mark stands for, and no row otherwise", () => {
@@ -148,9 +147,7 @@ describe("report panel", () => {
       within(screen.getByRole("region", { name: "True results" })).getByText("Not available: the run is still sealed"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        "Not scored: no outside system is connected to this run.",
-      ),
+      within(screen.getByRole("region", { name: "This run" })).getByText("Not scored: no outside system is connected"),
     ).toBeInTheDocument();
   });
 
@@ -174,7 +171,7 @@ describe("report panel", () => {
 
   it("words the true results of a connected session as one, never as an Evaluate run", () => {
     render(<ReportPanel report={report} unit={() => ""} entity={null} connection="saved" />);
-    expect(screen.getByText(/^Connected session: the true results below/)).toBeInTheDocument();
+    expect(screen.getByText(/^Connected session: the true results are the simulator's own record/)).toBeInTheDocument();
     expect(screen.queryByText(/^Evaluate run/)).toBeNull();
   });
 

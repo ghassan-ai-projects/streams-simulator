@@ -1,8 +1,12 @@
-import type { Clipboard, Clock, ReviewGateway, Scheduler } from "../../ports";
+import type { Clipboard, Clock, FileSaver, ReviewGateway, Scheduler } from "../../ports";
 import { createOperationIdentity } from "../../shared";
 import type { ReviewSession } from "./api";
+import type { CompareSession } from "./compareStore";
+import { CompareStore } from "./compareStore";
 import type { ControlSession } from "./controlStore";
 import { ControlStore } from "./controlStore";
+import type { HandoverSession } from "./handoverStore";
+import { HandoverStore } from "./handoverStore";
 import { ReviewStore } from "./reviewStore";
 import type { TwinSession } from "./twinStore";
 import { TwinStore } from "./twinStore";
@@ -10,17 +14,21 @@ import type { WatchSession } from "./watchStore";
 import { WatchStore } from "./watchStore";
 
 const noClipboard: Clipboard = { copy: () => Promise.resolve(false) };
+const noSaver: FileSaver = { save: () => false };
 
 class ControlledReview extends ReviewStore implements ReviewSession {
   readonly controls: ControlSession;
   readonly twin: TwinSession;
   readonly watchList: WatchSession = new WatchStore();
+  readonly compare: CompareSession;
+  readonly handover: HandoverSession;
 
   constructor(
     gateway: ReviewGateway,
     clock: Clock,
     scheduler: Scheduler,
     private readonly clipboard: Clipboard,
+    saver: FileSaver,
   ) {
     super(gateway, clock, scheduler, createOperationIdentity());
     this.controls = new ControlStore(gateway, {
@@ -31,6 +39,8 @@ class ControlledReview extends ReviewStore implements ReviewSession {
       this.controls.bind(this.snapshot().worldId);
     });
     this.twin = new TwinStore(gateway);
+    this.compare = new CompareStore(gateway);
+    this.handover = new HandoverStore(gateway, saver);
   }
 
   copyText(text: string): Promise<boolean> {
@@ -43,6 +53,7 @@ export function createReviewSession(
   clock: Clock,
   scheduler: Scheduler,
   clipboard: Clipboard = noClipboard,
+  saver: FileSaver = noSaver,
 ): ReviewSession {
-  return new ControlledReview(gateway, clock, scheduler, clipboard);
+  return new ControlledReview(gateway, clock, scheduler, clipboard, saver);
 }

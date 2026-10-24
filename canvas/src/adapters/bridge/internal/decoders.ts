@@ -2,7 +2,8 @@ import type { ComposeSummary, DomainDocument, FileContent } from "../../../app/p
 import type { Workspace } from "../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../model/plant";
-import type { Replay, Report } from "../../../model/review";
+import type { Comparison, Replay, Report } from "../../../model/review";
+import { parseComparisonPayload } from "./compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, list, record, text } from "../../../model/shared/json";
 
@@ -233,6 +234,15 @@ function finiteNumber(value: unknown): number | null {
 
 export function report(value: unknown): Report | null {
   return parseReportPayload(value);
+}
+
+export function comparison(value: unknown): Comparison | null {
+  return parseComparisonPayload(value);
+}
+
+export function markdown(value: unknown): string | null {
+  if (!isRecord(value) || value.format !== "markdown") return null;
+  return typeof value.markdown === "string" && value.markdown !== "" ? value.markdown : null;
 }
 
 export function replay(value: unknown): Replay | null {

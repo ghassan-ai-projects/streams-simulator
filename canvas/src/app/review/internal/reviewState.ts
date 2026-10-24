@@ -29,6 +29,9 @@ export interface LiveHistory {
   readonly trimmedBeforeNs: number | null;
 }
 
+export type ReplayCheck =
+  { readonly phase: "idle" } | { readonly phase: "checking" } | { readonly phase: "failed"; readonly message: string };
+
 export type OpenMode = "review" | "watch";
 
 export interface ReviewState {
@@ -45,6 +48,7 @@ export interface ReviewState {
   readonly worldId: string | null;
   readonly report: Load<Report>;
   readonly verified: Load<Replay>;
+  readonly replayCheck: ReplayCheck;
   readonly playback: {
     readonly phase: "loading" | "ready" | "failed";
     readonly records: number;
@@ -81,6 +85,7 @@ export const idle: ReviewState = {
   worldId: null,
   report: { phase: "loading" },
   verified: { phase: "loading" },
+  replayCheck: { phase: "idle" },
   playback: { phase: "loading", records: 0 },
   positionNs: 0,
   selected: null,

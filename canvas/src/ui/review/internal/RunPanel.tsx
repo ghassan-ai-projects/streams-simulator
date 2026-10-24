@@ -2,12 +2,12 @@ import { failureLine, shared } from "../../primitives";
 import type { ConnectSession } from "../../../app/launch";
 import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
-import { startNsOf } from "../../../app/review";
+import { handoverFor, startNsOf } from "../../../app/review";
 import { originWords } from "../../../model/graph";
 import { runClock } from "../../../model/review";
 import type { InstanceOrigin, Report } from "../../../model/review";
 import { OriginMark } from "../../graph";
-import { cx } from "../../primitives";
+import { cx, useStore } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { InterruptLine } from "./InterruptLine";
 import { Observed } from "./Observed";
@@ -128,6 +128,26 @@ export function RunPanel(props: RunPanelProps) {
   );
 }
 
+function replayControlOf(review: ReviewSession, state: ReviewState) {
+  return {
+    check: state.replayCheck,
+    onCheck: () => {
+      review.checkReplay();
+    },
+  };
+}
+
+function eventActionsOf(review: ReviewSession) {
+  return {
+    pick: (atNs: number, entity: string) => {
+      review.reveal(atNs, entity);
+    },
+    seek: (ns: number) => {
+      review.seek(ns);
+    },
+  };
+}
+
 function ReadyReport({
   review,
   connect,
@@ -145,6 +165,7 @@ function ReadyReport({
 }) {
   const { picked, positionNs } = state;
   const shown = picked !== null && picked.atNs === positionNs ? picked : null;
+  const handover = handoverFor(useStore(review.handover), state.worldId);
   return (
     <>
       {state.connection === "saved" && (
@@ -158,6 +179,9 @@ function ReadyReport({
         picked={shown}
         verify={state.verified}
         connection={state.connection}
+        handover={handover}
+        replay={replayControlOf(review, state)}
+        actions={eventActionsOf(review)}
       />
     </>
   );

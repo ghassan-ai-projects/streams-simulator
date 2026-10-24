@@ -2,16 +2,19 @@ import type { Replay, Report } from "../../../model/review";
 import type { ArgValue } from "../../../model/plant";
 import type { AlarmActivation } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
+import { questionsOf, replayOf } from "./reportQuestions";
 
 export function parseReportPayload(value: unknown): Report | null {
   if (!isRecord(value) || !isRecord(value.run) || !isRecord(value.counts)) {
     return null;
   }
   if (!isRecord(value.verification) || typeof value.verification.status !== "string") return null;
-  return decodeReport(value);
+  const replay = replayOf(value.replay);
+  const openQuestions = questionsOf(value.open_questions);
+  return replay === null || openQuestions === null ? null : decodeReport(value, { replay, openQuestions });
 }
 
-function decodeReport(value: Record<string, unknown>): Report {
+function decodeReport(value: Record<string, unknown>, asked: Pick<Report, "replay" | "openQuestions">): Report {
   const truth = record(value.truth);
   const counts = record(value.counts);
   const verification = record(value.verification);
@@ -34,6 +37,7 @@ function decodeReport(value: Record<string, unknown>): Report {
     alarmActivations: alarmActivations(kpis.entities),
     scoring: scoring(value.scoring),
     truthUnavailable: text(value.truth_unavailable),
+    ...asked,
   };
 }
 
@@ -144,6 +148,7 @@ function effectorCalls(truth: Record<string, unknown>) {
       effector: text(call.effector),
       args: argValues(call.args),
       outcome: outcomeText(outcome),
+      applied: outcome.accepted === true && outcome.effect_applied === true,
       immediate: text(call.command_id).startsWith(immediatePrefix),
     };
   });
@@ -156,7 +161,7 @@ function argValues(value: unknown): Record<string, ArgValue> {
   return Object.fromEntries(scalars);
 }
 
-function outcomeText(outcome: Record<string, unknown>): string {
+export function outcomeText(outcome: Record<string, unknown>): string {
   if (outcome.accepted !== true) return `refused${text(outcome.refusal) ? `: ${text(outcome.refusal)}` : ""}`;
   return outcome.effect_applied === true
     ? `applied · ${String(Math.round(number(outcome.ack_latency_ms)))} ms`

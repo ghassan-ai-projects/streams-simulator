@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { shared } from "../../primitives";
 import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
@@ -22,14 +23,16 @@ interface HeaderProps extends HallProps {
   readonly launch: LaunchStore;
   readonly worldId: string;
   readonly plant: { readonly title: string; readonly path: string | null };
+  readonly extra?: ReactNode;
 }
 
-function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderProps, "hall" | "onHall">) {
+function RunActions({ state, navigation, launch, plant, worldId, extra }: Omit<HeaderProps, "hall" | "onHall">) {
   const report = readyReport(state);
   const path = plant.path;
-  if (path === null) return null;
+  if (path === null) return extra === undefined ? null : <div className={styles.runActions}>{extra}</div>;
   return (
     <div className={styles.runActions}>
+      {extra}
       <button
         type="button"
         className={shared.secondary}

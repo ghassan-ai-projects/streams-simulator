@@ -33,17 +33,34 @@ export interface RowsProps {
   readonly headers: readonly string[];
   readonly empty?: string;
   readonly current?: number;
+  readonly onSelect?: (index: number) => void;
 }
 
-function Row({
-  row,
-  columns,
-  current,
-}: {
+interface RowProps {
   readonly row: readonly Cell[];
   readonly columns: readonly Column[];
   readonly current: boolean;
-}) {
+  readonly onSelect: (() => void) | undefined;
+}
+
+const textOf = (cell: Cell) => (typeof cell === "string" ? cell : cell.text);
+
+function Shown({ row, onSelect }: { readonly row: readonly Cell[]; readonly onSelect: (() => void) | undefined }) {
+  const text = textOf(row[0] ?? "");
+  if (onSelect === undefined) return text;
+  return (
+    <button
+      type="button"
+      className={styles.pick}
+      aria-label={`Open ${row.slice(0, 3).map(textOf).join(" ")}`}
+      onClick={onSelect}
+    >
+      {text}
+    </button>
+  );
+}
+
+function Row({ row, columns, current, onSelect }: RowProps) {
   return (
     <tr
       aria-current={current ? "true" : undefined}
@@ -58,7 +75,7 @@ function Row({
             className={cells[columns[c] ?? "text"]}
             title={typeof cell === "string" ? undefined : cell.title}
           >
-            {typeof cell === "string" ? cell : cell.text}
+            {c === 0 ? <Shown row={row} onSelect={onSelect} /> : textOf(cell)}
           </Tag>
         );
       })}
@@ -66,7 +83,7 @@ function Row({
   );
 }
 
-export function Rows({ rows, columns, headers, empty = "None", current = -1 }: RowsProps) {
+export function Rows({ rows, columns, headers, empty = "None", current = -1, onSelect }: RowsProps) {
   if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
     <table className={cells.table}>
@@ -81,7 +98,19 @@ export function Rows({ rows, columns, headers, empty = "None", current = -1 }: R
       </thead>
       <tbody>
         {rows.map((row, r) => (
-          <Row key={r} row={row} columns={columns} current={r === current} />
+          <Row
+            key={r}
+            row={row}
+            columns={columns}
+            current={r === current}
+            onSelect={
+              onSelect === undefined
+                ? undefined
+                : () => {
+                    onSelect(r);
+                  }
+            }
+          />
         ))}
       </tbody>
     </table>

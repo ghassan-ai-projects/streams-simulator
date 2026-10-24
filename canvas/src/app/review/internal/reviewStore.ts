@@ -129,6 +129,15 @@ export class ReviewStore extends Observable<ReviewState> {
     void this.loads.report(worldId, session);
   }
 
+  checkReplay(): void {
+    const state = this.snapshot();
+    const session = this.operations.current();
+    if (state.worldId === null || session === null || state.report.phase !== "ready") return;
+    if (state.replayCheck.phase === "checking") return;
+    this.set({ ...state, replayCheck: { phase: "checking" } });
+    void this.loads.checkReplay(state.worldId, session);
+  }
+
   close(): void {
     this.holders = Math.max(0, this.holders - 1);
     if (this.holders === 0) this.release();

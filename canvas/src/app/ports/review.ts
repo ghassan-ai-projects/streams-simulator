@@ -6,7 +6,7 @@ import type {
   TwinReport,
   TwinRequest,
 } from "../../model/review";
-import type { Report, Replay } from "../../model/review";
+import type { Comparison, Report, Replay } from "../../model/review";
 import type { Diagnostic, DomainDocument, Outcome } from "./shared";
 
 export type ReviewFailure =
@@ -23,6 +23,11 @@ export interface TwinFailure {
   readonly diagnostic: Diagnostic;
 }
 
+export interface DocumentFailure {
+  readonly kind: "refused" | "unavailable" | "unreadable";
+  readonly diagnostic: Diagnostic;
+}
+
 export interface RunFollower {
   entry(entry: JournalEntry): void;
   caughtUp?(): void;
@@ -31,7 +36,9 @@ export interface RunFollower {
 }
 
 export interface ReviewGateway {
-  report(runId: string): Promise<Outcome<Report, ReviewFailure>>;
+  report(runId: string, options?: { readonly replay: boolean }): Promise<Outcome<Report, ReviewFailure>>;
+  handover(runId: string, options: { readonly replay: boolean }): Promise<Outcome<string, DocumentFailure>>;
+  compare(reference: string, run: string): Promise<Outcome<Comparison, DocumentFailure>>;
   verify(runId: string): Promise<Outcome<Replay, ReviewFailure>>;
   runDomain(runId: string): Promise<Outcome<DomainDocument, ReviewFailure>>;
   follow(runId: string, follower: RunFollower): () => void;

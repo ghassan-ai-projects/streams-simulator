@@ -12,10 +12,12 @@ import { action, getFile, post, putFile, request } from "./http";
 import {
   composeSummary,
   component,
+  comparison,
   composition,
   examples,
   fileContent,
   library,
+  markdown,
   paired,
   presets,
   replay,
@@ -24,7 +26,14 @@ import {
   written,
   workspace,
 } from "./decoders";
-import { editorFailure, plantFailure, reviewFailure, sessionFailure, workspaceFailure } from "./failures";
+import {
+  documentFailure,
+  editorFailure,
+  plantFailure,
+  reviewFailure,
+  sessionFailure,
+  workspaceFailure,
+} from "./failures";
 
 export function bridgeAdapter(transport: Transport): BridgeAdapters {
   return {
@@ -86,13 +95,24 @@ function launchGateway(transport: Transport): BridgeAdapters["launch"] {
 
 function reviewGateway(transport: Transport): BridgeAdapters["review"] {
   return {
-    report: (runId) => action(transport, "run.report", { run: runId }, report, reviewFailure),
+    report: (runId, options) => action(transport, "run.report", replayArgs(runId, options), report, reviewFailure),
+    handover: (runId, options) =>
+      action(transport, "run.report", { ...replayArgs(runId, options), format: "markdown" }, markdown, documentFailure),
+    compare: (reference, run) =>
+      action(transport, "run.compare", { a: reference, b: run }, comparison, documentFailure),
     verify: (runId) => verify(transport, runId),
     runDomain: (runId) => getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure),
     follow: (runId, follower) => followRun(transport, runId, follower),
     control: (request) => controlSession(transport, request),
     twinReport: (request) => requestTwinReport(transport, request),
   };
+}
+
+function replayArgs(
+  runId: string,
+  options: { readonly replay: boolean } | undefined,
+): Readonly<Record<string, unknown>> {
+  return { run: runId, ...(options?.replay === true ? { replay: true } : {}) };
 }
 
 function generationArgs(
