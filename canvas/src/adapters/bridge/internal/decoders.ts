@@ -93,6 +93,7 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...(text(entry.name) === "" ? {} : { name: text(entry.name) }),
     ...intentOf(entry),
     ...connectedOf(entry),
   };

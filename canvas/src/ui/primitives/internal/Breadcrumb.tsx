@@ -17,9 +17,33 @@ interface BreadcrumbProps {
   readonly here: string;
   readonly heading: Ref<HTMLHeadingElement>;
   readonly tag?: string;
+  readonly caption?: string;
 }
 
-function Trail({ trail, here, heading, tag }: BreadcrumbProps) {
+function Here({ here, heading, caption }: Omit<BreadcrumbProps, "trail" | "tag">) {
+  return (
+    <li className={styles.hereItem}>
+      {caption !== undefined && (
+        <span id="crumb-caption" className={styles.caption} title={caption}>
+          {caption}
+        </span>
+      )}
+      <h1
+        aria-current="location"
+        aria-label={here}
+        aria-describedby={caption === undefined ? undefined : "crumb-caption"}
+        className={styles.here}
+        ref={heading}
+        tabIndex={-1}
+        title={here}
+      >
+        {here}
+      </h1>
+    </li>
+  );
+}
+
+function Trail({ trail, here, heading, tag, caption }: BreadcrumbProps) {
   return (
     <nav className={styles.crumbs} aria-label="Breadcrumb">
       <ol>
@@ -37,18 +61,7 @@ function Trail({ trail, here, heading, tag }: BreadcrumbProps) {
             <ChevronRight size={14} aria-hidden="true" />
           </li>
         ))}
-        <li className={styles.hereItem}>
-          <h1
-            aria-current="location"
-            aria-label={here}
-            className={styles.here}
-            ref={heading}
-            tabIndex={-1}
-            title={here}
-          >
-            {here}
-          </h1>
-        </li>
+        <Here here={here} heading={heading} {...(caption === undefined ? {} : { caption })} />
       </ol>
       {tag !== undefined && <span className={styles.tag}>{tag}</span>}
     </nav>

@@ -15,6 +15,7 @@ export interface RunEntry {
   readonly seed: number | null;
   readonly plant: string;
   readonly durationS: number;
+  readonly name?: string;
   readonly requestedS?: number;
   readonly terminationReason?: string;
   readonly recordedAt: string;

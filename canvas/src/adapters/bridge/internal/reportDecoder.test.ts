@@ -46,6 +46,42 @@ describe("the run report", () => {
     expect(parsed.scoring).toBeNull();
   });
 
+  it("reads the name and purpose of a run, and an empty one for a run that has none", () => {
+    const named = { ...reportWire, run: { ...reportWire.run, name: "Fan failure", purpose: "Observe recovery" } };
+    expect(parseReportPayload(named)).toMatchObject({ name: "Fan failure", purpose: "Observe recovery" });
+    expect(parseReportPayload(reportWire)).toMatchObject({ name: "", purpose: "" });
+  });
+
+  it("reads when a fault was cleared by its plan and the window and parameters of a delivery condition", () => {
+    const planned = {
+      ...reportWire,
+      truth: {
+        ...reportWire.truth,
+        faults: [
+          { entity_id: "CT-1", fault: "fan", onset_ns: 60e9, cleared_ns: 150e9, cleared_by: "command" },
+          { entity_id: "CT-2", fault: "fan", onset_ns: 70e9, cleared_ns: null, cleared_by: null },
+        ],
+        perturbations: [
+          {
+            action: "apply",
+            perturbation: "drop",
+            params: { rate: 0.5, fields: ["a"], on: true, mixed: [1] },
+            from_ns: 30e9,
+            until_ns: 120e9,
+          },
+          { action: "apply", perturbation: "reorder", from_ns: 40e9, until_ns: 0 },
+          { action: "clear", perturbation: "drop", at_ns: 120e9 },
+        ],
+      },
+    };
+    const parsed = parseReportPayload(planned);
+    const named = (name: string) => parsed?.disturbances.find((d) => d.name === name && d.action !== "clear");
+    expect(named("fan")).toMatchObject({ clearedNs: 150e9, clearedBy: "command" });
+    expect(named("drop")).toMatchObject({ params: { rate: 0.5, fields: ["a"] }, untilNs: 120e9 });
+    expect(named("reorder")).toMatchObject({ params: {} });
+    expect(named("reorder")).not.toHaveProperty("untilNs");
+  });
+
   it("reads the plan and the ending a job-run recorded, and nothing for a run that recorded none", () => {
     const stopped = {
       ...reportWire,

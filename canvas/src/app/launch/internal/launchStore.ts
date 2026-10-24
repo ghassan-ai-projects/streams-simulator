@@ -23,9 +23,10 @@ import { TrackedRun } from "./trackedRun";
 import { RunWatch } from "./runWatch";
 import type { LaunchStore as LaunchStoreApi } from "./api";
 import { ConnectStore } from "./connectStore";
+import { PlanCatalog } from "./planCatalog";
 
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
-const noPlan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], calls: [] };
+const noPlan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], perturbations: [], calls: [] };
 const patientPolls = 3;
 
 type Reading = Outcome<JobStatus, LaunchFailure>;
@@ -35,6 +36,7 @@ export class LaunchStore extends Observable<LaunchState> {
   private poll: StatusPoll | null = null;
   private readonly proposals = new ProposalSlot();
   readonly connect: ConnectStore;
+  readonly catalog: PlanCatalog;
 
   constructor(
     private readonly gateway: LaunchGateway,
@@ -43,6 +45,7 @@ export class LaunchStore extends Observable<LaunchState> {
   ) {
     super({ phase: "idle" });
     this.connect = new ConnectStore(gateway, scheduler);
+    this.catalog = new PlanCatalog(gateway);
   }
 
   propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {

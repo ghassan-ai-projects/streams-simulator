@@ -9,7 +9,7 @@ import { reviewState } from "../../../test/reviewFixture";
 import { NavigationStore } from "./navigationStore";
 import { proposeRerun } from "./proposeRerun";
 
-const plan = { seed: 1, durationS: 60, explore: true, faults: [], calls: [] };
+const plan = { seed: 1, durationS: 60, explore: true, faults: [], perturbations: [], calls: [] };
 
 function setup() {
   const location = memoryLocation();

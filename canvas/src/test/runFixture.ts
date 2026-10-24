@@ -62,6 +62,8 @@ export const reportWire = {
 
 export const report: Report = {
   runId: "r-1",
+  name: "",
+  purpose: "",
   mode: "evaluate",
   ended: true,
   complete: true,
@@ -89,6 +91,7 @@ export const report: Report = {
       onsetNs: 300e9,
       target: "delivery",
       name: "drop",
+      params: {},
       clearedNs: null,
       clearedBy: "",
     },
@@ -150,6 +153,8 @@ export const report: Report = {
 export function blankReport(overrides: Partial<Report> = {}): Report {
   return {
     runId: "",
+    name: "",
+    purpose: "",
     mode: "",
     ended: false,
     complete: false,

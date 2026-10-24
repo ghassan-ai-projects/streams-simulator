@@ -25,6 +25,6 @@ describe("launch panel keys", () => {
     const enter = createEvent.keyDown(select, { key: "Enter" });
     fireEvent(select, enter);
     expect(enter.defaultPrevented).toBe(true);
-    expect(fake.calls).toEqual([]);
+    expect(fake.jobCalls).toEqual([]);
   });
 });

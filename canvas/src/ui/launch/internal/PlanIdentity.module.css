@@ -1,0 +1,30 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.hint {
+  text-wrap: pretty;
+}
+
+.count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}

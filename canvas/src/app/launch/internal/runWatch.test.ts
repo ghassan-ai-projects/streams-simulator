@@ -4,7 +4,7 @@ import { elapse, launchBridge } from "../../../test/launchFixture";
 import { LaunchStore } from "./launchStore";
 
 const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
-const plan = { seed: 3, durationS: 120, explore: false, faults: [], calls: [] };
+const plan = { seed: 3, durationS: 120, explore: false, faults: [], perturbations: [], calls: [] };
 
 function setup() {
   const timers = fakeClock();

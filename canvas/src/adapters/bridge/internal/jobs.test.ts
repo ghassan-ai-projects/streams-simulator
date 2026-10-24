@@ -33,6 +33,10 @@ const status = {
   rate: 60,
   explore: true,
   failure: "",
+  name: "",
+  purpose: "",
+  faults: [],
+  perturbations: [],
   calls: [
     {
       entity: "CH-1",
@@ -75,6 +79,7 @@ describe("job gateway", () => {
       durationS: 1800,
       rate: 60,
       faults: [{ entity: "CT-1", fault: "fan", atS: 10 }],
+      perturbations: [],
       calls: [{ entity: "CH-1", effector: "chiller__start", atS: 20, args: { chiller_id: "CH-1" } }],
     });
     expect(outcome).toEqual({ ok: true, value: status });
@@ -88,6 +93,7 @@ describe("job gateway", () => {
           duration_s: 1800,
           rate: 60,
           faults: [{ entity_id: "CT-1", fault: "fan", at_s: 10 }],
+          perturbations: [],
           calls: [{ entity_id: "CH-1", effector: "chiller__start", at_s: 20, args: { chiller_id: "CH-1" } }],
         },
       },
@@ -113,7 +119,13 @@ describe("job gateway", () => {
   it("says which job step the binary refused", async () => {
     const refused = bridgeTransport(() => respond(422, { error: { code: "job_active", message: "a job is running" } }));
     expect(
-      await bridgeAdapter(refused).launch.startJob({ ...status, durationS: 60, faults: [], calls: [] }),
+      await bridgeAdapter(refused).launch.startJob({
+        ...status,
+        durationS: 60,
+        faults: [],
+        perturbations: [],
+        calls: [],
+      }),
     ).toMatchObject({
       ok: false,
       failure: {

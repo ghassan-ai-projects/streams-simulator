@@ -18,6 +18,7 @@ describe("prefilled run plan", () => {
         durationS: 3600,
         explore: true,
         faults: [{ entity: "CH-1", fault: "chiller__gone", atS: 600 }],
+        perturbations: [],
         calls: [],
       },
       [],
@@ -37,7 +38,7 @@ describe("prefilled run plan", () => {
     const { launch } = launchHarness(new FakeBridge());
     launch.proposeFresh(
       "mini",
-      { seed: 1, durationS: 1800, explore: false, pace: "watch", faults: [], calls: [] },
+      { seed: 1, durationS: 1800, explore: false, pace: "watch", faults: [], perturbations: [], calls: [] },
       "w-9",
     );
     render(
@@ -54,7 +55,12 @@ describe("prefilled run plan", () => {
 
   it("puts the note inside the plan's scrolling content, before the Run group, not above the form", () => {
     const { launch } = launchHarness(new FakeBridge());
-    launch.propose("mini", { seed: 5, durationS: 3600, explore: true, faults: [], calls: [] }, [], "w-6");
+    launch.propose(
+      "mini",
+      { seed: 5, durationS: 3600, explore: true, faults: [], perturbations: [], calls: [] },
+      [],
+      "w-6",
+    );
     render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );

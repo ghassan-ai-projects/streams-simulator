@@ -7,6 +7,7 @@ const plan: LaunchPlan = {
   seed: 1,
   durationS: 1800,
   explore: true,
+  perturbations: [],
   faults: [
     { entity: "boiler-1", fault: "scaling", atS: 600 },
     { entity: "hall-a/pump-1", fault: "bearing_wear", atS: 900 },

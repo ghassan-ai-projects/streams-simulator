@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runProgressWords, runStageWords } from "./progress";
+import { runProgressWords, runStageWords, runTitle } from "./progress";
 
 describe("run progress words", () => {
   it("says how far the run is and how fast it goes", () => {
@@ -17,5 +17,12 @@ describe("run progress words", () => {
     expect(runStageWords(paused)).toBe("Paused");
     expect(runStageWords({ paused: false })).toBe("Running");
     expect(runProgressWords(paused, " simulated")).toBe("00:12:00 of 00:30:00 simulated");
+  });
+});
+
+describe("the title of a run", () => {
+  it("is the plant until the run is named, then the name on the plant", () => {
+    expect(runTitle({}, "Mini plant")).toBe("Mini plant");
+    expect(runTitle({ name: "Cooling loss" }, "Mini plant")).toBe("Cooling loss on Mini plant");
   });
 });

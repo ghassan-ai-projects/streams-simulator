@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ProposalSlot } from "./proposalSlot";
 
-const plan = { seed: 1, durationS: 600, explore: true, faults: [], calls: [] };
+const plan = { seed: 1, durationS: 600, explore: true, faults: [], perturbations: [], calls: [] };
 
 describe("proposal slot", () => {
   it("offers a proposal only to the plant it was made for, until forgotten", () => {

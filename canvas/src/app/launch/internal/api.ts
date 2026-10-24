@@ -2,6 +2,7 @@ import type { ArgValue, LaunchPlan, SessionCheck, SessionDraft } from "../../../
 import type { Store } from "../../shared";
 import type { ConnectState } from "./connectState";
 import type { LaunchState } from "./launchState";
+import type { PlanCatalogState } from "./planCatalog";
 import type { PolicyDefaultState } from "./policyDefault";
 import type { Proposal } from "./proposalSlot";
 import type { LaunchOrigin } from "./trackedRun";
@@ -9,6 +10,7 @@ import type { LaunchOrigin } from "./trackedRun";
 export type { ConnectState } from "./connectState";
 export type { LaunchState } from "./launchState";
 export type { PolicyDefaultState } from "./policyDefault";
+export type { Loaded } from "./planCatalog";
 export type { Proposal } from "./proposalSlot";
 
 export type RunKind = "complete" | "session";
@@ -38,8 +40,13 @@ export interface RunWatch {
   holdFinished(then: (worldId: string) => void): () => void;
 }
 
+interface PlanCatalog extends Store<PlanCatalogState> {
+  load(domain: string): void;
+}
+
 export interface LaunchStore extends Store<LaunchState> {
   readonly connect: ConnectSession;
+  readonly catalog: PlanCatalog;
   propose(domain: string, plan: LaunchPlan, left?: readonly string[], from?: string): void;
   proposeFresh(domain: string, plan: LaunchPlan, from: string): void;
   forgetProposal(): void;

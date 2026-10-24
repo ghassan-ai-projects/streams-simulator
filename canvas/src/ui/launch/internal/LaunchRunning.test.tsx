@@ -43,7 +43,7 @@ describe("launch panel running", () => {
     const fake = launchBridge();
     const { launch, timers } = launchHarness(fake);
     const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
-    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
+    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], perturbations: [], calls: [] });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,

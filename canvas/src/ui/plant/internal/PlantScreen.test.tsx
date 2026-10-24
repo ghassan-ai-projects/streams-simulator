@@ -211,6 +211,7 @@ describe("a plant with a run going", () => {
     durationS: 3600,
     explore: true,
     faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 0 }],
+    perturbations: [],
     calls: [],
   };
 

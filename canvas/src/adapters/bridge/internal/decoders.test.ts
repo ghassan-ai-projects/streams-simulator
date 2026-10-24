@@ -95,6 +95,18 @@ describe("workspace payload", () => {
     expect(workspace(wire)?.runs[0]).not.toHaveProperty("requestedS");
   });
 
+  it("reads the name of a run, and leaves it out when the run has none or the name is not text", () => {
+    const named = { ...wire.runs[0], name: "Fan failure" };
+    const decoded = workspace({
+      ...wire,
+      runs: [named, { ...named, world_id: "w-2", name: "" }, { ...named, world_id: "w-3", name: 4 }],
+    });
+    expect(decoded?.runs[0]).toMatchObject({ name: "Fan failure" });
+    expect(decoded?.runs[1]).not.toHaveProperty("name");
+    expect(decoded?.runs[2]).not.toHaveProperty("name");
+    expect(workspace(wire)?.runs[0]).not.toHaveProperty("name");
+  });
+
   it("reads the kind files and components the workspace lists", () => {
     const decoded = workspace({
       ...wire,

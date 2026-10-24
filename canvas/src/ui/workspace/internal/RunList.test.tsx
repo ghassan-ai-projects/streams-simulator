@@ -161,6 +161,30 @@ describe("runs in the workspace", () => {
     expect(rowOf("w-cut")).not.toHaveTextContent(/9 min/);
   });
 
+  it("titles a named run by its name, with the plant and the run id in the details", async () => {
+    const bridge = new FakeBridge();
+    const unnamed = {
+      worldId: "w-8",
+      ended: true,
+      complete: true,
+      running: false,
+      incompleteReason: "",
+      explore: true,
+      seed: 7,
+      plant: "factory-utilities",
+      durationS: 1800,
+      recordedAt: "2026-10-15T10:00:00Z",
+      faults: 1,
+    };
+    const named = { ...unnamed, worldId: "w-9", name: "Cooling loss" };
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [named, unnamed] });
+    await show(bridge);
+    expect(within(rowOf("w-9")).getByText("Cooling loss")).toBeInTheDocument();
+    expect(rowOf("w-9")).toHaveTextContent(/Factory utilities · w-9/);
+    expect(rowOf("w-8")).not.toHaveTextContent("Cooling loss");
+    expect(within(rowOf("w-8")).getByText("Factory utilities")).toBeInTheDocument();
+  });
+
   it("names the one run left to show in the singular", async () => {
     const bridge = new FakeBridge();
     const runs = Array.from({ length: 21 }, (_, i) => ({

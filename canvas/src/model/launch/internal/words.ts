@@ -12,14 +12,18 @@ function callCountWords(plan: LaunchPlan): string {
   return plan.calls.length === 0 ? "" : counted(plan.calls.length, "effector call");
 }
 
+function deliveryCountWords(plan: LaunchPlan): string {
+  return plan.perturbations.length === 0 ? "" : counted(plan.perturbations.length, "delivery condition");
+}
+
 export function disturbanceWords(plan: LaunchPlan): string {
-  const faults = faultCountWords(plan);
-  const calls = callCountWords(plan);
-  return calls === "" ? faults : `${faults} and ${calls}`;
+  const parts = [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)].filter((part) => part !== "");
+  return parts.length < 2 ? (parts[0] ?? "") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1) ?? ""}`;
 }
 
 function disturbanceParts(plan: LaunchPlan): readonly string[] {
-  return plan.recovered === true ? [] : [faultCountWords(plan), callCountWords(plan)];
+  if (plan.recovered !== true) return [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)];
+  return plan.explore ? [faultCountWords(plan), deliveryCountWords(plan)] : [];
 }
 
 export function planSummary(plan: LaunchPlan, length: string): string {
@@ -59,7 +63,10 @@ function fieldName(problem: PlanProblem): string {
     case "call":
       return `Effector call ${String(problem.index + 1)}`;
     case "fault":
+    case "faultEnd":
       return `Fault ${String(problem.index + 1)}`;
+    case "delivery":
+      return `Delivery condition ${String(problem.index + 1)}`;
   }
 }
 

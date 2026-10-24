@@ -16,6 +16,7 @@ describe("launch store: starting a job", () => {
       duration_s: 1800,
       rate: 60,
       faults: [{ entity_id: "CT-1", fault: "fan", at_s: 600 }],
+      perturbations: [],
       calls: [],
     });
     expect(store.snapshot()).toMatchObject({ phase: "running", worldId: "w-4", atS: 0, durationS: 1800, rate: 60 });

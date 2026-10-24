@@ -6,6 +6,7 @@ import type { Deferred } from "./deferred";
 import { deferred } from "./deferred";
 import { cannedFailure } from "./fakeFailures";
 import { FakeJobs } from "./fakeJobs";
+import { describedWire, perturbationsWire } from "./planCatalogFixture";
 import type { Canned } from "./fakeFailures";
 import { FakeSource, answer, workspaceWire } from "./fakeWire";
 import { sampleWorkspace } from "./workspaceFixture";
@@ -70,6 +71,10 @@ export class FakeBridge {
   readonly devices = this.gateways.devices;
   readonly launch = this.gateways.launch;
   readonly review = this.gateways.review;
+
+  get jobCalls(): readonly { name: string; args: Args }[] {
+    return this.calls.filter((call) => call.name.startsWith("job."));
+  }
 
   addFile(path: string, content: unknown, etag = "e"): void {
     this.files.set(path, cannedFile(path, content, etag));
@@ -225,6 +230,8 @@ export class FakeBridge {
     if (canned !== undefined) return canned;
     const job = this.jobs.answer(name, args);
     if (job !== undefined) return job;
+    if (name === "catalog.perturbations") return success(perturbationsWire);
+    if (name === "catalog.describe") return success(describedWire);
     return failed(cannedFailure("unknown_action", 404));
   }
 }

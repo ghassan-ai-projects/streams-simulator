@@ -36,7 +36,7 @@ describe("launch store: finding a job after a reload", () => {
       durationS: 1800,
       rate: 60,
       stopping: false,
-      plan: { seed: 3, durationS: 1800, explore: false, faults: [], calls: [], recovered: true },
+      plan: { seed: 3, durationS: 1800, explore: false, faults: [], perturbations: [], calls: [], recovered: true },
     });
     expect(adopted.phase === "running" ? adopted.calls : []).toMatchObject([
       { effector: "chiller__start", accepted: true, atMs: Number.NEGATIVE_INFINITY },
@@ -46,6 +46,45 @@ describe("launch store: finding a job after a reload", () => {
     await tick(500);
     expect(store.snapshot()).toMatchObject({ phase: "done", early: false, reachedS: 1800, plan: { recovered: true } });
     expect(fake.jobs.requests).toEqual([]);
+  });
+
+  describe("with the plan the director returns", () => {
+    const planned = {
+      ...request,
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      faults: [{ entity_id: "CT-1", fault: "fan", at_s: 600, until_s: 900 }],
+      perturbations: [{ kind: "drop", params: { rate: 0.5 }, at_s: 300 }],
+    };
+
+    it("rebuilds the faults, the delivery conditions, the name and the purpose of an exploration", async () => {
+      const fake = launchBridge("w-4");
+      const run = launch(fake);
+      fake.jobs.adopt(700, { ...planned, explore: true });
+      await run.store.resume(originOf);
+      expect(run.store.snapshot()).toMatchObject({
+        phase: "running",
+        plan: {
+          name: "Fan failure",
+          purpose: "Observe recovery",
+          explore: true,
+          faults: [{ entity: "CT-1", fault: "fan", atS: 600, untilS: 900 }],
+          perturbations: [{ kind: "drop", params: { rate: 0.5 }, atS: 300 }],
+          recovered: true,
+        },
+      });
+    });
+
+    it("keeps an evaluation's plan sealed, naming the run all the same", async () => {
+      const fake = launchBridge("w-4");
+      const run = launch(fake);
+      fake.jobs.adopt(700, planned);
+      await run.store.resume(originOf);
+      const state = run.store.snapshot();
+      expect(state).toMatchObject({ phase: "running", plan: { name: "Fan failure", faults: [], perturbations: [] } });
+      expect(JSON.stringify(state)).not.toContain("fan");
+      expect(JSON.stringify(state)).not.toContain("drop");
+    });
   });
 
   it("can stop an adopted job", async () => {

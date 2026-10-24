@@ -5,7 +5,7 @@ import { panel } from "../../primitives";
 function proposalWords(proposed: Proposal): string {
   if (proposed.fresh) return freshSettingsWords(proposed.plan.explore);
   const source = proposed.from === "" ? "the earlier run" : proposed.from;
-  const copied = `Prefilled from ${source}: seed, duration, mode, pace, faults and effector calls. Change them if needed.`;
+  const copied = `Prefilled from ${source}: name, purpose, seed, duration, mode, pace, faults with their ends, delivery conditions and effector calls. Change them if needed.`;
   return proposed.left.length === 0 ? copied : `${copied} Not copied: ${proposed.left.join("; ")}.`;
 }
 

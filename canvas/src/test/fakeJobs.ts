@@ -158,8 +158,25 @@ export class FakeJobs {
       : { at_s, entity_id, effector, accepted: false, reason, ...marked };
   }
 
+  private planned(sim: Sim): object {
+    const { request } = sim;
+    const sealed = request.explore !== true && this.active(sim);
+    const list = (name: string) => (sealed ? [] : (request[name] ?? []));
+    return {
+      ...(request.name === undefined ? {} : { name: request.name }),
+      ...(request.purpose === undefined ? {} : { purpose: request.purpose }),
+      faults: list("faults"),
+      perturbations: list("perturbations"),
+    };
+  }
+
+  private active(sim: Sim): boolean {
+    return ["running", "paused", "stopping"].includes(this.stateOf(sim));
+  }
+
   private wire(sim: Sim): object {
     return {
+      ...this.planned(sim),
       world_id: sim.worldId,
       run_id: `${sim.worldId}-run`,
       domain: sim.request.domain,

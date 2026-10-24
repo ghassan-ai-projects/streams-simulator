@@ -7,6 +7,7 @@ const plan: LaunchPlan = {
   durationS: 600,
   explore: true,
   faults: [{ entity: "CH-1", fault: "chiller__CANARY_TRUTH_9f3a", atS: 120 }],
+  perturbations: [],
   calls: [{ entity: "CH-1", effector: "start", atS: 60, args: {} }],
 };
 

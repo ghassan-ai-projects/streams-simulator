@@ -9,6 +9,7 @@ import {
   pacedRate,
   plannedS,
   reachedS,
+  recoveredPlanOf,
   startFailureWords,
 } from "./job";
 import type { LaunchPlan } from "./launch";
@@ -20,6 +21,7 @@ const plan: LaunchPlan = {
   explore: false,
   pace: "watch",
   faults: [{ entity: "CT-1", fault: "fan", atS: 10 }],
+  perturbations: [],
   calls: [{ entity: "CH-1", effector: "chiller__start", atS: 20, args: { chiller_id: "CH-1" } }],
 };
 
@@ -36,6 +38,10 @@ const status: JobStatus = {
   explore: false,
   calls: [],
   failure: "",
+  name: "",
+  purpose: "",
+  faults: [],
+  perturbations: [],
 };
 
 describe("job request", () => {
@@ -47,10 +53,33 @@ describe("job request", () => {
       durationS: 1800,
       rate: 60,
       faults: plan.faults,
+      perturbations: [],
       calls: plan.calls,
     });
     expect(jobRequestOf("factory", { ...plan, pace: "fast" }).rate).toBe(0);
-    expect(jobRequestOf("factory", { seed: 3, durationS: 1800, explore: false, faults: [], calls: [] }).rate).toBe(0);
+    expect(
+      jobRequestOf("factory", { seed: 3, durationS: 1800, explore: false, faults: [], perturbations: [], calls: [] })
+        .rate,
+    ).toBe(0);
+  });
+
+  it("carries the name, the purpose, the end of a fault and the delivery conditions when the plan has them", () => {
+    const full: LaunchPlan = {
+      ...plan,
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      faults: [{ entity: "CT-1", fault: "fan", atS: 10, untilS: 90 }],
+      perturbations: [{ kind: "drop", params: { rate: 0.5 }, atS: 30, untilS: 120 }],
+    };
+    expect(jobRequestOf("factory", full)).toMatchObject({
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      faults: [{ entity: "CT-1", fault: "fan", atS: 10, untilS: 90 }],
+      perturbations: [{ kind: "drop", params: { rate: 0.5 }, atS: 30, untilS: 120 }],
+    });
+    const bare = jobRequestOf("factory", plan);
+    expect("name" in bare).toBe(false);
+    expect("purpose" in bare).toBe(false);
   });
 });
 
@@ -125,9 +154,42 @@ describe("failure words", () => {
 });
 
 describe("a plan recovered after a reload", () => {
+  const sealed = { ...status, name: "Fan failure", purpose: "Observe recovery" };
+
+  it("keeps the name and purpose and claims nothing of an evaluation's sealed plan", () => {
+    expect(recoveredPlanOf(sealed)).toEqual({
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      seed: 3,
+      durationS: 1800,
+      explore: false,
+      faults: [],
+      perturbations: [],
+      calls: [],
+      recovered: true,
+    });
+  });
+
+  it("rebuilds the faults and delivery conditions of an exploration from its status", () => {
+    const open = {
+      ...sealed,
+      explore: true,
+      faults: [{ entity: "CT-1", fault: "fan", atS: 10, untilS: 90 }],
+      perturbations: [{ kind: "drop", params: { rate: 0.5 }, atS: 30 }],
+    };
+    expect(recoveredPlanOf(open)).toMatchObject({
+      faults: open.faults,
+      perturbations: open.perturbations,
+      recovered: true,
+    });
+    expect(planSummary(recoveredPlanOf(open), "30 min")).toBe(
+      "30 min of simulated time · Explore · 1 fault · 1 delivery condition",
+    );
+  });
+
   it("names the length and the mode but claims no fault count it does not know", () => {
     expect(planSummary(plan, "30 min")).toBe("30 min of simulated time · Evaluate · 1 fault · 1 effector call");
-    expect(planSummary({ ...plan, recovered: true, faults: [], calls: [] }, "30 min")).toBe(
+    expect(planSummary({ ...plan, recovered: true, faults: [], perturbations: [], calls: [] }, "30 min")).toBe(
       "30 min of simulated time · Evaluate",
     );
   });

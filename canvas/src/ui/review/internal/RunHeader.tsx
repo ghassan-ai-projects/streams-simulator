@@ -86,10 +86,16 @@ function trailOf({ navigation, worldId, hall, onHall, plant }: HeaderProps): Cru
 export function Header(props: HeaderProps) {
   const { state, worldId, hall, plant } = props;
   const run = `Run ${worldId}`;
+  const name = readyReport(state)?.name ?? "";
   const heading = useScreen(hall === null ? `${run} · ${plant.title}` : `${hall} · ${run}`);
   return (
     <div className={styles.bar}>
-      <Breadcrumb trail={trailOf(props)} here={hall ?? run} heading={heading} />
+      <Breadcrumb
+        trail={trailOf(props)}
+        here={hall ?? run}
+        heading={heading}
+        {...(name === "" ? {} : { caption: name })}
+      />
       <Status state={state} now={() => props.launch.nowMs()} />
       <RunActions {...props} />
     </div>

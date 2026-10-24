@@ -28,6 +28,7 @@ function plan(explore: boolean) {
     explore,
     pace: "watch" as const,
     faults: [{ entity: "CH-1", fault: "chiller__CANARY_TRUTH_9f3a", atS: 0 }],
+    perturbations: [{ kind: "CANARY_TRUTH_drop", params: { rate: 0.5 }, atS: 0 }],
     calls: [{ entity: "CT-1", effector: "start", atS: 0, args: {} }],
   };
 }

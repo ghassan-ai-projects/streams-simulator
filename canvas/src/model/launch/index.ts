@@ -14,9 +14,13 @@ export {
   unobserved,
 } from "./internal/job";
 export { planProblems } from "./internal/planProblems";
+export { agendaOf } from "./internal/agenda";
+export { faultCategoryOf, faultGroups } from "./internal/faultGroups";
+export { kindNamed } from "./internal/perturbation";
+export { readinessOf } from "./internal/readiness";
 export { effectorShownS, shownFaults, showingMarks } from "./internal/showing";
 export { draftOf, firstDraft, freshPlanOf, pickedOnGraph, planOf } from "./internal/draft";
-export { runProgressWords, runStageWords } from "./internal/progress";
+export { runProgressWords, runStageWords, runTitle } from "./internal/progress";
 export {
   exploreOnlyFaultsWords,
   idleControl,
@@ -70,6 +74,8 @@ export {
   staleCheckWords,
 } from "./internal/sessionWords";
 export type {
+  AgendaItem,
+  AgendaLane,
   ArgValue,
   BindingNote,
   CallOutcome,
@@ -77,6 +83,10 @@ export type {
   DraftCall,
   DraftFault,
   ControlName,
+  DeliveryProblem,
+  DraftPerturbation,
+  FaultCategories,
+  FaultCategory,
   ImmediateCall,
   InjectedFault,
   JobRequest,
@@ -89,6 +99,9 @@ export type {
   PlanMember,
   PlannedFault,
   PlannedInstance,
+  PerturbationKind,
+  PerturbationParamSpec,
+  PerturbParams,
   PlanProblem,
   PolicyNote,
   RealRow,

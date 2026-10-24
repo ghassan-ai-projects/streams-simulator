@@ -1,3 +1,4 @@
+import type { PerturbParams } from "../../launch";
 import type { ArgValue } from "../../plant";
 import { groupBy } from "../../shared/collect";
 import { humanise } from "../../shared/words";
@@ -18,6 +19,8 @@ interface Disturbance {
   readonly name: string;
   readonly clearedNs: number | null;
   readonly clearedBy: string;
+  readonly params?: PerturbParams;
+  readonly untilNs?: number;
 }
 
 interface EffectorCall {
@@ -66,6 +69,8 @@ interface Termination {
 
 export interface Report {
   readonly runId: string;
+  readonly name: string;
+  readonly purpose: string;
   readonly mode: string;
   readonly ended: boolean;
   readonly complete: boolean;

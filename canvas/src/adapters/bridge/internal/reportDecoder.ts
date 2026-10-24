@@ -40,6 +40,8 @@ function decodeReport(value: Record<string, unknown>): Report {
 function runFacts(run: Record<string, unknown>) {
   return {
     runId: text(run.run_id),
+    name: text(run.name),
+    purpose: text(run.purpose),
     mode: text(run.mode),
     ended: run.ended === true,
     complete: run.complete === true,
@@ -85,6 +87,7 @@ function faults(truth: Record<string, unknown>) {
 function perturbations(truth: Record<string, unknown>) {
   return list(truth.perturbations).map((raw) => {
     const perturbation = record(raw);
+    const until = number(perturbation.until_ns);
     return {
       kind: "perturbation" as const,
       action: text(perturbation.action),
@@ -92,10 +95,25 @@ function perturbations(truth: Record<string, unknown>) {
       onsetNs: number(perturbation.from_ns) || number(perturbation.at_ns),
       target: "delivery",
       name: text(perturbation.perturbation),
+      params: paramValues(perturbation.params),
+      ...(until > 0 ? { untilNs: until } : {}),
       clearedNs: null,
       clearedBy: "",
     };
   });
+}
+
+type Params = NonNullable<Report["disturbances"][number]["params"]>;
+type ParamValue = Params[string];
+
+function paramValues(value: unknown): Params {
+  const kept = Object.entries(record(value)).filter(
+    (entry): entry is [string, ParamValue] =>
+      typeof entry[1] === "number" ||
+      typeof entry[1] === "string" ||
+      (Array.isArray(entry[1]) && entry[1].every((item) => typeof item === "string")),
+  );
+  return Object.fromEntries(kept);
 }
 
 function environment(truth: Record<string, unknown>) {

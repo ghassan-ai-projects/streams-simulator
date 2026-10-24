@@ -1,5 +1,6 @@
 import type { CallOutcome, LaunchPlan } from "./launch";
 import { paceOf } from "./launch";
+import type { PlannedPerturbation } from "./perturbation";
 
 type JobState = "running" | "paused" | "stopping" | "completed" | "stopped" | "failed";
 
@@ -14,6 +15,10 @@ interface JobCall {
 }
 
 export interface JobStatus {
+  readonly name: string;
+  readonly purpose: string;
+  readonly faults: LaunchPlan["faults"];
+  readonly perturbations: readonly PlannedPerturbation[];
   readonly worldId: string;
   readonly runId: string;
   readonly domain: string;
@@ -29,20 +34,34 @@ export interface JobStatus {
 }
 
 export interface JobRequest {
+  readonly name?: string;
+  readonly purpose?: string;
   readonly domain: string;
   readonly seed: number;
   readonly explore: boolean;
   readonly durationS: number;
   readonly rate: number;
   readonly faults: LaunchPlan["faults"];
+  readonly perturbations: LaunchPlan["perturbations"];
   readonly calls: LaunchPlan["calls"];
 }
 
 export const unobserved = Number.NEGATIVE_INFINITY;
 
 export function jobRequestOf(domain: string, plan: LaunchPlan): JobRequest {
-  const { seed, explore, durationS, faults, calls } = plan;
-  return { domain, seed, explore, durationS, rate: paceOf(plan) ?? 0, faults, calls };
+  const { name, purpose, seed, explore, durationS, faults, perturbations, calls } = plan;
+  return {
+    ...(name === undefined ? {} : { name }),
+    ...(purpose === undefined ? {} : { purpose }),
+    domain,
+    seed,
+    explore,
+    durationS,
+    rate: paceOf(plan) ?? 0,
+    faults,
+    perturbations,
+    calls,
+  };
 }
 
 export interface InjectedFault {
@@ -72,8 +91,18 @@ export function plannedS(status: JobStatus): number {
 }
 
 export function recoveredPlanOf(status: JobStatus): LaunchPlan {
-  const { seed, explore } = status;
-  return { seed, durationS: plannedS(status), explore, faults: [], calls: [], recovered: true };
+  const { seed, explore, name, purpose, faults, perturbations } = status;
+  return {
+    ...(name === "" ? {} : { name }),
+    ...(purpose === "" ? {} : { purpose }),
+    seed,
+    durationS: plannedS(status),
+    explore,
+    faults,
+    perturbations,
+    calls: [],
+    recovered: true,
+  };
 }
 
 export function pacedRate(status: JobStatus): number | null {

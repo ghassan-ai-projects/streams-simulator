@@ -12,6 +12,7 @@ const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   durationS: 100,
   explore: true,
   faults: [],
+  perturbations: [],
   calls: [],
   ...overrides,
 });

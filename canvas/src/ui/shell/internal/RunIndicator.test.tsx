@@ -10,7 +10,7 @@ import { memoryLocation } from "../../../test/location";
 import { RunIndicator } from "./RunIndicator";
 
 const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain.json" };
-const plan = { seed: 1, durationS: 60, explore: true, faults: [], calls: [] };
+const plan = { seed: 1, durationS: 60, explore: true, faults: [], perturbations: [], calls: [] };
 
 function setup(status?: object) {
   const bridge = launchBridge("w-5");
@@ -35,6 +35,23 @@ describe("run indicator", () => {
     fireEvent.click(screen.getByRole("button", { name: "Run w-5 finished · Open review" }));
     expect(location.hash).toBe("#/review?world=w-5");
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("names a named run in the pill and in the announcement, and its review once finished", async () => {
+    const { launch, timers } = setup();
+    const named = { ...plan, name: "Cooling loss", durationS: 1800, pace: "watch" as const };
+    await act(async () => {
+      await launch.start(origin, named);
+      await elapse(timers, 500);
+    });
+    expect(
+      screen.getByRole("button", { name: "Running Cooling loss · 00:00:30 of 00:30:00 · 60 s per s" }),
+    ).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("Run of Cooling loss on Mini plant started");
+    await act(async () => {
+      await elapse(timers, 30_000);
+    });
+    expect(screen.getByRole("button", { name: "Run w-5 (Cooling loss) finished · Open review" })).toBeVisible();
   });
 
   it("shows progress, links back to the plant's run panel, and lets a failure be dismissed", async () => {

@@ -34,6 +34,21 @@ const refused = {
   immediate: false,
 };
 
+function window(name: string, atS: number, extra: object): Report["disturbances"][number] {
+  return {
+    kind: "perturbation",
+    action: "apply",
+    injectedNs: start,
+    onsetNs: start + atS * 1e9,
+    target: "delivery",
+    name,
+    params: {},
+    clearedNs: null,
+    clearedBy: "",
+    ...extra,
+  };
+}
+
 function completeRun(overrides: Partial<Report> = {}): Report {
   return blankReport({
     runId: "r-9",
@@ -61,6 +76,7 @@ describe("setting up another run from a complete run", () => {
         explore: false,
         pace: "fast",
         faults: [{ entity: "CT-1", fault: "tower__fan_failure", atS: 600 }],
+        perturbations: [],
         calls: [{ entity: "CT-1", effector: "set_setpoint", atS: 60, args: { tower_id: "CT-1", setpoint: 7 } }],
       },
     });
@@ -99,22 +115,52 @@ describe("setting up another run from a complete run", () => {
     expect(rerunOf(completeRun({ mode: "explore" })).plan.explore).toBe(true);
   });
 
+  it("repeats the name, the purpose, a fault cleared by its plan and every delivery condition exactly", () => {
+    const run = completeRun({
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      disturbances: [
+        { ...fault, clearedNs: start + 900e9, clearedBy: "command" },
+        { ...fault, name: "tower__other", onsetNs: start + 700e9 },
+        window("drop", 300, { params: { rate: 0.5 }, untilNs: start + 1200e9 }),
+        window("reorder", 400, {}),
+        { ...window("drop", 1200, {}), action: "clear" },
+      ],
+    });
+    const again = rerunOf(run);
+    expect(again.plan).toMatchObject({
+      name: "Fan failure",
+      purpose: "Observe recovery",
+      faults: [
+        { entity: "CT-1", fault: "tower__fan_failure", atS: 600, untilS: 900 },
+        { entity: "CT-1", fault: "tower__other", atS: 700 },
+      ],
+      perturbations: [
+        { kind: "drop", params: { rate: 0.5 }, atS: 300, untilS: 1200 },
+        { kind: "reorder", params: {}, atS: 400 },
+      ],
+    });
+    expect(again.plan.faults[1]).not.toHaveProperty("untilS");
+    expect(again.plan.perturbations[1]).not.toHaveProperty("untilS");
+    expect(again.left).toEqual([]);
+  });
+
+  it("leaves the name and purpose out of a run that had none", () => {
+    expect("name" in rerunOf(completeRun()).plan).toBe(false);
+    expect("purpose" in rerunOf(completeRun()).plan).toBe(false);
+  });
+
   it("lists only what a launch plan cannot carry", () => {
     const run = completeRun({
       disturbances: [
-        { ...fault, clearedNs: start + 900e9, clearedBy: "command" },
-        { ...fault, name: "tower__other", clearedNs: start + 900e9, clearedBy: "pulse_end" },
+        { ...fault, clearedNs: start + 900e9, clearedBy: "pulse_end" },
         { ...fault, name: "tower__third", clearedNs: start + 900e9, clearedBy: "responder" },
-        { ...fault, kind: "perturbation", target: "delivery", name: "drop" },
         { ...fault, kind: "environment", target: "weather", name: "heat_wave" },
+        { ...fault, kind: "environment", target: "weather", name: "cold_snap" },
       ],
     });
-    expect(rerunOf(run).plan.faults).toHaveLength(3);
-    expect(rerunOf(run).left).toEqual([
-      "1 delivery perturbation",
-      "1 environment change",
-      "1 fault clear (the fault stays on)",
-    ]);
+    expect(rerunOf(run).plan.faults).toHaveLength(2);
+    expect(rerunOf(run).left).toEqual(["2 environment changes"]);
   });
 
   it("uses one minute for a shorter run and says so", () => {
@@ -130,7 +176,7 @@ describe("setting up another run from a run that did not finish", () => {
     expect(rerunOf(interrupted)).toEqual({
       fresh: true,
       left: [],
-      plan: { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], calls: [] },
+      plan: { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], perturbations: [], calls: [] },
     });
   });
 
@@ -141,6 +187,14 @@ describe("setting up another run from a run that did not finish", () => {
   ])("treats a run with %s as unrecovered and never copies its faults or calls", (_name, overrides) => {
     const rerun = rerunOf(completeRun(overrides));
     expect(rerun.fresh).toBe(true);
-    expect(rerun.plan).toEqual({ seed: 1, durationS: 1800, explore: false, pace: "watch", faults: [], calls: [] });
+    expect(rerun.plan).toEqual({
+      seed: 1,
+      durationS: 1800,
+      explore: false,
+      pace: "watch",
+      faults: [],
+      perturbations: [],
+      calls: [],
+    });
   });
 });

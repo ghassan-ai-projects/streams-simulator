@@ -1,7 +1,11 @@
 import type { EffectorSpec } from "../../plant";
 import { argProblem } from "../../plant";
 import { humanise } from "../../shared/words";
+import { deliveryProblems } from "./deliveryProblems";
+import type { DeliveryProblem } from "./deliveryProblems";
+import { endText } from "./endProblems";
 import type { LaunchPlan, PlannedCall } from "./launch";
+import type { PerturbationKind } from "./perturbation";
 
 type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
 
@@ -18,6 +22,8 @@ export type PlanProblem =
   | { readonly field: "seed"; readonly text: string }
   | { readonly field: "duration"; readonly text: string }
   | { readonly field: "fault"; readonly index: number; readonly text: string }
+  | { readonly field: "faultEnd"; readonly index: number; readonly text: string }
+  | DeliveryProblem
   | CallProblem;
 
 function insideRun(plan: LaunchPlan, atS: number): boolean {
@@ -38,6 +44,13 @@ function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
   return plan.faults.flatMap((_fault, index): PlanProblem[] => {
     const text = faultText(plan, index);
     return text === null ? [] : [{ field: "fault", index, text }];
+  });
+}
+
+function faultEndProblems(plan: LaunchPlan): readonly PlanProblem[] {
+  return plan.faults.flatMap((fault, index): PlanProblem[] => {
+    const text = endText(`Fault ${String(index + 1)}`, fault.atS, fault.untilS, plan.durationS);
+    return text === null ? [] : [{ field: "faultEnd", index, text }];
   });
 }
 
@@ -84,6 +97,16 @@ function runProblems(plan: LaunchPlan): readonly PlanProblem[] {
   return problems;
 }
 
-export function planProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {
-  return [...runProblems(plan), ...faultProblems(plan), ...callProblems(plan, specOf)];
+export function planProblems(
+  plan: LaunchPlan,
+  specOf: SpecOf,
+  kinds: readonly PerturbationKind[] = [],
+): readonly PlanProblem[] {
+  return [
+    ...runProblems(plan),
+    ...faultProblems(plan),
+    ...faultEndProblems(plan),
+    ...deliveryProblems(plan, kinds),
+    ...callProblems(plan, specOf),
+  ];
 }

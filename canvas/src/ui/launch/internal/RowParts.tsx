@@ -1,11 +1,13 @@
-import { panel } from "../../primitives";
-import { Trash2, TriangleAlert } from "lucide-react";
+import { cx, panel, shared } from "../../primitives";
+import { Plus, Trash2, TriangleAlert } from "lucide-react";
+import type { Ref } from "react";
 import { useRef, useState } from "react";
 import type { Draft } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { kindLabel } from "../../../model/shared/words";
 import { useFocusOnMount } from "../../primitives";
 import styles from "./LaunchPanel.module.css";
+import rows from "./PlanRows.module.css";
 
 export type Change = (draft: Draft) => Draft;
 
@@ -58,23 +60,28 @@ export function InstancePick({
   );
 }
 
+type When = "starts" | "ends";
+
 interface MinutePickProps {
   readonly value: string;
   readonly label: string;
   readonly id: string;
   readonly problem: string;
+  readonly when?: When;
+  readonly placeholder?: string;
   readonly onChange: (text: string) => void;
 }
 
-function MinutePick({ value, label, id, problem, onChange }: MinutePickProps) {
+function MinutePick({ value, label, id, problem, when = "starts", placeholder, onChange }: MinutePickProps) {
   return (
     <input
-      id={`${id}-start`}
+      id={`${id}-${when === "starts" ? "start" : "end"}`}
       className={styles.minute}
-      aria-label={`${label} starts at minute`}
+      aria-label={`${label} ${when} at minute`}
       inputMode="decimal"
       value={value}
-      {...invalid(problem, id)}
+      placeholder={placeholder}
+      {...invalid(problem, when === "starts" ? id : `${id}-end`)}
       onChange={(event) => {
         onChange(event.target.value);
       }}
@@ -82,10 +89,51 @@ function MinutePick({ value, label, id, problem, onChange }: MinutePickProps) {
   );
 }
 
-export function AtMinute({ value, label, id, problem, onChange }: MinutePickProps) {
+export function AtMinute({ lead = "At minute", ...pick }: MinutePickProps & { readonly lead?: string }) {
   return (
     <span className={styles.sentence}>
-      At minute <MinutePick value={value} label={label} id={id} problem={problem} onChange={onChange} />
+      {lead} <MinutePick {...pick} />
+    </span>
+  );
+}
+
+interface TimesProps {
+  readonly label: string;
+  readonly id: string;
+  readonly atMinutes: string;
+  readonly untilMinutes: string;
+  readonly startProblem: string;
+  readonly endProblem: string;
+  readonly endPlaceholder: string;
+  readonly update: (next: { readonly atMinutes?: string; readonly untilMinutes?: string }) => void;
+}
+
+export function RowTimes(props: TimesProps) {
+  const { label, id, atMinutes, untilMinutes, startProblem, endProblem, endPlaceholder, update } = props;
+  return (
+    <span className={rows.times}>
+      <AtMinute
+        lead="Starts at minute"
+        value={atMinutes}
+        label={label}
+        id={id}
+        problem={startProblem}
+        onChange={(next) => {
+          update({ atMinutes: next });
+        }}
+      />
+      <AtMinute
+        lead="Ends at minute"
+        when="ends"
+        placeholder={endPlaceholder}
+        value={untilMinutes}
+        label={label}
+        id={id}
+        problem={endProblem}
+        onChange={(next) => {
+          update({ untilMinutes: next });
+        }}
+      />
     </span>
   );
 }
@@ -132,4 +180,26 @@ export function useAdding(change: (change: Change) => void, append: (draft: Draf
     change((draft) => append({ ...draft, nextKey: draft.nextKey + 1 }, draft.nextKey));
   };
   return { added, addButton, add };
+}
+
+interface AddRowProps {
+  readonly label: string;
+  readonly buttonRef: Ref<HTMLButtonElement>;
+  readonly disabled?: boolean;
+  readonly onAdd: () => void;
+}
+
+export function AddRow({ label, buttonRef, disabled = false, onAdd }: AddRowProps) {
+  return (
+    <button
+      type="button"
+      ref={buttonRef}
+      disabled={disabled}
+      className={cx(shared.secondary, panel.secondary)}
+      onClick={onAdd}
+    >
+      <Plus size={14} aria-hidden="true" />
+      {label}
+    </button>
+  );
 }

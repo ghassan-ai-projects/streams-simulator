@@ -2,7 +2,7 @@ import { CircleAlert, CircleCheck, Loader, Pause, X } from "lucide-react";
 import { useEffect } from "react";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import { runProgressWords, runStageWords } from "../../../model/launch";
+import { runProgressWords, runStageWords, runTitle } from "../../../model/launch";
 import { shared, useStore } from "../../primitives";
 import styles from "./RunIndicator.module.css";
 
@@ -13,21 +13,35 @@ interface IndicatorProps {
 
 type Shown = Exclude<LaunchState, { phase: "idle" }>;
 
-function words(state: Shown): string {
+interface Words {
+  readonly head: string;
+  readonly name: string;
+  readonly tail: string;
+}
+
+function parts(state: Shown): Words {
   if (state.phase === "running") {
-    return state.stopping
-      ? `Stopping the run of ${state.origin.title}`
-      : `${runStageWords(state)} ${state.origin.title} · ${runProgressWords(state)}`;
+    const name = state.plan.name ?? state.origin.title;
+    if (state.stopping) return { head: "Stopping the run of", name, tail: "" };
+    return { head: runStageWords(state), name, tail: `· ${runProgressWords(state)}` };
   }
   if (state.phase === "done") {
-    return `Run ${state.worldId} ${state.early ? "stopped early" : "finished"} · Open review`;
+    const named = state.plan.name === undefined ? "" : ` (${state.plan.name})`;
+    const how = state.early ? "stopped early" : "finished";
+    return { head: `Run ${state.worldId}${named} ${how}`, name: "", tail: "· Open review" };
   }
-  return `The run of ${state.origin.title} did not finish`;
+  return { head: `The run of ${state.origin.title} did not finish`, name: "", tail: "" };
+}
+
+function words(state: Shown): string {
+  const { head, name, tail } = parts(state);
+  return [head, name, tail].filter((part) => part !== "").join(" ");
 }
 
 function announcement(state: LaunchState): string {
   if (state.phase === "idle") return "";
-  if (state.phase === "running") return `Run of ${state.origin.title} ${state.paused ? "paused" : "started"}`;
+  if (state.phase === "running")
+    return `Run of ${runTitle(state.plan, state.origin.title)} ${state.paused ? "paused" : "started"}`;
   if (state.phase === "done") return `The review of run ${state.worldId} is ready`;
   return words(state);
 }
@@ -71,6 +85,28 @@ export function RunIndicator(props: IndicatorProps) {
   );
 }
 
+function Label({ head, name, tail }: Words) {
+  return (
+    <>
+      {name === "" ? <span className={styles.runName}>{head}</span> : head}
+      {name !== "" && (
+        <>
+          {" "}
+          <span className={styles.runName} title={name}>
+            {name}
+          </span>
+        </>
+      )}
+      {tail !== "" && (
+        <>
+          {" "}
+          <span className={styles.runTail}>{tail}</span>
+        </>
+      )}
+    </>
+  );
+}
+
 function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: Shown }) {
   const Icon = state.phase === "running" && state.paused ? Pause : icons[state.phase];
   const open = () => {
@@ -87,7 +123,7 @@ function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: 
           aria-hidden="true"
           className={state.phase === "running" && !state.paused ? shared.spin : undefined}
         />
-        {words(state)}
+        <Label {...parts(state)} />
       </button>
       {state.phase !== "running" && (
         <button

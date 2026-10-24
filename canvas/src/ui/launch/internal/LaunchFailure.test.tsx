@@ -20,6 +20,7 @@ describe("a run that stops on a fault", () => {
       durationS: 3600,
       explore: true,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 0 }],
+      perturbations: [],
       calls: [],
     });
     render(

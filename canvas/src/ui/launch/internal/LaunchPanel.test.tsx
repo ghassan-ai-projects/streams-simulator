@@ -68,7 +68,7 @@ describe("launch panel", () => {
       timers.advance(2000);
     });
     expect(onFinished).toHaveBeenCalledWith("w-7");
-    expect(fake.calls[0]).toEqual({
+    expect(fake.jobCalls[0]).toEqual({
       name: "job.start",
       args: {
         domain: "mini",
@@ -77,6 +77,7 @@ describe("launch panel", () => {
         duration_s: 1800,
         rate: 0,
         faults: [{ entity_id: "CH-1", fault: "chiller__fouling", at_s: 600 }],
+        perturbations: [],
         calls: [],
       },
     });
@@ -107,7 +108,7 @@ describe("launch panel", () => {
       "Fault 1 needs an instance and a fault.",
     );
     expect(screen.getByRole("status")).toHaveTextContent(/^2 to fix before starting/);
-    expect(fake.calls).toEqual([]);
+    expect(fake.jobCalls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Remove fault 1" }));
     expect(screen.getByRole("button", { name: "Add fault" })).toHaveFocus();
     expect(screen.getByText("None: no fault is scheduled for this run.")).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe("launch panel", () => {
     const fault = screen.getByLabelText("Fault 1 fault");
     expect(fault).toHaveFocus();
     expect(fault).toHaveAccessibleDescription("Fault 1 needs a fault.");
-    expect(fake.calls).toEqual([]);
+    expect(fake.jobCalls).toEqual([]);
   });
 
   it("shows the binary's refusal and returns to the plan", async () => {
@@ -214,7 +215,7 @@ describe("launch panel lifetime", () => {
     const { launch, timers } = launchHarness(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
-      { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
+      { seed: 1, durationS: 60, explore: true, faults: [], perturbations: [], calls: [] },
     );
     await elapse(timers, 500);
     expect(launch.snapshot()).toMatchObject({ phase: "done" });
@@ -233,6 +234,7 @@ describe("launch panel lifetime", () => {
       durationS: 7200,
       explore: false,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
+      perturbations: [],
       calls: [],
     });
     const view = render(
@@ -255,8 +257,8 @@ describe("launch panel lifetime", () => {
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
-      { seed: 5, durationS: 90, explore: true, faults, calls: [] },
-      ["1 delivery perturbation"],
+      { seed: 5, durationS: 90, explore: true, faults, perturbations: [], calls: [] },
+      ["1 environment change"],
       "w-4",
     );
     render(
@@ -265,7 +267,7 @@ describe("launch panel lifetime", () => {
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "Prefilled from w-4: seed, duration, mode, pace, faults and effector calls. Change them if needed. Not copied: 1 delivery perturbation.",
+      "Prefilled from w-4: name, purpose, seed, duration, mode, pace, faults with their ends, delivery conditions and effector calls. Change them if needed. Not copied: 1 environment change.",
     );
   });
 });

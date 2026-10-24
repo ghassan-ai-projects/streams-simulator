@@ -12,6 +12,7 @@ export const plan: LaunchPlan = {
   explore: false,
   pace: "watch",
   faults: [{ entity: "CT-1", fault: "fan", atS: 600 }],
+  perturbations: [],
   calls: [],
 };
 

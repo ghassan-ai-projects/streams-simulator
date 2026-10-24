@@ -36,7 +36,12 @@ function moreLabel(count: number): string {
 }
 
 function detailParts(row: RunRow): readonly string[] {
-  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "");
+  return [
+    row.run.name === undefined ? "" : row.plantTitle,
+    row.run.worldId,
+    whenOf(row.run.recordedAt),
+    ...runFacts(row.run),
+  ].filter((part) => part !== "");
 }
 
 function detail(row: RunRow): string {
@@ -95,8 +100,8 @@ function Row({
     <li className={rowStyles.item}>
       <span className={rowStyles.lines}>
         <span className={rowStyles.line}>
-          <span className={rowStyles.name} title={row.plantTitle}>
-            {row.plantTitle}
+          <span className={rowStyles.name} title={row.run.name ?? row.plantTitle}>
+            {row.run.name ?? row.plantTitle}
           </span>
           <ModeBadge row={row} />
         </span>

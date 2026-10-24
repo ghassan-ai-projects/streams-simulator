@@ -1,11 +1,13 @@
 import type { ArgValue } from "../../plant";
 import { humanise } from "../../shared/words";
 import { durationOf } from "../../shared/duration";
+import type { PlannedPerturbation } from "./perturbation";
 
 export interface PlannedFault {
   readonly entity: string;
   readonly fault: string;
   readonly atS: number;
+  readonly untilS?: number;
 }
 
 export interface PlannedCall {
@@ -16,10 +18,13 @@ export interface PlannedCall {
 }
 
 export interface LaunchPlan {
+  readonly name?: string;
+  readonly purpose?: string;
   readonly seed: number;
   readonly durationS: number;
   readonly explore: boolean;
   readonly faults: readonly PlannedFault[];
+  readonly perturbations: readonly PlannedPerturbation[];
   readonly calls: readonly PlannedCall[];
   readonly pace?: "watch" | "fast";
   readonly recovered?: boolean;
@@ -55,7 +60,7 @@ export function keepKnownFaults(plan: LaunchPlan, faultsOf: (entity: string) => 
     const known = faultsOf(fault.entity);
     if (known?.includes(fault.fault)) return fault;
     dropped.push(droppedWords(fault, known === null));
-    return known === null ? { entity: "", fault: "", atS: fault.atS } : { ...fault, fault: "" };
+    return known === null ? { ...fault, entity: "", fault: "" } : { ...fault, fault: "" };
   });
   return { plan: { ...plan, faults }, dropped };
 }

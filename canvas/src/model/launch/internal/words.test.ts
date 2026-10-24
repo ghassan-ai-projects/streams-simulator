@@ -11,7 +11,15 @@ import {
   unrecoveredWords,
 } from "./words";
 
-const plan: LaunchPlan = { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], calls: [] };
+const plan: LaunchPlan = {
+  seed: 1,
+  durationS: 1800,
+  explore: true,
+  pace: "watch",
+  faults: [],
+  perturbations: [],
+  calls: [],
+};
 
 const faulted = (count: number): LaunchPlan["faults"] =>
   Array.from({ length: count }, (_, index) => ({ entity: "CT-1", fault: "fan", atS: 5 + index }));

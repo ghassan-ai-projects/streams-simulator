@@ -1,6 +1,6 @@
 import { panel, shared, cx, useFocusOnMount } from "../../primitives";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
-import { planSummary, progressTicks, runProgressWords, runStageWords } from "../../../model/launch";
+import { planSummary, progressTicks, runProgressWords, runStageWords, runTitle } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
 import { durationOf } from "../../../model/shared/duration";
@@ -37,12 +37,14 @@ export function Progress({
   readonly plant: Plant;
 }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
-  const words = state.worldId === null ? "Creating the world…" : `Running ${plantTitle(plant)} as run ${state.worldId}`;
+  const title = runTitle(state.plan, plantTitle(plant));
+  const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
         {state.stopping ? "Stopping at the next step…" : words}
       </p>
+      {state.plan.purpose !== undefined && <p className={styles.clock}>{state.plan.purpose}</p>}
       <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
       <ProgressBar state={state} />
       <p className={styles.clock}>{`${runStageWords(state)} · ${runProgressWords(state, " simulated")}`}</p>

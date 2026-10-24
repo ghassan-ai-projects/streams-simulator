@@ -6,6 +6,7 @@ const plan = (explore: boolean): LaunchPlan => ({
   seed: 1,
   durationS: 600,
   explore,
+  perturbations: [],
   faults: [
     { entity: "CT-1", fault: "fan_failure", atS: 240 },
     { entity: "", fault: "fan_failure", atS: 10 },

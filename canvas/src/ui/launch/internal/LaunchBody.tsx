@@ -40,6 +40,7 @@ export function Body({ state, launch, plant, path, draft, selected, change, onFi
     );
   return (
     <LaunchForm
+      launch={launch}
       plant={plant}
       draft={draft}
       selected={selected}

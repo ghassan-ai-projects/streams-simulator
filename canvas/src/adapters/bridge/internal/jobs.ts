@@ -1,6 +1,7 @@
 import type { ImmediateCall, InjectedFault, JobRequest, JobStatus, LaunchGateway } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 import { launchFailure } from "./failures";
+import { faultArgs, jobFaults, jobPerturbations, perturbationArgs } from "./jobPlan";
 import type { Transport } from "./http";
 import { action } from "./http";
 
@@ -103,6 +104,22 @@ function paceOf(value: Record<string, unknown>): Pace | null {
   return { seed, rate, explore: value.explore };
 }
 
+interface Authored {
+  readonly name: string;
+  readonly purpose: string;
+  readonly faults: JobStatus["faults"];
+  readonly perturbations: JobStatus["perturbations"];
+}
+
+function authoredOf(value: Record<string, unknown>): Authored | null {
+  const name = optionalText(value.name);
+  const purpose = optionalText(value.purpose);
+  const faults = jobFaults(value.faults);
+  const perturbations = jobPerturbations(value.perturbations);
+  if (name === null || purpose === null || faults === null || perturbations === null) return null;
+  return { name, purpose, faults, perturbations };
+}
+
 export function jobStatus(value: unknown): JobStatus | null {
   if (!isRecord(value)) return null;
   const ids = idsOf(value);
@@ -111,8 +128,9 @@ export function jobStatus(value: unknown): JobStatus | null {
   const failure = optionalText(value.failure);
   const span = spanOf(value);
   const pace = paceOf(value);
-  if (ids === null || state === null || calls === null || failure === null) return null;
-  return span === null || pace === null ? null : { ...ids, ...span, ...pace, state, calls, failure };
+  const authored = authoredOf(value);
+  if (ids === null || state === null || calls === null || failure === null || authored === null) return null;
+  return span === null || pace === null ? null : { ...ids, ...span, ...pace, ...authored, state, calls, failure };
 }
 
 export function jobList(value: unknown): readonly JobStatus[] | null {
@@ -134,14 +152,17 @@ export function immediateCall(value: unknown): ImmediateCall | null {
 }
 
 function startArgs(request: JobRequest): Readonly<Record<string, unknown>> {
-  const { domain, seed, explore, durationS, rate, faults, calls } = request;
+  const { name, purpose, domain, seed, explore, durationS, rate, faults, perturbations, calls } = request;
   return {
+    ...(name === undefined ? {} : { name }),
+    ...(purpose === undefined ? {} : { purpose }),
     domain,
     seed,
     explore,
     duration_s: durationS,
     rate,
-    faults: faults.map((fault) => ({ entity_id: fault.entity, fault: fault.fault, at_s: fault.atS })),
+    faults: faults.map(faultArgs),
+    perturbations: perturbations.map(perturbationArgs),
     calls: calls.map((call) => ({ entity_id: call.entity, effector: call.effector, at_s: call.atS, args: call.args })),
   };
 }

@@ -18,6 +18,10 @@ const status: JobStatus = {
   explore: true,
   calls: [],
   failure: "",
+  name: "",
+  purpose: "",
+  faults: [],
+  perturbations: [],
 };
 
 describe("status poll", () => {

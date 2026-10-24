@@ -1,6 +1,7 @@
 import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure } from "../../../app/ports";
 import type { Replay } from "../../../model/review";
 import { connectGateway } from "./connect";
+import { catalogGateway } from "./planCatalog";
 import { jobGateway } from "./jobs";
 import { controlSession } from "./control";
 import { devicesGateway } from "./devices";
@@ -80,7 +81,7 @@ function editorGateway(transport: Transport): BridgeAdapters["editor"] {
 }
 
 function launchGateway(transport: Transport): BridgeAdapters["launch"] {
-  return { ...jobGateway(transport), ...connectGateway(transport) };
+  return { ...jobGateway(transport), ...catalogGateway(transport), ...connectGateway(transport) };
 }
 
 function reviewGateway(transport: Transport): BridgeAdapters["review"] {

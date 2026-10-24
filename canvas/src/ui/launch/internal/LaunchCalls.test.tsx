@@ -87,7 +87,7 @@ describe("effector calls in the run plan", () => {
     expect(list).toHaveTextContent("00:10:00 · CH-1 · set setpoint: accepted");
     expect(screen.getByRole("status")).toHaveTextContent("1 of 2 effector calls were not accepted.");
     expect(onFinished).not.toHaveBeenCalled();
-    expect(fake.calls[0]?.args.calls).toEqual([
+    expect(fake.jobCalls[0]?.args.calls).toEqual([
       { entity_id: "CH-1", effector: "start", at_s: 0, args: { chiller_id: "CH-1" } },
       { entity_id: "CH-1", effector: "set_setpoint", at_s: 600, args: { chiller_id: "CH-1", setpoint_c: 7 } },
     ]);

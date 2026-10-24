@@ -1,18 +1,31 @@
-import type { ImmediateCall, InjectedFault, JobRequest, JobStatus, PlanIssue, SessionCheck } from "../../model/launch";
+import type {
+  FaultCategories,
+  ImmediateCall,
+  InjectedFault,
+  JobRequest,
+  JobStatus,
+  PerturbationKind,
+  PlanIssue,
+  SessionCheck,
+} from "../../model/launch";
 import type { ArgValue } from "../../model/plant";
 import type { RunFollower } from "./review";
 import type { Diagnostic, Outcome } from "./shared";
 
 export type {
+  FaultCategories,
+  FaultCategory,
   ImmediateCall,
   InjectedFault,
   JobRequest,
   JobStatus,
+  PerturbationKind,
+  PerturbationParamSpec,
   PlannedInstance,
   SessionCheck,
 } from "../../model/launch";
 
-export type LaunchStep = "start" | "status" | "stop" | "list" | "run" | "control";
+export type LaunchStep = "start" | "status" | "stop" | "list" | "run" | "control" | "catalog";
 
 export type LaunchFailure =
   | {
@@ -70,6 +83,8 @@ export interface LaunchGateway extends ConnectGateway {
   jobStatus(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   stopJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   listJobs(): Promise<Outcome<readonly JobStatus[], LaunchFailure>>;
+  perturbationCatalog(): Promise<Outcome<readonly PerturbationKind[], LaunchFailure>>;
+  faultCategories(domain: string): Promise<Outcome<FaultCategories, LaunchFailure>>;
   pauseJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   resumeJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   stepJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
