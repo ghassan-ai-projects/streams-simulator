@@ -2,6 +2,10 @@
 
 Turns the audit ([findings](FINDINGS.md), [direction](CONTROL_PLANE_DIRECTION.md), [round 2](round-2/README.md)) into phases with quality bars. Revision 2: the P1 findings were traced to code (references below, checked at `3c6d78c8`), which changes the plan substantially.
 
+## Audit caveat: stale binary
+
+`make build` writes `bin/streams-simulator` (the checkout directory name), but the audit and review log started `bin/streamsim`, which was dated 22 October 15:18, six commits older than the audited commit `3c6d78c8` (23 October). The UI was built fresh; the binary behind it was not. Findings that depend on binary behavior (F03, F05, F14, F16, plus the `/privatesockets` path) were observed on that older binary and must be re-confirmed on a fresh build. Code-traced causes below were read at `3c6d78c8` and are unaffected. Every browser check from Phase 1 on uses `bin/streams-simulator` and states its mtime.
+
 ## What the code says
 
 The audit was a browser review. Reading the code shows that most of the trust findings share one cause.
