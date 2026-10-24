@@ -27,6 +27,7 @@ const (
 	CodeComponentInvalid    Code = "component_invalid"
 	CodeCompositionInvalid  Code = "composition_invalid"
 	CodeNoLibrary           Code = "no_component_library"
+	CodeJobActive           Code = "job_active"
 )
 
 type ToolError struct {

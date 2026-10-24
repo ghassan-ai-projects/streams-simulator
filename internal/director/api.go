@@ -9,6 +9,18 @@ type WorldRequest = layer.WorldRequest
 
 type Code = rules.Code
 
+type JobRequest = rules.JobRequest
+
+type JobFault = rules.JobFault
+
+type JobCall = rules.JobCall
+
+type JobStatus = rules.JobStatus
+
+type JobCallOutcome = rules.JobCallOutcome
+
+type JobState = rules.JobState
+
 type Nameplate = rules.Nameplate
 
 type EffectorInfo = rules.EffectorInfo
@@ -18,4 +30,11 @@ const (
 	CodeInvalidArgs      = rules.CodeInvalidArgs
 	CodeCapabilityDenied = rules.CodeCapabilityDenied
 	CodeNotImplemented   = rules.CodeNotImplemented
+	CodeJobActive        = rules.CodeJobActive
+
+	JobRunning   = rules.JobRunning
+	JobStopping  = rules.JobStopping
+	JobCompleted = rules.JobCompleted
+	JobStopped   = rules.JobStopped
+	JobFailed    = rules.JobFailed
 )

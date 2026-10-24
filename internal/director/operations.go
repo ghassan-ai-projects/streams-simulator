@@ -20,6 +20,14 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	return d.impl.DestroyWorld(worldID)
 }
 
+func (d *Director) StartJob(req JobRequest) (JobStatus, error) { return d.impl.StartJob(req) }
+
+func (d *Director) JobStatus(worldID string) (JobStatus, error) { return d.impl.JobStatus(worldID) }
+
+func (d *Director) StopJob(worldID string) (JobStatus, error) { return d.impl.StopJob(worldID) }
+
+func (d *Director) ListJobs() []JobStatus { return d.impl.ListJobs() }
+
 func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, await bool) (map[string]any, error) {
 	return d.impl.Advance(ctx, worldID, toNS, await)
 }

@@ -257,6 +257,10 @@ func RunScenario(ctx context.Context, scenario *model.Scenario, options Scenario
 	return layer.RunScenario(ctx, scenario, options)
 }
 
+func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) error {
+	return layer.CheckScenarioPlan(ctx, cfg, scenario)
+}
+
 func CheckDomain(check model.DomainCheck, spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
 	return layer.CheckDomain(check, spec)
 }

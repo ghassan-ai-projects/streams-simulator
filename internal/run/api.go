@@ -33,6 +33,8 @@ type ScenarioHooks = layer.ScenarioHooks
 
 type ScenarioOutcome = layer.ScenarioOutcome
 
+type StepResult = layer.StepResult
+
 var (
 	ErrFieldTrace          = layer.ErrFieldTrace
 	ErrFieldTraceMissing   = layer.ErrFieldTraceMissing

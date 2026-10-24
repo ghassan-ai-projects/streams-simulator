@@ -9,6 +9,7 @@ import (
 
 type ScenarioHooks struct {
 	Before func(ctx context.Context, index int, command model.ScenarioCommand) (stop bool, err error)
+	After  func(ctx context.Context, index int, command model.ScenarioCommand, result StepResult)
 }
 
 type ScenarioOutcome struct {
@@ -26,9 +27,11 @@ func (r *Run) ExecuteScenarioWith(ctx context.Context, scenario *model.Scenario,
 		if stop, err := hooks.before(ctx, index, step); err != nil || stop {
 			return ScenarioOutcome{Executed: index, Stopped: stop}, err
 		}
-		if err := r.executeStep(ctx, index, step); err != nil {
+		result, err := r.executeStep(ctx, index, step)
+		if err != nil {
 			return ScenarioOutcome{Executed: index}, err
 		}
+		hooks.after(ctx, index, step, result)
 	}
 	return ScenarioOutcome{Executed: len(scenario.Commands)}, nil
 }
@@ -47,12 +50,19 @@ func (hooks ScenarioHooks) before(ctx context.Context, index int, step model.Sce
 	return stop, nil
 }
 
-func (r *Run) executeStep(ctx context.Context, index int, step model.ScenarioCommand) error {
+func (hooks ScenarioHooks) after(ctx context.Context, index int, step model.ScenarioCommand, result StepResult) {
+	if hooks.After != nil {
+		hooks.After(ctx, index, step, result)
+	}
+}
+
+func (r *Run) executeStep(ctx context.Context, index int, step model.ScenarioCommand) (StepResult, error) {
 	if err := ctx.Err(); err != nil {
-		return scenarioStepError(index, step, err)
+		return StepResult{}, scenarioStepError(index, step, err)
 	}
 	command := model.Command{Op: step.Op, Args: step.Args}
-	return scenarioStepError(index, step, executeCommand(ctx, r, &command, keepWorldRefusals))
+	result, err := executeObserved(ctx, r, &command, keepWorldRefusals)
+	return result, scenarioStepError(index, step, err)
 }
 
 func scenarioStepError(index int, step model.ScenarioCommand, err error) error {

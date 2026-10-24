@@ -52,6 +52,10 @@ The `sim.world.create` response includes the endpoint when configured and always
 | `sim.score` | Score a submitted verdict against truth and ledger. | `run_id`. |
 | `sim.scenario.audit` | Run the trivial-baseline audit for one injection. | `domain`, `entity_id`, `fault`; optional times. |
 | `sim.entity.retire` | Retire an entity. | `world_id`, `entity_id`, `reason`. |
+| `sim.job.start` | Run a plan as a job: create a world and execute the planned run on the director's own goroutine, paced against the wall clock, and return at once. The plan is checked as a scenario before anything starts; one job runs at a time. | `domain`, `seed`, `duration_s`; optional `explore`, `rate`, `faults`, `calls`. |
+| `sim.job.status` | Read a job: state, simulated time reached, requested end and the outcome of each effector call so far. Never waits for an advance in flight. | `world_id`. |
+| `sim.job.stop` | Ask a job to end early. The run closes with the commands executed so far and a `stopped_by_operator` termination; repeating the call is harmless. | `world_id`. |
+| `sim.job.list` | List every job since the director started, finished ones included. | None. |
 
 The authoritative input schemas are defined and enforced beside the handlers in [`internal/mcp/internal/protocol/schemas.go`](../../internal/mcp/internal/protocol/schemas.go). Unknown properties are rejected at the MCP schema boundary; domain-dependent checks such as effector names and argument schemas happen in the handler.
 
@@ -75,6 +79,7 @@ The operator view contains no truth store, fault registry, perturbation log, or 
 | `sim.effector.invoke` | `token`, `effector`, `entity_id`, and unique `command_id` are required. `args` defaults to an empty object and is checked against the domain-declared argument schema. The call acts at the current world clock: an operator cannot date a call, because a dated call would probe hidden state at another time. |
 | `sim.consumer.report` | `token` and `run_id` are required. `quiesced_through_ns` is optional; `verdict` is optional when the consumer is reporting only quiescence. The response acknowledges acceptance and never includes a score. |
 | `sim.truth.seal` | `run_id` and a complete `ground_truth` object conforming to `ground-truth-v0.1` are required. It must happen before `sim.run.begin`. |
+| `sim.job.start` | `domain`, `seed` and `duration_s` (a positive number of seconds) are required. `rate` is simulated seconds per wall second and defaults to `0`, as fast as possible; a positive rate runs 30 chunked advances, `0` runs 20, and each paced advance waits until the wall clock has reached its simulated time. `faults` are `{entity_id, fault, at_s}` and `calls` are `{entity_id, effector, args, at_s}`, with `at_s` from `0` to `duration_s`. At each boundary the run advances to the time, then injects the faults, then invokes the calls, in plan order; actions at `0` run first. The world is an ordinary world (`w-N`, run folder `<out>/w-N`). A refused effector call (interlock, rejection) is recorded as an outcome with its reason and the job goes on. `job_active` refuses a second job while one is running or stopping. The run records the plan (`requested_end_ns`, `rate`) and why it ended (`completed` or `stopped_by_operator`). |
 | `sim.truth.reveal` | `run_id` is required. `unblind` defaults false; `unblind: true` permanently stamps the run and is allowed only after the scoring decision. |
 
 ## Minimal director/operator sequence
@@ -107,7 +112,7 @@ Resources are part of the director surface. They are not a substitute for the op
 
 The stable error codes are:
 
-`domain_invalid`, `adapter_invalid`, `world_not_found`, `clock_backwards`, `consumer_not_quiesced`, `profile_rate_exceeded`, `truth_sealed`, `run_unblinded`, `unknown_effector`, `invalid_args`, `missing_command_id`, `capability_denied`, `effector_refused`, `interlock_refused`, and `not_implemented`.
+`domain_invalid`, `adapter_invalid`, `world_not_found`, `clock_backwards`, `consumer_not_quiesced`, `profile_rate_exceeded`, `truth_sealed`, `run_unblinded`, `unknown_effector`, `invalid_args`, `missing_command_id`, `capability_denied`, `effector_refused`, `interlock_refused`, `not_implemented`, and `job_active`.
 
 Operator-facing errors intentionally remain coarse so error text cannot become a hidden truth channel. A retry must preserve the `command_id`; a new command ID is a new action attempt.
 

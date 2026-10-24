@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The director runs a planned experiment as a job (control-plane round 2.2).** `sim.job.start` takes a run plan (domain, seed,
+  duration, rate, faults, effector calls), checks it as a scenario, creates an ordinary world and runs the plan on a goroutine
+  the director owns, paced against the wall clock by the new `runner` edge; `sim.job.status`, `sim.job.stop` and `sim.job.list`
+  read and end it without waiting behind an advance. A stopped job closes its run with the commands it executed and a
+  `stopped_by_operator` termination; a refused effector call is an outcome, not a failure. The scenario executor's hooks gain
+  an `After` hook that hands over each command's effector acknowledgement. `job_active` is a new refusal code.
+
 - **Review fixes, the Lows (fan S11b).** `kind validate` accepts board mappings (`*.board.json`) and lists each with its
   `board_digest` in `boards`. The check document says `gateway` (the canvas reads it instead of the environment word). The
   wall pacer counts on the monotonic clock. A scaled raw value within floating-point error of a whole number is that number,

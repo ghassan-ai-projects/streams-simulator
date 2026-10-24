@@ -15,6 +15,7 @@ func NewDirectorServer(dir *director.Director) *mcp.Server {
 	registerEffectorTools(s, d)
 	registerInjectionTools(s, d)
 	registerRunTools(s, d)
+	registerJobTools(s, d)
 	registerTruthTools(s, d)
 	registerDirectorResources(s, d)
 	return s
@@ -59,6 +60,13 @@ func registerInjectionTools(s *mcp.Server, d directorTools) {
 func registerRunTools(s *mcp.Server, d directorTools) {
 	addTool(s, toolDef{name: "sim.run.begin", description: "Open a run; truth is sealed.", schema: toolSchema("sim.run.begin"), handler: d.handleRunBegin})
 	addTool(s, toolDef{name: "sim.run.end", description: "Close the run; writes the run artifact.", schema: toolSchema("sim.run.end"), handler: d.handleRunEnd})
+}
+
+func registerJobTools(s *mcp.Server, d directorTools) {
+	addTool(s, toolDef{name: "sim.job.start", description: "Start a run plan as a paced, stoppable job on a new world; returns at once.", schema: toolSchema("sim.job.start"), handler: d.handleJobStart})
+	addTool(s, toolDef{name: "sim.job.status", description: "The job on a world: state, simulated time reached, requested end, effector call outcomes.", schema: toolSchema("sim.job.status"), handler: d.handleJobStatus})
+	addTool(s, toolDef{name: "sim.job.stop", description: "Ask a job to end early; the run is closed with the commands executed so far.", schema: toolSchema("sim.job.stop"), handler: d.handleJobStop})
+	addTool(s, toolDef{name: "sim.job.list", description: "Every job started since the director began, finished ones included.", schema: toolSchema("sim.job.list"), handler: d.handleJobList})
 }
 
 func registerTruthTools(s *mcp.Server, d directorTools) {
