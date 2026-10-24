@@ -8,8 +8,8 @@ import (
 
 type boundary struct{ *Bridge }
 
-func (o boundary) Workspace() (domain.Listing, error) {
-	listing, err := o.Bridge.Workspace()
+func (o boundary) Workspace(ctx context.Context) (domain.Listing, error) {
+	listing, err := o.Bridge.Workspace(ctx)
 	if err != nil {
 		return domain.Listing{}, o.redacted(err)
 	}

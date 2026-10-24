@@ -38,7 +38,7 @@ func TestTheListingReportsRunningForEveryRunTheBridgeKnowsIsRunning(t *testing.T
 			if tc.then != "" {
 				act(t, h, tc.then, map[string]any{"world_id": "w-1"})
 			}
-			listing, err := h.bridge.Workspace()
+			listing, err := h.bridge.Workspace(context.Background())
 			if err != nil || len(listing.Runs) != 1 {
 				t.Fatalf("listing = %+v, %v", listing, err)
 			}

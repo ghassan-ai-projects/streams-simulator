@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The canvas bridge exposes the jobs (control-plane round 2.3).** `job.start`, `job.status`, `job.stop` and `job.list` map to the
+  director's `sim.job.*` tools. A started job's world is tracked as running like a created world, every job result settles the
+  running flag of its world, and the workspace listing asks a running director for its jobs, so a job that finished while no
+  browser was open is listed ended and its sealed evidence opens. A director that died takes its jobs with it: the listing then
+  shows them neither running nor ended. Acceptance tests drive a completed job, a stopped job, a reloaded browser and refused
+  plans through the real binary.
+
 - **The director runs a planned experiment as a job (control-plane round 2.2).** `sim.job.start` takes a run plan (domain, seed,
   duration, rate, faults, effector calls), checks it as a scenario, creates an ordinary world and runs the plan on a goroutine
   the director owns, paced against the wall clock by the new `runner` edge; `sim.job.status`, `sim.job.stop` and `sim.job.list`

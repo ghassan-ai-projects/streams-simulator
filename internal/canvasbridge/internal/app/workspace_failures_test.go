@@ -27,7 +27,7 @@ func TestAWorkspaceFolderThatCannotBeListedFailsTheListingNamingIt(t *testing.T)
 			t.Parallel()
 			h := newHarness(t)
 			h.blockFolder(t, folder)
-			if _, err := h.bridge.Workspace(); err == nil || !strings.Contains(err.Error(), "canvasbridge: list "+folder) {
+			if _, err := h.bridge.Workspace(context.Background()); err == nil || !strings.Contains(err.Error(), "canvasbridge: list "+folder) {
 				t.Fatalf("Workspace() = %v, want an error naming %s", err, folder)
 			}
 		})
@@ -40,7 +40,7 @@ func TestARunWhoseJournalCannotBeReadIsListedWithoutASummary(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(h.dir, "runs", "w-1", "journal.jsonl"), 0o750); err != nil {
 		t.Fatal(err)
 	}
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 {
 		t.Fatalf("Workspace() runs = %+v, %v, want the one run listed", listing.Runs, err)
 	}

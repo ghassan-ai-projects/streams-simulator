@@ -17,7 +17,7 @@ func TestTheListingBoundaryScrubsARunReasonUnderEveryNameOfTheWorkspace(t *testi
 	h.bridge.settings.WorkspaceAliases = []string{h.dir + "-resolved"}
 	reason := "lstat " + h.dir + "/sockets/a.sock; dial " + h.dir + "-resolved/sockets/b.sock"
 	writeRun(t, h.dir, "c-1", openedLine, `{"seed":18446744073709551615,"error":`+quoted(t, reason)+`}`)
-	listing, err := boundary{h.bridge}.Workspace()
+	listing, err := boundary{h.bridge}.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 {
 		t.Fatalf("listing = %+v, %v", listing, err)
 	}
@@ -33,7 +33,7 @@ func TestTheListingBoundaryScrubsASessionPlanOfARecordedRun(t *testing.T) {
 	plan := `{"socket":"` + h.dir + `/sockets/a.sock"}`
 	journal := openedLine + `{"type":"session","stream":"observer","mode":"connected","plan":` + plan + "}\n" + closedLine
 	h.write(t, "runs/c-1/journal.jsonl", journal)
-	listing, err := boundary{h.bridge}.Workspace()
+	listing, err := boundary{h.bridge}.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 || string(listing.Runs[0].Plan) != `{"socket":"sockets/a.sock"}` {
 		t.Fatalf("listing = %+v, %v", listing, err)
 	}
@@ -72,7 +72,7 @@ func TestTheListingBoundaryHidesTheWorkspaceInAFailureAndKeepsItsCause(t *testin
 	t.Parallel()
 	h := newHarness(t)
 	h.blockFolder(t, "runs")
-	listing, err := boundary{h.bridge}.Workspace()
+	listing, err := boundary{h.bridge}.Workspace(context.Background())
 	var pathError *fs.PathError
 	if !errors.As(err, &pathError) || strings.Contains(err.Error(), h.dir) || !strings.Contains(err.Error(), "canvasbridge: list runs") {
 		t.Fatalf("Workspace = %v, want the list failure of runs with the workspace path removed", err)

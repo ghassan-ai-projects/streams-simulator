@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
@@ -12,7 +13,7 @@ const (
 	closingLimit   = 64 << 10
 )
 
-func (b *Bridge) Workspace() (domain.Listing, error) {
+func (b *Bridge) Workspace(ctx context.Context) (domain.Listing, error) {
 	listing := domain.Listing{Name: b.edges.Workspace.Name()}
 	if err := b.listDefinitions(&listing); err != nil {
 		return domain.Listing{}, err
@@ -21,7 +22,7 @@ func (b *Bridge) Workspace() (domain.Listing, error) {
 		return domain.Listing{}, err
 	}
 	var err error
-	listing.Runs, err = b.runs()
+	listing.Runs, err = b.runs(ctx)
 	return listing, err
 }
 
@@ -49,7 +50,8 @@ func (b *Bridge) definitions(folder string) ([]domain.Definition, error) {
 	return out, nil
 }
 
-func (b *Bridge) runs() ([]domain.RunEntry, error) {
+func (b *Bridge) runs(ctx context.Context) ([]domain.RunEntry, error) {
+	b.reconcileJobs(ctx)
 	names, err := b.edges.Workspace.Names("runs")
 	if err != nil {
 		return nil, err
