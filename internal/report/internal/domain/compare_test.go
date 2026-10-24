@@ -262,3 +262,31 @@ func TestNotComparableNamesWhyARunCannotBeCompared(t *testing.T) {
 		}
 	}
 }
+
+func limitMessage(c *Comparison, code string) string {
+	for _, limit := range c.Limits {
+		if limit.Code+limit.Side == code {
+			return limit.Message
+		}
+	}
+	return ""
+}
+
+func TestLimitSentencesNameSimulatedTimeAsAClockNotAsRawSeconds(t *testing.T) {
+	t.Parallel()
+	b := sealedRun(7)
+	b.Run.EndTimeNS = ns(300)
+	b.Run.RequestedEndNS = ns(5400)
+	b.Run.Termination = &model.Termination{Reason: model.TerminationStoppedByOperator, AtNS: ns(300)}
+	b.Truth.KPIs.ToNS = ns(300)
+	c := Compare(sealedRun(7), b)
+	for code, want := range map[string]string{
+		"stopped_earlyb":               "the operator stopped it at 00:05:00, so its results cover only part of its plan.",
+		"different_simulated_length":   "The runs cover different simulated lengths (00:10:00 and 00:05:00); whole-run results are not over the same span.",
+		"different_requested_duration": "(00:10:00 and 01:30:00)",
+	} {
+		if got := limitMessage(c, code); !strings.Contains(got, want) {
+			t.Errorf("%s says %q, want it to contain %q", code, got, want)
+		}
+	}
+}

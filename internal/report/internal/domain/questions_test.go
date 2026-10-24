@@ -102,7 +102,7 @@ func TestOpenQuestionsComeInTheOrderOfTheRulesWithStableSentences(t *testing.T) 
 	got := questionsOf(report)
 	want := []Question{
 		{"run_incomplete", "The run ended incomplete: the sink failed. Its evidence is partial."},
-		{"stopped_early", "The operator stopped the run at +540s of the requested +1800s; actions planned after the stop never ran."},
+		{"stopped_early", "The operator stopped the run at 00:09:00 of the requested 00:30:00; actions planned after the stop never ran."},
 		{"replay_not_checked", "The recording was not replayed: file digests agree with the run, but nobody has shown that the run reproduces."},
 		{"no_outside_scoring", "This is an unscored investigation: no outside system was scored against the run."},
 	}

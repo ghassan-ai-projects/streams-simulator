@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"strconv"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -40,7 +38,7 @@ var differences = []difference{
 		return "The runs were asked for different durations (" + requestedSeconds(a) + " and " + requestedSeconds(b) + ")."
 	}},
 	{"different_simulated_length", func(a, b RunInputs) bool { return a.SimulatedLengthNS != b.SimulatedLengthNS }, func(a, b RunInputs) string {
-		return "The runs cover different simulated lengths (" + seconds(a.SimulatedLengthNS) + " and " + seconds(b.SimulatedLengthNS) + "); whole-run results are not over the same span."
+		return "The runs cover different simulated lengths (" + clockText(a.SimulatedLengthNS) + " and " + clockText(b.SimulatedLengthNS) + "); whole-run results are not over the same span."
 	}},
 }
 
@@ -69,9 +67,5 @@ func requestedSeconds(in RunInputs) string {
 	if in.RequestedEndNS == 0 {
 		return "not recorded"
 	}
-	return seconds(requestedLength(in))
-}
-
-func seconds(ns int64) string {
-	return strconv.FormatFloat(float64(ns)/1e9, 'f', -1, 64) + "s"
+	return clockText(requestedLength(in))
 }

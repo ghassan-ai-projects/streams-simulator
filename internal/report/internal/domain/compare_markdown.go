@@ -46,7 +46,7 @@ func inputFieldsOf(a, b RunInputs) []pairField {
 		{"Time mode", a.TimeMode, b.TimeMode}, {"Start", instant(a.StartTimeNS, 0), instant(b.StartTimeNS, 0)},
 		{"Requested end", instant(a.RequestedEndNS, a.StartTimeNS), instant(b.RequestedEndNS, b.StartTimeNS)},
 		{"End", instant(a.EndTimeNS, a.StartTimeNS), instant(b.EndTimeNS, b.StartTimeNS)},
-		{"Simulated length", seconds(a.SimulatedLengthNS), seconds(b.SimulatedLengthNS)},
+		{"Simulated length", clockText(a.SimulatedLengthNS), clockText(b.SimulatedLengthNS)},
 		{"Termination", terminationText(Run{Termination: a.Termination, StartTimeNS: a.StartTimeNS}), terminationText(Run{Termination: b.Termination, StartTimeNS: b.StartTimeNS})},
 		{"Pace", rateText(a.Rate), rateText(b.Rate)}, {"Complete", yesNo(a.Complete), yesNo(b.Complete)},
 		{"Verification", a.Verification, b.Verification},

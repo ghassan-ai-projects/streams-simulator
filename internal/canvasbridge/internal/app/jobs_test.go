@@ -153,7 +153,7 @@ func TestReconcilingNeverStartsADirector(t *testing.T) {
 	}{
 		{"nothing runs", func(*harness) {}},
 		{"a tracked world whose director is gone", func(h *harness) {
-			h.bridge.running["w-1"] = true
+			h.bridge.running["w-1"] = domain.JobView{}
 		}},
 	}
 	for _, tc := range cases {

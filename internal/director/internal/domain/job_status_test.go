@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -126,5 +127,87 @@ func TestAnActiveEvaluateJobCarriesNoFailureText(t *testing.T) {
 	status.State = JobFailed
 	if view := JobStatusView(status); view.Failure == "" {
 		t.Fatal("a failed job lost its failure text")
+	}
+}
+
+func calledJob() JobRequest {
+	request := recoveryJob()
+	request.Calls = []JobCall{
+		{EntityID: "p-2", Effector: "late_call", Args: map[string]any{"level": 1}, AtS: 90},
+		{EntityID: "p-1", Effector: "early_call", AtS: 5},
+	}
+	return request
+}
+
+func TestANewJobStatusListsThePlannedEffectorCallsInPlanOrderWithArgumentsNeverNull(t *testing.T) {
+	t.Parallel()
+	status := NewJobStatus("w-1", "r-1", calledJob(), planStart)
+	want := []JobPlannedCall{
+		{EntityID: "p-2", Effector: "late_call", Args: map[string]any{"level": 1}, AtS: 90},
+		{EntityID: "p-1", Effector: "early_call", Args: map[string]any{}, AtS: 5},
+	}
+	if !reflect.DeepEqual(status.PlannedCalls, want) {
+		t.Fatalf("planned calls = %+v, want %+v", status.PlannedCalls, want)
+	}
+	if none := NewJobStatus("w-1", "r-1", JobRequest{Domain: "d", DurationS: 10}, planStart); none.PlannedCalls == nil || len(none.PlannedCalls) != 0 {
+		t.Fatalf("planned calls = %#v, want an empty list, not null", none.PlannedCalls)
+	}
+}
+
+func TestPlannedCallsAreTheOperatorsOwnCommandsSoEveryModeAndStateShowsThem(t *testing.T) {
+	t.Parallel()
+	for _, explore := range []bool{true, false} {
+		for _, state := range []JobState{JobRunning, JobPaused, JobStopping, JobCompleted, JobStopped, JobFailed} {
+			t.Run(fmt.Sprintf("explore=%v/%s", explore, state), func(t *testing.T) {
+				t.Parallel()
+				request := calledJob()
+				request.Explore = explore
+				status := NewJobStatus("w-1", "r-1", request, planStart)
+				status.State = state
+				view := JobStatusView(status)
+				if len(view.PlannedCalls) != 2 || view.PlannedCalls[0].Effector != "late_call" {
+					t.Fatalf("view = %+v, want both planned calls in plan order", view.PlannedCalls)
+				}
+			})
+		}
+	}
+}
+
+func TestAStatusViewsPlannedCallsShareNothingWithTheSource(t *testing.T) {
+	t.Parallel()
+	status := NewJobStatus("w-1", "r-1", calledJob(), planStart)
+	view := JobStatusView(status)
+	status.PlannedCalls[0].Effector, status.PlannedCalls[0].Args["level"] = "x", 9
+	if view.PlannedCalls[0].Effector != "late_call" || view.PlannedCalls[0].Args["level"] != 1 {
+		t.Fatalf("view = %+v changed with its source", view.PlannedCalls)
+	}
+}
+
+func TestAnImmediateFaultIsAFlaggedViewAtTheSecondItWasInjectedWithItsId(t *testing.T) {
+	t.Parallel()
+	got := NewImmediateFault("p-1", "probe_fouling", "f-4", 240)
+	want := JobFaultView{JobFault: JobFault{EntityID: "p-1", Fault: "probe_fouling", AtS: 240}, FaultID: "f-4", Immediate: true}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("fault = %+v, want %+v", got, want)
+	}
+}
+
+func TestAnEvaluateJobHidesImmediateFaultsAndClearTimesWithTheRestOfItsPlanWhileActive(t *testing.T) {
+	t.Parallel()
+	cleared := int64(35)
+	status := NewJobStatus("w-1", "r-1", calledJob(), planStart)
+	status.Faults[1].ClearedAtS = &cleared
+	status.Faults = append(status.Faults, NewImmediateFault("p-1", "canary_fault", "f-9", 12))
+	if view := JobStatusView(status); len(view.Faults) != 0 || len(view.PlannedCalls) != 2 {
+		t.Fatalf("view = %+v, want no faults and the operator's calls", view)
+	}
+	status.Explore = true
+	view := JobStatusView(status)
+	if len(view.Faults) != 4 || !view.Faults[3].Immediate || *view.Faults[1].ClearedAtS != 35 {
+		t.Fatalf("view = %+v, want the explore job's immediate fault and clear time", view.Faults)
+	}
+	status.Faults[1].ClearedAtS = nil
+	if view.Faults[1].ClearedAtS == nil || *view.Faults[1].ClearedAtS != 35 {
+		t.Fatal("the clone shares a clear time with its source")
 	}
 }

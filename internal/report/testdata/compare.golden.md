@@ -15,7 +15,7 @@ Run A is the reference. This document lists what differs; it does not rank the r
 | Time mode | stepped | stepped |
 | Start | 2026-01-01T00:00:00Z | 2026-01-01T00:00:00Z |
 | End | 2026-01-01T00:02:00Z (+120s) | 2026-01-01T00:02:00Z (+120s) |
-| Simulated length | 120s | 120s |
+| Simulated length | 00:02:00 | 00:02:00 |
 | Complete | yes | yes |
 | Verification | files\_match | files\_differ |
 

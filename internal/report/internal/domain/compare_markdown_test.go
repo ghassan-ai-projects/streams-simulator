@@ -34,7 +34,7 @@ func TestTheComparisonMarkdownListsInputsLimitsPlanAndResultsWithoutRanking(t *t
 		"### Faults", "#### Different", "| Run | Entity | Fault | Onset | Cleared | Differs in |", "cleared\\_by, cleared\\_ns",
 		"### Perturbations", "| clear | p-0 |", "### Environment", "#### Only in A", "heat\\_wave",
 		"### Effector calls", "refused: interlock", "#### Only in B",
-		"Scope: whole run of each run. Simulated length covered by KPI truth: A 600s, B 600s.",
+		"Scope: whole run of each run. Simulated length covered by KPI truth: A 00:10:00, B 00:10:00.",
 		"| chiller-1 | cop | both | 5.000 | 4.000 | -1.000 | -20.0% | 4.000..6.000 | 3.000..5.000 |",
 		"| chiller-1 | flow | only\\_in\\_b |  | 1.000 |",
 		"| chiller-1 | high\\_temp | only\\_in\\_a | 2 |  |", "| pump-1 | trip | only\\_in\\_b |  | 1 |",

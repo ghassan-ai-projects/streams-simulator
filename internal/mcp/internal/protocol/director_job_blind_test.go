@@ -88,3 +88,34 @@ func TestJobToolsOfAnExploreJobShowThePlanWhileItIsActive(t *testing.T) {
 	mustCall(t, cs, "sim.job.stop", map[string]any{"world_id": started["world_id"]})
 	settledJob(t, cs, started["world_id"].(string))
 }
+
+func TestJobToolsOfEitherModeListThePlannedCallsAndAnExploreJobKeepsAHandFaultOnTheWire(t *testing.T) {
+	t.Parallel()
+	for _, explore := range []bool{false, true} {
+		cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+		started := mustCall(t, cs, "sim.job.start", blindJobArguments(explore))
+		id := started["world_id"]
+		status := mustCall(t, cs, "sim.job.status", map[string]any{"world_id": id})
+		planned, _ := status["planned_calls"].([]any)
+		first, _ := planned[0].(map[string]any)
+		if len(planned) != 1 || first["effector"] != "start_aerator" || first["at_s"] != float64(900) || first["entity_id"] != "site-a/pond-1" {
+			t.Fatalf("explore=%v status = %v, want the one planned call with its time", explore, status)
+		}
+		if explore {
+			assertHandFaultListed(t, cs, id)
+		}
+		mustCall(t, cs, "sim.job.stop", map[string]any{"world_id": id})
+		settledJob(t, cs, id.(string))
+	}
+}
+
+func assertHandFaultListed(t *testing.T, cs *mcp.ClientSession, id any) {
+	t.Helper()
+	mustCall(t, cs, "sim.job.pause", map[string]any{"world_id": id})
+	injected := mustCall(t, cs, "sim.job.inject_fault", map[string]any{"world_id": id, "entity_id": "site-a/pond-1", "fault": "do_probe_fouling"})
+	faults, _ := mustCall(t, cs, "sim.job.status", map[string]any{"world_id": id})["faults"].([]any)
+	hand, _ := faults[len(faults)-1].(map[string]any)
+	if len(faults) != 2 || hand["immediate"] != true || hand["fault"] != "do_probe_fouling" || hand["fault_id"] != injected["fault_id"] || hand["at_s"] == nil {
+		t.Fatalf("faults = %v, want the hand fault listed with its id, second and immediate flag", faults)
+	}
+}

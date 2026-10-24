@@ -102,6 +102,8 @@ func TestJobsOfReadsOneJobOrAList(t *testing.T) {
 		want         []JobView
 	}{
 		{"one job", `{"world_id":"w-1","state":"running","calls":[]}`, []JobView{{WorldID: "w-1", State: "running"}}},
+		{"a named job", `{"world_id":"w-1","state":"running","name":"Loss","domain":"pond","explore":true,"faults":[]}`,
+			[]JobView{{WorldID: "w-1", State: "running", Name: "Loss", Domain: "pond", Explore: true}}},
 		{"a list", `{"jobs":[{"world_id":"w-1","state":"completed"},{"world_id":"w-2","state":"stopping"}]}`,
 			[]JobView{{WorldID: "w-1", State: "completed"}, {WorldID: "w-2", State: "stopping"}}},
 		{"an empty list", `{"jobs":[]}`, []JobView{}},
@@ -153,5 +155,22 @@ func TestJobControlsTakeTheirClosedKeyListsAndNothingElse(t *testing.T) {
 				t.Errorf("%s took %q: %v", name, key, err)
 			}
 		}
+	}
+}
+
+func TestARunEntryOfARunningJobTakesItsNamePlantAndModeFromTheJob(t *testing.T) {
+	t.Parallel()
+	job := JobView{WorldID: "w-1", State: "running", Name: "Loss", Domain: "pond", Explore: true}
+	entry := RunEntry{WorldID: "w-1", Running: true}.WithJob(job)
+	if entry.Name != "Loss" || entry.Plant != "pond" || !entry.Explore || entry.WorldID != "w-1" || !entry.Running {
+		t.Fatalf("entry = %+v, want the job's name, plant and mode", entry)
+	}
+	unknown := RunEntry{WorldID: "w-2", Name: "kept", Plant: "kept", Explore: true}.WithJob(JobView{})
+	if unknown.Name != "kept" || unknown.Plant != "kept" || !unknown.Explore {
+		t.Fatalf("entry = %+v, want a world that is no job left as it was", unknown)
+	}
+	blank := RunEntry{WorldID: "w-1", Name: "kept", Plant: "kept"}.WithJob(JobView{WorldID: "w-1", State: "running"})
+	if blank.Name != "kept" || blank.Plant != "kept" || blank.Explore {
+		t.Fatalf("entry = %+v, want empty job fields to invent nothing but the mode", blank)
 	}
 }

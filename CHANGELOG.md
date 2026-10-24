@@ -4,6 +4,18 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A reloaded run keeps its live actions; the run row names a running job; the stop question reads as a clock (control-plane
+  review of the live diagnosis).** The job status gains `planned_calls` (`{entity_id, effector, args, at_s}`, the plan's effector
+  calls in plan order, executed or not, always a list, visible in Evaluate jobs too because they are the operator's own commands)
+  and, for Explore jobs, a fault injected with `job.inject_fault` is appended to `faults` with `immediate: true`, `at_s` (the
+  simulated second it was injected) and its `fault_id`; a planned fault whose clear has run carries `cleared_at_s` (a clear the
+  world made by itself is not seen by the director and carries none). `JobStatusView` stays the single redaction point: an active
+  Evaluate job still returns empty `faults` and `perturbations`. The bridge listing of a run whose job is still running takes
+  `name`, `plant` and `explore` from the job status (`sim.job.list`), never for a world it did not start as a job; once the job
+  ends the recorded files speak as before. The `stopped_early` open question, the comparison limit of the same name, the Markdown
+  scope sentence and the comparison's length sentences print simulated time as `hh:mm:ss` (`at 00:04:00 of the requested
+  00:30:00`) instead of `+240s`; table cells that pair an instant with its offset keep `(+Ns)`. No cap or allow-list was loosened.
+
 - **What changed between two models (control-plane round R5, audit F24, F25, OP08).** `streamsim domain diff <a> <b>
   [--format json|markdown]` compares two domains, each a domain file or a run folder (`domain_spec` of `run.json` only;
   a sealed file is never opened), and prints one deterministic document (`domain-diff-v0.1`, embedded and validated before

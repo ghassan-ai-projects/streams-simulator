@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
@@ -57,7 +56,7 @@ func stoppedEarly(report *Report) (Question, bool) {
 	if run.Termination == nil || run.Termination.Reason != model.TerminationStoppedByOperator {
 		return Question{}, false
 	}
-	return Question{"stopped_early", "The operator stopped the run at " + offset(run.Termination.AtNS, run.StartTimeNS) + requested(run) +
+	return Question{"stopped_early", "The operator stopped the run at " + clockText(run.Termination.AtNS-run.StartTimeNS) + requested(run) +
 		"; actions planned after the stop never ran."}, true
 }
 
@@ -65,11 +64,7 @@ func requested(run Run) string {
 	if run.RequestedEndNS == 0 {
 		return ""
 	}
-	return " of the requested " + offset(run.RequestedEndNS, run.StartTimeNS)
-}
-
-func offset(ns, start int64) string {
-	return "+" + strconv.FormatFloat(float64(ns-start)/1e9, 'f', -1, 64) + "s"
+	return " of the requested " + clockText(run.RequestedEndNS-run.StartTimeNS)
 }
 
 func filesDiffer(report *Report) (Question, bool) {

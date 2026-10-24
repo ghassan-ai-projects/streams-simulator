@@ -67,7 +67,7 @@ func (b *Bridge) runs(ctx context.Context) ([]domain.RunEntry, error) {
 
 func (b *Bridge) runEntry(name string) domain.RunEntry {
 	running := b.runIsRunning(name)
-	entry := domain.NewRunEntry(name, b.summary(name), running, b.artifact(name))
+	entry := domain.NewRunEntry(name, b.summary(name), running, b.artifact(name)).WithJob(b.runningJob(name))
 	entry.RecordedAt = b.recordedAt("runs/" + name + "/journal.jsonl")
 	if plan, started := b.startedSession(name); started {
 		return entry.AsSession(running, plan)

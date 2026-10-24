@@ -98,14 +98,20 @@ func (j *job) after(_ context.Context, _ int, command model.ScenarioCommand, res
 	defer j.mu.Unlock()
 	switch command.Op {
 	case model.OpClockAdvance:
-		j.advances++
-		j.gate.stepping = false
-		j.status.ReachedNS = timeArgument(command, "to_ns")
+		j.noteAdvance(command)
 	case model.OpEffectorInvoke:
 		j.status.Calls = append(j.status.Calls, j.callOutcome(command, result.Acknowledgement))
 	case model.OpFaultInject:
 		j.noteInjection(result.FaultID)
+	case model.OpFaultClear:
+		j.noteClear(command)
 	}
+}
+
+func (j *job) noteAdvance(command model.ScenarioCommand) {
+	j.advances++
+	j.gate.stepping = false
+	j.status.ReachedNS = timeArgument(command, "to_ns")
 }
 
 func (j *job) callOutcome(command model.ScenarioCommand, ack *model.EffectorAcknowledgement) rules.JobCallOutcome {

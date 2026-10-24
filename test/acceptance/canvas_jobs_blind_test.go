@@ -54,16 +54,21 @@ func TestAnEvaluateJobsPlanNeverReachesTheBrowserWhileItRunsButTheEndedJobAndIts
 	if status == http.StatusOK || errorCode(document) != "evaluate_blind" {
 		t.Fatalf("job.inject_fault on an evaluate job: %d %v, want evaluate_blind", status, document)
 	}
-	if active := jobState(t, client, world); active["state"] == "completed" {
+	active := jobState(t, client, world)
+	if active["state"] == "completed" {
 		t.Fatal("the job ended before its active responses were checked")
 	}
+	checkPlannedFanCall(t, active, 900)
 	heardActive := client.heard()
 	client.action("job.stop", map[string]any{"world_id": world})
-	for _, canary := range []string{canvasFault, canvasPerturbation, "fault_id"} {
+	for _, canary := range []string{canvasFault, canvasPerturbation, "fault_id", "cleared_at_s"} {
 		if strings.Contains(heardActive, canary) {
 			i := strings.Index(heardActive, canary)
 			t.Fatalf("a response while the evaluate job was active carries %q: ...%s...", canary, heardActive[max(0, i-200):min(len(heardActive), i+100)])
 		}
+	}
+	if !strings.Contains(heardActive, `"planned_calls":[{`) {
+		t.Fatalf("the responses of the active evaluate job do not list the operator's own planned calls: %s", heardActive)
 	}
 	checkObserverStreamHidesTruth(t, stream)
 	checkEndedJobShowsItsPlan(t, client, world)

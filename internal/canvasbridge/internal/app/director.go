@@ -89,7 +89,14 @@ func (b *Bridge) runLive() bool {
 func (b *Bridge) runIsRunning(runID string) bool {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	return b.running[runID] || b.sessionRuns(runID)
+	_, tracked := b.running[runID]
+	return tracked || b.sessionRuns(runID)
+}
+
+func (b *Bridge) runningJob(runID string) domain.JobView {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	return b.running[runID]
 }
 
 func (b *Bridge) track(action string, args map[string]any, structured json.RawMessage) {
@@ -113,6 +120,6 @@ func (b *Bridge) trackCreated(structured json.RawMessage) {
 		WorldID string `json:"world_id"`
 	}
 	if json.Unmarshal(structured, &created) == nil && created.WorldID != "" {
-		b.running[created.WorldID] = true
+		b.running[created.WorldID] = domain.JobView{}
 	}
 }

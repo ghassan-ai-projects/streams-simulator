@@ -48,7 +48,7 @@ type Bridge struct {
 	settings   Settings
 	stateMu    sync.Mutex
 	pairing    *domain.Pairing
-	running    map[string]bool
+	running    map[string]domain.JobView
 	directorMu sync.Mutex
 	director   Director
 	catalog    string
@@ -59,7 +59,7 @@ type Bridge struct {
 
 func New(edges Edges, settings Settings) *Bridge {
 	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
-		running: map[string]bool{}, sessions: map[string]json.RawMessage{}}
+		running: map[string]domain.JobView{}, sessions: map[string]json.RawMessage{}}
 }
 
 func (b *Bridge) workspaceRoots() []string {

@@ -14,7 +14,7 @@ const jobListTool = "sim.job.list"
 func (b *Bridge) settleJobs(structured json.RawMessage) {
 	for _, job := range domain.JobsOf(structured) {
 		if job.Active() {
-			b.running[job.WorldID] = true
+			b.running[job.WorldID] = job
 			continue
 		}
 		delete(b.running, job.WorldID)

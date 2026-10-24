@@ -73,7 +73,7 @@ var sideRules = []sideRule{
 	{"stopped_early", func(in RunInputs) bool {
 		return in.Termination != nil && in.Termination.Reason == model.TerminationStoppedByOperator
 	}, func(in RunInputs) string {
-		return "the operator stopped it at " + offset(in.Termination.AtNS, in.StartTimeNS) + ", so its results cover only part of its plan."
+		return "the operator stopped it at " + clockText(in.Termination.AtNS-in.StartTimeNS) + ", so its results cover only part of its plan."
 	}},
 	{"incomplete", func(in RunInputs) bool { return !in.Complete }, func(in RunInputs) string {
 		return "it ended incomplete (" + in.IncompleteReason + "), so its evidence is partial."

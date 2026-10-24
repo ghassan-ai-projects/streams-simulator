@@ -19,6 +19,7 @@ module composes `run` (artifact loading), `journal` (stream reading and digests)
 | Scoring | The offline scorecard, or why there is none | `Scoring` | `scoring.status`: `scored`, `not_scored`, `failed` |
 | Format | The rendering of a report or comparison | `FormatJSON`, `FormatMarkdown` | `--format` |
 | Replay | Whether the recording was replayed and reproduced the run; `not_checked` unless `--replay` asked for it | `Replay`, `ReplayReproduces`, `ReplayDiverges`, `ReplayIncomplete` | `replay.status` |
+| Simulated clock text | A span of simulated time written in a human sentence as `hh:mm:ss` rounded to the second (hours not wrapped), the form the canvas shows; machine fields keep nanoseconds and table cells that pair an instant with its offset keep `(+Ns)` | `clockText` | `open_questions[].message`, `comparability_limits[].message` |
 | Open question | Something a reader cannot conclude from the run, asked by a rule of the binary in a fixed order | `Question`, `questionsOf` | `open_questions[]` (`code`, `message`) |
 | Handover | The Markdown report read by someone who did not attend the run: purpose, what ran, outcome and integrity as separate rows, evidence coverage, results, plan, open questions | `Markdown` | `--format markdown` |
 | Comparison | Two ended runs set side by side, run A the reference: inputs, plan difference, comparability limits, whole-run results; it never ranks runs | `Comparison`, `Compare` | `run-comparison-v0.1`, `streamsim report compare` |

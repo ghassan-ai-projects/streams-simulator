@@ -70,7 +70,7 @@ func resultsLines(report *Report) []string {
 	}
 	lines := []string{}
 	if kpis := report.Truth.KPIs; kpis != nil {
-		lines = append(lines, "Scope: whole run, "+offset(kpis.ToNS, kpis.FromNS)[1:]+" of simulated time.", "")
+		lines = append(lines, "Scope: whole run, "+clockText(kpis.ToNS-kpis.FromNS)+" of simulated time.", "")
 	}
 	return append(lines, fieldTable([]field{{"Objective", "Not assessed. The run declares no objective, so nothing is judged against one."}})...)
 }

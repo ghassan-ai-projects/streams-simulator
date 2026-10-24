@@ -39,11 +39,18 @@ func (j *job) injectNow(entityID, fault string) (rules.JobImmediate, error) {
 	if err := j.admitImmediate(); err != nil {
 		return rules.JobImmediate{}, err
 	}
-	faultID, _, err := j.run.InjectFaultNow(entityID, fault, map[string]any{})
+	faultID, atNS, err := j.run.InjectFaultNow(entityID, fault, map[string]any{})
 	if err != nil {
 		return rules.JobImmediate{}, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	return rules.JobImmediate{JobStatus: j.snapshot(), FaultID: faultID}, nil
+	return j.recordImmediateFault(rules.NewImmediateFault(entityID, fault, faultID, (atNS-j.status.StartNS)/nsPerSecond)), nil
+}
+
+func (j *job) recordImmediateFault(fault rules.JobFaultView) rules.JobImmediate {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.status.Faults = append(j.status.Faults, fault)
+	return rules.JobImmediate{JobStatus: j.copyStatus(), FaultID: fault.FaultID}
 }
 
 func (j *job) invokeNow(entityID, effector string, args map[string]any) (rules.JobImmediate, error) {

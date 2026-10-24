@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"maps"
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -33,7 +34,16 @@ type JobCallOutcome struct {
 
 type JobFaultView struct {
 	JobFault
-	FaultID string `json:"fault_id,omitempty"`
+	FaultID    string `json:"fault_id,omitempty"`
+	Immediate  bool   `json:"immediate,omitempty"`
+	ClearedAtS *int64 `json:"cleared_at_s,omitempty"`
+}
+
+type JobPlannedCall struct {
+	EntityID string         `json:"entity_id"`
+	Effector string         `json:"effector"`
+	Args     map[string]any `json:"args"`
+	AtS      int64          `json:"at_s"`
 }
 
 type JobStatus struct {
@@ -51,6 +61,7 @@ type JobStatus struct {
 	Explore        bool              `json:"explore"`
 	Faults         []JobFaultView    `json:"faults"`
 	Perturbations  []JobPerturbation `json:"perturbations"`
+	PlannedCalls   []JobPlannedCall  `json:"planned_calls"`
 	Calls          []JobCallOutcome  `json:"calls"`
 	Failure        string            `json:"failure,omitempty"`
 }
@@ -83,7 +94,7 @@ func NewJobStatus(worldID, runID string, req JobRequest, startNS int64) JobStatu
 	return JobStatus{WorldID: worldID, RunID: runID, Name: req.Name, Purpose: req.Purpose, Domain: req.Domain, Seed: req.Seed,
 		State: JobRunning, StartNS: startNS, ReachedNS: startNS, RequestedEndNS: startNS + req.DurationS*nsPerSecond,
 		Rate: req.Rate, Explore: req.Explore, Faults: faultViews(req.Faults), Perturbations: slices.Clone(orEmpty(req.Perturbations)),
-		Calls: []JobCallOutcome{}}
+		PlannedCalls: plannedCalls(req.Calls), Calls: []JobCallOutcome{}}
 }
 
 func faultViews(faults []JobFault) []JobFaultView {
@@ -92,6 +103,33 @@ func faultViews(faults []JobFault) []JobFaultView {
 		views[i] = JobFaultView{JobFault: fault}
 	}
 	return views
+}
+
+func NewImmediateFault(entityID, fault, faultID string, atS int64) JobFaultView {
+	return JobFaultView{JobFault: JobFault{EntityID: entityID, Fault: fault, AtS: atS}, FaultID: faultID, Immediate: true}
+}
+
+func plannedCalls(calls []JobCall) []JobPlannedCall {
+	planned := make([]JobPlannedCall, len(calls))
+	for i, call := range calls {
+		planned[i] = JobPlannedCall{EntityID: call.EntityID, Effector: call.Effector, Args: argsOrEmpty(call.Args), AtS: call.AtS}
+	}
+	return planned
+}
+
+func clonePlannedCalls(calls []JobPlannedCall) []JobPlannedCall {
+	cloned := slices.Clone(calls)
+	for i := range cloned {
+		cloned[i].Args = maps.Clone(cloned[i].Args)
+	}
+	return cloned
+}
+
+func argsOrEmpty(args map[string]any) map[string]any {
+	if args == nil {
+		return map[string]any{}
+	}
+	return maps.Clone(args)
 }
 
 func orEmpty(perturbations []JobPerturbation) []JobPerturbation {
@@ -103,6 +141,7 @@ func orEmpty(perturbations []JobPerturbation) []JobPerturbation {
 
 func JobStatusView(status JobStatus) JobStatus {
 	status.Calls = slices.Clone(status.Calls)
+	status.PlannedCalls = clonePlannedCalls(status.PlannedCalls)
 	if !status.Explore && JobActive(status.State) {
 		status.Faults, status.Perturbations, status.Failure = []JobFaultView{}, []JobPerturbation{}, ""
 		return status

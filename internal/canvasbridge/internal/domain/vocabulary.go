@@ -69,6 +69,20 @@ type RunEntry struct {
 	Plan                json.RawMessage `json:"plan,omitempty"`
 }
 
+func (e RunEntry) WithJob(job JobView) RunEntry {
+	if job.WorldID == "" {
+		return e
+	}
+	e.Explore = job.Explore
+	if job.Name != "" {
+		e.Name = job.Name
+	}
+	if job.Domain != "" {
+		e.Plant = job.Domain
+	}
+	return e
+}
+
 func (e RunEntry) AsSession(running bool, plan json.RawMessage) RunEntry {
 	e.Connected, e.Running, e.Plan = true, running, plan
 	return e

@@ -5,6 +5,9 @@ import "encoding/json"
 type JobView struct {
 	WorldID string `json:"world_id"`
 	State   string `json:"state"`
+	Name    string `json:"name,omitempty"`
+	Domain  string `json:"domain,omitempty"`
+	Explore bool   `json:"explore,omitempty"`
 }
 
 type jobResult struct {

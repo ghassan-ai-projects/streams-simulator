@@ -18,7 +18,7 @@ func spanText(span *int64) string {
 	if span == nil {
 		return "none"
 	}
-	return seconds(*span)
+	return clockText(*span)
 }
 
 var kpiHeader = []string{"Entity", "KPI", "Presence", "A mean", "B mean", "Delta", "Relative", "A min..max", "B min..max"}

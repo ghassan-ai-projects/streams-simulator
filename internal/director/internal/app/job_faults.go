@@ -50,3 +50,13 @@ func (j *job) retargetClear(command model.ScenarioCommand) {
 	planned, _ := command.Args["fault_id"].(string)
 	command.Args["fault_id"] = j.faults.retarget(planned)
 }
+
+func (j *job) noteClear(command model.ScenarioCommand) {
+	faultID, _ := command.Args["fault_id"].(string)
+	clearedAtS := (timeArgument(command, "at_ns") - j.status.StartNS) / nsPerSecond
+	for i := range j.status.Faults {
+		if j.status.Faults[i].FaultID == faultID {
+			j.status.Faults[i].ClearedAtS = &clearedAtS
+		}
+	}
+}
