@@ -4,6 +4,7 @@ import {
   jobActive,
   jobRequestOf,
   observedCalls,
+  observedInjected,
   reachedS,
   recoveredPlanOf,
   refusalWords,
@@ -91,6 +92,7 @@ export class LaunchStore extends Observable<LaunchState> {
     const origin = originOf(status.domain) ?? { domain: status.domain, title: status.domain, path: "" };
     const run = this.track(new TrackedRun(origin, recoveredPlanOf(status), this.clock.nowMs()));
     run.calls = observedCalls([], status, unobserved);
+    run.injected = observedInjected([], status);
     await this.follow(run, status);
   }
 
@@ -125,8 +127,9 @@ export class LaunchStore extends Observable<LaunchState> {
     return this.control("fault", async (worldId) => {
       const done = await this.gateway.injectFaultNow(worldId, entity, fault);
       if (!done.ok) return done;
-      run.injected = [...run.injected, { entity, fault, atS: reachedS(done.value.status) }];
-      return success(done.value.status);
+      const { status, faultId } = done.value;
+      run.injected = [...run.injected, { entity, fault, atS: reachedS(status), faultId }];
+      return success(status);
     });
   }
 
@@ -195,6 +198,7 @@ export class LaunchStore extends Observable<LaunchState> {
     const atMs = this.clock.nowMs();
     run.worldId = status.worldId;
     run.calls = observedCalls(run.calls, status, atMs);
+    run.injected = observedInjected(run.injected, status);
     this.set(followedState(run, status, atMs));
     return jobActive(status);
   }

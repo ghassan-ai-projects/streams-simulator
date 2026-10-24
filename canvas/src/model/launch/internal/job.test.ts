@@ -6,6 +6,7 @@ import {
   jobPaused,
   jobRequestOf,
   observedCalls,
+  observedInjected,
   pacedRate,
   plannedS,
   reachedS,
@@ -42,6 +43,7 @@ const status: JobStatus = {
   purpose: "",
   faults: [],
   perturbations: [],
+  plannedCalls: [],
 };
 
 describe("job request", () => {
@@ -187,10 +189,61 @@ describe("a plan recovered after a reload", () => {
     );
   });
 
+  it("brings back the operator's planned calls in every mode, and leaves the live faults out of the plan", () => {
+    const calls = [{ entity: "CH-1", effector: "set_setpoint", atS: 60, args: { setpoint_c: 7 } }];
+    const evaluation = recoveredPlanOf({ ...status, plannedCalls: calls });
+    expect(evaluation).toMatchObject({ calls, faults: [], perturbations: [] });
+    expect(planSummary(evaluation, "30 min")).toBe("30 min of simulated time · Evaluate · 1 effector call");
+    const open = {
+      ...status,
+      explore: true,
+      plannedCalls: calls,
+      faults: [
+        { entity: "CT-1", fault: "fan", atS: 120, untilS: 540, clearedAtS: 540 },
+        { entity: "CH-1", fault: "fouling", atS: 600, immediate: true, faultId: "f-1" },
+      ],
+    };
+    expect(recoveredPlanOf(open).faults).toEqual([open.faults[0]]);
+    expect(planSummary(recoveredPlanOf(open), "30 min")).toBe(
+      "30 min of simulated time · Explore · 1 fault · 1 effector call",
+    );
+  });
+
   it("names the length and the mode but claims no fault count it does not know", () => {
     expect(planSummary(plan, "30 min")).toBe("30 min of simulated time · Evaluate · 1 fault · 1 effector call");
     expect(planSummary({ ...plan, recovered: true, faults: [], perturbations: [], calls: [] }, "30 min")).toBe(
       "30 min of simulated time · Evaluate",
     );
+  });
+});
+
+describe("the faults injected now, as the status lists them", () => {
+  const live = { entity: "CH-1", fault: "fouling", atS: 600, immediate: true, faultId: "f-1" };
+  const open: JobStatus = {
+    ...status,
+    explore: true,
+    faults: [{ entity: "CT-1", fault: "fan", atS: 120 }, live],
+  };
+
+  it("are those flagged immediate, with the second they were injected and their id", () => {
+    expect(observedInjected([], open)).toEqual([{ entity: "CH-1", fault: "fouling", atS: 600, faultId: "f-1" }]);
+  });
+
+  it("are not added again when the same id, or the same instance, fault and second, is already known", () => {
+    const known = [{ entity: "CH-1", fault: "fouling", atS: 600.4, faultId: "f-1" }];
+    expect(observedInjected(known, open)).toBe(known);
+    const unnamed = [{ entity: "CH-1", fault: "fouling", atS: 600.4 }];
+    const anonymous = { entity: "CH-1", fault: "fouling", atS: 600, immediate: true };
+    expect(observedInjected(unnamed, { ...open, faults: [anonymous] })).toBe(unnamed);
+  });
+
+  it("add a second injection of the same fault under its own id", () => {
+    const second = { ...live, atS: 700, faultId: "f-2" };
+    const known = observedInjected([], open);
+    expect(observedInjected(known, { ...open, faults: [live, second] })).toHaveLength(2);
+  });
+
+  it("are none while an Evaluate job hides its faults", () => {
+    expect(observedInjected([], { ...status, faults: [] })).toEqual([]);
   });
 });

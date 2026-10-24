@@ -34,6 +34,7 @@ describe("the controls of a running run", () => {
     expect(clock()).toBe("Running · 00:01:00 of 00:30:00 simulated · 60 s per s");
     await press("Pause");
     expect(clock()).toBe("Paused · 00:01:00 of 00:30:00 simulated");
+    expect(screen.getByText("Paused Mini plant as run w-7")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
     await tick(3000);
@@ -45,6 +46,7 @@ describe("the controls of a running run", () => {
     await press("Resume");
     await tick(1000);
     expect(clock()).toBe("Running · 00:03:00 of 00:30:00 simulated · 60 s per s");
+    expect(screen.getByText("Running Mini plant as run w-7")).toBeInTheDocument();
   });
 
   it("changes the speed from the select and shows the live rate in the clock line and the select", async () => {

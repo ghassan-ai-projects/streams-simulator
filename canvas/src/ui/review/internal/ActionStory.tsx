@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ActionStory as Story } from "../../../model/review";
 import { humanise } from "../../../model/shared/words";
 import { shared } from "../../primitives";
@@ -53,11 +54,20 @@ function Facts({ story }: { readonly story: Story }) {
   );
 }
 
+function useShownOnOpen(story: Story) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView({ block: "nearest" });
+  }, [story.atNs, story.entity]);
+  return ref;
+}
+
 export function ActionStory({ story, actions }: { readonly story: Story; readonly actions: StoryActions }) {
+  const buttons = useShownOnOpen(story);
   return (
     <Section title="Action story" note={`${story.entity} · ${humanise(story.effector)}`}>
       <Facts story={story} />
-      <div className={styles.actions}>
+      <div ref={buttons} className={styles.actions}>
         <button
           type="button"
           className={shared.secondary}

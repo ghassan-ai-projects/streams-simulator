@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewSession, ReviewState } from "../../../app/review";
-import { readoutOf, runClock } from "../../../model/review";
+import { defaultTrendSize, readoutOf, runClock } from "../../../model/review";
 import type { PlannedFault } from "../../../model/review";
 import { useResizeObserver, useStore } from "../../primitives";
 import { TrendRow } from "./TrendRow";
@@ -63,8 +63,9 @@ function TrendsBody(props: TrendsPanelProps) {
   const [trackRef, width] = useTrackWidth();
   const view = useTrends(review, state, plant, width, props.planned ?? noFaults);
   const probe = useProbe(review.index, view.span);
+  const size = useStore(review.watchList).size ?? defaultTrendSize(view.watched.length);
   return (
-    <section className={styles.panel} aria-label="Trends">
+    <section className={styles.panel} data-size={size} aria-label="Trends">
       <TrendsHeader
         watch={review.watchList}
         plantId={plant?.plant.id ?? ""}
@@ -72,6 +73,7 @@ function TrendsBody(props: TrendsPanelProps) {
         choice={view.choice}
         running={view.running}
         cursorWords={cursorWords(probe.ns, view.cursorNs, view.startNs, view.running)}
+        size={size}
       />
       <Limited fromNs={view.limitedFromNs} startNs={view.startNs} />
       <div className={styles.scroll}>

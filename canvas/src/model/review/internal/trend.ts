@@ -1,3 +1,4 @@
+import { groupedFigure } from "../../shared/units";
 import type { PlaybackIndex } from "./playback";
 
 export const trendWindowNs = 30 * 60e9;
@@ -45,7 +46,7 @@ export interface Projection {
 }
 
 export function numberText(value: number): string {
-  return String(Number(value.toFixed(2)));
+  return groupedFigure(String(Number(value.toFixed(2))));
 }
 
 export function numeric(values: readonly (number | string | boolean)[]): readonly number[] | null {

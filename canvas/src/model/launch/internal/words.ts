@@ -22,8 +22,8 @@ export function disturbanceWords(plan: LaunchPlan): string {
 }
 
 function disturbanceParts(plan: LaunchPlan): readonly string[] {
-  if (plan.recovered !== true) return [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)];
-  return plan.explore ? [faultCountWords(plan), deliveryCountWords(plan)] : [];
+  if (plan.recovered === true && !plan.explore) return [callCountWords(plan)];
+  return [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)];
 }
 
 export function planSummary(plan: LaunchPlan, length: string): string {

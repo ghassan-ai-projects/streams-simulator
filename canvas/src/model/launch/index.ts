@@ -6,6 +6,7 @@ export {
   jobRequestOf,
   lostWords,
   observedCalls,
+  observedInjected,
   pacedRate,
   plannedS,
   reachedS,

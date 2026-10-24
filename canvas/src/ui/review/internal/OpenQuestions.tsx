@@ -10,7 +10,7 @@ export interface ReplayControl {
 
 export const noReplayControl: ReplayControl = { check: { phase: "idle" }, onCheck: () => undefined };
 
-function ReplayButton({ control }: { readonly control: ReplayControl }) {
+export function ReplayButton({ control }: { readonly control: ReplayControl }) {
   const checking = control.check.phase === "checking";
   return (
     <>

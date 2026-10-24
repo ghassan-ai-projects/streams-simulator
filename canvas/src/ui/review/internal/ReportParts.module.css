@@ -47,3 +47,11 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+.pickable {
+  cursor: pointer;
+}
+
+.pickable:hover {
+  background: var(--surface-hover);
+}

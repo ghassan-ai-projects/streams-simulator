@@ -1,5 +1,6 @@
 import { humanise } from "../../shared/words";
-import { callWords } from "./agendaWords";
+import type { UnitOf } from "./agendaWords";
+import { callWords, noUnits } from "./agendaWords";
 import type { FaultCategory } from "./perturbation";
 import type { LaunchPlan } from "./launch";
 
@@ -88,14 +89,14 @@ function deliveryEntries(plan: LaunchPlan): Entry[] {
   });
 }
 
-function callEntries(plan: LaunchPlan): Entry[] {
+function callEntries(plan: LaunchPlan, unitOf: UnitOf): Entry[] {
   return plan.calls.map((call, index) =>
-    entry("call", index, call.atS, "Command", callWords(call), `launch-call-${String(index + 1)}`),
+    entry("call", index, call.atS, "Command", callWords(call, unitOf), `launch-call-${String(index + 1)}`),
   );
 }
 
-export function agendaOf(plan: LaunchPlan, categoryOf: CategoryOf): readonly AgendaItem[] {
-  const entries = [...faultEntries(plan, categoryOf), ...deliveryEntries(plan), ...callEntries(plan)];
+export function agendaOf(plan: LaunchPlan, categoryOf: CategoryOf, unitOf: UnitOf = noUnits): readonly AgendaItem[] {
+  const entries = [...faultEntries(plan, categoryOf), ...deliveryEntries(plan), ...callEntries(plan, unitOf)];
   const sorted = entries.sort((a, b) => a.atS - b.atS || rank[a.lane] - rank[b.lane] || a.order - b.order);
   return sorted.map(({ key, lane, label, time, text, editor }) => ({ key, lane, label, time, text, editor }));
 }

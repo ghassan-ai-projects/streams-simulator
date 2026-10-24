@@ -118,4 +118,15 @@ describe("the plan in time order", () => {
   it("is empty for a plan with nothing in it", () => {
     expect(agendaOf(plan(), categoryOf)).toEqual([]);
   });
+
+  it("writes the unit a call's argument declares after its value, and none for an argument that declares none", () => {
+    const call = { entity: "CH-1", effector: "set_setpoint", atS: 60, args: { setpoint_c: 7, ramp: 2 } };
+    const unitOf = (_entity: string, _effector: string, arg: string) => (arg === "setpoint_c" ? "°C" : "");
+    expect(agendaOf(plan({ calls: [call] }), categoryOf, unitOf).map((item) => item.text)).toEqual([
+      "CH-1 set setpoint (setpoint c 7 °C, ramp 2)",
+    ]);
+    expect(agendaOf(plan({ calls: [call] }), categoryOf).map((item) => item.text)).toEqual([
+      "CH-1 set setpoint (setpoint c 7, ramp 2)",
+    ]);
+  });
 });

@@ -53,7 +53,14 @@ function Calls({ report, chosen, onPick }: CallsProps) {
   );
 }
 
-function Disturbances({ report, picked }: Pick<EventsProps, "report" | "picked">) {
+function endCell(d: Report["disturbances"][number], at: (ns: number) => string): Cell {
+  const endNs = d.untilNs ?? d.clearedNs;
+  if (endNs === null) return { text: "–", title: "Did not end before the run ended" };
+  const by = d.clearedBy === "" ? "" : ` by ${d.clearedBy}`;
+  return { text: at(endNs), title: `Ends at ${at(endNs)}${by}` };
+}
+
+function Disturbances({ report, picked, actions }: EventsProps) {
   const at = (ns: number) => runClock(ns, report.startNs);
   return (
     <Section title="Disturbances">
@@ -62,13 +69,26 @@ function Disturbances({ report, picked }: Pick<EventsProps, "report" | "picked">
           { text: at(d.onsetNs), title: `set at ${at(d.injectedNs)}` },
           d.target,
           named(d.name),
+          endCell(d, at),
         ])}
-        columns={["clock", "id", "label"]}
-        headers={["Starts", "Instance", "Disturbance"]}
+        columns={["clock", "id", "label", "clock"]}
+        headers={["Starts", "Instance", "Disturbance", "Ends"]}
         current={report.disturbances.findIndex((d) => picked?.atNs === d.onsetNs && picked.entity === d.target)}
+        {...(actions === undefined
+          ? {}
+          : {
+              onSelect: (index) => {
+                pickDisturbance(report, index, actions);
+              },
+            })}
       />
     </Section>
   );
+}
+
+function pickDisturbance(report: Report, index: number, actions: EventActions): void {
+  const disturbance = report.disturbances[index];
+  if (disturbance !== undefined) actions.pick(disturbance.onsetNs, disturbance.target);
 }
 
 function useChosen(picked: Picked | null) {
@@ -99,7 +119,7 @@ export function Events({ report, picked, actions }: EventsProps) {
   };
   return (
     <>
-      <Disturbances report={report} picked={picked} />
+      <Disturbances report={report} picked={picked} actions={actions} />
       <Calls report={report} chosen={chosen} onPick={actions === undefined ? undefined : pick} />
       {story !== null && actions !== undefined && (
         <ActionStory

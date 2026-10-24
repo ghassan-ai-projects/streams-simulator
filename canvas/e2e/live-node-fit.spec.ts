@@ -1,5 +1,5 @@
 import { expect, test } from "./support/test";
-import { selectInOutline, rowsOutsideNode, startWatchRun } from "./support/watchRun";
+import { partsOverlapping, selectInOutline, rowsOutsideNode, startWatchRun } from "./support/watchRun";
 import type { RunMode } from "./support/watchRun";
 import { zoomInTo } from "./support/viewport";
 
@@ -41,5 +41,28 @@ test("a fault note that appears on a live node grows the node to hold it", async
   await expect(page.getByRole("group", { name: /^CT-1, / })).toContainText("Fault · fan failure", {
     timeout: 30_000,
   });
+  await expect.poll(async () => (await page.evaluate(rowsOutsideNode, "CT-1")).outside).toEqual([]);
+});
+
+test("a node with a fault and a command status line holds both without overlapping its id, subtitle or readings", async ({
+  page,
+}) => {
+  await startWatchRun(page, "Explore");
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
+  await expect(panel.getByText(/^Running · 00:0[5-9]/)).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Pause" }).click();
+  await panel.getByLabel("Call now instance").selectOption("CT-1");
+  await panel.getByLabel("Call now effector").selectOption({ label: "set fan speed" });
+  await panel.getByLabel("Call now speed").fill("0.6");
+  await panel.getByRole("button", { name: "Call now" }).click();
+  await panel.getByRole("button", { name: "Close the run panel" }).click();
+  await page.getByRole("application", { name: "Plant graph" }).focus();
+  await page.keyboard.press("0");
+  expect(await zoomInTo(page, "compact", 4)).toBe("compact");
+  const node = page.getByRole("group", { name: /^CT-1, / });
+  await expect(node).toContainText("Fault · fan failure", { timeout: 30_000 });
+  await expect(node).toContainText("set fan speed · accepted");
+  await expect.poll(async () => page.evaluate(partsOverlapping, "CT-1")).toEqual([]);
   await expect.poll(async () => (await page.evaluate(rowsOutsideNode, "CT-1")).outside).toEqual([]);
 });

@@ -24,6 +24,7 @@ interface QualityBand {
 interface Tick {
   readonly y: number;
   readonly text: string;
+  readonly side: "start" | "end";
 }
 
 export interface Plot {
@@ -82,6 +83,20 @@ function bandsOf(window: Window, span: Span, width: number): readonly QualityBan
   }));
 }
 
+const glyphWidth = 6;
+const labelReach = 10;
+
+function tickSide(text: string, labelY: number, plotted: readonly TrendPoint[], width: number): Tick["side"] {
+  const room = text.length * glyphWidth + glyphWidth;
+  const near = (from: number, to: number) =>
+    plotted.some((p) => p.x >= from && p.x <= to && p.y >= labelY - labelReach && p.y <= labelY + 3);
+  return near(0, room) && !near(width - room, width) ? "end" : "start";
+}
+
+function tickOf(y: number, text: string, plotted: readonly TrendPoint[], width: number): Tick {
+  return { y, text, side: tickSide(text, y, plotted, width) };
+}
+
 function identity(watched: Watched, unit: string) {
   return {
     key: watchKey(watched),
@@ -111,8 +126,8 @@ function drawn(watched: Watched, unit: string, window: Window, values: readonly 
     state: "plotted",
     segments: plotted.filter((points) => points.length > 1),
     dots: plotted.filter((points) => points.length === 1).flat(),
-    top: { y: levelOf(high, range), text: numberText(high) },
-    bottom: { y: levelOf(low, range), text: numberText(low) },
+    top: tickOf(levelOf(high, range), numberText(high), plotted.flat(), width),
+    bottom: tickOf(levelOf(low, range), numberText(low), plotted.flat(), width),
     bands: bandsOf(window, span, width),
     gaps: runs.length - 1,
     medianNs,

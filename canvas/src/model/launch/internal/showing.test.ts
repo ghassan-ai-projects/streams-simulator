@@ -42,3 +42,25 @@ describe("the faults injected during the run", () => {
     expect(showingMarks(plan(false), [], 900, 0, injected).faults.size).toBe(0);
   });
 });
+
+describe("a fault that has an end", () => {
+  const ending: LaunchPlan = {
+    ...plan(true),
+    faults: [
+      { entity: "CT-1", fault: "fan_failure", atS: 120, untilS: 540 },
+      { entity: "CH-1", fault: "fouling", atS: 120, untilS: 540, clearedAtS: 300 },
+    ],
+  };
+
+  it("shows from its start to its planned end, and the end is exclusive", () => {
+    expect(showingMarks(ending, [], 119, 0).faults.has("CT-1")).toBe(false);
+    expect(showingMarks(ending, [], 120, 0).faults.get("CT-1")).toEqual(["fan failure"]);
+    expect(showingMarks(ending, [], 539, 0).faults.has("CT-1")).toBe(true);
+    expect(showingMarks(ending, [], 540, 0).faults.has("CT-1")).toBe(false);
+  });
+
+  it("stops at the second the plan's clear actually ran when that is known", () => {
+    expect(showingMarks(ending, [], 299, 0).faults.has("CH-1")).toBe(true);
+    expect(showingMarks(ending, [], 300, 0).faults.has("CH-1")).toBe(false);
+  });
+});

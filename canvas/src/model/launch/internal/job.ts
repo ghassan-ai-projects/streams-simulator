@@ -1,4 +1,4 @@
-import type { CallOutcome, LaunchPlan } from "./launch";
+import type { CallOutcome, LaunchPlan, PlannedCall, PlannedFault } from "./launch";
 import { paceOf } from "./launch";
 import type { PlannedPerturbation } from "./perturbation";
 
@@ -19,6 +19,7 @@ export interface JobStatus {
   readonly purpose: string;
   readonly faults: LaunchPlan["faults"];
   readonly perturbations: readonly PlannedPerturbation[];
+  readonly plannedCalls: readonly PlannedCall[];
   readonly worldId: string;
   readonly runId: string;
   readonly domain: string;
@@ -91,7 +92,8 @@ export function plannedS(status: JobStatus): number {
 }
 
 export function recoveredPlanOf(status: JobStatus): LaunchPlan {
-  const { seed, explore, name, purpose, faults, perturbations } = status;
+  const { seed, explore, name, purpose, perturbations, plannedCalls } = status;
+  const faults = status.faults.filter((fault) => fault.immediate !== true);
   return {
     ...(name === "" ? {} : { name }),
     ...(purpose === "" ? {} : { purpose }),
@@ -100,9 +102,24 @@ export function recoveredPlanOf(status: JobStatus): LaunchPlan {
     explore,
     faults,
     perturbations,
-    calls: [],
+    calls: plannedCalls,
     recovered: true,
   };
+}
+
+function sameFault(known: PlannedFault, fault: PlannedFault): boolean {
+  if (known.faultId !== undefined && fault.faultId !== undefined) return known.faultId === fault.faultId;
+  return (
+    known.entity === fault.entity && known.fault === fault.fault && Math.floor(known.atS) === Math.floor(fault.atS)
+  );
+}
+
+export function observedInjected(known: readonly PlannedFault[], status: JobStatus): readonly PlannedFault[] {
+  const fresh = status.faults
+    .filter((fault) => fault.immediate === true)
+    .filter((fault) => !known.some((each) => sameFault(each, fault)))
+    .map(({ entity, fault, atS, faultId }) => ({ entity, fault, atS, ...(faultId === undefined ? {} : { faultId }) }));
+  return fresh.length === 0 ? known : [...known, ...fresh];
 }
 
 export function pacedRate(status: JobStatus): number | null {

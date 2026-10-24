@@ -181,7 +181,9 @@ describe("launch store: commands given now", () => {
       name: "job.inject_fault",
       args: { world_id: "w-4", entity_id: "CT-1", fault: "fan_failure" },
     });
-    expect(running(store.snapshot()).injected).toEqual([{ entity: "CT-1", fault: "fan_failure", atS: 60 }]);
+    expect(running(store.snapshot()).injected).toEqual([
+      { entity: "CT-1", fault: "fan_failure", atS: 60, faultId: "f-0" },
+    ]);
   });
 
   it("never injects a fault in an Evaluate run, and keeps no fault to show", async () => {
@@ -191,13 +193,24 @@ describe("launch store: commands given now", () => {
     expect(running(store.snapshot()).injected).toEqual([]);
   });
 
-  it("is lost with the tab: a run found again after a reload has no commands of this tab", async () => {
+  it("is found again after a reload: the director lists the fault injected now, once, at its second", async () => {
     const { store, fake } = await pausedRun();
     await store.injectNow("CT-1", "fan_failure");
     expect(running(store.snapshot()).injected).toHaveLength(1);
     const again = launch(fake);
     await again.store.resume(() => origin);
-    expect(running(again.store.snapshot()).injected).toEqual([]);
+    expect(running(again.store.snapshot()).injected).toEqual([
+      { entity: "CT-1", fault: "fan_failure", atS: 60, faultId: "f-0" },
+    ]);
+    await again.tick(1000);
+    expect(running(again.store.snapshot()).injected).toHaveLength(1);
+  });
+
+  it("does not list a fault injected now twice when the status reports the one this tab injected", async () => {
+    const { store, tick } = await pausedRun();
+    await store.injectNow("CT-1", "fan_failure");
+    await tick(1500);
+    expect(running(store.snapshot()).injected).toHaveLength(1);
   });
 });
 

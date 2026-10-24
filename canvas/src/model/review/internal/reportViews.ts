@@ -1,4 +1,5 @@
 import { clockOf, durationOf } from "../../shared/duration";
+import { groupedFigure } from "../../shared/units";
 import { seedWords } from "../../shared/words";
 import type { KpiRow, Report, VerifyState } from "./report";
 import { badgeOf, replayLine, wallClock } from "./report";
@@ -21,7 +22,7 @@ export function kpiWords(state: string): string {
 
 export function kpiFigure(value: number): string {
   const size = Math.abs(value);
-  return size >= 100 ? value.toFixed(0) : size >= 10 ? value.toFixed(1) : value.toFixed(2);
+  return groupedFigure(size >= 100 ? value.toFixed(0) : size >= 10 ? value.toFixed(1) : value.toFixed(2));
 }
 
 export function kpiSteady(row: KpiRow): boolean {

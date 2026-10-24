@@ -8,6 +8,9 @@ export interface PlannedFault {
   readonly fault: string;
   readonly atS: number;
   readonly untilS?: number;
+  readonly clearedAtS?: number;
+  readonly immediate?: boolean;
+  readonly faultId?: string;
 }
 
 export interface PlannedCall {

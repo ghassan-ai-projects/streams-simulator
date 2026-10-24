@@ -209,6 +209,7 @@ export class ReviewStore extends Observable<ReviewState> {
       ...atPosition(this.drainLive(), positionNs),
       following: false,
       selected: entity,
+      tab: "report",
       picked: { atNs: positionNs, entity },
     });
   }

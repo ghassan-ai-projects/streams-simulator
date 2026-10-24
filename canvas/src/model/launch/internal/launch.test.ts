@@ -47,7 +47,7 @@ describe("launch plan", () => {
 const setpoint = {
   name: "chiller__set_setpoint",
   entityArg: "chiller_id",
-  args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12 }],
+  args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12, unit: "" }],
 } as const;
 
 const call = (overrides: Partial<PlannedCall>): PlannedCall => ({

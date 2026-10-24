@@ -6,7 +6,7 @@ import type { Draft, LaunchPlan, PlanProblem } from "../../../model/launch";
 import { agendaOf, faultCategoryOf, planCue, planOf, planProblems, problemWords } from "../../../model/launch";
 import { Pace } from "./PaceChoice";
 import type { Plant } from "../../../model/plant";
-import { effectorOf, plantTitle } from "../../../model/plant";
+import { argUnitOf, effectorOf, plantTitle } from "../../../model/plant";
 import { CallRows } from "./CallRows";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
@@ -48,6 +48,7 @@ interface FieldsProps extends Pick<FormProps, "plant" | "draft" | "selected" | "
 function PlanFields({ plant, draft, selected, change, shown, plan, note, catalog }: FieldsProps) {
   const { ref, cut } = useCutBottom<HTMLDivElement>();
   const categoryOf = (entity: string, fault: string) => faultCategoryOf(plant, catalog.categories, entity, fault);
+  const unitOf = (entity: string, effector: string, arg: string) => argUnitOf(plant, entity, effector, arg);
   return (
     <div
       ref={ref}
@@ -74,7 +75,7 @@ function PlanFields({ plant, draft, selected, change, shown, plan, note, catalog
       />
       <DeliveryRows draft={draft} catalog={catalog.perturbations} problems={shown} change={change} />
       <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-      <PlanAgenda items={agendaOf(plan, categoryOf)} />
+      <PlanAgenda items={agendaOf(plan, categoryOf, unitOf)} />
       <Readiness plan={plan} plantName={plantTitle(plant)} />
     </div>
   );

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { stubScrollIntoView } from "../../../test/dom";
@@ -77,6 +77,44 @@ describe("the action story of an effector call", () => {
     expect(screen.getByRole("region", { name: "Action story" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Hide" }));
     expect(screen.queryByRole("region", { name: "Action story" })).toBeNull();
+  });
+
+  it("selects the call from anywhere in its row, not only from the time", () => {
+    const { calls } = mount();
+    const row = screen.getByRole("button", { name: startCall }).closest("tr");
+    expect(row).not.toBeNull();
+    fireEvent.click(within(row as HTMLElement).getByText("start"));
+    expect(calls.pick).toHaveBeenCalledTimes(1);
+    expect(calls.pick).toHaveBeenCalledWith(1_200e9, "CH-1");
+    expect(screen.getByRole("region", { name: "Action story" })).toBeInTheDocument();
+  });
+
+  it("moves the cursor to a disturbance from anywhere in its row and shows no call story", () => {
+    const { calls } = mount();
+    const row = screen.getByRole("button", { name: /^Open 00:10:00 CT-1/ }).closest("tr");
+    fireEvent.click(within(row as HTMLElement).getByText("CT-1"));
+    expect(calls.pick).toHaveBeenCalledWith(600e9, "CT-1");
+    expect(screen.queryByRole("region", { name: "Action story" })).toBeNull();
+  });
+
+  it("says when each disturbance ends, or that it did not end before the run did", () => {
+    const ending = report.disturbances.map((d) =>
+      d.name === "tower__fan_failure"
+        ? { ...d, clearedNs: 840e9, clearedBy: "fault.clear" }
+        : d.name === "drop"
+          ? { ...d, untilNs: 480e9 }
+          : d,
+    );
+    render(<Events report={{ ...report, disturbances: ending }} picked={null} actions={actions()} />);
+    const table = screen.getByRole("region", { name: "Disturbances" });
+    expect(within(table).getByRole("columnheader", { name: "Ends" })).toBeInTheDocument();
+    const cells = (id: RegExp) => within(within(table).getByRole("button", { name: id }).closest("tr") as HTMLElement);
+    expect(cells(/^Open 00:10:00 CT-1/).getByText("00:14:00")).toHaveAttribute(
+      "title",
+      "Ends at 00:14:00 by fault.clear",
+    );
+    expect(cells(/^Open 00:05:00 delivery/).getByText("00:08:00")).toBeInTheDocument();
+    expect(cells(/^Open 00:15:00 weather/).getByText("–")).toHaveAttribute("title", "Did not end before the run ended");
   });
 
   it("opens the story of a call picked on the timeline, and of no disturbance", () => {

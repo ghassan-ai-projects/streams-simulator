@@ -22,6 +22,7 @@ const status: JobStatus = {
   purpose: "",
   faults: [],
   perturbations: [],
+  plannedCalls: [],
 };
 
 describe("status poll", () => {

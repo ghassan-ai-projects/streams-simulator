@@ -1,6 +1,6 @@
 import type { InstanceOrigin } from "../../graph";
 import type { OriginKind } from "../../shared/origin";
-import { codeTitle, withUnit } from "../../shared/units";
+import { codeTitle, groupedFigure, withUnit } from "../../shared/units";
 import type { InterruptState } from "./interrupts";
 
 type ReadingState = "good" | "simulated" | "stale" | "disconnected" | "invalid" | "untrusted";
@@ -119,7 +119,7 @@ export function readingWords(reading: SessionReading): ReadingWords {
   const stateWords = `${state}${quality}`;
   if (!carriesValue(reading) || reading.value === null) return { valueText: "—", stateWords, unitTitle: "" };
   return {
-    valueText: withUnit(String(reading.value), reading.unit),
+    valueText: withUnit(groupedFigure(String(reading.value)), reading.unit),
     stateWords,
     unitTitle: codeTitle(reading.unit),
   };

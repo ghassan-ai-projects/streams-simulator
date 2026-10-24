@@ -36,7 +36,15 @@ describe("launch store: finding a job after a reload", () => {
       durationS: 1800,
       rate: 60,
       stopping: false,
-      plan: { seed: 3, durationS: 1800, explore: false, faults: [], perturbations: [], calls: [], recovered: true },
+      plan: {
+        seed: 3,
+        durationS: 1800,
+        explore: false,
+        faults: [],
+        perturbations: [],
+        calls: [{ entity: "CH-1", effector: "chiller__start", atS: 600, args: {} }],
+        recovered: true,
+      },
     });
     expect(adopted.phase === "running" ? adopted.calls : []).toMatchObject([
       { effector: "chiller__start", accepted: true, atMs: Number.NEGATIVE_INFINITY },

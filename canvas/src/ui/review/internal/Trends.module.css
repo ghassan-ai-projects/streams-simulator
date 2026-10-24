@@ -9,6 +9,34 @@
   background: var(--surface-panel);
 }
 
+.panel[data-size="compact"] {
+  max-height: min(200px, 28vh);
+}
+
+.panel[data-size="tall"] {
+  max-height: min(520px, 62vh);
+}
+
+.panel[data-size="full"] {
+  max-height: min(760px, 82vh);
+}
+
+.sizing {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.sizing .action {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-1);
+}
+
+.sizing .action[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .scroll {
   min-height: 0;
   overflow-y: auto;

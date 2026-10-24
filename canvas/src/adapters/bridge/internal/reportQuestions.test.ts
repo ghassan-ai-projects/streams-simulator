@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { reportWire } from "../../../test/runFixture";
 import { parseReportPayload } from "./reportDecoder";
 
-const question = { code: "stopped_early", message: "The operator stopped the run at +540s." };
+const question = {
+  code: "stopped_early",
+  message: "The operator stopped the run at 00:09:00 of the requested 00:30:00.",
+};
 
 describe("the replay status and open questions of a report", () => {
   it("reads the replay status with its detail and the open questions in the binary's order", () => {

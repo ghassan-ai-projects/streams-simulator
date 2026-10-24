@@ -8,6 +8,7 @@ import type { Report } from "../../../model/review";
 import { endedGate } from "../../../model/review";
 import { shared, useStore } from "../../primitives";
 import { CompareDialog } from "./CompareDialog";
+import { HandoverNote } from "./HandoverNote";
 
 interface ActionsProps {
   readonly review: ReviewSession;
@@ -35,6 +36,7 @@ function ExportHandover({
   const blocked = !gate.open || handover.phase === "working";
   return (
     <>
+      <HandoverNote handover={handover} />
       <button
         type="button"
         className={shared.secondary}

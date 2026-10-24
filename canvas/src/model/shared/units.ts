@@ -75,3 +75,9 @@ export function withUnit(value: string, unit: string): string {
 export function grouped(count: number): string {
   return count.toLocaleString("en-US").replaceAll(",", " ");
 }
+
+export function groupedFigure(figure: string): string {
+  const [whole = "", ...rest] = figure.split(".");
+  const spaced = whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return [spaced, ...rest].join(".");
+}

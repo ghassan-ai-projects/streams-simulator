@@ -72,3 +72,21 @@ test("opening the review of a run that is still running reads Running in its hea
   await expect(page.getByRole("status").filter({ hasText: /Did not finish/ })).toHaveCount(0);
   await expect(page.getByText("Did not finish", { exact: true })).toHaveCount(0);
 });
+
+test("a running Explore job lists with its own name, its plant and its mode, not Unknown plant or Evaluate", async ({
+  page,
+}) => {
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Name").fill("Loss and recovery");
+  await panel.getByLabel("Duration", { exact: true }).fill("30");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  await expect(panel.getByText(/^Running Loss and recovery on Factory utilities as run w-/)).toBeVisible();
+  await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
+  const row = page.getByRole("region", { name: "Runs" }).getByRole("listitem").filter({ hasText: "Running" });
+  await expect(row).toContainText("Loss and recovery");
+  await expect(row).toContainText("Explore");
+  await expect(row).toContainText("Factory utilities");
+  await expect(row).not.toContainText("Unknown plant");
+  await expect(row).not.toContainText("Evaluate");
+});

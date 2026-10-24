@@ -5,15 +5,17 @@ import {
   evidenceWords,
   executionWords,
   openedReplayWords,
+  openQuestionsOf,
   purposeWords,
   replayStatusWords,
   scoringWords,
   visibilityWords,
 } from "../../../model/review";
 import type { ReactNode } from "react";
-import { OpenQuestions } from "./OpenQuestions";
+import { OpenQuestions, ReplayButton } from "./OpenQuestions";
 import type { ReplayControl } from "./OpenQuestions";
 import { Integrity } from "./ReportIntegrity";
+import { cx } from "../../primitives";
 import { Section } from "./ReportParts";
 import styles from "./ThisRun.module.css";
 
@@ -52,30 +54,22 @@ function Scoring({ report }: { readonly report: Report }) {
 }
 
 function HandoverNotice({ handover }: { readonly handover: HandoverState }) {
-  if (handover.phase === "failed")
-    return (
-      <p role="alert" className={styles.failure}>
-        {handover.message}
-      </p>
-    );
+  if (handover.phase === "failed") return <p className={cx(styles.notice, styles.failure)}>{handover.message}</p>;
   if (handover.phase !== "saved") return null;
-  return (
-    <p role="status" className={styles.line}>
-      {`Handover saved as ${handover.name}.`}
-    </p>
-  );
+  return <p className={styles.notice}>{`Handover saved as ${handover.name}.`}</p>;
 }
 
-function OpenedReplay({ report, verify }: Pick<ThisRunProps, "report" | "verify">) {
+function OpenedReplay({ report, verify, replay }: Pick<ThisRunProps, "report" | "verify" | "replay">) {
   const words = openedReplayWords(report, verify);
   return words === "" ? null : (
     <p className={styles.line} data-part="opened-replay">
-      {words}
+      {`${words} `}
+      <ReplayButton control={replay} />
     </p>
   );
 }
 
-function Facts({ report, verify }: Pick<ThisRunProps, "report" | "verify">) {
+function Facts({ report, verify, replay }: Pick<ThisRunProps, "report" | "verify" | "replay">) {
   return (
     <dl className={styles.facts}>
       <Fact label="Execution">
@@ -87,7 +81,7 @@ function Facts({ report, verify }: Pick<ThisRunProps, "report" | "verify">) {
           className={styles.line}
           data-part="replay-status"
         >{`Replay in this report: ${replayStatusWords(report.replay)}`}</p>
-        <OpenedReplay report={report} verify={verify} />
+        <OpenedReplay report={report} verify={verify} replay={replay} />
       </Fact>
       <Fact label="Evidence">
         {evidenceWords(report).map((line) => (
@@ -109,11 +103,11 @@ export function ThisRun(props: ThisRunProps) {
       <p className={styles.purpose} data-part="purpose">
         {purposeWords(report)}
       </p>
-      <Facts report={report} verify={props.verify} />
+      <Facts report={report} verify={props.verify} replay={replay} />
       <p className={styles.visibility} data-part="visibility">
         {visibilityWords(report, connection)}
       </p>
-      <OpenQuestions questions={report.openQuestions} replay={replay} />
+      <OpenQuestions questions={openQuestionsOf(report, props.verify)} replay={replay} />
       <HandoverNotice handover={handover} />
     </Section>
   );

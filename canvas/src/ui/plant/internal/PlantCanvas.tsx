@@ -9,6 +9,7 @@ import type { PlanMark, PlantView } from "../../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
 import type { Connected } from "./connected";
+import { useNoteLines } from "./useNoteLines";
 
 function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, PlanMark> | undefined {
   const run = useStore(launch);
@@ -64,16 +65,17 @@ function useLaidOutPlant(
   hall: string | null,
   aspect: number | undefined,
   connected: Connected | undefined,
+  marks: ReadonlyMap<string, PlanMark> | undefined,
 ): PlantView {
   const presentation = connected?.view;
-  const notes = connected?.notes;
+  const notes = useNoteLines(connected?.notes, marks);
   return useMemo(
     () =>
       plantView(state.plant, state.specs, {
         open: hall,
         aspect,
         ...(presentation === undefined ? {} : { view: presentation }),
-        ...(notes === undefined ? {} : { notes }),
+        notes,
       }),
     [state.plant, state.specs, hall, aspect, presentation, notes],
   );
@@ -96,7 +98,7 @@ export function PlantCanvas({
 }) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
-  const view = useLaidOutPlant(state, hall, aspect, connected);
+  const view = useLaidOutPlant(state, hall, aspect, connected, marks);
   return (
     <div ref={ref} className={screen.graphHost}>
       <PlantViewGraph

@@ -12,6 +12,14 @@ interface WireCall {
   readonly immediate?: true;
 }
 
+interface WireFault {
+  readonly entity_id: string;
+  readonly fault: string;
+  readonly at_s: number;
+  readonly fault_id: string;
+  readonly immediate: true;
+}
+
 interface Sim {
   readonly worldId: string;
   readonly request: Args;
@@ -20,6 +28,7 @@ interface Sim {
   rate: number;
   paused: boolean;
   readonly now: WireCall[];
+  readonly live: WireFault[];
   halted: "stopped" | "failed" | null;
   stopping: boolean;
   polled: boolean;
@@ -91,6 +100,7 @@ export class FakeJobs {
       rate: Number(request.rate ?? 0),
       paused: false,
       now: [],
+      live: [],
       halted: null,
       stopping: false,
       polled: false,
@@ -162,12 +172,30 @@ export class FakeJobs {
     const { request } = sim;
     const sealed = request.explore !== true && this.active(sim);
     const list = (name: string) => (sealed ? [] : (request[name] ?? []));
+    const faults = sealed ? [] : [...this.plannedFaults(sim), ...sim.live];
     return {
       ...(request.name === undefined ? {} : { name: request.name }),
       ...(request.purpose === undefined ? {} : { purpose: request.purpose }),
-      faults: list("faults"),
+      faults,
       perturbations: list("perturbations"),
+      planned_calls: this.plannedCalls(sim),
     };
+  }
+
+  private plannedFaults(sim: Sim): readonly object[] {
+    const reached = this.reachedS(sim);
+    const faults = (Array.isArray(sim.request.faults) ? sim.request.faults : []) as {
+      at_s: number;
+      until_s?: number;
+    }[];
+    return faults.map((fault) =>
+      fault.until_s !== undefined && fault.until_s <= reached ? { ...fault, cleared_at_s: fault.until_s } : fault,
+    );
+  }
+
+  private plannedCalls(sim: Sim): readonly object[] {
+    const calls = (Array.isArray(sim.request.calls) ? sim.request.calls : []) as WireCall[];
+    return calls.map((call) => ({ args: {}, ...call }));
   }
 
   private active(sim: Sim): boolean {
@@ -245,7 +273,9 @@ export class FakeJobs {
 
   private inject(sim: Sim, entity: string, fault: string): object {
     const faultId = `f-${String(this.injected.length)}`;
-    this.injected.push({ entity, fault, faultId, atS: Math.floor(this.reachedS(sim)) });
+    const atS = Math.floor(this.reachedS(sim));
+    this.injected.push({ entity, fault, faultId, atS });
+    sim.live.push({ entity_id: entity, fault, at_s: atS, fault_id: faultId, immediate: true });
     return { fault_id: faultId };
   }
 

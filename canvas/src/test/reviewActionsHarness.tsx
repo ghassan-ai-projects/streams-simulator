@@ -7,7 +7,10 @@ import { reportWire } from "./runFixture";
 import { miniWorkspace, reviewBridge, reviewHash } from "./screenFixture";
 
 const replayQuestion = { code: "replay_not_checked", message: "The recording was not replayed." };
-const stopped = { code: "stopped_early", message: "The operator stopped the run at +540s." };
+const stopped = {
+  code: "stopped_early",
+  message: "The operator stopped the run at 00:09:00 of the requested 00:30:00.",
+};
 
 export function run(worldId: string, extra: Partial<RunEntry> = {}): RunEntry {
   return {

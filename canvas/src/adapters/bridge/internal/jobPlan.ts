@@ -2,6 +2,7 @@ import type { JobStatus } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 
 type Fault = JobStatus["faults"][number];
+type PlannedCall = JobStatus["plannedCalls"][number];
 type Perturbation = JobStatus["perturbations"][number];
 type Params = Perturbation["params"];
 type ParamValue = Params[string];
@@ -16,14 +17,47 @@ function untilOf(value: unknown): { readonly untilS?: number } | null {
   return until === null ? null : { untilS: until };
 }
 
+function clearedOf(value: unknown): { readonly clearedAtS?: number } | null {
+  if (value === undefined) return {};
+  const cleared = finite(value);
+  return cleared === null ? null : { clearedAtS: cleared };
+}
+
+function liveOf(value: Record<string, unknown>): { readonly immediate?: true; readonly faultId?: string } | null {
+  if (value.immediate !== undefined && typeof value.immediate !== "boolean") return null;
+  const faultId = text(value.fault_id);
+  return { ...(value.immediate === true ? { immediate: true as const } : {}), ...(faultId === "" ? {} : { faultId }) };
+}
+
 function fault(value: unknown): Fault | null {
   if (!isRecord(value)) return null;
   const atS = finite(value.at_s);
   const until = untilOf(value.until_s);
+  const cleared = clearedOf(value.cleared_at_s);
+  const live = liveOf(value);
   const entity = text(value.entity_id);
   const name = text(value.fault);
-  if (atS === null || until === null || entity === "" || name === "") return null;
-  return { entity, fault: name, atS, ...until };
+  if (atS === null || until === null || cleared === null || live === null || entity === "" || name === "") return null;
+  return { entity, fault: name, atS, ...until, ...cleared, ...live };
+}
+
+function plannedCall(value: unknown): PlannedCall | null {
+  if (!isRecord(value)) return null;
+  const atS = finite(value.at_s);
+  const entity = text(value.entity_id);
+  const effector = text(value.effector);
+  const args = argsOf(value.args);
+  if (atS === null || entity === "" || effector === "" || args === null) return null;
+  return { entity, effector, atS, args };
+}
+
+function argsOf(value: unknown): PlannedCall["args"] | null {
+  if (value === undefined) return {};
+  if (!isRecord(value)) return null;
+  const entries = Object.entries(value);
+  if (!entries.every(([, item]) => typeof item === "number" || typeof item === "string" || typeof item === "boolean"))
+    return null;
+  return value as PlannedCall["args"];
 }
 
 function paramValue(value: unknown): ParamValue | null {
@@ -59,6 +93,10 @@ function listOf<T>(value: unknown, item: (entry: unknown) => T | null): readonly
 
 export function jobFaults(value: unknown): readonly Fault[] | null {
   return listOf(value, fault);
+}
+
+export function jobPlannedCalls(value: unknown): readonly PlannedCall[] | null {
+  return listOf(value, plannedCall);
 }
 
 export function jobPerturbations(value: unknown): readonly Perturbation[] | null {

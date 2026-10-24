@@ -8,6 +8,7 @@ import {
   hashLocation,
   localPreferences,
   mediaSystemTheme,
+  sessionPreferences,
 } from "./adapters/browser";
 import { bridgeAdapter, browserTransport } from "./adapters/bridge";
 import { createDeviceDesk, createDeviceSession } from "./app/devices";
@@ -35,9 +36,10 @@ if (root) {
   const editor = createEditorSession(adapters.editor);
   const clipboard = browserClipboard(window.navigator.clipboard);
   const saver = browserFileSaver(documentDownloads(window));
-  const review = createReviewSession(adapters.review, time, time, clipboard, saver);
-  const liveReview = createReviewSession(adapters.review, time, time, clipboard, saver);
-  const watchReview = createReviewSession(adapters.review, time, time, clipboard, saver);
+  const viewer = sessionPreferences(window);
+  const review = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
+  const liveReview = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
+  const watchReview = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
   createRoot(root).render(
     <StrictMode>
       <App

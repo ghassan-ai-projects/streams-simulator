@@ -113,6 +113,14 @@ export { hallLiveOf, isRealBoard } from "./internal/live";
 export { observedRows } from "./internal/observedRows";
 export { trendFrame } from "./internal/trend";
 export { isWatched, toggled, watchLimit } from "./internal/watchList";
+export {
+  defaultTrendSize,
+  resizedTrend,
+  savedTrendsOf,
+  savedTrendsText,
+  stillExists,
+  trendSizes,
+} from "./internal/savedTrends";
 export { trendSpanOf, windowChoices, windowWords } from "./internal/trendWindow";
 export { nsAtX, plotFrame, plotsOf, xOf } from "./internal/trendPlot";
 export { readoutOf } from "./internal/trendReadout";
@@ -144,6 +152,7 @@ export {
   evidenceWords,
   executionWords,
   openedReplayWords,
+  openQuestionsOf,
   purposeWords,
   replayStatusWords,
   scoringWords,
@@ -197,6 +206,8 @@ export type {
   Readout,
   Span,
   TrendSpan,
+  SavedTrends,
+  TrendSize,
   Watched,
   WindowChoice,
   AlarmActivation,

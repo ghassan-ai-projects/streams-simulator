@@ -12,10 +12,15 @@ function callWords(call: CallOutcome): string {
 
 const noFaults: readonly PlannedFault[] = [];
 
+function faultActive(fault: PlannedFault, atS: number): boolean {
+  const end = fault.clearedAtS ?? fault.untilS;
+  return fault.atS <= atS && (end === undefined || atS < end);
+}
+
 function faultsAt(faults: readonly PlannedFault[], atS: number): Map<string, readonly string[]> {
   const faulted = new Map<string, readonly string[]>();
   for (const planned of faults) {
-    if (planned.entity === "" || planned.fault === "" || planned.atS > atS) continue;
+    if (planned.entity === "" || planned.fault === "" || !faultActive(planned, atS)) continue;
     faulted.set(planned.entity, [...(faulted.get(planned.entity) ?? []), humanise(planned.fault)]);
   }
   return faulted;

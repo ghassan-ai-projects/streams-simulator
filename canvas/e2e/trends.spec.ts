@@ -107,3 +107,26 @@ test("Review: the plots follow the cursor and a plot moves it", async ({ page })
   await expect(slider).toHaveAttribute("aria-valuetext", /^00:00:\d\d$/);
   expect((await new AxeBuilder({ page }).include("[aria-label='Trends']").analyze()).violations).toEqual([]);
 });
+
+test("a reload keeps the watched channels and the open panel, and the height buttons make the panel taller", async ({
+  page,
+}) => {
+  await startWatchRun(page, "Explore");
+  await expect(page.getByText(/^Running · 00:(0[3-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
+  const panel = await pinTwoLive(page);
+  await pinLive(page, "P-1", "flow");
+  const height = async () => (await panel.boundingBox())?.height ?? 0;
+  await expect(panel).toHaveAttribute("data-size", "tall");
+  const tall = await height();
+  await panel.getByRole("button", { name: "Make the trends panel shorter" }).click();
+  await expect(panel).toHaveAttribute("data-size", "normal");
+  await expect.poll(height).toBeLessThan(tall);
+  await panel.getByRole("button", { name: "Make the trends panel taller" }).click();
+  await page.reload();
+  await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
+  await page.getByRole("button", { name: "Close the run panel" }).click();
+  const again = page.getByRole("region", { name: "Trends" });
+  await expect(again.getByRole("slider")).toHaveCount(3);
+  await expect(again).toHaveAttribute("data-size", "tall");
+  await expect(again.getByRole("slider", { name: /^P-1 · flow trend/ })).toBeVisible();
+});

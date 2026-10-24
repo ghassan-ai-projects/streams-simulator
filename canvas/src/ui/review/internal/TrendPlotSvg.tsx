@@ -86,20 +86,26 @@ function Lines({ plot, width }: { readonly plot: Plot; readonly width: number })
   );
 }
 
-function Extremes({ plot }: { readonly plot: Plot }) {
+function Extreme({ tick, y, width }: { readonly tick: Plot["top"]; readonly y: number; readonly width: number }) {
+  if (tick === null) return null;
+  const atEnd = tick.side === "end";
+  return (
+    <text className={styles.tick} x={atEnd ? width - 3 : 3} y={y} textAnchor={atEnd ? "end" : "start"}>
+      {tick.text}
+    </text>
+  );
+}
+
+function Extremes({ plot, width }: { readonly plot: Plot; readonly width: number }) {
   const { top, bottom } = plot;
   return (
     <>
-      {top !== null && (
-        <text className={styles.tick} x={3} y={Math.max(9, top.y - 2)}>
-          {top.text}
-        </text>
-      )}
-      {bottom !== null && bottom.text !== top?.text && (
-        <text className={styles.tick} x={3} y={Math.min(height - 6, bottom.y + 10)}>
-          {bottom.text}
-        </text>
-      )}
+      <Extreme tick={top} y={Math.max(9, (top?.y ?? 0) - 2)} width={width} />
+      <Extreme
+        tick={bottom !== null && bottom.text !== top?.text ? bottom : null}
+        y={Math.min(height - 6, (bottom?.y ?? 0) + 10)}
+        width={width}
+      />
     </>
   );
 }
@@ -114,7 +120,7 @@ function Drawing({ plot, cursor }: Pick<Props, "plot" | "cursor">) {
     >
       <Backdrop plot={plot} cursor={cursor} />
       <Lines plot={plot} width={cursor.width} />
-      <Extremes plot={plot} />
+      <Extremes plot={plot} width={cursor.width} />
       <VerticalLine at={cursor.cursorNs} cursor={cursor} className={styles.cursor} />
       {cursor.probeNs !== null && <VerticalLine at={cursor.probeNs} cursor={cursor} className={styles.probe} />}
     </svg>

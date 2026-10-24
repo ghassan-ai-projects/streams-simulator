@@ -7,6 +7,7 @@ import {
   executionWords,
   noPurposeWords,
   openedReplayWords,
+  openQuestionsOf,
   purposeWords,
   replayStatusWords,
   scoringWords,
@@ -158,9 +159,7 @@ describe("the replay this page ran when it opened", () => {
   });
 
   it("says so when the page's own replay reproduced a run whose report was not replayed", () => {
-    expect(openedReplayWords(blankReport(), ready(true))).toBe(
-      "The replay this page ran when it opened reproduced the run.",
-    );
+    expect(openedReplayWords(blankReport(), ready(true))).toBe("Replay checked when this page opened: reproduces");
   });
 
   it.each([
@@ -170,5 +169,39 @@ describe("the replay this page ran when it opened", () => {
     ["the report holds its own replay", blankReport({ replay: { status: "reproduces", detail: "" } }), ready(true)],
   ])("says nothing when %s", (_name, run, verify) => {
     expect(openedReplayWords(run, verify)).toBe("");
+  });
+});
+
+describe("the open questions the page can answer itself", () => {
+  const ready = (matches: boolean) => ({
+    phase: "ready" as const,
+    value: { matches, domainChanged: false, detail: "", reason: "", file: "" },
+  });
+  const notReplayed = { code: "replay_not_checked", message: "The recording was not replayed." };
+  const other = { code: "no_kpi_results", message: "No whole-run results." };
+
+  it("drops the binary's not-replayed question when this page's own replay reproduced the run", () => {
+    const run = blankReport({ openQuestions: [notReplayed, other] });
+    expect(openQuestionsOf(run, ready(true))).toEqual([other]);
+    expect(openedReplayWords(run, ready(true))).not.toBe("");
+  });
+
+  it.each([
+    ["the page's replay did not reproduce", ready(false)],
+    ["the page's replay is still running", { phase: "loading" as const }],
+    ["the page's replay failed", { phase: "failed" as const }],
+  ])("keeps the question when %s", (_name, verify) => {
+    const run = blankReport({ openQuestions: [notReplayed, other] });
+    expect(openQuestionsOf(run, verify)).toEqual([notReplayed, other]);
+    expect(openedReplayWords(run, verify)).toBe("");
+  });
+
+  it("never claims two things: either the line or the question, not both", () => {
+    const run = blankReport({ openQuestions: [notReplayed] });
+    for (const verify of [ready(true), ready(false), { phase: "loading" as const }]) {
+      const said = openedReplayWords(run, verify) !== "";
+      const asked = openQuestionsOf(run, verify).some((question) => question.code === notReplayed.code);
+      expect(said).not.toBe(asked);
+    }
   });
 });

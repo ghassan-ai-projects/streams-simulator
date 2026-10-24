@@ -49,12 +49,7 @@ function Shown({ row, onSelect }: { readonly row: readonly Cell[]; readonly onSe
   const text = textOf(row[0] ?? "");
   if (onSelect === undefined) return text;
   return (
-    <button
-      type="button"
-      className={styles.pick}
-      aria-label={`Open ${row.slice(0, 3).map(textOf).join(" ")}`}
-      onClick={onSelect}
-    >
+    <button type="button" className={styles.pick} aria-label={`Open ${row.slice(0, 3).map(textOf).join(" ")}`}>
       {text}
     </button>
   );
@@ -63,8 +58,10 @@ function Shown({ row, onSelect }: { readonly row: readonly Cell[]; readonly onSe
 function Row({ row, columns, current, onSelect }: RowProps) {
   return (
     <tr
+      className={onSelect === undefined ? undefined : styles.pickable}
       aria-current={current ? "true" : undefined}
       ref={current ? (element) => element?.scrollIntoView({ block: "nearest" }) : undefined}
+      onClick={onSelect}
     >
       {row.map((cell, c) => {
         const Tag = c === 0 ? "th" : "td";

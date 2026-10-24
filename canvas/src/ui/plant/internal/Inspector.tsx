@@ -140,7 +140,7 @@ function InstanceDetails({ plant, instance, onClose, onSelect, spec, liveDetail 
       />
       <LinkList title="Links in" links={incoming} side="in" onSelect={onSelect} />
       <LinkList title="Links out" links={outgoing} side="out" onSelect={onSelect} />
-      <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} folded />
+      <List title="Faults this component can have" items={kind?.faults ?? []} mono={false} show={humanise} folded />
       <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
       <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} folded />
     </aside>

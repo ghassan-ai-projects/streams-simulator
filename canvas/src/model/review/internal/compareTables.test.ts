@@ -43,7 +43,7 @@ describe("a difference keeps its sign", () => {
     [-0.0004, "−0.00040"],
     [0.0004, "+0.00040"],
     [-12.34, "−12.3"],
-    [1234.5, "+1235"],
+    [1234.5, "+1 235"],
   ])("writes %s as %s", (delta, shown) => {
     expect(signedFigure(delta)).toBe(shown);
   });

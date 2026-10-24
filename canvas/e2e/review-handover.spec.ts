@@ -52,10 +52,13 @@ test("a reviewer reads what ran, checks the replay, exports a handover and compa
   await expect(block.locator("[data-part='purpose']")).toHaveText("Investigation without a stated question");
   await expect(block.locator("[data-part='visibility']")).toHaveText("Truth was visible while the run was going.");
   const questions = block.getByRole("region", { name: "Open questions" });
-  await expect(questions.locator("[data-code='replay_not_checked']")).toBeVisible();
+  const opened = block.locator("[data-part='opened-replay']");
+  await expect(opened).toContainText("Replay checked when this page opened: reproduces", { timeout: 90_000 });
+  await expect(questions.locator("[data-code='replay_not_checked']")).toHaveCount(0);
+  await expect(block).not.toContainText("nobody has shown");
   await expect(questions.locator("[data-code='no_outside_scoring']")).toBeVisible();
 
-  await questions.getByRole("button", { name: "Check replay now" }).click();
+  await opened.getByRole("button", { name: "Check replay now" }).click();
   await expect(block.locator("[data-part='replay-status']")).toHaveText("Replay in this report: Reproduces", {
     timeout: 90_000,
   });
@@ -68,6 +71,10 @@ test("a reviewer reads what ran, checks the replay, exports a handover and compa
   expect(handover.text).toContain("## Open questions");
   expect(handover.text).toContain("| Replay | reproduces |");
   await expect(block.getByText(`Handover saved as ${recorded}-handover.md.`)).toBeVisible();
+  const confirmation = page.getByText(`Saved ${recorded}-handover.md`, { exact: true });
+  await expect(confirmation).toBeVisible();
+  await expect(page.getByRole("status").filter({ has: confirmation })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Export handover" })).toBeInViewport();
 
   await page.getByRole("button", { name: "Compare with…" }).click();
   const dialog = page.getByRole("dialog", { name: "Compare with another run" });

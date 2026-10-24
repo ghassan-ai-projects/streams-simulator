@@ -49,6 +49,26 @@ describe("Export handover", () => {
     expect(saved).toEqual([{ name: "r-1-handover.md", text: "# Run w-1\n\n## Open questions\n" }]);
   });
 
+  it("says it next to the button, in a status region, and takes the note away after a few seconds", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await reviewing();
+      fireEvent.click(screen.getByRole("button", { name: "Export handover" }));
+      const note = await screen.findByText("Saved r-1-handover.md");
+      expect(note.closest("[role='status']")).not.toBeNull();
+      expect(note.closest("[role='status']")?.parentElement).toContainElement(
+        screen.getByRole("button", { name: "Export handover" }),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8100);
+      });
+      expect(screen.queryByText("Saved r-1-handover.md")).toBeNull();
+      expect(screen.getByText("Handover saved as r-1-handover.md.")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("names the file after the world when the report carries no run id", async () => {
     const { saved } = await reviewing(undefined, "");
     fireEvent.click(screen.getByRole("button", { name: "Export handover" }));
@@ -72,7 +92,9 @@ describe("Export handover", () => {
     const { bridge } = await reviewing();
     bridge.handlers.set("run.report", () => failure(cannedFailure("run_not_ended", 422, "run w-1 has not ended")));
     fireEvent.click(screen.getByRole("button", { name: "Export handover" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("run w-1 has not ended");
+    const refusal = await screen.findByRole("alert");
+    expect(refusal).toHaveTextContent("run w-1 has not ended");
+    expect(refusal.parentElement).toContainElement(screen.getByRole("button", { name: "Export handover" }));
   });
 });
 

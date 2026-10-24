@@ -1,4 +1,4 @@
-import type { Clipboard, Clock, FileSaver, ReviewGateway, Scheduler } from "../../ports";
+import type { Clipboard, Clock, FileSaver, PreferenceStore, ReviewGateway, Scheduler } from "../../ports";
 import { createOperationIdentity } from "../../shared";
 import type { ReviewSession } from "./api";
 import type { CompareSession } from "./compareStore";
@@ -15,11 +15,12 @@ import { WatchStore } from "./watchStore";
 
 const noClipboard: Clipboard = { copy: () => Promise.resolve(false) };
 const noSaver: FileSaver = { save: () => false };
+const noViewer: PreferenceStore = { read: () => null, write: () => undefined };
 
 class ControlledReview extends ReviewStore implements ReviewSession {
   readonly controls: ControlSession;
   readonly twin: TwinSession;
-  readonly watchList: WatchSession = new WatchStore();
+  readonly watchList: WatchSession;
   readonly compare: CompareSession;
   readonly handover: HandoverSession;
 
@@ -29,8 +30,10 @@ class ControlledReview extends ReviewStore implements ReviewSession {
     scheduler: Scheduler,
     private readonly clipboard: Clipboard,
     saver: FileSaver,
+    viewer: PreferenceStore,
   ) {
     super(gateway, clock, scheduler, createOperationIdentity());
+    this.watchList = new WatchStore(viewer);
     this.controls = new ControlStore(gateway, {
       run: () => this.snapshot().worldId,
       newest: () => this.snapshot().liveHistory?.entries.at(-1) ?? null,
@@ -54,6 +57,7 @@ export function createReviewSession(
   scheduler: Scheduler,
   clipboard: Clipboard = noClipboard,
   saver: FileSaver = noSaver,
+  viewer: PreferenceStore = noViewer,
 ): ReviewSession {
-  return new ControlledReview(gateway, clock, scheduler, clipboard, saver);
+  return new ControlledReview(gateway, clock, scheduler, clipboard, saver, viewer);
 }

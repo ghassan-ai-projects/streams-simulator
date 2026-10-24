@@ -27,6 +27,18 @@ function ProgressBar({ state }: { readonly state: Running }) {
   );
 }
 
+function StatusLine({ state, plant }: { readonly state: Running; readonly plant: Plant }) {
+  const status = useFocusOnMount<HTMLParagraphElement>();
+  const title = runTitle(state.plan, plantTitle(plant));
+  const going = state.paused ? "Paused" : "Running";
+  const words = state.worldId === null ? "Creating the world…" : `${going} ${title} as run ${state.worldId}`;
+  return (
+    <p className={styles.status} role="status" ref={status} tabIndex={-1}>
+      {state.stopping ? "Stopping at the next step…" : words}
+    </p>
+  );
+}
+
 export function Progress({
   state,
   launch,
@@ -36,14 +48,9 @@ export function Progress({
   readonly launch: LaunchStore;
   readonly plant: Plant;
 }) {
-  const status = useFocusOnMount<HTMLParagraphElement>();
-  const title = runTitle(state.plan, plantTitle(plant));
-  const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
   return (
     <div className={cx(panel.body, styles.progress)}>
-      <p className={styles.status} role="status" ref={status} tabIndex={-1}>
-        {state.stopping ? "Stopping at the next step…" : words}
-      </p>
+      <StatusLine state={state} plant={plant} />
       {state.plan.purpose !== undefined && <p className={styles.clock}>{state.plan.purpose}</p>}
       <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
       <ProgressBar state={state} />

@@ -7,6 +7,8 @@ import { WatchButton } from "./WatchButton";
 import cells from "./ReportTable.module.css";
 import styles from "./ObservedTable.module.css";
 
+const qualityLegend = "A quality word appears only when a reading is suspect, out of range, stale or disconnected.";
+
 function Value({ row }: { readonly row: ObservedRow }) {
   return (
     <td className={cx(cells.number, styles.value, row.attention !== null && styles[`value-${row.attention}`])}>
@@ -85,7 +87,7 @@ export function ObservedTable({ rows, clock, watch = null }: TableProps) {
       <thead className={styles.heads}>
         <tr>
           <th scope="col">Channel</th>
-          <th scope="col" className={styles.valueHead}>
+          <th scope="col" className={styles.valueHead} title={qualityLegend}>
             Value
           </th>
           <th scope="col">Observed at</th>
@@ -97,15 +99,20 @@ export function ObservedTable({ rows, clock, watch = null }: TableProps) {
           <Row key={row.key} row={row} watch={watch} />
         ))}
       </tbody>
-      {rows.some((row) => row.outside !== "") && (
-        <tfoot>
+      <tfoot>
+        {rows.some((row) => row.outside !== "") && (
           <tr>
             <td colSpan={4} className={styles.legend} data-part="outside-legend">
               <OutsideMark text="Outside the instrument's range" /> marks a value outside the instrument&apos;s range.
             </td>
           </tr>
-        </tfoot>
-      )}
+        )}
+        <tr>
+          <td colSpan={4} className={styles.legend} data-part="quality-legend">
+            {qualityLegend}
+          </td>
+        </tr>
+      </tfoot>
     </table>
   );
 }

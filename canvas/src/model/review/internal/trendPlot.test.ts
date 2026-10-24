@@ -50,6 +50,13 @@ describe("one plot of the trends panel", () => {
     expect([kilowatts.unit, kilowatts.unitTitle]).toEqual(["kW", ""]);
   });
 
+  it("puts each extreme's label on the side of the plot where the line is not, so the line's start stays readable", () => {
+    const rising = plotOf(indexOf(every(0, 600, 10, (second) => 20 + second / 100)), basin, span);
+    expect([rising.top?.side, rising.bottom?.side]).toEqual(["start", "end"]);
+    const falling = plotOf(indexOf(every(0, 600, 10, (second) => 26 - second / 100)), basin, span);
+    expect([falling.top?.side, falling.bottom?.side]).toEqual(["end", "start"]);
+  });
+
   it("scales y to its own readings, labels the true extremes and keeps them inside the frame", () => {
     const plot = plotOf(indexOf(every(0, 600, 10, (second) => 20 + second / 100)), basin, span);
     expect([plot.top?.text, plot.bottom?.text]).toEqual(["26", "20"]);
@@ -71,7 +78,7 @@ describe("one plot of the trends panel", () => {
       power,
       span,
     );
-    expect(hundreds.top?.text).toBe("1000");
+    expect(hundreds.top?.text).toBe("1 000");
   });
 
   it("draws a flat channel in the middle of its frame", () => {

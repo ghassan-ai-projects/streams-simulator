@@ -37,6 +37,7 @@ const status = {
   purpose: "",
   faults: [],
   perturbations: [],
+  plannedCalls: [],
   calls: [
     {
       entity: "CH-1",

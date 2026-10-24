@@ -54,3 +54,29 @@ export function rowsOutsideNode(id: string): Fit {
   const values = rows.filter((row) => /\d/.test(row.querySelector("dd")?.textContent ?? "")).length;
   return { rows: rows.length, outside, values };
 }
+
+export function partsOverlapping(id: string): readonly string[] {
+  const node = [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance")].find(
+    (candidate) => candidate.dataset.id === id,
+  );
+  if (node === undefined) return ["node not rendered"];
+  const named = ["id", "kind"].flatMap((part) => {
+    const found = node.querySelector<HTMLElement>(`[data-part="${part}"]`);
+    return found === null ? [] : [[part, found.getBoundingClientRect()] as const];
+  });
+  const lines = [...node.querySelectorAll<HTMLElement>('[data-part="note"] > span')].map(
+    (line, index) => [`note line ${String(index + 1)}`, line.getBoundingClientRect()] as const,
+  );
+  const readout = node.querySelector("dl");
+  const shown = [...named, ...lines];
+  const parts = readout === null ? shown : [...shown, ["readout", readout.getBoundingClientRect()] as const];
+  const clashes: string[] = [];
+  parts.forEach(([first, a], index) => {
+    parts.slice(index + 1).forEach(([second, b]) => {
+      const across = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const down = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (across > 1 && down > 1) clashes.push(`${first} overlaps ${second}`);
+    });
+  });
+  return clashes;
+}

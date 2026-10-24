@@ -1,7 +1,7 @@
 import type { ImmediateCall, InjectedFault, JobRequest, JobStatus, LaunchGateway } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 import { launchFailure } from "./failures";
-import { faultArgs, jobFaults, jobPerturbations, perturbationArgs } from "./jobPlan";
+import { faultArgs, jobFaults, jobPerturbations, jobPlannedCalls, perturbationArgs } from "./jobPlan";
 import type { Transport } from "./http";
 import { action } from "./http";
 
@@ -109,6 +109,7 @@ interface Authored {
   readonly purpose: string;
   readonly faults: JobStatus["faults"];
   readonly perturbations: JobStatus["perturbations"];
+  readonly plannedCalls: JobStatus["plannedCalls"];
 }
 
 function authoredOf(value: Record<string, unknown>): Authored | null {
@@ -116,8 +117,10 @@ function authoredOf(value: Record<string, unknown>): Authored | null {
   const purpose = optionalText(value.purpose);
   const faults = jobFaults(value.faults);
   const perturbations = jobPerturbations(value.perturbations);
-  if (name === null || purpose === null || faults === null || perturbations === null) return null;
-  return { name, purpose, faults, perturbations };
+  const plannedCalls = jobPlannedCalls(value.planned_calls);
+  if (name === null || purpose === null || faults === null || perturbations === null || plannedCalls === null)
+    return null;
+  return { name, purpose, faults, perturbations, plannedCalls };
 }
 
 export function jobStatus(value: unknown): JobStatus | null {

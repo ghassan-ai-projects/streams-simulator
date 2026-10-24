@@ -19,6 +19,14 @@ export function localPreferences(storage: Storage): PreferenceStore {
   };
 }
 
+export function sessionPreferences(window: Window): PreferenceStore {
+  try {
+    return localPreferences(window.sessionStorage);
+  } catch {
+    return { read: () => null, write: () => undefined };
+  }
+}
+
 export function mediaSystemTheme(media: MediaQueryList): SystemTheme {
   return {
     prefersDark: () => media.matches,

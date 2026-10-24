@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeTitle, displayUnit, grouped, presentedUnits, withUnit } from "./units";
+import { codeTitle, displayUnit, grouped, groupedFigure, presentedUnits, withUnit } from "./units";
 
 describe("unit grouping", () => {
   it("groups thousands with a thin space", () => {
@@ -53,5 +53,18 @@ describe("unit symbols", () => {
     const codes = presentedUnits();
     expect(new Set(codes).size).toBe(codes.length);
     expect(codes).toEqual(expect.arrayContaining(["Cel", "1", "kW", "%", "rpm", "Hz"]));
+  });
+
+  it("groups the thousands of a printed figure, and leaves its sign, decimals and small values alone", () => {
+    expect(["180013", "-1234567.5", "999", "1000", "12.345", "0.5", "", "state 1"].map(groupedFigure)).toEqual([
+      "180 013",
+      "-1 234 567.5",
+      "999",
+      "1 000",
+      "12.345",
+      "0.5",
+      "",
+      "state 1",
+    ]);
   });
 });

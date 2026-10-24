@@ -35,7 +35,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
   await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("basin temp · °C");
   await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → CT-1 heat in");
-  await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("fan failure");
+  await expect(inspector.getByRole("region", { name: "Faults this component can have" })).toContainText("fan failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
 });

@@ -93,15 +93,20 @@ test("an exploration found again after a reload brings back its name, its fault 
   const panel = await planned(page);
   await panel.getByRole("button", { name: "Start the run" }).click();
   await expect(panel.getByText(new RegExp(`^Running ${name} on Factory utilities as run w-`))).toBeVisible();
-  await expect(panel.getByText(/^Running · 00:0[2-9]/)).toBeVisible({ timeout: 30_000 });
+  await panel.getByRole("combobox", { name: "Speed" }).selectOption({ label: "10 s per s" });
+  await expect(panel.getByText(/^Running · 00:01/)).toBeVisible({ timeout: 30_000 });
+  await panel.getByRole("button", { name: "Pause" }).click();
   await page.reload();
-  const banner = page.getByRole("button", { name: new RegExp(`^Running ${name} · 00:`) });
+  const banner = page.getByRole("button", { name: new RegExp(`^Paused ${name} · 00:0[12]`) });
   await expect(banner).toBeVisible();
   await banner.click();
   await expect(panel.getByText(purpose)).toBeVisible();
-  await expect(panel.getByText("30 min of simulated time · Explore · 1 fault · 1 delivery condition")).toBeVisible();
+  await expect(
+    panel.getByText("30 min of simulated time · Explore · 1 fault · 1 delivery condition · 1 effector call"),
+  ).toBeVisible();
   await expect(page.getByRole("group", { name: /^CT-1, Fault: fan failure/ })).toBeVisible();
   await expect(panel.locator("[title='CT-1 fan failure at 00:01:00']")).toHaveCount(1);
+  await expect(panel.locator("[title='CH-1 set setpoint at 00:02:00']")).toHaveCount(1);
   await panel.getByRole("button", { name: "Stop now" }).click();
   await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();

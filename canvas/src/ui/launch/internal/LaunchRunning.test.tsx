@@ -39,6 +39,36 @@ describe("launch panel running", () => {
     expect(onFinished).toHaveBeenCalledWith("w-7");
   });
 
+  it("keeps counting the run's elapsed time across closing and opening the panel", async () => {
+    const fake = launchBridge();
+    const { launch, timers } = launchHarness(fake);
+    const plant = parsePlant(domain);
+    const panel = () => (
+      <LaunchPanel launch={launch} plant={plant} path={path} onClose={vi.fn()} onFinished={vi.fn()} />
+    );
+    const first = render(panel());
+    fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
+    await screen.findByText("Running Mini plant as run w-7");
+    await act(async () => {
+      await elapse(timers, 5000);
+    });
+    first.unmount();
+    render(panel());
+    expect(screen.getByText("00:00:05 elapsed")).toBeInTheDocument();
+  });
+
+  it("says nothing of elapsed time for a run found again after a reload, whose start this tab never saw", async () => {
+    const fake = launchBridge();
+    const { launch } = launchHarness(fake);
+    fake.jobs.adopt(600, { domain: "mini", seed: 1, explore: true, duration_s: 1800, rate: 60, faults: [], calls: [] });
+    await launch.resume((domain) => ({ domain, title: "Mini plant", path }));
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+    );
+    expect(await screen.findByText(/^Running Mini plant as run w-7/)).toBeInTheDocument();
+    expect(screen.queryByText(/elapsed/)).toBeNull();
+  });
+
   it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
     const fake = launchBridge();
     const { launch, timers } = launchHarness(fake);

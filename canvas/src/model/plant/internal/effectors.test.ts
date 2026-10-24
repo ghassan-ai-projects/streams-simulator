@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { argProblem, callArgs, parseEffectors, rangeHint } from "./effectors";
+import { argLabel, argProblem, callArgs, parseEffectors, rangeHint } from "./effectors";
 
 const declared = [
   {
@@ -41,7 +41,7 @@ describe("effector specs from a domain kind", () => {
     expect(specs[0]).toEqual({
       name: "chiller__set_setpoint",
       entityArg: "chiller_id",
-      args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12 }],
+      args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12, unit: "" }],
     });
     expect(specs[1]).toEqual({ name: "chiller__start", entityArg: "chiller_id", args: [] });
     expect(specs[2]?.entityArg).toBeNull();
@@ -79,5 +79,29 @@ describe("effector specs from a domain kind", () => {
     expect(rangeHint(specs[0]?.args[0] ?? fail())).toBe("4 to 12");
     expect(rangeHint(specs[2]?.args.find((arg) => arg.name === "level") ?? fail())).toBe("");
     expect(rangeHint(specs[2]?.args.find((arg) => arg.name === "mode") ?? fail())).toBe("");
+  });
+});
+
+describe("the unit an effector argument declares", () => {
+  const [spec] = parseEffectors([
+    {
+      name: "chiller__set_setpoint",
+      args_schema: {
+        required: ["chiller_id", "setpoint_c", "ramp"],
+        properties: {
+          chiller_id: { type: "string" },
+          setpoint_c: { type: "number", minimum: 4, maximum: 12, unit: "degC" },
+          ramp: { type: "number" },
+        },
+      },
+    },
+  ]);
+
+  it("is read from the argument's schema, and none is invented for an argument that declares none", () => {
+    expect(spec?.args.map((arg) => arg.unit)).toEqual(["degC", ""]);
+  });
+
+  it("follows the argument's name in its label as the symbol the product shows", () => {
+    expect(spec?.args.map(argLabel)).toEqual(["setpoint c (°C)", "ramp"]);
   });
 });

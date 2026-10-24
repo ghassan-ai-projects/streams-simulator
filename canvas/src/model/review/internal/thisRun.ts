@@ -86,8 +86,15 @@ export function endedGate(report: Report): EndedGate {
   return { open: false, why: asked?.message ?? "The run has not ended yet." };
 }
 
+function replayedOnOpening(report: Report, verify: VerifyState): boolean {
+  return report.replay.status === "not_checked" && verify.phase === "ready" && verify.value.matches;
+}
+
 export function openedReplayWords(report: Report, verify: VerifyState): string {
-  const reproduced = verify.phase === "ready" && verify.value.matches;
-  if (report.replay.status !== "not_checked" || !reproduced) return "";
-  return "The replay this page ran when it opened reproduced the run.";
+  return replayedOnOpening(report, verify) ? "Replay checked when this page opened: reproduces" : "";
+}
+
+export function openQuestionsOf(report: Report, verify: VerifyState): readonly OpenQuestion[] {
+  if (!replayedOnOpening(report, verify)) return report.openQuestions;
+  return report.openQuestions.filter((question) => question.code !== "replay_not_checked");
 }

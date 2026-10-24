@@ -2,7 +2,7 @@ import type { Attention, ChannelSpec, NodeStatus, ReadingValue, Shown } from "./
 import type { ChannelRange, ChannelState } from "../../plant";
 import { shortChannel, spaced } from "../../shared/words";
 import { qualityWords } from "../../shared/quality";
-import { displayUnit } from "../../shared/units";
+import { displayUnit, groupedFigure } from "../../shared/units";
 
 export const statusWords: Readonly<Record<NonNullable<NodeStatus>, string>> = {
   alarm: "Alarm",
@@ -20,7 +20,7 @@ function outsideOf(value: number, range: ChannelRange | null, unit: string): str
 
 function number(value: number): string {
   const abs = Math.abs(value);
-  return value.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2);
+  return groupedFigure(value.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2));
 }
 
 function namedState(channel: string, value: number, states: readonly ChannelState[]): Shown {
