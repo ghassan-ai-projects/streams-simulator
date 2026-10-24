@@ -1,4 +1,5 @@
 import type { Replay, Report } from "../../../model/review";
+import type { ArgValue } from "../../../model/plant";
 import type { AlarmActivation } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
 
@@ -52,6 +53,7 @@ function runFacts(run: Record<string, unknown>) {
     startNs: number(run.start_time_ns),
     endNs: number(run.end_time_ns),
     requestedEndNs: typeof run.requested_end_ns === "number" ? run.requested_end_ns : null,
+    rate: typeof run.rate === "number" && run.rate > 0 ? run.rate : null,
     termination: termination(run.termination),
   };
 }
@@ -120,9 +122,17 @@ function effectorCalls(truth: Record<string, unknown>) {
       atNs: number(call.at_ns),
       entity: text(call.entity_id),
       effector: text(call.effector),
+      args: argValues(call.args),
       outcome: outcomeText(outcome),
     };
   });
+}
+
+function argValues(value: unknown): Record<string, ArgValue> {
+  const scalars = Object.entries(record(value)).filter((entry): entry is [string, ArgValue] =>
+    ["string", "number", "boolean"].includes(typeof entry[1]),
+  );
+  return Object.fromEntries(scalars);
 }
 
 function outcomeText(outcome: Record<string, unknown>): string {

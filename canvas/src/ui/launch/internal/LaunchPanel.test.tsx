@@ -265,7 +265,7 @@ describe("launch panel lifetime", () => {
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "Prefilled from w-4: seed, duration, mode and faults. Change them if needed. Not copied: 1 delivery perturbation.",
+      "Prefilled from w-4: seed, duration, mode, pace, faults and effector calls. Change them if needed. Not copied: 1 delivery perturbation.",
     );
   });
 });

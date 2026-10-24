@@ -38,6 +38,7 @@ export interface RunWatch {
 export interface LaunchStore extends Store<LaunchState> {
   readonly connect: ConnectSession;
   propose(domain: string, plan: LaunchPlan, left?: readonly string[], from?: string): void;
+  proposeFresh(domain: string, plan: LaunchPlan, from: string): void;
   forgetProposal(): void;
   proposal(domain: string): Proposal | null;
   nowMs(): number;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
 import type { PlanProblem } from "./planProblems";
-import { disturbanceWords, modeWords, planCue, planSummary, problemWords } from "./words";
+import { disturbanceWords, freshSettingsWords, modeWords, planCue, planSummary, problemWords } from "./words";
 
 const plan: LaunchPlan = { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], calls: [] };
 
@@ -59,5 +59,12 @@ describe("launch words", () => {
     expect(planSummary({ ...plan, calls: called(1) }, "30 min")).toBe(
       "30 min of simulated time · Explore · no faults · 1 effector call",
     );
+  });
+
+  it("says why fresh settings are fresh and which mode the run opened with", () => {
+    expect(freshSettingsWords(false)).toBe(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: Evaluate.",
+    );
+    expect(freshSettingsWords(true)).toMatch(/opened with: Explore\.$/);
   });
 });

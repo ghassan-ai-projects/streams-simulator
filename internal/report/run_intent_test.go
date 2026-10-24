@@ -30,9 +30,9 @@ func TestTheReportCarriesTheRequestedEndAndTheTerminationTheRunRecorded(t *testi
 		built.Run.Termination.AtNS != model.DefaultStartTimeNS+120e9 {
 		t.Fatalf("run = %+v, want the requested end and the operator stop", built.Run)
 	}
-	assertReportValid(t, built, `"requested_end_ns"`, `"termination"`, `"stopped_by_operator"`)
+	assertReportValid(t, built, `"requested_end_ns"`, `"rate": 60`, `"termination"`, `"stopped_by_operator"`)
 	markdown, err := report.Render(built, report.FormatMarkdown)
-	if err != nil || !strings.Contains(string(markdown), "Stopped by operator") {
+	if err != nil || !strings.Contains(string(markdown), "Stopped by operator") || !strings.Contains(string(markdown), "60 simulated s per wall s") {
 		t.Fatalf("markdown = %q, %v, want the stop named", markdown, err)
 	}
 }
@@ -43,12 +43,12 @@ func TestTheReportOfARunWithoutIntentHasNeitherField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if built.Run.RequestedEndNS != 0 || built.Run.Termination != nil {
+	if built.Run.RequestedEndNS != 0 || built.Run.Rate != 0 || built.Run.Termination != nil {
 		t.Fatalf("run = %+v, want no intent", built.Run)
 	}
 	assertReportValid(t, built)
 	raw, err := report.Render(built, report.FormatJSON)
-	if err != nil || strings.Contains(string(raw), "requested_end_ns") || strings.Contains(string(raw), "termination") {
+	if err != nil || strings.Contains(string(raw), "requested_end_ns") || strings.Contains(string(raw), `"rate"`) || strings.Contains(string(raw), "termination") {
 		t.Fatalf("report = %s, %v, want neither field", raw, err)
 	}
 }
@@ -74,5 +74,23 @@ func assertReportValid(t *testing.T, built *report.Report, wanted ...string) {
 	}
 	if errs := schema.Validate(doc); len(errs) > 0 {
 		t.Fatalf("report does not match run-report-v0.1:\n%s", jsonschema.FormatErrors(errs))
+	}
+}
+
+func TestTheReportOfAFastPlanHasARequestedEndButNoRate(t *testing.T) {
+	t.Parallel()
+	end := model.DefaultStartTimeNS + 600e9
+	built, err := report.Build(t.Context(), folderWith(t, func(_ string, r *run.Run) {
+		if err := r.SetPlan(model.RunPlan{RequestedEndNS: end}); err != nil {
+			t.Fatal(err)
+		}
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertReportValid(t, built, `"requested_end_ns"`)
+	raw, err := report.Render(built, report.FormatJSON)
+	if err != nil || built.Run.Rate != 0 || strings.Contains(string(raw), `"rate"`) {
+		t.Fatalf("report = %s, %v, want no rate for a plan run as fast as possible", raw, err)
 	}
 }

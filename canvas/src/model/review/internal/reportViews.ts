@@ -1,6 +1,5 @@
-import type { LaunchPlan } from "../../launch";
 import { clockOf, durationOf } from "../../shared/duration";
-import { counted, seedWords } from "../../shared/words";
+import { seedWords } from "../../shared/words";
 import type { KpiRow, Report, VerifyState } from "./report";
 import { badgeOf, replayLine, wallClock } from "./report";
 
@@ -75,51 +74,6 @@ export function terminationWords(report: Report): string {
 
 export const unfinishedTruthWords =
   "This run did not finish. These are the plant's recorded values up to where it stopped, not the result of a completed run.";
-
-export interface Rerun {
-  readonly plan: LaunchPlan;
-  readonly left: readonly string[];
-}
-
-function count(n: number, one: string, many: string): string {
-  return n === 0 ? "" : counted(n, one, many);
-}
-
-function clearedFaults(report: Report): number {
-  return report.disturbances.filter((d) => d.kind === "fault" && d.clearedNs !== null).length;
-}
-
-function leftOut(report: Report): readonly string[] {
-  const kinds = (kind: string) => report.disturbances.filter((d) => d.kind === kind).length;
-  return [
-    report.seed === null ? "the seed, which the run did not record (seed 1 is used)" : "",
-    report.endNs - report.startNs < 60e9 ? "a length under one minute (one minute is used)" : "",
-    count(kinds("perturbation"), "delivery perturbation", "delivery perturbations"),
-    count(kinds("environment"), "environment change", "environment changes"),
-    count(report.effectorCalls.length, "effector call", "effector calls"),
-    count(clearedFaults(report), "fault clear (the fault stays on)", "fault clears (the faults stay on)"),
-  ].filter((part) => part !== "");
-}
-
-export function rerunOf(report: Report): Rerun {
-  return { plan: planOfRun(report), left: leftOut(report) };
-}
-
-function planOfRun(report: Report): LaunchPlan {
-  return {
-    seed: report.seed ?? 1,
-    durationS: Math.max(60, Math.round((report.endNs - report.startNs) / 1e9)),
-    explore: report.mode === "explore",
-    faults: report.disturbances
-      .filter((disturbance) => disturbance.kind === "fault")
-      .map((fault) => ({
-        entity: fault.target,
-        fault: fault.name,
-        atS: Math.max(0, Math.round((fault.onsetNs - report.startNs) / 1e9)),
-      })),
-    calls: [],
-  };
-}
 
 export function integrityLine(report: Report, verify: VerifyState): string {
   switch (badgeOf(report, verify)) {

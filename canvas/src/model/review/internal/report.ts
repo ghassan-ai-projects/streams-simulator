@@ -1,3 +1,4 @@
+import type { ArgValue } from "../../plant";
 import { groupBy } from "../../shared/collect";
 import { humanise } from "../../shared/words";
 
@@ -23,6 +24,7 @@ interface EffectorCall {
   readonly atNs: number;
   readonly entity: string;
   readonly effector: string;
+  readonly args: Readonly<Record<string, ArgValue>>;
   readonly outcome: string;
 }
 
@@ -74,6 +76,7 @@ export interface Report {
   readonly startNs: number;
   readonly endNs: number;
   readonly requestedEndNs: number | null;
+  readonly rate: number | null;
   readonly termination: Termination | null;
   readonly verification: string;
   readonly checks: readonly Check[];

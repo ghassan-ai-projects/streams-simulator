@@ -121,12 +121,12 @@ export {
   kpiSteady,
   kpiWords,
   kpisOf,
-  rerunOf,
   reportFacts,
   runIdentity,
   terminationWords,
   unfinishedTruthWords,
 } from "./internal/reportViews";
+export { rerunOf } from "./internal/rerun";
 export { firstEventNode } from "./internal/reviewAnchor";
 export { reviewView } from "./internal/reviewRows";
 export { alarmRow, modeWords } from "./internal/words";

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FakeBridge } from "../../../test/fakeBridge";
 import { launchHarness } from "../../../test/launchFixture";
 import { memoryLocation } from "../../../test/location";
+import { report } from "../../../test/runFixture";
 import { reviewState } from "../../../test/reviewFixture";
 import { NavigationStore } from "./navigationStore";
 import { proposeRerun } from "./proposeRerun";
@@ -19,6 +20,19 @@ describe("proposing another run", () => {
     expect(launch.proposal("mini")).toMatchObject({ from: "w-4", plan: { seed: 7 } });
     expect(location.hash).toContain("launch=1");
     expect(navigation.snapshot()).toMatchObject({ screen: "plant", domain: "domains/mini.domain.json", launch: true });
+  });
+
+  it("proposes fresh settings, marked as such, for a run that did not finish", () => {
+    const { launch, navigation } = setup();
+    const open = { ...report, ended: false, complete: false, mode: "explore" };
+    proposeRerun(
+      launch,
+      navigation,
+      reviewState({ report: { phase: "ready", value: open } }),
+      "w-5",
+      "domains/mini.domain.json",
+    );
+    expect(launch.proposal("mini")).toMatchObject({ from: "w-5", fresh: true, plan: { explore: true, faults: [] } });
   });
 
   it("proposes nothing and stays where it is before the report is ready", () => {

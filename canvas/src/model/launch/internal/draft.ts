@@ -39,6 +39,11 @@ export const firstDraft: Draft = {
   nextKey: 1,
 };
 
+export function freshPlanOf(explore: boolean): LaunchPlan {
+  const { seed, duration, pace } = firstDraft;
+  return { seed: Number(seed), durationS: Number(duration) * 60, explore, pace, faults: [], calls: [] };
+}
+
 const whole = (text: string, scale: number) => Math.round(Number(text.trim() === "" ? Number.NaN : text) * scale);
 
 export function planOf(draft: Draft, plant: Plant): LaunchPlan {

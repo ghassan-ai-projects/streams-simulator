@@ -28,6 +28,7 @@
         "start_time_ns": {"type": "integer"},
         "end_time_ns": {"type": "integer"},
         "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0, "description": "Present when run.json recorded a plan: the simulated instant the run was asked to reach. Compare with end_time_ns to see how far it got."},
+        "rate": {"type": "number", "exclusiveMinimum": 0, "description": "Present when run.json recorded a paced plan: simulated seconds per wall second. Absent when the plan ran as fast as possible or no plan was recorded."},
         "termination": {
           "type": "object",
           "additionalProperties": false,

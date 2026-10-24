@@ -62,6 +62,36 @@ describe("the run report", () => {
     expect(parseReportPayload(reportWire)).toMatchObject({ requestedEndNs: null, termination: null });
   });
 
+  it("reads the pace a paced run recorded, and none for a run that ran as fast as it could", () => {
+    const paced = { ...reportWire, run: { ...reportWire.run, rate: 60 } };
+    expect(parseReportPayload(paced)).toMatchObject({ rate: 60 });
+    expect(parseReportPayload(reportWire)).toMatchObject({ rate: null });
+    expect(parseReportPayload({ ...reportWire, run: { ...reportWire.run, rate: "fast" } })).toMatchObject({
+      rate: null,
+    });
+  });
+
+  it("reads each effector call's arguments, keeping only the numbers, texts and booleans a plan can carry", () => {
+    const call = (args: unknown) => ({
+      at_ns: 60e9,
+      entity_id: "CT-1",
+      effector: "set_setpoint",
+      args,
+      outcome: { accepted: true },
+    });
+    const wire = (args: unknown) => ({ ...reportWire, truth: { ...reportWire.truth, effector_calls: [call(args)] } });
+    const argsOf = (args: unknown) => parseReportPayload(wire(args))?.effectorCalls[0]?.args;
+    expect(argsOf({ tower_id: "CT-1", setpoint: 7, eco: true, mode: "auto" })).toEqual({
+      tower_id: "CT-1",
+      setpoint: 7,
+      eco: true,
+      mode: "auto",
+    });
+    expect(argsOf({ nested: { a: 1 }, list: [1], none: null, kept: 2 })).toEqual({ kept: 2 });
+    expect(argsOf(undefined)).toEqual({});
+    expect(argsOf("7")).toEqual({});
+  });
+
   it.each([
     ["an unknown reason", { reason: "abandoned", at_ns: 5 }],
     ["a text instant", { reason: "completed", at_ns: "5" }],

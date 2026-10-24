@@ -32,4 +32,23 @@ describe("prefilled run plan", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(screen.getByLabelText("Fault 1 fault")).toHaveAccessibleDescription(/Fault 1 needs a fault\./);
   });
+
+  it("says the plan of a run that did not finish could not be recovered, and offers fresh settings in its mode", () => {
+    const { launch } = launchHarness(new FakeBridge());
+    launch.proposeFresh(
+      "mini",
+      { seed: 1, durationS: 1800, explore: false, pace: "watch", faults: [], calls: [] },
+      "w-9",
+    );
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: Evaluate.",
+    );
+    expect(screen.getByRole("note")).not.toHaveTextContent("Prefilled from");
+    expect(screen.getByRole("radio", { name: /^Evaluate/ })).toBeChecked();
+    expect(screen.getByLabelText("Duration")).toHaveValue("30");
+    expect(screen.queryByLabelText("Fault 1 instance")).toBeNull();
+  });
 });

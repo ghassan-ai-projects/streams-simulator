@@ -32,6 +32,11 @@ export function modeWords(explore: boolean): string {
   return explore ? "The truth is visible while the run is going; this run is not for scoring." : evaluateRule;
 }
 
+export function freshSettingsWords(explore: boolean): string {
+  const mode = explore ? "Explore" : "Evaluate";
+  return `The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: ${mode}.`;
+}
+
 export function problemWords(problems: readonly PlanProblem[]): string {
   if (problems.length === 0) return "";
   return `${String(problems.length)} to fix before starting: ${problems.map((problem) => problem.text).join(" ")}`;

@@ -12,7 +12,8 @@ export function proposeRerun(
 ): void {
   const rerun = rerunProposalOf(state);
   if (rerun === null) return;
-  if (state.connection === "none") launch.propose(rerun.domainId, rerun.plan, rerun.left, worldId);
-  else launch.connect.setUpNext(rerun.domainId, state.sessionPolicies ?? []);
+  if (state.connection !== "none") launch.connect.setUpNext(rerun.domainId, state.sessionPolicies ?? []);
+  else if (rerun.fresh) launch.proposeFresh(rerun.domainId, rerun.plan, worldId);
+  else launch.propose(rerun.domainId, rerun.plan, rerun.left, worldId);
   navigation.go({ screen: "plant", domain: plantPath, hall: null, launch: true });
 }

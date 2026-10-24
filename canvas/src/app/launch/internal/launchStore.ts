@@ -35,7 +35,11 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {
-    this.proposals.propose(domain, plan, left, from);
+    this.proposals.propose(domain, { plan, left, from, fresh: false });
+  }
+
+  proposeFresh(domain: string, plan: LaunchPlan, from: string): void {
+    this.proposals.propose(domain, { plan, left: [], from, fresh: true });
   }
 
   nowMs(): number {
