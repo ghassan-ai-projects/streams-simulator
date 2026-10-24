@@ -3,6 +3,7 @@ import type { JobStatus } from "./job";
 import {
   jobActive,
   jobFailureWords,
+  jobPaused,
   jobRequestOf,
   observedCalls,
   pacedRate,
@@ -62,6 +63,7 @@ describe("job status", () => {
   it("is active while running or stopping, and paced when the rate is positive", () => {
     expect(jobActive(status)).toBe(true);
     expect(jobActive({ ...status, state: "stopping" })).toBe(true);
+    expect(jobActive({ ...status, state: "paused" })).toBe(true);
     expect(jobActive({ ...status, state: "completed" })).toBe(false);
     expect(jobActive({ ...status, state: "stopped" })).toBe(false);
     expect(jobActive({ ...status, state: "failed" })).toBe(false);
@@ -78,6 +80,7 @@ describe("call outcomes", () => {
     accepted: true,
     reason: "",
     effectEtaNs: 5e9,
+    immediate: false,
   };
   const refused = { ...accepted, accepted: false, reason: "interlock_refused", effectEtaNs: null };
 
@@ -95,6 +98,19 @@ describe("call outcomes", () => {
   it("gives a refusal without a reason a reason", () => {
     const silent = { ...refused, reason: "" };
     expect(observedCalls([], { ...status, calls: [silent] }, 0)[0]?.reason).toBe("no reason given");
+  });
+});
+
+describe("a paused job and commands given now", () => {
+  it("is paused only in the paused state", () => {
+    expect(jobPaused({ ...status, state: "paused" })).toBe(true);
+    expect(jobPaused(status)).toBe(false);
+  });
+
+  it("keeps the mark of a command given during the run on its outcome", () => {
+    const now = { entity: "CH-1", effector: "chiller__stop", atS: 300, accepted: true, reason: "", effectEtaNs: 1e9 };
+    const seen = observedCalls([], { ...status, calls: [{ ...now, immediate: true }] }, 7);
+    expect(seen).toEqual([{ ...now, immediate: true, atMs: 7 }]);
   });
 });
 

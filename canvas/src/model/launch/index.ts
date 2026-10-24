@@ -2,6 +2,7 @@ export { keepKnownFaults, watchWords } from "./internal/launch";
 export {
   jobActive,
   jobFailureWords,
+  jobPaused,
   jobRequestOf,
   lostWords,
   observedCalls,
@@ -15,7 +16,17 @@ export {
 export { planProblems } from "./internal/planProblems";
 export { effectorShownS, shownFaults, showingMarks } from "./internal/showing";
 export { draftOf, firstDraft, freshPlanOf, pickedOnGraph, planOf } from "./internal/draft";
-export { runProgressWords } from "./internal/progress";
+export { runProgressWords, runStageWords } from "./internal/progress";
+export {
+  exploreOnlyFaultsWords,
+  idleControl,
+  pendingWords,
+  refusalWords,
+  speedChoices,
+  speedValue,
+} from "./internal/controls";
+export { nowLines, outcomeWords } from "./internal/nowWords";
+export { emptyNowDraft, nowCallOf, nowCallProblem } from "./internal/nowCall";
 export { progressTicks } from "./internal/ticks";
 export { freshSettingsWords, modeWords, planCue, planSummary, problemWords, unrecoveredWords } from "./internal/words";
 export {
@@ -59,17 +70,24 @@ export {
   staleCheckWords,
 } from "./internal/sessionWords";
 export type {
+  ArgValue,
   BindingNote,
   CallOutcome,
   Draft,
   DraftCall,
   DraftFault,
+  ControlName,
+  ImmediateCall,
+  InjectedFault,
   JobRequest,
   JobStatus,
   LaunchPlan,
+  NowDraft,
+  RunControl,
   CallProblem,
   PlanIssue,
   PlanMember,
+  PlannedFault,
   PlannedInstance,
   PlanProblem,
   PolicyNote,

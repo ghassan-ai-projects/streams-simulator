@@ -22,6 +22,7 @@ const call: CallOutcome = {
   accepted: true,
   reason: "",
   effectEtaNs: null,
+  immediate: false,
   atMs: 10_000,
 };
 

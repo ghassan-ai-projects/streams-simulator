@@ -213,6 +213,36 @@ describe("the trends panel in Explore", () => {
   });
 });
 
+describe("a fault injected during the run", () => {
+  it("is marked on its node and on the trends overlay from the instant it was injected in Explore", async () => {
+    const app = await watching(true, ...steady, clock(130));
+    await act(async () => {
+      await app.stores.launch.injectNow("CT-1", "tower__scaling");
+    });
+    expect(screen.getByRole("group", { name: /^CT-1, Fault: scaling/ })).toBeInTheDocument();
+    fireEvent.click(within(inspector()).getByRole("button", { name: "Watch basin temp" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Trends/ }));
+    const panel = screen.getByRole("region", { name: "Trends" });
+    fireEvent.click(within(panel).getByText(/^Events in this window/));
+    expect(panel).toHaveTextContent(/Fault starts · CT-1 /);
+    expect(panel.querySelectorAll("[data-kind='fault']")).toHaveLength(2);
+  });
+
+  it("is refused in Evaluate: nothing is sent, no fault appears, and a call given now stays visible", async () => {
+    const app = await watching(false, ...steady);
+    await act(async () => {
+      await app.stores.launch.injectNow("CT-1", "chiller__CANARY_TRUTH_9f3a");
+      await app.stores.launch.invokeNow("CT-1", "start", {});
+    });
+    expect(app.bridge.calls.map((call) => call.name)).not.toContain("job.inject_fault");
+    expect(await screen.findByRole("group", { name: /^CT-1, .*effector call: start · accepted/ })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(canary);
+    expect(attributeValues().filter((value) => canary.test(value))).toEqual([]);
+    expect(roles.map(namedBy)).toEqual(roles.map(() => 0));
+    expect(document.body.innerHTML).not.toMatch(canary);
+  });
+});
+
 describe("the room a live node has for its readout", () => {
   it("holds the header, the note line and every readout row it draws", async () => {
     await watching(true, ...steady);

@@ -61,6 +61,24 @@ describe("run indicator", () => {
     heading.remove();
   });
 
+  it("shows the live rate, then Paused with the frozen clock, and announces the pause", async () => {
+    const { launch, timers } = setup();
+    const long = { ...plan, durationS: 1800, pace: "watch" as const };
+    await act(async () => {
+      await launch.start(origin, long);
+      await elapse(timers, 500);
+    });
+    expect(
+      screen.getByRole("button", { name: "Running Mini plant · 00:00:30 of 00:30:00 · 60 s per s" }),
+    ).toBeVisible();
+    await act(async () => {
+      await launch.setRate(10);
+      await launch.pause();
+    });
+    expect(screen.getByRole("button", { name: "Paused Mini plant · 00:00:30 of 00:30:00" })).toBeVisible();
+    expect(screen.getByRole("status")).toHaveTextContent("Run of Mini plant paused");
+  });
+
   it("leads back to the live view of a running connected session and hides itself there", async () => {
     const { location } = setup({ run: "c-9", state: "running", domain: "mini" });
     const open = await screen.findByRole("button", { name: "Connected session · running · Open live view" });

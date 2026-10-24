@@ -1,5 +1,13 @@
 import type { JobStatus } from "../../../model/launch";
-import { jobFailureWords, lostWords, pacedRate, plannedS, reachedS, startFailureWords } from "../../../model/launch";
+import {
+  jobFailureWords,
+  jobPaused,
+  lostWords,
+  pacedRate,
+  plannedS,
+  reachedS,
+  startFailureWords,
+} from "../../../model/launch";
 import type { LaunchFailure } from "../../ports";
 import type { LaunchState } from "./launchState";
 import type { TrackedRun } from "./trackedRun";
@@ -18,6 +26,9 @@ export function startingState(run: TrackedRun): Running {
     startedMs,
     atMs: startedMs,
     stopping: run.stopping,
+    paused: false,
+    control: run.control,
+    injected: run.injected,
     rate: null,
     calls: [],
   };
@@ -35,6 +46,9 @@ function runningState(run: TrackedRun, status: JobStatus, atMs: number): Running
     startedMs,
     atMs,
     stopping: run.stopping || status.state === "stopping",
+    paused: jobPaused(status),
+    control: run.control,
+    injected: run.injected,
     rate: pacedRate(status),
     calls,
   };

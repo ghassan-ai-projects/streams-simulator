@@ -19,10 +19,22 @@ interface InstancePickProps {
   readonly id: string;
   readonly problem: string;
   readonly fresh: boolean;
+  readonly prompt?: string;
   readonly onPick: (entity: string) => void;
 }
 
-export function InstancePick({ plant, entity, label, id, problem, fresh, onPick }: InstancePickProps) {
+const graphPrompt = "Choose an instance, or click one on the graph";
+
+export function InstancePick({
+  plant,
+  entity,
+  label,
+  id,
+  problem,
+  fresh,
+  prompt = graphPrompt,
+  onPick,
+}: InstancePickProps) {
   const first = useFocusOnMount<HTMLSelectElement>({ when: fresh });
   return (
     <select
@@ -36,7 +48,7 @@ export function InstancePick({ plant, entity, label, id, problem, fresh, onPick 
         onPick(event.target.value);
       }}
     >
-      <option value="">Choose an instance, or click one on the graph</option>
+      <option value="">{prompt}</option>
       {plant.instances.map((instance) => (
         <option key={instance.id} value={instance.id}>
           {`${instance.id} · ${kindLabel(instance.kind)}`}
@@ -85,6 +97,16 @@ interface RowTailProps {
   readonly onRemove: () => void;
 }
 
+export function ProblemNote({ id, text }: { readonly id: string; readonly text: string }) {
+  if (text === "") return null;
+  return (
+    <small id={`${id}-problem`} className={styles.problem}>
+      <TriangleAlert size={13} aria-hidden="true" />
+      {text}
+    </small>
+  );
+}
+
 export function RowTail({ label, id, problem, onRemove }: RowTailProps) {
   return (
     <>
@@ -97,12 +119,7 @@ export function RowTail({ label, id, problem, onRemove }: RowTailProps) {
       >
         <Trash2 size={14} aria-hidden="true" />
       </button>
-      {problem !== "" && (
-        <small id={`${id}-problem`} className={styles.problem}>
-          <TriangleAlert size={13} aria-hidden="true" />
-          {problem}
-        </small>
-      )}
+      <ProblemNote id={id} text={problem} />
     </>
   );
 }

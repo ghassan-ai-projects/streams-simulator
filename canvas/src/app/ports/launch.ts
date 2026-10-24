@@ -1,13 +1,23 @@
-import type { JobRequest, JobStatus, PlanIssue, SessionCheck } from "../../model/launch";
+import type { ImmediateCall, InjectedFault, JobRequest, JobStatus, PlanIssue, SessionCheck } from "../../model/launch";
+import type { ArgValue } from "../../model/plant";
 import type { RunFollower } from "./review";
 import type { Diagnostic, Outcome } from "./shared";
 
-export type { JobRequest, JobStatus, PlannedInstance, SessionCheck } from "../../model/launch";
+export type {
+  ImmediateCall,
+  InjectedFault,
+  JobRequest,
+  JobStatus,
+  PlannedInstance,
+  SessionCheck,
+} from "../../model/launch";
+
+export type LaunchStep = "start" | "status" | "stop" | "list" | "run" | "control";
 
 export type LaunchFailure =
   | {
       readonly kind: "rejected";
-      readonly step: "start" | "status" | "stop" | "list" | "run";
+      readonly step: LaunchStep;
       readonly diagnostic: Diagnostic;
     }
   | { readonly kind: "unavailable" | "unreadable"; readonly diagnostic: Diagnostic };
@@ -60,4 +70,15 @@ export interface LaunchGateway extends ConnectGateway {
   jobStatus(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   stopJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
   listJobs(): Promise<Outcome<readonly JobStatus[], LaunchFailure>>;
+  pauseJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
+  resumeJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
+  stepJob(worldId: string): Promise<Outcome<JobStatus, LaunchFailure>>;
+  setJobRate(worldId: string, rate: number): Promise<Outcome<JobStatus, LaunchFailure>>;
+  injectFaultNow(worldId: string, entity: string, fault: string): Promise<Outcome<InjectedFault, LaunchFailure>>;
+  invokeEffectorNow(
+    worldId: string,
+    entity: string,
+    effector: string,
+    args: Readonly<Record<string, ArgValue>>,
+  ): Promise<Outcome<ImmediateCall, LaunchFailure>>;
 }

@@ -67,6 +67,7 @@ export interface CallOutcome {
   readonly accepted: boolean;
   readonly reason: string;
   readonly effectEtaNs: number | null;
+  readonly immediate: boolean;
   readonly atMs: number;
 }
 

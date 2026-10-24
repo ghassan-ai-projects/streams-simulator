@@ -1,4 +1,4 @@
-import type { CallOutcome, LaunchPlan } from "../../../model/launch";
+import type { CallOutcome, LaunchPlan, PlannedFault, RunControl } from "../../../model/launch";
 import type { LaunchFailure } from "../../ports";
 import type { LaunchOrigin } from "./trackedRun";
 
@@ -14,6 +14,9 @@ export type LaunchState =
       readonly startedMs: number;
       readonly atMs: number;
       readonly stopping: boolean;
+      readonly paused: boolean;
+      readonly control: RunControl;
+      readonly injected: readonly PlannedFault[];
       readonly rate: number | null;
       readonly calls: readonly CallOutcome[];
     }

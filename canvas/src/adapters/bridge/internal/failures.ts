@@ -5,6 +5,7 @@ import type {
   Diagnostic,
   EditorFailure,
   LaunchFailure,
+  LaunchStep,
   PlantFailure,
   PolicyDefaultFailure,
   ReviewFailure,
@@ -78,11 +79,11 @@ function deviceProblem(problem: WireProblem, step: DeviceStep): DeviceFailure {
   return serverFault(problem, display);
 }
 
-export function launchFailure(step: "start" | "status" | "stop" | "list"): FailureMapper<LaunchFailure> {
+export function launchFailure(step: LaunchStep): FailureMapper<LaunchFailure> {
   return (error) => (error.kind === "http" ? launchProblem(error.problem, step) : unreached(error));
 }
 
-function launchProblem(problem: WireProblem, step: "start" | "status" | "stop" | "list"): LaunchFailure {
+function launchProblem(problem: WireProblem, step: LaunchStep): LaunchFailure {
   const display = diagnostic(problem);
   return problem.status >= 500
     ? { kind: "unavailable", diagnostic: display }

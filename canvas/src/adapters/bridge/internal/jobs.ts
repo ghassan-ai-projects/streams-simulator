@@ -1,15 +1,27 @@
-import type { JobRequest, JobStatus, LaunchGateway } from "../../../app/ports";
+import type { ImmediateCall, InjectedFault, JobRequest, JobStatus, LaunchGateway } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
 import { launchFailure } from "./failures";
 import type { Transport } from "./http";
 import { action } from "./http";
 
-type JobGateway = Pick<LaunchGateway, "startJob" | "jobStatus" | "stopJob" | "listJobs">;
+type JobGateway = Pick<
+  LaunchGateway,
+  | "startJob"
+  | "jobStatus"
+  | "stopJob"
+  | "listJobs"
+  | "pauseJob"
+  | "resumeJob"
+  | "stepJob"
+  | "setJobRate"
+  | "injectFaultNow"
+  | "invokeEffectorNow"
+>;
 
 type JobCall = JobStatus["calls"][number];
 type JobState = JobStatus["state"];
 
-const states: readonly JobState[] = ["running", "stopping", "completed", "stopped", "failed"];
+const states: readonly JobState[] = ["running", "paused", "stopping", "completed", "stopped", "failed"];
 
 function finite(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -25,15 +37,22 @@ function optionalNumber(value: unknown): number | null | undefined {
   return finite(value) ?? undefined;
 }
 
+function optionalFlag(value: unknown): boolean | null {
+  if (value === undefined) return false;
+  return typeof value === "boolean" ? value : null;
+}
+
 function jobCall(value: unknown): JobCall | null {
   if (!isRecord(value) || typeof value.accepted !== "boolean") return null;
   const atS = finite(value.at_s);
   const reason = optionalText(value.reason);
   const eta = optionalNumber(value.effect_eta_ns);
+  const immediate = optionalFlag(value.immediate);
   const entity = text(value.entity_id);
   const effector = text(value.effector);
-  if (atS === null || reason === null || eta === undefined || entity === "" || effector === "") return null;
-  return { entity, effector, atS, accepted: value.accepted, reason, effectEtaNs: eta };
+  if (atS === null || reason === null || eta === undefined || immediate === null) return null;
+  if (entity === "" || effector === "") return null;
+  return { entity, effector, atS, accepted: value.accepted, reason, effectEtaNs: eta, immediate };
 }
 
 function jobCalls(value: unknown): readonly JobCall[] | null {
@@ -102,6 +121,18 @@ export function jobList(value: unknown): readonly JobStatus[] | null {
   return jobs.every((job) => job !== null) ? jobs : null;
 }
 
+export function injectedFault(value: unknown): InjectedFault | null {
+  const status = jobStatus(value);
+  const faultId = isRecord(value) ? text(value.fault_id) : "";
+  return status === null || faultId === "" ? null : { status, faultId };
+}
+
+export function immediateCall(value: unknown): ImmediateCall | null {
+  const status = jobStatus(value);
+  const call = isRecord(value) ? jobCall(value.call) : null;
+  return status === null || call === null ? null : { status, call };
+}
+
 function startArgs(request: JobRequest): Readonly<Record<string, unknown>> {
   const { domain, seed, explore, durationS, rate, faults, calls } = request;
   return {
@@ -121,5 +152,33 @@ export function jobGateway(transport: Transport): JobGateway {
     jobStatus: (worldId) => action(transport, "job.status", { world_id: worldId }, jobStatus, launchFailure("status")),
     stopJob: (worldId) => action(transport, "job.stop", { world_id: worldId }, jobStatus, launchFailure("stop")),
     listJobs: () => action(transport, "job.list", {}, jobList, launchFailure("list")),
+    ...controlGateway(transport),
+  };
+}
+
+function controlGateway(transport: Transport) {
+  const control = (name: string, args: Readonly<Record<string, unknown>>) =>
+    action(transport, name, args, jobStatus, launchFailure("control"));
+  return {
+    pauseJob: (worldId: string) => control("job.pause", { world_id: worldId }),
+    resumeJob: (worldId: string) => control("job.resume", { world_id: worldId }),
+    stepJob: (worldId: string) => control("job.step", { world_id: worldId }),
+    setJobRate: (worldId: string, rate: number) => control("job.rate", { world_id: worldId, rate }),
+    injectFaultNow: (worldId: string, entity: string, fault: string) =>
+      action(
+        transport,
+        "job.inject_fault",
+        { world_id: worldId, entity_id: entity, fault },
+        injectedFault,
+        launchFailure("control"),
+      ),
+    invokeEffectorNow: (worldId: string, entity: string, effector: string, args: Readonly<Record<string, unknown>>) =>
+      action(
+        transport,
+        "job.invoke_effector",
+        { world_id: worldId, entity_id: entity, effector, args },
+        immediateCall,
+        launchFailure("control"),
+      ),
   };
 }

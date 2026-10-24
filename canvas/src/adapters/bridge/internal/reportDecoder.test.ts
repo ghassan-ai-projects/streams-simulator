@@ -71,6 +71,24 @@ describe("the run report", () => {
     });
   });
 
+  it("marks the calls the operator gave during the run by the id the director recorded them under", () => {
+    const call = (commandId: string) => ({
+      at_ns: 60e9,
+      entity_id: "CT-1",
+      effector: "start",
+      command_id: commandId,
+      outcome: { accepted: true },
+    });
+    const wire = { ...reportWire, truth: { ...reportWire.truth, effector_calls: [call("job-now-1"), call("job-3")] } };
+    expect(parseReportPayload(wire)?.effectorCalls.map((each) => each.immediate)).toEqual([true, false]);
+    expect(parseReportPayload(reportWire)?.effectorCalls.map((each) => each.immediate)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
   it("reads each effector call's arguments, keeping only the numbers, texts and booleans a plan can carry", () => {
     const call = (args: unknown) => ({
       at_ns: 60e9,

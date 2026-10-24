@@ -1,3 +1,4 @@
+import { idleControl } from "../../../model/launch";
 import { describe, expect, it } from "vitest";
 import { plan, origin as launched } from "../../../test/launchRun";
 import type { LaunchState } from "./launchState";
@@ -13,6 +14,9 @@ const running = (worldId: string | null, domain = "factory"): LaunchState => ({
   startedMs: 0,
   atMs: 0,
   stopping: false,
+  paused: false,
+  control: idleControl,
+  injected: [],
   rate: null,
   calls: [],
 });

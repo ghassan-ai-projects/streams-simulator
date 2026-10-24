@@ -1,18 +1,11 @@
 import { cx, panel, shared } from "../../primitives";
 import type { LaunchState } from "../../../app/launch";
-import type { CallOutcome } from "../../../model/launch";
-import { planSummary } from "../../../model/launch";
+import { outcomeWords, planSummary } from "../../../model/launch";
 import { clockOf, durationOf } from "../../../model/shared/duration";
-import { humanise } from "../../../model/shared/words";
 import { useFocusOnMount } from "../../primitives";
 import styles from "./LaunchPanel.module.css";
 
 type Done = Extract<LaunchState, { phase: "done" }>;
-
-function outcomeWords(outcome: CallOutcome): string {
-  const call = `${clockOf(outcome.atS)} · ${outcome.entity} · ${humanise(outcome.effector)}`;
-  return outcome.accepted ? `${call}: accepted` : `${call}: command not accepted: ${outcome.reason}`;
-}
 
 function callsWords(state: Done): string {
   const refused = state.calls.filter((call) => !call.accepted).length;

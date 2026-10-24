@@ -13,6 +13,7 @@ import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { ZoomBar } from "../../graph";
+import type { RunningHere } from "./PlantActions";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
@@ -94,7 +95,7 @@ function LiveViewButton({
   );
 }
 
-function Bar(props: PlantCentreProps & { readonly running: string | null }) {
+function Bar(props: PlantCentreProps & { readonly running: RunningHere | null }) {
   const { state, hall, navigation, run, connected, running } = props;
   return (
     <div className={screen.bar}>
@@ -120,8 +121,10 @@ const noFaults: readonly PlannedFault[] = [];
 
 function usePlannedFaults(launch: LaunchStore, plant: string): readonly PlannedFault[] {
   const run = useStore(launch);
-  const plan = run.phase === "running" && run.origin.domain === plant ? run.plan : null;
-  return useMemo(() => (plan === null ? noFaults : shownFaults(plan)), [plan]);
+  const here = run.phase === "running" && run.origin.domain === plant ? run : null;
+  const plan = here?.plan ?? null;
+  const injected = here?.injected ?? noFaults;
+  return useMemo(() => (plan === null ? noFaults : shownFaults(plan, injected)), [plan, injected]);
 }
 
 export function PlantCentre(props: PlantCentreProps) {

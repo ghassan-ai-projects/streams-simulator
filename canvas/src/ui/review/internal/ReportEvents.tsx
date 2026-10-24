@@ -1,6 +1,6 @@
 import type { Report } from "../../../model/review";
 import { humanise } from "../../../model/shared/words";
-import { runClock } from "../../../model/review";
+import { immediateWords, runClock } from "../../../model/review";
 import type { Cell } from "./ReportParts";
 import { Rows, Section } from "./ReportParts";
 import styles from "./ReportParts.module.css";
@@ -43,7 +43,7 @@ export function Events({ report, picked }: { readonly report: Report; readonly p
             at(call.atNs),
             call.entity,
             named(call.effector),
-            words(call.outcome),
+            words(call.immediate ? `${call.outcome} · ${immediateWords}` : call.outcome),
           ])}
           columns={["clock", "id", "effector", "outcome"]}
           headers={["Time", "Instance", "Effector", "Outcome"]}

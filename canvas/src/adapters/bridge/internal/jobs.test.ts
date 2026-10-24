@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { bridgeTransport } from "../../../test/bridgeTransport";
 import { respond } from "../../../test/fakeWire";
 import { bridgeAdapter } from "..";
-import { jobList, jobStatus } from "./jobs";
+import { immediateCall, injectedFault, jobList, jobStatus } from "./jobs";
 
 const wire = {
   world_id: "w-9",
@@ -34,7 +34,15 @@ const status = {
   explore: true,
   failure: "",
   calls: [
-    { entity: "CH-1", effector: "chiller__start", atS: 20, accepted: true, reason: "", effectEtaNs: 5e9 },
+    {
+      entity: "CH-1",
+      effector: "chiller__start",
+      atS: 20,
+      accepted: true,
+      reason: "",
+      effectEtaNs: 5e9,
+      immediate: false,
+    },
     {
       entity: "CH-1",
       effector: "chiller__stop",
@@ -42,6 +50,7 @@ const status = {
       accepted: false,
       reason: "interlock_refused",
       effectEtaNs: null,
+      immediate: false,
     },
   ],
 };
@@ -119,7 +128,7 @@ describe("job gateway", () => {
   });
 
   it("refuses an answer it cannot read as a job", async () => {
-    const outcome = await bridgeAdapter(answering({ ...wire, state: "paused" })).launch.jobStatus("w-9");
+    const outcome = await bridgeAdapter(answering({ ...wire, state: "frozen" })).launch.jobStatus("w-9");
     expect(outcome).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
   });
 });
@@ -130,7 +139,7 @@ describe("job status payload", () => {
     expect(failed).toMatchObject({ state: "failed", failure: "job failed: boom", calls: [] });
     const bare = jobStatus({ ...wire, calls: [{ at_s: 1, entity_id: "e", effector: "f", accepted: true }] });
     expect(bare?.calls).toEqual([
-      { entity: "e", effector: "f", atS: 1, accepted: true, reason: "", effectEtaNs: null },
+      { entity: "e", effector: "f", atS: 1, accepted: true, reason: "", effectEtaNs: null, immediate: false },
     ]);
   });
 
@@ -139,7 +148,7 @@ describe("job status payload", () => {
     ["an empty world id", { ...wire, world_id: "" }],
     ["no run id", { ...wire, run_id: undefined }],
     ["an empty domain", { ...wire, domain: "" }],
-    ["an unknown state", { ...wire, state: "paused" }],
+    ["an unknown state", { ...wire, state: "frozen" }],
     ["a text seed", { ...wire, seed: "3" }],
     ["a missing start", { ...wire, start_ns: undefined }],
     ["an infinite reach", { ...wire, reached_ns: Infinity }],
@@ -163,6 +172,10 @@ describe("job status payload", () => {
       { ...wire, calls: [{ at_s: 1, entity_id: "e", effector: "f", accepted: true, effect_eta_ns: "5" }] },
     ],
     ["a numeric failure", { ...wire, failure: 7 }],
+    [
+      "a call with a text immediate mark",
+      { ...wire, calls: [{ at_s: 1, entity_id: "e", effector: "f", accepted: true, immediate: "yes" }] },
+    ],
   ])("refuses a job with %s", (_name, bad) => {
     expect(jobStatus(bad)).toBeNull();
   });
@@ -170,7 +183,76 @@ describe("job status payload", () => {
   it("refuses a listing that is not a list of jobs", () => {
     expect(jobList({ jobs: [] })).toEqual([]);
     expect(jobList({})).toBeNull();
-    expect(jobList({ jobs: [wire, { ...wire, state: "paused" }] })).toBeNull();
+    expect(jobList({ jobs: [wire, { ...wire, state: "frozen" }] })).toBeNull();
     expect(jobList(null)).toBeNull();
+  });
+});
+
+describe("job controls", () => {
+  const controlled = (name: string, args: object) => ({ url: `/api/actions/${name}`, body: { args } });
+
+  it.each([
+    ["pauseJob", "job.pause", "paused"],
+    ["resumeJob", "job.resume", "running"],
+    ["stepJob", "job.step", "paused"],
+  ] as const)("%s sends the world and reads back the job's state", async (method, name, state) => {
+    const t = answering({ ...wire, state });
+    const outcome = await bridgeAdapter(t).launch[method]("w-9");
+    expect(outcome).toMatchObject({ ok: true, value: { worldId: "w-9", state } });
+    expect(lastCall(t)).toEqual(controlled(name, { world_id: "w-9" }));
+  });
+
+  it("sets the rate, where 0 is as fast as possible", async () => {
+    const t = answering({ ...wire, rate: 0 });
+    expect(await bridgeAdapter(t).launch.setJobRate("w-9", 0)).toMatchObject({ ok: true, value: { rate: 0 } });
+    expect(lastCall(t)).toEqual(controlled("job.rate", { world_id: "w-9", rate: 0 }));
+  });
+
+  it("injects a fault now and reads the fault's id with the job", async () => {
+    const t = answering({ ...wire, fault_id: "f-3" });
+    const outcome = await bridgeAdapter(t).launch.injectFaultNow("w-9", "CT-1", "fan_failure");
+    expect(outcome).toMatchObject({ ok: true, value: { faultId: "f-3", status: { worldId: "w-9" } } });
+    expect(lastCall(t)).toEqual(
+      controlled("job.inject_fault", { world_id: "w-9", entity_id: "CT-1", fault: "fan_failure" }),
+    );
+  });
+
+  it("calls an effector now and reads the recorded outcome with the job", async () => {
+    const now = { at_s: 600, entity_id: "CH-1", effector: "chiller__start", accepted: true, immediate: true };
+    const t = answering({ ...wire, calls: [...wire.calls, now], call: now });
+    const outcome = await bridgeAdapter(t).launch.invokeEffectorNow("w-9", "CH-1", "chiller__start", { level: 1 });
+    expect(outcome).toMatchObject({
+      ok: true,
+      value: { call: { entity: "CH-1", atS: 600, immediate: true }, status: { calls: [{}, {}, { immediate: true }] } },
+    });
+    expect(lastCall(t)).toEqual(
+      controlled("job.invoke_effector", {
+        world_id: "w-9",
+        entity_id: "CH-1",
+        effector: "chiller__start",
+        args: { level: 1 },
+      }),
+    );
+  });
+
+  it("keeps the director's refusal of a control, with the step that was refused", async () => {
+    const refused = bridgeTransport(() =>
+      respond(409, { error: { code: "job_not_paused", message: "the job is not paused" } }),
+    );
+    expect(await bridgeAdapter(refused).launch.stepJob("w-9")).toMatchObject({
+      ok: false,
+      failure: { kind: "rejected", step: "control", diagnostic: { displayCode: "job_not_paused" } },
+    });
+  });
+
+  it("refuses answers that are not the job with the fault or call they should carry", () => {
+    expect(injectedFault({ ...wire })).toBeNull();
+    expect(injectedFault({ ...wire, fault_id: "" })).toBeNull();
+    expect(injectedFault({ ...wire, fault_id: "f-0" })).toMatchObject({ faultId: "f-0" });
+    expect(immediateCall({ ...wire })).toBeNull();
+    expect(immediateCall({ ...wire, call: { at_s: 1, entity_id: "e" } })).toBeNull();
+    expect(
+      immediateCall({ ...wire, state: "frozen", call: { at_s: 1, entity_id: "e", effector: "f", accepted: true } }),
+    ).toBeNull();
   });
 });

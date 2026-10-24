@@ -11,7 +11,7 @@ export class StatusPoll {
 
   constructor(
     private readonly scheduler: Scheduler,
-    private readonly read: () => Promise<Reading>,
+    private readonly read: () => Promise<Reading | null>,
     private readonly take: (reading: Reading) => boolean,
   ) {}
 
@@ -35,6 +35,7 @@ export class StatusPoll {
   private async poll(): Promise<void> {
     this.cancel = null;
     const reading = await this.read();
-    if (this.live && this.take(reading)) this.arm();
+    if (!this.live) return;
+    if (reading === null || this.take(reading)) this.arm();
   }
 }

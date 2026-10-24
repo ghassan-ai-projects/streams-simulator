@@ -26,7 +26,10 @@ interface EffectorCall {
   readonly effector: string;
   readonly args: Readonly<Record<string, ArgValue>>;
   readonly outcome: string;
+  readonly immediate: boolean;
 }
+
+export const immediateWords = "by the operator during the run";
 
 export function callWords(call: Pick<EffectorCall, "effector" | "outcome">): string {
   return `${humanise(call.effector)} · ${call.outcome}`;

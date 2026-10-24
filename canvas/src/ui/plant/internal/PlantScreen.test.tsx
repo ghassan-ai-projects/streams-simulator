@@ -231,6 +231,19 @@ describe("a plant with a run going", () => {
     expect(screen.getByRole("group", { name: /^CT-1, tower/ })).toBeInTheDocument();
   });
 
+  it("says Paused with the frozen clock on the Run button, and marks a fault injected now like a planned one", async () => {
+    const app = await running();
+    await act(async () => {
+      await app.stores.launch.pause();
+    });
+    expect(screen.getByRole("button", { name: /^Paused · 00:00:00/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Running · / })).toBeNull();
+    await act(async () => {
+      await app.stores.launch.injectNow("CT-1", "tower__scaling");
+    });
+    expect(screen.getByRole("group", { name: /^CT-1, Fault: scaling/ })).toBeInTheDocument();
+  });
+
   it("holds the editor until the run is over", async () => {
     const app = await running();
     const edit = screen.getByRole("button", { name: "Edit plant" });

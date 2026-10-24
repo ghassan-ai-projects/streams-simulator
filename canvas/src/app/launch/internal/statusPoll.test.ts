@@ -69,4 +69,14 @@ describe("status poll", () => {
     expect(take).not.toHaveBeenCalled();
     expect(timers.pending()).toBe(0);
   });
+
+  it("goes on without taking a reading that was set aside", async () => {
+    const timers = fakeClock();
+    const take = vi.fn(() => true);
+    new StatusPoll(timers, () => Promise.resolve(null), take).begin();
+    timers.advance(500);
+    await flushPromises();
+    expect(take).not.toHaveBeenCalled();
+    expect(timers.pending()).toBe(1);
+  });
 });

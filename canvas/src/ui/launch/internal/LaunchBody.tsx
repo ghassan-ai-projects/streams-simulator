@@ -25,7 +25,7 @@ interface BodyProps {
 export function Body({ state, launch, plant, path, draft, selected, change, onFinished, watch, note }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
-    return own ? <Progress state={state} launch={launch} title={plantTitle(plant)} /> : <Elsewhere state={state} />;
+    return own ? <Progress state={state} launch={launch} plant={plant} /> : <Elsewhere state={state} />;
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
   if (watch.shows(state))

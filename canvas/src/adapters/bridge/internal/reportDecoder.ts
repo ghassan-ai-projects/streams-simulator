@@ -114,6 +114,8 @@ function environment(truth: Record<string, unknown>) {
   });
 }
 
+const immediatePrefix = "job-now-";
+
 function effectorCalls(truth: Record<string, unknown>) {
   return list(truth.effector_calls).map((raw) => {
     const call = record(raw);
@@ -124,6 +126,7 @@ function effectorCalls(truth: Record<string, unknown>) {
       effector: text(call.effector),
       args: argValues(call.args),
       outcome: outcomeText(outcome),
+      immediate: text(call.command_id).startsWith(immediatePrefix),
     };
   });
 }

@@ -1,7 +1,18 @@
 import type { JobStatus, LaunchPlan } from "../../../model/launch";
-import { jobActive, jobRequestOf, observedCalls, recoveredPlanOf, unobserved } from "../../../model/launch";
+import {
+  idleControl,
+  jobActive,
+  jobRequestOf,
+  observedCalls,
+  reachedS,
+  recoveredPlanOf,
+  refusalWords,
+  unobserved,
+} from "../../../model/launch";
+import type { ArgValue, ControlName, RunControl } from "../../../model/launch";
 import { Observable } from "../../shared";
 import type { Clock, LaunchFailure, LaunchGateway, Outcome, Scheduler } from "../../ports";
+import { success } from "../../ports";
 import type { Proposal } from "./proposalSlot";
 import { ProposalSlot } from "./proposalSlot";
 import type { LaunchState } from "./launchState";
@@ -80,6 +91,42 @@ export class LaunchStore extends Observable<LaunchState> {
     await this.follow(run, status);
   }
 
+  pause(): Promise<void> {
+    return this.control("pause", (worldId) => this.gateway.pauseJob(worldId));
+  }
+
+  continueRun(): Promise<void> {
+    return this.control("resume", (worldId) => this.gateway.resumeJob(worldId));
+  }
+
+  step(): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase !== "running" || !state.paused) return Promise.resolve();
+    return this.control("step", (worldId) => this.gateway.stepJob(worldId));
+  }
+
+  setRate(rate: number): Promise<void> {
+    return this.control("rate", (worldId) => this.gateway.setJobRate(worldId, rate));
+  }
+
+  invokeNow(entity: string, effector: string, args: Readonly<Record<string, ArgValue>>): Promise<void> {
+    return this.control("call", async (worldId) => {
+      const done = await this.gateway.invokeEffectorNow(worldId, entity, effector, args);
+      return done.ok ? success(done.value.status) : done;
+    });
+  }
+
+  injectNow(entity: string, fault: string): Promise<void> {
+    const run = this.run;
+    if (!run.plan.explore) return Promise.resolve();
+    return this.control("fault", async (worldId) => {
+      const done = await this.gateway.injectFaultNow(worldId, entity, fault);
+      if (!done.ok) return done;
+      run.injected = [...run.injected, { entity, fault, atS: reachedS(done.value.status) }];
+      return success(done.value.status);
+    });
+  }
+
   stopEarly(): void {
     const state = this.snapshot();
     if (state.phase !== "running" || state.stopping) return;
@@ -90,6 +137,30 @@ export class LaunchStore extends Observable<LaunchState> {
 
   reset(): void {
     if (this.snapshot().phase !== "running") this.set({ phase: "idle" });
+  }
+
+  private async control(name: ControlName, call: (worldId: string) => Promise<Reading>): Promise<void> {
+    const run = this.run;
+    const state = this.snapshot();
+    if (state.phase !== "running" || state.worldId === null || state.stopping || state.control.pending !== null) return;
+    this.setControl(run, { pending: name, refusal: "" });
+    const done = await call(state.worldId);
+    if (this.run !== run) return;
+    if (!done.ok) this.setControl(run, { pending: null, refusal: refusalWords(done.failure.diagnostic.message) });
+    else this.controlAnswered(run, done.value);
+  }
+
+  private setControl(run: TrackedRun, control: RunControl): void {
+    run.control = control;
+    run.epoch += 1;
+    const state = this.snapshot();
+    if (state.phase === "running") this.set({ ...state, control });
+  }
+
+  private controlAnswered(run: TrackedRun, status: JobStatus): void {
+    run.control = idleControl;
+    run.epoch += 1;
+    if (!this.show(run, status)) this.poll?.end();
   }
 
   private track(run: TrackedRun): TrackedRun {
@@ -104,11 +175,17 @@ export class LaunchStore extends Observable<LaunchState> {
     const worldId = status.worldId;
     this.poll = new StatusPoll(
       this.scheduler,
-      () => this.gateway.jobStatus(worldId),
+      () => this.read(run, worldId),
       (reading) => this.took(run, reading),
     );
     this.poll.begin();
-    if (run.stopping && status.state === "running") await this.requestStop(run, worldId);
+    if (run.stopping && (status.state === "running" || status.state === "paused")) await this.requestStop(run, worldId);
+  }
+
+  private async read(run: TrackedRun, worldId: string): Promise<Reading | null> {
+    const epoch = run.epoch;
+    const reading = await this.gateway.jobStatus(worldId);
+    return run.epoch === epoch ? reading : null;
   }
 
   private show(run: TrackedRun, status: JobStatus): boolean {

@@ -106,7 +106,9 @@ test("an Evaluate run found again after a reload names no fault and no plan it c
   await page.reload();
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
   await expect(panel.getByText("30 min of simulated time · Evaluate")).toBeVisible();
-  await expect(panel.getByText(/\bfaults?\b/i)).toHaveCount(0);
+  await expect(
+    panel.getByText(/\bfaults?\b/i).filter({ hasNotText: "Faults can only be injected live in Explore runs." }),
+  ).toHaveCount(0);
   expect(await page.locator("body").innerText()).not.toMatch(fanFailure);
   await panel.getByRole("button", { name: "Stop now" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });

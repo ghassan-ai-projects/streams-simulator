@@ -175,6 +175,7 @@
         "app/workspace",
         "model/devices",
         "model/graph",
+        "model/launch",
         "model/plant",
         "model/review",
         "model/workspace",

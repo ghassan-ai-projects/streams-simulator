@@ -43,17 +43,29 @@ function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
 
 type CallFinding = Pick<CallProblem, "part" | "text">;
 
-function callFinding(call: PlannedCall, name: string, plan: LaunchPlan, specOf: SpecOf): CallFinding | null {
+type CallTarget = Pick<PlannedCall, "entity" | "effector" | "args">;
+
+export function targetFinding(call: CallTarget, name: string): CallFinding | null {
   if (call.entity === "" && call.effector === "")
     return { part: "instance", text: `${name} needs an instance and an effector.` };
   if (call.entity === "") return { part: "instance", text: `${name} needs an instance.` };
   if (call.effector === "") return { part: "effector", text: `${name} needs an effector.` };
-  if (!insideRun(plan, call.atS)) return { part: "minute", text: `${name} is made inside the run, before its end.` };
+  return null;
+}
+
+export function specFinding(call: CallTarget, name: string, specOf: SpecOf): CallFinding | null {
   const spec = specOf(call.entity, call.effector);
   if (spec === undefined)
     return { part: "effector", text: `${name}: ${call.entity} has no effector ${humanise(call.effector)}.` };
   const problem = argProblem(spec, call.args);
   return problem === "" ? null : { part: "args", text: `${name}: ${problem}` };
+}
+
+function callFinding(call: PlannedCall, name: string, plan: LaunchPlan, specOf: SpecOf): CallFinding | null {
+  const target = targetFinding(call, name);
+  if (target !== null) return target;
+  if (!insideRun(plan, call.atS)) return { part: "minute", text: `${name} is made inside the run, before its end.` };
+  return specFinding(call, name, specOf);
 }
 
 function callProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {

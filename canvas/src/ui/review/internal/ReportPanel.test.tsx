@@ -85,6 +85,27 @@ describe("report panel", () => {
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 
+  it("labels a call the operator gave during the run, and no other", () => {
+    const given = {
+      atNs: 60e9,
+      entity: "CH-1",
+      effector: "start",
+      args: {},
+      outcome: "applied · 20 ms",
+      immediate: true,
+    };
+    render(
+      <ReportPanel
+        report={{ ...report, effectorCalls: [given, ...report.effectorCalls.slice(1, 2)] }}
+        unit={() => ""}
+        entity={null}
+      />,
+    );
+    const calls = within(screen.getByRole("region", { name: "Effector calls" }));
+    expect(calls.getByText("applied · 20 ms · by the operator during the run")).toBeInTheDocument();
+    expect(calls.getByText("refused: interlock")).toBeInTheDocument();
+  });
+
   it("says None for an empty section and shows a scoring result", () => {
     render(
       <ReportPanel

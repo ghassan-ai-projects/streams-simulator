@@ -1,8 +1,8 @@
-import { CircleAlert, CircleCheck, Loader, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Loader, Pause, X } from "lucide-react";
 import { useEffect } from "react";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import { runProgressWords } from "../../../model/launch";
+import { runProgressWords, runStageWords } from "../../../model/launch";
 import { shared, useStore } from "../../primitives";
 import styles from "./RunIndicator.module.css";
 
@@ -17,7 +17,7 @@ function words(state: Shown): string {
   if (state.phase === "running") {
     return state.stopping
       ? `Stopping the run of ${state.origin.title}`
-      : `Running ${state.origin.title} · ${runProgressWords(state)}`;
+      : `${runStageWords(state)} ${state.origin.title} · ${runProgressWords(state)}`;
   }
   if (state.phase === "done") {
     return `Run ${state.worldId} ${state.early ? "stopped early" : "finished"} · Open review`;
@@ -27,7 +27,7 @@ function words(state: Shown): string {
 
 function announcement(state: LaunchState): string {
   if (state.phase === "idle") return "";
-  if (state.phase === "running") return `Run of ${state.origin.title} started`;
+  if (state.phase === "running") return `Run of ${state.origin.title} ${state.paused ? "paused" : "started"}`;
   if (state.phase === "done") return `The review of run ${state.worldId} is ready`;
   return words(state);
 }
@@ -72,7 +72,7 @@ export function RunIndicator(props: IndicatorProps) {
 }
 
 function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: Shown }) {
-  const Icon = icons[state.phase];
+  const Icon = state.phase === "running" && state.paused ? Pause : icons[state.phase];
   const open = () => {
     if (state.phase === "done") {
       launch.reset();
@@ -82,7 +82,11 @@ function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: 
   return (
     <div className={styles[`run-${state.phase}`]}>
       <button type="button" className={styles.runOpen} onClick={open}>
-        <Icon size={14} aria-hidden="true" className={state.phase === "running" ? shared.spin : undefined} />
+        <Icon
+          size={14}
+          aria-hidden="true"
+          className={state.phase === "running" && !state.paused ? shared.spin : undefined}
+        />
         {words(state)}
       </button>
       {state.phase !== "running" && (

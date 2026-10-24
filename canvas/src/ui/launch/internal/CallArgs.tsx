@@ -1,4 +1,4 @@
-import type { CallProblem, DraftCall } from "../../../model/launch";
+import type { CallProblem, NowDraft } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
 import { effectorOf, rangeHint } from "../../../model/plant";
 import { spaced } from "../../../model/shared/words";
@@ -62,11 +62,11 @@ export function CallArgs({
   update,
 }: {
   readonly plant: Plant;
-  readonly call: DraftCall;
+  readonly call: NowDraft;
   readonly label: string;
   readonly id: string;
   readonly problem: CallProblem | null;
-  readonly update: (next: Partial<DraftCall>) => void;
+  readonly update: (next: Partial<NowDraft>) => void;
 }) {
   const spec = effectorOf(plant, call.entity, call.effector);
   const shown = (spec?.args ?? []).filter((arg) => arg.type !== "other");

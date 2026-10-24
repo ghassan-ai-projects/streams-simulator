@@ -120,7 +120,7 @@ export { probeKey } from "./internal/trendProbe";
 export { eventLine, overlayOf } from "./internal/trendOverlay";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
-export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
+export { badgeLabels, badgeOf, immediateWords, replayLine, runSpan } from "./internal/report";
 export {
   fileLine,
   integrityLine,

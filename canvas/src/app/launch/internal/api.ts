@@ -1,4 +1,4 @@
-import type { LaunchPlan, SessionCheck, SessionDraft } from "../../../model/launch";
+import type { ArgValue, LaunchPlan, SessionCheck, SessionDraft } from "../../../model/launch";
 import type { Store } from "../../shared";
 import type { ConnectState } from "./connectState";
 import type { LaunchState } from "./launchState";
@@ -48,6 +48,12 @@ export interface LaunchStore extends Store<LaunchState> {
   watch(plant: string): RunWatch;
   start(origin: LaunchOrigin, plan: LaunchPlan): Promise<void>;
   resume(originOf: (domain: string) => LaunchOrigin | null): Promise<void>;
+  pause(): Promise<void>;
+  continueRun(): Promise<void>;
+  step(): Promise<void>;
+  setRate(rate: number): Promise<void>;
+  invokeNow(entity: string, effector: string, args: Readonly<Record<string, ArgValue>>): Promise<void>;
+  injectNow(entity: string, fault: string): Promise<void>;
   stopEarly(): void;
   reset(): void;
 }

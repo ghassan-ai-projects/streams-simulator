@@ -113,6 +113,7 @@ describe("launch store: following the job", () => {
         accepted: true,
         reason: "",
         effectEtaNs: 30e9,
+        immediate: false,
         atMs: 10_000,
       },
     ]);
@@ -127,6 +128,7 @@ describe("launch store: following the job", () => {
         accepted: true,
         reason: "",
         effectEtaNs: 30e9,
+        immediate: false,
         atMs: 10_000,
       },
       {
@@ -136,6 +138,7 @@ describe("launch store: following the job", () => {
         accepted: false,
         reason: "interlock_refused",
         effectEtaNs: null,
+        immediate: false,
         atMs: 15_000,
       },
     ]);

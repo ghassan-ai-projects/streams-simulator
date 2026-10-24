@@ -1,7 +1,7 @@
 import type { CallOutcome, LaunchPlan } from "./launch";
 import { paceOf } from "./launch";
 
-type JobState = "running" | "stopping" | "completed" | "stopped" | "failed";
+type JobState = "running" | "paused" | "stopping" | "completed" | "stopped" | "failed";
 
 interface JobCall {
   readonly entity: string;
@@ -10,6 +10,7 @@ interface JobCall {
   readonly accepted: boolean;
   readonly reason: string;
   readonly effectEtaNs: number | null;
+  readonly immediate: boolean;
 }
 
 export interface JobStatus {
@@ -44,8 +45,22 @@ export function jobRequestOf(domain: string, plan: LaunchPlan): JobRequest {
   return { domain, seed, explore, durationS, rate: paceOf(plan) ?? 0, faults, calls };
 }
 
+export interface InjectedFault {
+  readonly status: JobStatus;
+  readonly faultId: string;
+}
+
+export interface ImmediateCall {
+  readonly status: JobStatus;
+  readonly call: JobCall;
+}
+
 export function jobActive(status: JobStatus): boolean {
-  return status.state === "running" || status.state === "stopping";
+  return status.state === "running" || status.state === "paused" || status.state === "stopping";
+}
+
+export function jobPaused(status: JobStatus): boolean {
+  return status.state === "paused";
 }
 
 export function reachedS(status: JobStatus): number {
@@ -66,8 +81,9 @@ export function pacedRate(status: JobStatus): number | null {
 }
 
 function outcomeOf(call: JobCall, atMs: number): CallOutcome {
-  const { entity, effector, atS, accepted, reason, effectEtaNs } = call;
-  return { entity, effector, atS, accepted, reason: accepted ? "" : reason || "no reason given", effectEtaNs, atMs };
+  const { entity, effector, atS, accepted, reason, effectEtaNs, immediate } = call;
+  const why = accepted ? "" : reason || "no reason given";
+  return { entity, effector, atS, accepted, reason: why, effectEtaNs, immediate, atMs };
 }
 
 export function observedCalls(known: readonly CallOutcome[], status: JobStatus, atMs: number): readonly CallOutcome[] {

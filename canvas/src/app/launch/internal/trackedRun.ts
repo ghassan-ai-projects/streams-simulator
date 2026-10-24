@@ -1,4 +1,5 @@
-import type { CallOutcome, LaunchPlan } from "../../../model/launch";
+import type { CallOutcome, LaunchPlan, PlannedFault, RunControl } from "../../../model/launch";
+import { idleControl } from "../../../model/launch";
 
 export interface LaunchOrigin {
   readonly domain: string;
@@ -11,6 +12,9 @@ export class TrackedRun {
   calls: readonly CallOutcome[] = [];
   stopping = false;
   missed = 0;
+  epoch = 0;
+  control: RunControl = idleControl;
+  injected: readonly PlannedFault[] = [];
 
   constructor(
     readonly origin: LaunchOrigin,
