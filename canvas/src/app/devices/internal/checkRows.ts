@@ -1,20 +1,12 @@
-import { issueText } from "../../../model/devices";
 import { counted } from "../../../model/workspace";
-import type { DeviceFailure, LintReport } from "../../ports";
+import type { DeviceFailure } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
 import { isDirty } from "./deviceSelectors";
+import type { CheckRow } from "./checkRow";
 import type { Built, TwinDraft } from "./twinDraft";
+import { calibrationRow, hardwareRow, interfaceRow, plausibilityRow, refusal } from "./claimRows";
+import { partialOf } from "./twinScope";
 import { builtOf, verdictOf } from "./twinSelectors";
-
-export interface CheckRow {
-  readonly id: "device" | "twin" | "implements" | "lint";
-  readonly state: "ok" | "bad" | "pending" | "idle";
-  readonly text: string;
-  readonly notes: readonly string[];
-  readonly details: readonly string[];
-}
-
-const shown = 6;
 
 function row(
   id: CheckRow["id"],
@@ -23,14 +15,7 @@ function row(
   notes: readonly string[] = [],
   details: readonly string[] = [],
 ): CheckRow {
-  return { id, state, text, notes, details };
-}
-
-function refusal(failure: DeviceFailure): { readonly notes: readonly string[]; readonly details: readonly string[] } {
-  if (failure.kind !== "refused" || failure.issues.length === 0) {
-    return { notes: [failure.diagnostic.message], details: [] };
-  }
-  return { notes: failure.issues.map(issueText), details: failure.issues.map((issue) => issue.message) };
+  return { id, state, status: "", text, notes, details };
 }
 
 function failureRow(id: CheckRow["id"], text: string, failure: DeviceFailure): CheckRow {
@@ -68,41 +53,36 @@ function twinRow(draft: TwinDraft): CheckRow {
 
 function builtRow(built: Built): CheckRow {
   const verdict = verdictOf(built);
-  if (verdict === "ready") return row("twin", "ok", "Twin ready");
+  if (verdict === "ready") return row("twin", "ok", "Twin created");
   if (verdict === "pending") return row("twin", "pending", "The twin was created and is being checked");
   return row("twin", "bad", "The twin was created, but it has problems");
 }
 
-function implementsRow(built: Built | null): CheckRow {
-  if (built === null) return row("implements", "idle", "Not checked yet");
-  const { implemented } = built;
-  if (implemented.kind === "checking")
-    return row("implements", "pending", "Checking that the twin matches its device…");
-  if (implemented.kind === "passed") return row("implements", "ok", "The twin matches its device");
-  return failureRow("implements", "The twin does not match its device", implemented.failure);
-}
-
-function findings(report: LintReport): readonly string[] {
-  const lines = report.findings.slice(0, shown).map((finding) => `${finding.entity}: ${finding.detail}`);
-  const more = report.findings.length - shown;
-  return more > 0 ? [...lines, `…and ${String(more)} more`] : lines;
-}
-
-function lintRow(built: Built | null): readonly CheckRow[] {
-  if (built === null || built.lint.kind === "unavailable") return [];
-  if (built.lint.kind === "running") return [row("lint", "pending", "Checking that the readings stay plausible…")];
-  const { report } = built.lint;
-  if (report.errors > 0) {
-    return [row("lint", "bad", `The plausibility check found ${counted(report.errors, "error")}`, findings(report))];
-  }
-  const text =
-    report.warnings > 0
-      ? `The plausibility check has ${counted(report.warnings, "warning")}`
-      : "The readings stay plausible";
-  return [row("lint", "ok", text, findings(report))];
+function scopeRow(draft: TwinDraft): readonly CheckRow[] {
+  const partial = partialOf(draft);
+  return partial === ""
+    ? []
+    : [
+        {
+          id: "scope",
+          state: "warn",
+          status: "Partial twin",
+          text: "Some devices are left out of the twin",
+          notes: [partial],
+          details: [],
+        },
+      ];
 }
 
 export function checkRows(device: DeviceState, draft: TwinDraft): readonly CheckRow[] {
   const built = builtOf(draft);
-  return [deviceRow(device), twinRow(draft), implementsRow(built), ...lintRow(built)];
+  return [
+    deviceRow(device),
+    twinRow(draft),
+    ...scopeRow(draft),
+    interfaceRow(built),
+    plausibilityRow(built),
+    calibrationRow(),
+    hardwareRow(),
+  ];
 }

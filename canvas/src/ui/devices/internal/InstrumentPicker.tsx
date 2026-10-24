@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from "react";
 import {
   chosenInstrumentWords,
+  instrumentAssumptions,
   instrumentCount,
   instrumentWords,
   noInstrument,
@@ -13,6 +14,8 @@ import { cx, panel, shared, useFocusOnMount } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import type { Aria } from "./Field";
 import notes from "./Notes.module.css";
+import prov from "./Provenance.module.css";
+import { ChoiceTag } from "./Suggestions";
 
 interface ListingProps {
   readonly metric: string;
@@ -180,14 +183,27 @@ interface PickerProps {
   readonly instruments: readonly Instrument[] | null;
   readonly aria: Aria;
   readonly reveal: (() => void) | null;
+  readonly suggested: boolean;
   readonly onPick: (ref: string) => void;
 }
 
-export function InstrumentPicker({ metric, value, instruments, aria, reveal, onPick }: PickerProps) {
+function Assumptions({ value, instruments, suggested }: Pick<PickerProps, "value" | "instruments" | "suggested">) {
+  if (instruments === null) return null;
+  const chosen = instruments.find((entry) => entry.ref === value);
+  return (
+    <p className={prov.assumption}>
+      <ChoiceTag suggested={suggested} />
+      {instrumentAssumptions(chosen)}
+    </p>
+  );
+}
+
+export function InstrumentPicker({ metric, value, instruments, aria, reveal, suggested, onPick }: PickerProps) {
   const shown = instruments === null ? value : chosenInstrumentWords(value, instruments);
   return (
     <div className={tw.picker}>
       <textarea {...aria} className={cx(shared.sunkenField, notes.chosen)} readOnly rows={2} value={shown} />
+      <Assumptions value={value} instruments={instruments} suggested={suggested} />
       {instruments === null ? (
         <p className={panel.hint}>The instrument list could not be read, so only plain readings can be chosen.</p>
       ) : (

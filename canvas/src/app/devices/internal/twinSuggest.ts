@@ -1,4 +1,4 @@
-import { heldWords, serialiseKind, stemOf } from "../../../model/devices";
+import { heldIssues, heldWords, serialiseKind, stemOf } from "../../../model/devices";
 import type { Member } from "../../../model/devices";
 import type { DeviceFailure, DevicesGateway, Outcome } from "../../ports";
 import type { Held } from "./twinDraft";
@@ -18,7 +18,8 @@ async function heldOf(gateway: DevicesGateway, members: readonly Member[]): Prom
     const checked = checks[index];
     if (checked === undefined || checked.ok || checked.failure.kind !== "refused") return [];
     const words = heldWords(nameOf(member), checked.failure.issues);
-    return [{ path: member.path, name: nameOf(member), words, adding: false }];
+    const issues = heldIssues(member.kind, checked.failure.issues);
+    return [{ path: member.path, name: nameOf(member), words, issues, adding: false }];
   });
 }
 
@@ -30,5 +31,5 @@ export async function suggestFor(gateway: DevicesGateway, members: readonly Memb
 
 export function unreadableHeld(path: string): Held {
   const name = stemOf(path);
-  return { path, name, words: `${name} could not be read`, adding: true };
+  return { path, name, words: `${name} could not be read`, issues: [], adding: true };
 }

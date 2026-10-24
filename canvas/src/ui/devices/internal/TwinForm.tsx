@@ -7,6 +7,8 @@ import { FormTitle } from "./FormTitle";
 import { HeldNotice } from "./HeldNotice";
 import { DeviceNeeds } from "./InterfaceNeeds";
 import { KindCard } from "./KindCard";
+import { SuggestionNote } from "./Suggestions";
+import { TwinScope } from "./TwinScope";
 import { choose, commit } from "./twinProps";
 import type { TwinProps } from "./twinProps";
 
@@ -83,7 +85,15 @@ export function TwinForm(props: TwinProps) {
         The twin is a simulated version of your devices. Choose what measures each reading and how each command changes
         things. The choices are saved as you go.
       </p>
-      <HeldNotice held={others} twin={props.twin} navigation={props.navigation} />
+      <TwinScope draft={props.draft} />
+      <HeldNotice
+        held={others}
+        twin={props.twin}
+        navigation={props.navigation}
+        lead={lead ?? ""}
+        reveal={props.reveal}
+      />
+      <SuggestionNote draft={props.draft} twin={props.twin} />
       <DeviceNeeds needs={props.needs} reveal={props.reveal} />
       <Naming {...props} />
       {pairsOf(props.draft).map(({ kind, choice }) => (

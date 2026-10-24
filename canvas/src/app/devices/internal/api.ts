@@ -40,6 +40,7 @@ export interface TwinSession extends Store<TwinState> {
   edit(change: (choices: TwinChoices) => TwinChoices): void;
   include(path: string): Promise<void>;
   leave(path: string): void;
+  review(choices: readonly string[]): void;
   persist(): Promise<void>;
   discard(): void;
   create(): Promise<void>;

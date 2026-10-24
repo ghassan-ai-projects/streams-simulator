@@ -62,6 +62,10 @@ function unknownSetting({ member }: Subject): string {
   return member === "" ? "This setting is not known" : `"${member}" is not a known setting`;
 }
 
+function unsupportedSetting({ member }: Subject): string {
+  return member === "" ? "A twin does not reproduce this setting" : `A twin does not reproduce the setting ${member}`;
+}
+
 const schema = (words: Words): Entry => ({ twin: false, words });
 
 const twin = (words: Words): Entry => ({ twin: true, words });
@@ -98,7 +102,7 @@ const entries: Readonly<Record<string, Entry>> = {
   contract_unsupported: schema("The board speaks a version of the protocol this simulator does not"),
   kind_draft: schema("The announced device does not meet the rules for a device file"),
   twin_member_required: twin(needs),
-  twin_member_unsupported: twin("A twin does not reproduce this setting"),
+  twin_member_unsupported: twin(unsupportedSetting),
   twin_name_pattern: twin("A twin needs a simpler name: lower-case letters, digits and _"),
   twin_type_unsupported: twin("A twin reproduces number and on/off readings only"),
   twin_unit_required: twin(unitFor),

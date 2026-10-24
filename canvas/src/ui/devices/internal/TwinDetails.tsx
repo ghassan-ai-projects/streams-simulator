@@ -1,10 +1,18 @@
 import { Info, TriangleAlert } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { TwinDraft } from "../../../app/devices";
-import { placeKey, twinDomainPath, twinIssueTitle } from "../../../model/devices";
+import {
+  notReproduced,
+  placeKey,
+  reproduced,
+  standInWords,
+  twinDomainPath,
+  twinIssueTitle,
+} from "../../../model/devices";
 import { cx, panel, shared, useCutBottom } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
+import prov from "./Provenance.module.css";
 
 function fieldAt(place: string): HTMLElement | undefined {
   const fields = document.querySelectorAll<HTMLElement>("[data-place]");
@@ -52,6 +60,26 @@ function Issues({ draft }: { readonly draft: TwinDraft }) {
   );
 }
 
+function Reproduces() {
+  return (
+    <section className={prov.claims} aria-label="What the twin reproduces">
+      <h3>What this twin reproduces</h3>
+      <ul className={prov.claimList}>
+        {reproduced.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      <h3>What it does not reproduce</h3>
+      <ul className={prov.claimList}>
+        {notReproduced.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      <p className={panel.hint}>{standInWords}</p>
+    </section>
+  );
+}
+
 export function TwinDetails({ draft }: { readonly draft: TwinDraft }) {
   const { ref, cut } = useCutBottom<HTMLElement>();
   return (
@@ -71,6 +99,7 @@ export function TwinDetails({ draft }: { readonly draft: TwinDraft }) {
           A twin is a plant that behaves like your devices. It is made from the saved devices and your choices, and the
           binary checks that it offers exactly what each device offers.
         </p>
+        <Reproduces />
         <details>
           <summary className={cx(shared.sectionTitle, shared.disclosure)}>Technical details</summary>
           <dl className={styles.facts}>

@@ -183,7 +183,9 @@ function lacksTwinMembers(content: string): boolean {
       .map(record)
       .some((metric) => {
         const numeric = metric.data_type === "number" || metric.data_type === "integer";
-        return metric.resolution === undefined || (numeric && text(metric.unit) === "");
+        return (
+          metric.resolution === undefined || metric.scan_class !== undefined || (numeric && text(metric.unit) === "")
+        );
       });
   } catch {
     return false;

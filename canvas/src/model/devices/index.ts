@@ -2,10 +2,12 @@ export type {
   ArgRow,
   Choices,
   Command,
+  Claims,
   CommandChoice,
   DraftLines,
   Drive,
   FieldIssue,
+  HeldIssue,
   Instrument,
   InstrumentQuery,
   KindChoice,
@@ -70,6 +72,7 @@ export {
   unfitWords,
   unstatedMember,
 } from "./internal/instruments";
+export { blockingWords, heldIssues, heldReason, heldSelection, leftOutWords } from "./internal/heldDetail";
 export { heldWords } from "./internal/heldWords";
 export { enumOptions, withEnumOptions } from "./internal/options";
 export { deviceNameProblem, devicePath, draftProblems, rangeHint } from "./internal/rules";
@@ -88,6 +91,20 @@ export {
   setArgument,
   startAt,
 } from "./internal/twinEdits";
+export {
+  calibrationWords,
+  chosenWords,
+  claimSummary,
+  hardwareNote,
+  hardwareWords,
+  instrumentAssumptions,
+  notReproduced,
+  partialWords,
+  reproduced,
+  standInWords,
+  suggestedWords,
+  suggestionNote,
+} from "./internal/twinClaims";
 export { choicesOfDocument, parseChoices, responseOf } from "./internal/twinFile";
 export { keyChoices, serialiseChoices } from "./internal/twinKeys";
 export { keepCurrentIssues, placeKey, resolveTwinIssues, twinIssueTitle, twinIssuesOn } from "./internal/twinIssues";
