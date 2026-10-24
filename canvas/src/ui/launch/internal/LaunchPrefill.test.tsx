@@ -51,4 +51,15 @@ describe("prefilled run plan", () => {
     expect(screen.getByLabelText("Duration")).toHaveValue("30");
     expect(screen.queryByLabelText("Fault 1 instance")).toBeNull();
   });
+
+  it("puts the note inside the plan's scrolling content, before the Run group, not above the form", () => {
+    const { launch } = launchHarness(new FakeBridge());
+    launch.propose("mini", { seed: 5, durationS: 3600, explore: true, faults: [], calls: [] }, [], "w-6");
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+    );
+    const scroller = screen.getByRole("form", { name: "Run plan" }).firstElementChild;
+    expect(scroller).toContainElement(screen.getByRole("note"));
+    expect(scroller?.firstElementChild).toBe(screen.getByRole("note"));
+  });
 });

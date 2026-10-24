@@ -51,19 +51,21 @@ func expandedCount(sets []instanceSet) int {
 }
 
 type RunEntry struct {
-	WorldID          string          `json:"world_id"`
-	Ended            bool            `json:"ended"`
-	Complete         bool            `json:"complete"`
-	IncompleteReason string          `json:"incomplete_reason"`
-	Explore          bool            `json:"explore"`
-	Seed             *uint64         `json:"seed"`
-	Plant            string          `json:"plant,omitempty"`
-	DurationNs       int64           `json:"duration_ns,omitempty"`
-	Faults           int             `json:"faults,omitempty"`
-	RecordedAt       string          `json:"recorded_at,omitempty"`
-	Connected        bool            `json:"connected,omitempty"`
-	Running          bool            `json:"running,omitempty"`
-	Plan             json.RawMessage `json:"plan,omitempty"`
+	WorldID             string          `json:"world_id"`
+	Ended               bool            `json:"ended"`
+	Complete            bool            `json:"complete"`
+	IncompleteReason    string          `json:"incomplete_reason"`
+	Explore             bool            `json:"explore"`
+	Seed                *uint64         `json:"seed"`
+	Plant               string          `json:"plant,omitempty"`
+	DurationNs          int64           `json:"duration_ns,omitempty"`
+	Faults              int             `json:"faults,omitempty"`
+	RequestedDurationNs int64           `json:"requested_duration_ns,omitempty"`
+	TerminationReason   string          `json:"termination_reason,omitempty"`
+	RecordedAt          string          `json:"recorded_at,omitempty"`
+	Connected           bool            `json:"connected,omitempty"`
+	Running             bool            `json:"running,omitempty"`
+	Plan                json.RawMessage `json:"plan,omitempty"`
 }
 
 func (e RunEntry) AsSession(running bool, plan json.RawMessage) RunEntry {

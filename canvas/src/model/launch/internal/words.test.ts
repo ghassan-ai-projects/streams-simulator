@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
 import type { PlanProblem } from "./planProblems";
-import { disturbanceWords, freshSettingsWords, modeWords, planCue, planSummary, problemWords } from "./words";
+import {
+  disturbanceWords,
+  freshSettingsWords,
+  modeWords,
+  planCue,
+  planSummary,
+  problemWords,
+  unrecoveredWords,
+} from "./words";
 
 const plan: LaunchPlan = { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], calls: [] };
 
@@ -66,5 +74,12 @@ describe("launch words", () => {
       "The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: Evaluate.",
     );
     expect(freshSettingsWords(true)).toMatch(/opened with: Explore\.$/);
+  });
+
+  it("says a session plan could not be recovered without naming a mode", () => {
+    expect(unrecoveredWords).toBe(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings.",
+    );
+    expect(freshSettingsWords(true).startsWith(unrecoveredWords)).toBe(true);
   });
 });

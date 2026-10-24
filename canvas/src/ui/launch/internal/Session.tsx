@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import type { ConnectState, LaunchStore } from "../../../app/launch";
 import type { SessionDraft } from "../../../model/launch";
-import { keepForNextRun } from "../../../model/launch";
+import { keepForNextRun, unrecoveredWords } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
-import { useStore } from "../../primitives";
+import { panel, useStore } from "../../primitives";
 import { SessionForm } from "./SessionForm";
 import { SessionElsewhere, SessionEnded, SessionFailed, SessionLive } from "./SessionLive";
 
@@ -73,9 +73,21 @@ function useDraft(launch: LaunchStore, plant: string) {
   return { draft, change, forget };
 }
 
+function useUnrecovered(launch: LaunchStore, plant: string): boolean {
+  const [unrecovered] = useState(() => launch.connect.unrecovered(plant));
+  useEffect(
+    () => () => {
+      launch.connect.forgetUnrecovered(plant);
+    },
+    [launch, plant],
+  );
+  return unrecovered;
+}
+
 export function Session({ launch, plant, onFinished }: SessionProps) {
   const state = useStore(launch.connect);
   const { draft, change, forget } = useDraft(launch, plant.id);
+  const unrecovered = useUnrecovered(launch, plant.id);
   useEffect(() => {
     void launch.connect.resume();
   }, [launch]);
@@ -87,6 +99,13 @@ export function Session({ launch, plant, onFinished }: SessionProps) {
       change={change}
       state={mine ?? { phase: "idle" }}
       connect={launch.connect}
+      note={
+        unrecovered ? (
+          <p className={panel.hint} role="note">
+            {unrecoveredWords}
+          </p>
+        ) : null
+      }
     />
   );
   if (mine === null && (state.phase === "live" || state.phase === "starting")) {

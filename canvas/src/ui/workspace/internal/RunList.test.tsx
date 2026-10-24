@@ -138,6 +138,29 @@ describe("runs in the workspace", () => {
     expect(live).not.toHaveTextContent(/Connected session/);
   });
 
+  it("says a stopped run was stopped, with the length it reached out of the length it was asked for", async () => {
+    const bridge = new FakeBridge();
+    const stopped = {
+      worldId: "w-cut",
+      ended: true,
+      complete: true,
+      running: false,
+      incompleteReason: "",
+      explore: false,
+      seed: 7,
+      plant: "factory-utilities",
+      durationS: 540,
+      requestedS: 1800,
+      terminationReason: "stopped_by_operator",
+      recordedAt: "2026-10-15T10:00:00Z",
+      faults: 1,
+    };
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [stopped] });
+    await show(bridge);
+    expect(rowOf("w-cut")).toHaveTextContent("9 of 30 min · stopped · seed 7 · 1 fault");
+    expect(rowOf("w-cut")).not.toHaveTextContent(/9 min/);
+  });
+
   it("names the one run left to show in the singular", async () => {
     const bridge = new FakeBridge();
     const runs = Array.from({ length: 21 }, (_, i) => ({

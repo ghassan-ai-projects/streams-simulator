@@ -83,6 +83,18 @@ describe("workspace payload", () => {
     });
   });
 
+  it("reads the length a run was asked for and how it ended, and leaves them out when absent or not numbers and text", () => {
+    const stopped = { ...wire.runs[0], requested_duration_ns: 1800e9, termination_reason: "stopped_by_operator" };
+    const decoded = workspace({
+      ...wire,
+      runs: [stopped, { ...stopped, world_id: "w-2", requested_duration_ns: "x", termination_reason: 3 }],
+    });
+    expect(decoded?.runs[0]).toMatchObject({ requestedS: 1800, terminationReason: "stopped_by_operator" });
+    expect(decoded?.runs[1]).not.toHaveProperty("requestedS");
+    expect(decoded?.runs[1]).not.toHaveProperty("terminationReason");
+    expect(workspace(wire)?.runs[0]).not.toHaveProperty("requestedS");
+  });
+
   it("reads the kind files and components the workspace lists", () => {
     const decoded = workspace({
       ...wire,

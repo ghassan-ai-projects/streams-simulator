@@ -123,4 +123,11 @@ test("Stop now before the end keeps a shorter run that says it was stopped, and 
   const longest = Number(await slider.getAttribute("max"));
   expect(longest).toBeGreaterThan(0);
   expect(longest).toBeLessThan(1800);
+  const run = /^Run (w-\S+)/.exec((await page.getByRole("heading", { level: 1 }).textContent()) ?? "")?.[1] ?? "";
+  await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
+  const row = page
+    .getByRole("region", { name: "Runs" })
+    .getByRole("listitem")
+    .filter({ hasText: new RegExp(`${run} ·`) });
+  await expect(row).toContainText(/\d+( s| min)? of 30 min · stopped · seed /);
 });

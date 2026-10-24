@@ -1,5 +1,5 @@
 import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "./types";
-import { durationOf } from "../../shared/duration";
+import { lengthFacts } from "./length";
 import { counted, seedWords } from "../../shared/words";
 
 function firstText(...values: readonly (string | undefined)[]): string {
@@ -49,9 +49,7 @@ export function runModeWords(run: RunEntry): string {
 }
 
 export function runFacts(run: RunEntry): readonly string[] {
-  return [durationOf(run.durationS), seedWords(run.seed), faultWords(run), outcomeWords(run)].filter(
-    (part) => part !== "",
-  );
+  return [...lengthFacts(run), seedWords(run.seed), faultWords(run), outcomeWords(run)].filter((part) => part !== "");
 }
 
 export function plantFacts(plant: PlantEntry): string {

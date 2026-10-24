@@ -60,9 +60,9 @@ test("a world still running reviews from the listing as Running, with no failed 
     .getByRole("listitem")
     .filter({ hasText: new RegExp(`${world} ·`) });
   await expect(row).toHaveCount(1);
-  const warn = await tokenColor(page, "--status-warn-bg", "backgroundColor");
-  expect(warn).not.toBe(await tokenColor(page, "--status-ok-bg", "backgroundColor"));
-  await expect(row.getByText("Running", { exact: true })).toHaveCSS("background-color", warn);
+  const calm = await tokenColor(page, "--surface-selected", "backgroundColor");
+  expect(calm).not.toBe(await tokenColor(page, "--status-warn-bg", "backgroundColor"));
+  await expect(row.getByText("Running", { exact: true })).toHaveCSS("background-color", calm);
   await expect(row).not.toContainText("Did not finish");
 
   const doomed: string[] = [];

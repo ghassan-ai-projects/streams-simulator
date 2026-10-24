@@ -18,6 +18,9 @@ export interface ConnectSession extends Store<ConnectState> {
   kindFor(domain: string): RunKind;
   chooseKind(domain: string, kind: RunKind): void;
   setUpNext(domain: string, policies: readonly string[]): void;
+  setUpFresh(domain: string): void;
+  unrecovered(domain: string): boolean;
+  forgetUnrecovered(domain: string): void;
   draftFor(domain: string): SessionDraft;
   keepDraft(domain: string, draft: SessionDraft): void;
   prefill(domain: string): Promise<SessionDraft | null>;

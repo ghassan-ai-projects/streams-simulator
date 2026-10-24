@@ -32,9 +32,11 @@ export function modeWords(explore: boolean): string {
   return explore ? "The truth is visible while the run is going; this run is not for scoring." : evaluateRule;
 }
 
+export const unrecoveredWords =
+  "The plan of this run could not be recovered because it did not finish; these are fresh settings.";
+
 export function freshSettingsWords(explore: boolean): string {
-  const mode = explore ? "Explore" : "Evaluate";
-  return `The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: ${mode}.`;
+  return `${unrecoveredWords} The mode is the one the run opened with: ${explore ? "Explore" : "Evaluate"}.`;
 }
 
 export function problemWords(problems: readonly PlanProblem[]): string {

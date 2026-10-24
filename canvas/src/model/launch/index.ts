@@ -17,7 +17,7 @@ export { effectorShownS, showingMarks } from "./internal/showing";
 export { draftOf, firstDraft, freshPlanOf, pickedOnGraph, planOf } from "./internal/draft";
 export { runProgressWords } from "./internal/progress";
 export { progressTicks } from "./internal/ticks";
-export { freshSettingsWords, modeWords, planCue, planSummary, problemWords } from "./internal/words";
+export { freshSettingsWords, modeWords, planCue, planSummary, problemWords, unrecoveredWords } from "./internal/words";
 export {
   filledFromDefault,
   isPolicyIssue,

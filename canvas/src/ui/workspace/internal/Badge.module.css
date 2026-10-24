@@ -1,5 +1,6 @@
 .badge,
 .explore,
+.running,
 .verified {
   display: inline-flex;
   align-items: center;
@@ -17,6 +18,16 @@
 .unfinished {
   color: var(--status-warn);
   background: var(--status-warn-bg);
+}
+
+.running {
+  gap: var(--space-2);
+  background: var(--surface-selected);
+  color: var(--accent);
+}
+
+.running svg {
+  flex: none;
 }
 
 .explore {

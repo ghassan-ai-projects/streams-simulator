@@ -8,6 +8,7 @@ import (
 type RunSummary struct {
 	Plant      string
 	Explore    bool
+	StartNs    int64
 	Closed     bool
 	Incomplete bool
 	DurationNs int64
@@ -33,7 +34,7 @@ func SummarizeRun(firstLine, tail []byte) RunSummary {
 	if json.Unmarshal(firstLine, &opened) != nil || opened.Type != "run.opened" {
 		return RunSummary{}
 	}
-	summary := RunSummary{Plant: opened.Domain.ID, Explore: opened.Mode == "explore"}
+	summary := RunSummary{Plant: opened.Domain.ID, Explore: opened.Mode == "explore", StartNs: opened.StartNs}
 	var closed runClosed
 	if json.Unmarshal(lastLine(tail), &closed) == nil && closed.Type == "run.closed" {
 		summary.Closed, summary.Incomplete = true, closed.Incomplete
@@ -49,6 +50,12 @@ type RunArtifact struct {
 	CommandLog []struct {
 		Op string `json:"op"`
 	} `json:"command_log"`
+	Plan *struct {
+		RequestedEndNs int64 `json:"requested_end_ns"`
+	} `json:"plan"`
+	Termination *struct {
+		Reason string `json:"reason"`
+	} `json:"termination"`
 }
 
 // ParseRunArtifact reads run.json; an unreadable file yields no seed and no faults.
@@ -68,6 +75,20 @@ func (a RunArtifact) Faults() int {
 		}
 	}
 	return count
+}
+
+func (a RunArtifact) RequestedEndNs() int64 {
+	if a.Plan == nil {
+		return 0
+	}
+	return a.Plan.RequestedEndNs
+}
+
+func (a RunArtifact) TerminationReason() string {
+	if a.Termination == nil {
+		return ""
+	}
+	return a.Termination.Reason
 }
 
 func (s RunSummary) State(running bool) RunState {
@@ -109,11 +130,19 @@ func (s RunSummary) Complete(running bool) bool {
 func NewRunEntry(worldID string, summary RunSummary, running bool, artifact RunArtifact) RunEntry {
 	complete := summary.Complete(running)
 	entry := RunEntry{WorldID: worldID, Ended: summary.State(running).Ended, Complete: complete, Running: running, Seed: artifact.Seed,
-		Explore: summary.Explore, Plant: summary.Plant, DurationNs: summary.DurationNs, Faults: artifact.Faults()}
+		Explore: summary.Explore, Plant: summary.Plant, DurationNs: summary.DurationNs, Faults: artifact.Faults(),
+		RequestedDurationNs: requestedDuration(artifact, summary), TerminationReason: artifact.TerminationReason()}
 	if !complete {
 		entry.IncompleteReason = artifact.Error
 	}
 	return entry
+}
+
+func requestedDuration(artifact RunArtifact, summary RunSummary) int64 {
+	if length := artifact.RequestedEndNs() - summary.StartNs; length > 0 {
+		return length
+	}
+	return 0
 }
 
 func lastLine(tail []byte) []byte {

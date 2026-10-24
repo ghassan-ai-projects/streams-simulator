@@ -59,6 +59,8 @@ export function workspaceWire(workspace: Workspace) {
       recorded_at: run.recordedAt,
       faults: run.faults,
       running: run.running,
+      ...(run.requestedS === undefined ? {} : { requested_duration_ns: run.requestedS * 1e9 }),
+      ...(run.terminationReason === undefined ? {} : { termination_reason: run.terminationReason }),
       ...(run.connected === undefined ? {} : { connected: true }),
       ...(run.simulated === undefined
         ? {}

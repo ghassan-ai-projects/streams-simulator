@@ -15,6 +15,8 @@ export interface RunEntry {
   readonly seed: number | null;
   readonly plant: string;
   readonly durationS: number;
+  readonly requestedS?: number;
+  readonly terminationReason?: string;
   readonly recordedAt: string;
   readonly faults: number;
   readonly connected?: "running" | "saved";

@@ -1,5 +1,5 @@
 import { holdEnter, panel, shared } from "../../primitives";
-import type { SyntheticEvent } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { Draft, LaunchPlan, PlanProblem } from "../../../model/launch";
 import { planCue, planOf, planProblems, problemWords } from "../../../model/launch";
@@ -19,6 +19,7 @@ interface FormProps {
   readonly selected: string | null;
   readonly change: (change: Change) => void;
   readonly onStart: (plan: LaunchPlan) => void;
+  readonly note: ReactNode;
 }
 
 function useFocusFirstProblem(tried: number) {
@@ -36,7 +37,8 @@ function PlanFields({
   change,
   shown,
   plan,
-}: Pick<FormProps, "plant" | "draft" | "selected" | "change"> & {
+  note,
+}: Pick<FormProps, "plant" | "draft" | "selected" | "change" | "note"> & {
   readonly shown: readonly PlanProblem[];
   readonly plan: LaunchPlan;
 }) {
@@ -48,6 +50,7 @@ function PlanFields({
       data-scroll="run-plan"
       data-cut={cut ? "true" : undefined}
     >
+      {note}
       <fieldset className={panel.group}>
         <legend>Run</legend>
         <Seed draft={draft} change={change} problems={shown} />
@@ -61,7 +64,7 @@ function PlanFields({
   );
 }
 
-export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
+export function LaunchForm({ plant, draft, selected, change, onStart, note }: FormProps) {
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
   const form = useFocusFirstProblem(tried);
@@ -76,7 +79,15 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
   };
   return (
     <form ref={form} className={styles.plan} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
-      <PlanFields plant={plant} draft={draft} selected={selected} change={change} shown={shown} plan={plan} />
+      <PlanFields
+        plant={plant}
+        draft={draft}
+        selected={selected}
+        change={change}
+        shown={shown}
+        plan={plan}
+        note={note}
+      />
       <div className={styles.footer}>
         <p id="launch-summary" className={styles.summary}>
           {planCue(shown, plan)}

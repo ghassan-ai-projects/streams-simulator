@@ -132,6 +132,9 @@ describe("workspace catalogue", () => {
       faults: 0,
     };
     expect(runFacts(finished)).toEqual(["30 min", "seed 7", "no faults"]);
+    expect(
+      runFacts({ ...finished, durationS: 540, requestedS: 1800, terminationReason: "stopped_by_operator" }),
+    ).toEqual(["9 of 30 min", "stopped", "seed 7", "no faults"]);
     expect(runFacts({ ...finished, seed: null })).toEqual(["30 min", "no faults"]);
     const abandoned = { ...finished, complete: false, incompleteReason: "run was stopped", faults: 2 };
     expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);

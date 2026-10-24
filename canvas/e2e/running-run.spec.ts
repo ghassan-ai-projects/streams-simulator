@@ -20,6 +20,21 @@ async function startWatchedRun(page: Page): Promise<string> {
   return /run (w-[^\s·.]+)/.exec((await started.textContent()) ?? "")?.[1] ?? "";
 }
 
+async function expectLegibleIcon(pill: Locator): Promise<void> {
+  const inside = await pill.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const mark = element.querySelector("svg")?.getBoundingClientRect();
+    const gap = Number.parseFloat(getComputedStyle(element).columnGap);
+    if (mark === undefined) return null;
+    return { size: mark.width, left: mark.left - box.left, spill: mark.bottom - box.bottom, gap };
+  });
+  expect(inside).not.toBeNull();
+  expect(inside?.size).toBeGreaterThanOrEqual(14);
+  expect(inside?.left).toBeGreaterThan(4);
+  expect(inside?.spill).toBeLessThanOrEqual(0);
+  expect(inside?.gap).toBeGreaterThanOrEqual(6);
+}
+
 test("a run still running lists as Running, never Did not finish, and stops reading Running once it ends", async ({
   page,
 }) => {
@@ -27,8 +42,10 @@ test("a run still running lists as Running, never Did not finish, and stops read
   expect(world).not.toBe("");
   await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
   const row = rowOf(page, world);
-  await expect(row.getByText("Running", { exact: true })).toBeVisible();
+  const pill = row.getByText("Running", { exact: true });
+  await expect(pill).toBeVisible();
   await expect(row).not.toContainText("Did not finish");
+  await expectLegibleIcon(pill);
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
   await page
     .getByRole("complementary", { name: "Run Factory utilities" })

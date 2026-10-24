@@ -93,7 +93,20 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...intentOf(entry),
     ...connectedOf(entry),
+  };
+}
+
+function intentOf(entry: Record<string, unknown>): {
+  readonly requestedS?: number;
+  readonly terminationReason?: string;
+} {
+  return {
+    ...(typeof entry.requested_duration_ns === "number"
+      ? { requestedS: Math.round(entry.requested_duration_ns / 1e9) }
+      : {}),
+    ...(typeof entry.termination_reason === "string" ? { terminationReason: entry.termination_reason } : {}),
   };
 }
 

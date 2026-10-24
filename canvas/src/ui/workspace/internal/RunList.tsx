@@ -43,15 +43,18 @@ function detail(row: RunRow): string {
   return detailParts(row).join(" · ");
 }
 
+function OpenStatus({ row }: { readonly row: RunRow }) {
+  const running = row.run.running;
+  return (
+    <span className={running ? badgeStyles.running : badgeStyles.unfinished}>
+      <Radio size={running ? 14 : 12} aria-hidden="true" />
+      {openRunWords(row.run)}
+    </span>
+  );
+}
+
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
-  if (!row.run.ended) {
-    return (
-      <span className={badgeStyles.unfinished}>
-        <Radio size={12} aria-hidden="true" />
-        {openRunWords(row.run)}
-      </span>
-    );
-  }
+  if (!row.run.ended) return <OpenStatus row={row} />;
   if (!row.run.complete) {
     return (
       <span className={badgeStyles.badge} title={unfinishedReason(row.run)}>

@@ -208,4 +208,19 @@ describe("the mode and the draft kept for the next run", () => {
     });
     expect(connect.kindFor("mini")).toBe("session");
   });
+
+  it("sets up fresh settings in the session mode, flagged as unrecovered until the next session or until forgotten", () => {
+    const { connect } = rig();
+    connect.setUpNext("mini", [a]);
+    connect.setUpFresh("mini");
+    expect(connect.draftFor("mini")).toEqual(firstSessionDraft);
+    expect(connect.kindFor("mini")).toBe("session");
+    expect(connect.unrecovered("mini")).toBe(true);
+    expect(connect.unrecovered("other")).toBe(false);
+    connect.forgetUnrecovered("mini");
+    expect(connect.unrecovered("mini")).toBe(false);
+    connect.setUpFresh("mini");
+    connect.setUpNext("mini", []);
+    expect(connect.unrecovered("mini")).toBe(false);
+  });
 });
