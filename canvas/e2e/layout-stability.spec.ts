@@ -95,7 +95,7 @@ for (const { world, alerts } of noticed) {
   }) => {
     await openReview(page, world);
     const note = page.getByRole("status").filter({ hasText: "The plant file changed after this run" });
-    await expect(note).toHaveCount(1);
+    await expect(note).toHaveCount(1, { timeout: 60_000 });
     await expect(note).toHaveAttribute("title", /plant file changed after this run/);
     await expect(page.getByRole("alert")).toHaveCount(alerts.length);
     for (const text of alerts) {

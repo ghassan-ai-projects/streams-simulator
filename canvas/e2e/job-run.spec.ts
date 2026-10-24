@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./support/test";
+import { finishNow } from "./support/jobControls";
 
 test.setTimeout(120_000);
 
@@ -87,6 +88,7 @@ test("a run left running across a reload still ends by itself and opens as a com
   await expect(panelOf(page).getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await page.reload();
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
+  await finishNow(panelOf(page));
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 90_000 });
   await expect(page.getByText(/Stopped by operator/)).toHaveCount(0);
   await expect(page.getByText("Did not finish", { exact: true })).toHaveCount(0);

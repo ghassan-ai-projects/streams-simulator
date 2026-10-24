@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    pool: "vmThreads",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     setupFiles: ["src/test/setup.ts"],
     restoreMocks: true,

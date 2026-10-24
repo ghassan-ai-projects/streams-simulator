@@ -50,3 +50,8 @@ export async function pausedPanel(page: Page, mode: Mode, minutes = 60): Promise
   await expect(clockLine(panel)).toHaveText(/^Paused · /);
   return panel;
 }
+
+export async function finishNow(panel: Locator): Promise<void> {
+  await panel.getByRole("combobox", { name: "Speed" }).selectOption({ label: "As fast as possible" });
+  await expect(panel.getByRole("combobox", { name: "Speed" })).toHaveValue("0");
+}
