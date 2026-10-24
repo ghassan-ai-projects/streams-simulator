@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -77,5 +78,17 @@ func TestADirectorThatCannotStartFailsTheToolCallWithItsError(t *testing.T) {
 	h.bridge.edges.StartDirector = func(context.Context) (Director, error) { return nil, errors.New("no director binary") }
 	if _, err := h.bridge.RunAction(context.Background(), "catalog.list", nil); err == nil || err.Error() != "no director binary" {
 		t.Fatalf("catalog.list without a director = %v, want the start error", err)
+	}
+}
+
+func TestARunWithoutAJournalHasNoRecordedTime(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	h.write(t, "runs/w-1/journal.jsonl", openedLine)
+	if got := h.bridge.recordedAt("runs/w-2/journal.jsonl"); got != "" {
+		t.Fatalf("recordedAt of an absent journal = %q, want none", got)
+	}
+	if got := h.bridge.recordedAt("runs/w-1/journal.jsonl"); !regexp.MustCompile(`^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$`).MatchString(got) {
+		t.Fatalf("recordedAt of a journal = %q, want an RFC 3339 UTC time", got)
 	}
 }

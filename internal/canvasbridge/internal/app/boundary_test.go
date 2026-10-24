@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -63,5 +65,19 @@ func TestTheStreamBoundaryScrubsTheFailureOfAFollow(t *testing.T) {
 	}
 	if err := (boundary{h.bridge}).OpenRun("c-9"); !errors.Is(err, domain.ErrAbsent) {
 		t.Fatalf("OpenRun of an absent run = %v, want ErrAbsent kept", err)
+	}
+}
+
+func TestTheListingBoundaryHidesTheWorkspaceInAFailureAndKeepsItsCause(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	h.blockFolder(t, "runs")
+	listing, err := boundary{h.bridge}.Workspace()
+	var pathError *fs.PathError
+	if !errors.As(err, &pathError) || strings.Contains(err.Error(), h.dir) || !strings.Contains(err.Error(), "canvasbridge: list runs") {
+		t.Fatalf("Workspace = %v, want the list failure of runs with the workspace path removed", err)
+	}
+	if !reflect.DeepEqual(listing, domain.Listing{}) {
+		t.Fatalf("listing = %+v, want none with a failure", listing)
 	}
 }
