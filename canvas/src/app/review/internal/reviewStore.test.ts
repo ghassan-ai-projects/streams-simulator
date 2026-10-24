@@ -219,6 +219,7 @@ const entry = {
   worldId: "w-9",
   ended: true,
   complete: true,
+  running: false,
   incompleteReason: "the run did not close.",
   explore: false,
   seed: 5,

@@ -6,7 +6,16 @@ import type { Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
-import { counted, plantsOf, runFacts, runModeWords, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
+import {
+  counted,
+  openRunWords,
+  plantsOf,
+  runFacts,
+  runModeWords,
+  runRows,
+  unfinishedReason,
+  whenOf,
+} from "../../../model/workspace";
 import { SectionHeading } from "./SectionHeading";
 import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
@@ -39,7 +48,7 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
     return (
       <span className={badgeStyles.unfinished}>
         <Radio size={12} aria-hidden="true" />
-        {row.run.connected === "running" ? "Running" : "Did not finish"}
+        {openRunWords(row.run)}
       </span>
     );
   }

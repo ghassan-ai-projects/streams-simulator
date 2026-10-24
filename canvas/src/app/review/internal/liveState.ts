@@ -202,5 +202,5 @@ export function playStart(state: ReviewState, index: PlaybackIndex): ReviewState
 
 export function liveEntry(worldId: string, known: RunEntry | undefined): RunEntry {
   const base = { incompleteReason: "", explore: false, seed: null, plant: "", durationS: 0, recordedAt: "", faults: 0 };
-  return { ...base, ...known, worldId, ended: false, complete: false, connected: "running" };
+  return { ...base, ...known, worldId, ended: false, complete: false, running: true, connected: "running" };
 }

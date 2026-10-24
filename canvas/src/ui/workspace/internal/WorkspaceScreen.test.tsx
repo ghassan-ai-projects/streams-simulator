@@ -50,6 +50,7 @@ describe("workspace screen", () => {
       worldId: `w-${String(i)}`,
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: false,
       seed: null,

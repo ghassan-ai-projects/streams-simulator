@@ -32,6 +32,11 @@ export function unfinishedReason(run: RunEntry): string {
   return run.incompleteReason || "the run did not close.";
 }
 
+export function openRunWords(run: RunEntry): string {
+  if (run.ended) return "";
+  return run.running ? "Running" : "Did not finish";
+}
+
 export function outcomeWords(run: RunEntry): string {
   if (run.connected === "running") return "";
   return run.ended && !run.complete ? `Did not finish: ${unfinishedReason(run)}` : "";

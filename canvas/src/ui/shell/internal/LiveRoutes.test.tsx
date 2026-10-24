@@ -17,6 +17,7 @@ function liveBridge() {
     worldId: "c-9",
     ended: false,
     complete: false,
+    running: true,
     incompleteReason: "",
     explore: false,
     seed: 1,

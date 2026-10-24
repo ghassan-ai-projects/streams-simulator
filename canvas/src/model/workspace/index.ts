@@ -1,6 +1,7 @@
 export type { Definition, KindEntry, PlantEntry, RunEntry, RunRow, Workspace } from "./contract";
 export { counted } from "../shared/words";
 export {
+  openRunWords,
   plantFacts,
   plantsOf,
   runFacts,

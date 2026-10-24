@@ -57,6 +57,7 @@ export interface ReviewState {
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly recordedOrigins: ReadonlyMap<string, InstanceOrigin>;
   readonly connection: Connection;
+  readonly running: boolean;
   readonly simulated: readonly string[];
   readonly sessionDomain: string;
   readonly sessionPolicies: readonly string[] | null;
@@ -88,6 +89,7 @@ export const idle: ReviewState = {
   origins: new Map(),
   recordedOrigins: new Map(),
   connection: "none",
+  running: false,
   simulated: [],
   sessionDomain: "",
   sessionPolicies: null,
@@ -104,9 +106,11 @@ function connectionOf(known: RunEntry | undefined): Connection {
 }
 
 export function withListedConnection(state: ReviewState, known: RunEntry | undefined): ReviewState {
+  const running = known?.running ?? state.running;
   const listed = known?.connected;
-  if (listed === undefined || listed === state.connection) return state;
-  return { ...state, connection: listed, simulated: known?.simulated ?? state.simulated };
+  if (listed === undefined || listed === state.connection)
+    return running === state.running ? state : { ...state, running };
+  return { ...state, running, connection: listed, simulated: known?.simulated ?? state.simulated };
 }
 
 type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" | "session" }>;
@@ -172,5 +176,13 @@ function absentLoads(known: RunEntry | undefined): Pick<ReviewState, "verified" 
 
 export function visitState(worldId: string, known: RunEntry | undefined, openedAt: number): ReviewState {
   const simulated = known?.simulated ?? [];
-  return { ...idle, worldId, openedAt, connection: connectionOf(known), simulated, ...absentLoads(known) };
+  return {
+    ...idle,
+    worldId,
+    openedAt,
+    connection: connectionOf(known),
+    running: known?.running ?? false,
+    simulated,
+    ...absentLoads(known),
+  };
 }

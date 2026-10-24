@@ -37,6 +37,15 @@ function Chip({ badge, label, title }: { readonly badge: Badge; readonly label: 
   );
 }
 
+function RunningChip() {
+  return (
+    <span className={styles.chip} title="The run is still going." data-part="status-chip">
+      <Loader size={13} aria-hidden="true" />
+      Running
+    </span>
+  );
+}
+
 function Reason({ text }: { readonly text: string }) {
   return (
     <span className={styles.reason} title={text}>
@@ -120,6 +129,15 @@ export function Status({ state, now }: { readonly state: ReviewState; readonly n
     return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
+  if (state.running && badge === "incomplete") {
+    return (
+      <>
+        <Mode report={report} state={state} />
+        <RunningChip />
+        <Announce text="Running" />
+      </>
+    );
+  }
   const shown = badgeLabels[badge];
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : shown;
   return (

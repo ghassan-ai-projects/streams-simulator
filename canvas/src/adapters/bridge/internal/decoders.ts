@@ -85,6 +85,7 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     worldId: text(entry.world_id),
     ended: entry.ended === true,
     complete: entry.complete === true,
+    running: entry.running === true,
     incompleteReason: text(entry.incomplete_reason),
     explore: entry.explore === true,
     seed: typeof entry.seed === "number" ? entry.seed : null,

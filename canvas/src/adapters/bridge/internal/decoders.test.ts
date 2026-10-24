@@ -112,6 +112,7 @@ describe("workspace payload", () => {
           worldId: "w-1",
           ended: true,
           complete: true,
+          running: false,
           incompleteReason: "",
           explore: false,
           seed: 42,
@@ -163,6 +164,20 @@ describe("workspace payload", () => {
     expect(decoded?.runs.map((run) => run.simulated)).toEqual([["fan-01"], [], undefined]);
   });
 
+  it("reads whether a run is running for every run, not only for connected sessions", () => {
+    const decoded = workspace({
+      ...wire,
+      runs: [
+        { world_id: "w-1", running: true },
+        { world_id: "w-2", running: false },
+        { world_id: "w-3" },
+        { world_id: "w-4", running: "yes" },
+      ],
+    });
+    expect(decoded?.runs.map((run) => run.running)).toEqual([true, false, false, false]);
+    expect(decoded?.runs.map((run) => run.connected)).toEqual([undefined, undefined, undefined, undefined]);
+  });
+
   it("defaults a run's missing or mistyped fields", () => {
     const decoded = workspace({
       ...wire,
@@ -173,6 +188,7 @@ describe("workspace payload", () => {
         worldId: "w-2",
         ended: false,
         complete: false,
+        running: false,
         incompleteReason: "",
         explore: false,
         seed: null,

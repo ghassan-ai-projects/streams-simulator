@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Workspace } from "./types";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import {
+  openRunWords,
   outcomeWords,
   runModeWords,
   plantFacts,
@@ -20,6 +21,7 @@ const run = (worldId: string, plant: string, recordedAt: string) => ({
   recordedAt,
   ended: true,
   complete: true,
+  running: false,
   incompleteReason: "",
   explore: false,
   seed: null,
@@ -120,6 +122,7 @@ describe("workspace catalogue", () => {
       worldId: "w",
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: true,
       seed: 7,
@@ -142,11 +145,21 @@ describe("workspace catalogue", () => {
     expect(outcomeWords({ ...abandoned, ended: false })).toBe("");
   });
 
+  it.each([
+    ["ended", { ended: true, complete: true, running: false }, ""],
+    ["ended and incomplete", { ended: true, complete: false, running: false }, ""],
+    ["running", { ended: false, complete: false, running: true }, "Running"],
+    ["neither ended nor running", { ended: false, complete: false, running: false }, "Did not finish"],
+  ])("names a run that is %s in its status words", (_name, state, words) => {
+    expect(openRunWords({ ...run("w", "p", ""), ...state })).toBe(words);
+  });
+
   it("says how many faults a finished run injected", () => {
     const finished = {
       worldId: "w",
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: true,
       seed: null,

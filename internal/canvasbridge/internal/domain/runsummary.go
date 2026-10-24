@@ -108,7 +108,7 @@ func (s RunSummary) Complete(running bool) bool {
 // NewRunEntry lists a run; the reason is shown only for a run that is not complete.
 func NewRunEntry(worldID string, summary RunSummary, running bool, artifact RunArtifact) RunEntry {
 	complete := summary.Complete(running)
-	entry := RunEntry{WorldID: worldID, Ended: summary.State(running).Ended, Complete: complete, Seed: artifact.Seed,
+	entry := RunEntry{WorldID: worldID, Ended: summary.State(running).Ended, Complete: complete, Running: running, Seed: artifact.Seed,
 		Explore: summary.Explore, Plant: summary.Plant, DurationNs: summary.DurationNs, Faults: artifact.Faults()}
 	if !complete {
 		entry.IncompleteReason = artifact.Error

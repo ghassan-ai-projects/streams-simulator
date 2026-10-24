@@ -9,6 +9,7 @@ export interface RunEntry {
   readonly worldId: string;
   readonly ended: boolean;
   readonly complete: boolean;
+  readonly running: boolean;
   readonly incompleteReason: string;
   readonly explore: boolean;
   readonly seed: number | null;

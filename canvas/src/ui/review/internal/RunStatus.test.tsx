@@ -57,6 +57,17 @@ describe("run status", () => {
     expect(screen.queryByText("not finished")).toBeNull();
   });
 
+  it("says a run the listing shows as running is Running, never Did not finish, while it runs", () => {
+    const open = { phase: "ready", value: { ...parsed, ended: false, complete: false } } as const;
+    const { unmount } = render(<Status state={state({ report: open, running: true })} now={now} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Running");
+    expect(screen.queryByText(/Did not finish/)).toBeNull();
+    expect(screen.queryByText(/Connected session/)).toBeNull();
+    unmount();
+    render(<Status state={state({ report: open, running: false })} now={now} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
+  });
+
   it("styles Not verified, Did not finish, Verified and Verifying as four different chips", () => {
     const divergent = {
       phase: "ready",

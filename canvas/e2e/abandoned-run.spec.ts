@@ -45,7 +45,7 @@ test("a world created and destroyed through the bridge lists and reviews as Did 
   expect(doomed).toEqual([]);
 });
 
-test("a world the listing still shows as open reviews from the listing, with no failed request", async ({ page }) => {
+test("a world still running reviews from the listing as Running, with no failed request", async ({ page }) => {
   const created = await action(page, "world.create", {
     domain: "factory-utilities",
     seed: 9,
@@ -62,14 +62,16 @@ test("a world the listing still shows as open reviews from the listing, with no 
   await expect(row).toHaveCount(1);
   const warn = await tokenColor(page, "--status-warn-bg", "backgroundColor");
   expect(warn).not.toBe(await tokenColor(page, "--status-ok-bg", "backgroundColor"));
-  await expect(row.getByText("Did not finish", { exact: true })).toHaveCSS("background-color", warn);
+  await expect(row.getByText("Running", { exact: true })).toHaveCSS("background-color", warn);
+  await expect(row).not.toContainText("Did not finish");
 
   const doomed: string[] = [];
   page.on("response", (response) => {
     if (response.status() >= 400) doomed.push(`${String(response.status())} ${response.url()}`);
   });
   await page.goto(`/#/review?world=${world}`);
-  await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1, { timeout: 60_000 });
+  await expect(page.getByRole("status").filter({ hasText: /^Running$/ })).toHaveCount(1, { timeout: 60_000 });
+  await expect(page.getByRole("status").filter({ hasText: /Did not finish/ })).toHaveCount(0);
   await expect(page.getByText("run.json is absent: the run is still open or did not end").first()).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
   expect(doomed).toEqual([]);
@@ -84,7 +86,7 @@ test("a review opened live loads its recorded plant when the run completes", asy
   });
   const world = String(created.world_id);
   await page.goto(`/#/review?world=${world}`);
-  await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1);
+  await expect(page.getByRole("status").filter({ hasText: /^Running$/ })).toHaveCount(1);
   const recordedPlant = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return url.pathname === "/api/file" && url.searchParams.get("path") === `runs/${world}/run.json`;
