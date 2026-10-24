@@ -225,6 +225,18 @@ func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) err
 	return r.run.ExecuteScenario(ctx, scenario)
 }
 
+func (r *Run) ExecuteScenarioWith(ctx context.Context, scenario *model.Scenario, hooks ScenarioHooks) (ScenarioOutcome, error) {
+	return r.run.ExecuteScenarioWith(ctx, scenario, hooks)
+}
+
+func (r *Run) SetPlan(plan model.RunPlan) error {
+	return r.run.SetPlan(plan)
+}
+
+func (r *Run) SetTermination(termination model.Termination) error {
+	return r.run.SetTermination(termination)
+}
+
 func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
 	return layer.LoadInputs(domainsDir, adaptersDir, domainID, adapterID)
 }

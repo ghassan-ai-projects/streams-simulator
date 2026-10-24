@@ -297,6 +297,26 @@
       "enum": ["evaluate", "explore"],
       "description": "explore marks a run unblinded from creation (unblinded is then true); it is never scored. An absent mode is evaluate."
     },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_end_ns"],
+      "description": "Optional. What the operator asked of the run: the simulated instant it was meant to end at and the pace it was meant to run at. Written by a run that was driven toward an end (a job). It is intent, not evidence: nothing replays or verifies it, and the command log, not the plan, reproduces the run.",
+      "properties": {
+        "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0, "description": "The simulated instant the run was asked to reach, in nanoseconds since the Unix epoch (the same axis as the clock.advance targets)."},
+        "rate": {"type": "number", "minimum": 0, "description": "Simulated seconds per wall second. 0 or absent means as fast as possible."}
+      }
+    },
+    "termination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "at_ns"],
+      "description": "Optional. Why and where the run stopped, written by the driver that ended it. Absent when no driver recorded one (a hand-driven or scenario run). It is a record of intent, not evidence: nothing replays or verifies it.",
+      "properties": {
+        "reason": {"enum": ["completed", "stopped_by_operator"], "description": "completed: the run reached the end it was asked for. stopped_by_operator: the operator ended it earlier."},
+        "at_ns": {"type": "integer", "description": "The simulated instant the run stopped at."}
+      }
+    },
     "journal_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",

@@ -123,4 +123,7 @@ type Run struct {
 
 	fieldTraceDigest   string
 	interruptLogDigest string
+
+	plan        *model.RunPlan
+	termination *model.Termination
 }

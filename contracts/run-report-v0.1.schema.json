@@ -27,6 +27,17 @@
         "time_mode": {"type": "string"},
         "start_time_ns": {"type": "integer"},
         "end_time_ns": {"type": "integer"},
+        "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0, "description": "Present when run.json recorded a plan: the simulated instant the run was asked to reach. Compare with end_time_ns to see how far it got."},
+        "termination": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reason", "at_ns"],
+          "description": "Present when run.json recorded why the run stopped.",
+          "properties": {
+            "reason": {"enum": ["completed", "stopped_by_operator"]},
+            "at_ns": {"type": "integer"}
+          }
+        },
         "entity_count": {"type": "integer", "minimum": 0}
       }
     },

@@ -40,6 +40,8 @@ type Run struct {
 	TimeMode         string             `json:"time_mode,omitempty"`
 	StartTimeNS      int64              `json:"start_time_ns,omitempty"`
 	EndTimeNS        int64              `json:"end_time_ns,omitempty"`
+	RequestedEndNS   int64              `json:"requested_end_ns,omitempty"`
+	Termination      *model.Termination `json:"termination,omitempty"`
 	EntityCount      int                `json:"entity_count,omitempty"`
 }
 

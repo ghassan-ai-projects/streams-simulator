@@ -29,6 +29,10 @@ type RunSummary = layer.RunSummary
 
 type ScenarioCheckError = layer.ScenarioCheckError
 
+type ScenarioHooks = layer.ScenarioHooks
+
+type ScenarioOutcome = layer.ScenarioOutcome
+
 var (
 	ErrFieldTrace          = layer.ErrFieldTrace
 	ErrFieldTraceMissing   = layer.ErrFieldTraceMissing

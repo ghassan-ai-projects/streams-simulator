@@ -1,6 +1,10 @@
 package domain
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func runLines(run Run) []string {
 	return fieldTable(append(identityFields(run), inputFields(run)...))
@@ -27,6 +31,8 @@ func inputFields(run Run) []field {
 		{"Time mode", run.TimeMode},
 		{"Start", instant(run.StartTimeNS, 0)},
 		{"End", instant(run.EndTimeNS, run.StartTimeNS)},
+		{"Requested end", instant(run.RequestedEndNS, run.StartTimeNS)},
+		{"Termination", terminationText(run)},
 		{"Entities", countText(run.EntityCount)},
 	}
 }
@@ -86,4 +92,15 @@ func reasonTable(lines []string, title string, counts map[string]int64) []string
 		return lines
 	}
 	return append(append(lines, "", "### "+title, ""), countTable("Reason", counts)...)
+}
+
+func terminationText(run Run) string {
+	if run.Termination == nil {
+		return ""
+	}
+	label := "Completed"
+	if run.Termination.Reason == model.TerminationStoppedByOperator {
+		label = "Stopped by operator"
+	}
+	return label + " at " + instant(run.Termination.AtNS, run.StartTimeNS)
 }

@@ -35,8 +35,16 @@ func endedRun(art *model.RunArtifact) Run {
 		SimVersion: art.SimVersion, Domain: &art.Domain, Adapter: &art.Adapter, Seed: &art.Seed, Sink: art.Sink,
 		TimeMode: art.TimeMode, StartTimeNS: art.WorldConfig.StartTimeNS, EntityCount: len(art.WorldConfig.EntityIDs)}
 	run.EndTimeNS = lastAdvance(art.CommandLog)
+	run.RequestedEndNS, run.Termination = intentOf(art)
 	run.Complete, run.IncompleteReason = completion(art)
 	return run
+}
+
+func intentOf(art *model.RunArtifact) (int64, *model.Termination) {
+	if art.Plan == nil {
+		return 0, art.Termination
+	}
+	return art.Plan.RequestedEndNS, art.Termination
 }
 
 func completion(art *model.RunArtifact) (bool, string) {
