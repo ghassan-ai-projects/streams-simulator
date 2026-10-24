@@ -4,6 +4,32 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **An Evaluate job no longer shows its plan while it runs (truth boundary fix).** Round 4a's job status listed the planned
+  `faults` and `perturbations`, which for an Evaluate job (`explore` false) are the injected cause and reached the browser
+  through the bridge before the run was sealed. Every job status the director returns (`sim.job.start`, `status`, `list`,
+  `stop`, `pause`, `resume`, `step`, `rate`, `inject_fault`, `invoke_effector`) now carries empty `faults` and `perturbations`
+  lists while an Evaluate job is running, paused or stopping, and the plan once it has completed, stopped or failed; Explore
+  jobs are unchanged. `sim.job.inject_fault` is refused on an Evaluate job with the new code `evaluate_blind`. Acceptance
+  test: the raw bridge responses of a polled, paused, stepped and re-rated Evaluate job never contain the canary fault or
+  perturbation names.
+
+- **The report answers what a reader cannot conclude, and two runs can be compared (control-plane round 4c, audit F19, F20, R16, R17, R20).**
+  `streamsim report` gains `open_questions`: rules of the binary ask, in a fixed order and with stable codes, whether the run
+  is not ended or unsealed, incomplete, stopped early, differs from its recorded digests, was never replayed or does not
+  reproduce, has no observations, has a torn tail, records no KPI results or was scored by no outside system. `replay` is
+  new: `--replay` replays the recording (with `--domains-dir` and `--adapters-dir`) and reports `reproduces`,
+  `does_not_reproduce`, `incomplete` or `not_checked`. The Markdown report now reads as a handover (purpose, what ran,
+  execution outcome and recording integrity as separate rows, evidence coverage, results with an explicit `Not assessed`
+  objective, plan, open questions), and `--format markdown` without `--out` prints the text inside the one JSON document
+  `{"format", "markdown"}` instead of failing. `streamsim report compare --a <run-dir> --b <run-dir>` (new contract
+  `run-comparison-v0.1`) sets two ended runs side by side with A as the reference: both runs' inputs, the plan difference
+  (faults, perturbations, environment, effector calls as identical, different, only in A or only in B), stable
+  comparability limits (different domain digest or seed, a run stopped early, incomplete or unverified, and always the
+  single-run caution), and whole-run KPI, alarm and alarm-system rows with deltas, relative deltas and their scope.
+  `windowed_results` is `not_available`: the report holds whole-run truth only. It refuses with the new `run_not_ended`
+  unless both runs ended and their truth is readable. The canvas bridge gains `run.compare` and `run.report` takes
+  `format` and `replay`.
+
 - **A run plan can be named, recover a fault and carry delivery conditions (control-plane round 4a, audit F12 and F13).** `sim.job.start`
   gains optional `name` (80 characters) and `purpose` (500), plain text kept in the run's `plan` (`plan.name`, `plan.purpose`),
   the job status, the run report (`run.name`, `run.purpose`, markdown included) and the workspace listing entry (`name`); they

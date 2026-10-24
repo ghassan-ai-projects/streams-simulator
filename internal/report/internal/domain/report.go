@@ -17,12 +17,14 @@ type Report struct {
 	Run              Run          `json:"run"`
 	Digests          *Digests     `json:"digests,omitempty"`
 	Verification     Verification `json:"verification"`
+	Replay           Replay       `json:"replay"`
 	Counts           Counts       `json:"counts"`
 	Truth            *Truth       `json:"truth,omitempty"`
 	TruthUnavailable string       `json:"truth_unavailable,omitempty"`
 	TornTail         []string     `json:"torn_tail,omitempty"`
 	Consumer         *Consumer    `json:"consumer,omitempty"`
 	Scoring          *Scoring     `json:"scoring,omitempty"`
+	OpenQuestions    []Question   `json:"open_questions"`
 }
 
 type Run struct {

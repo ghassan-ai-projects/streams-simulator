@@ -169,7 +169,8 @@ Commands:
   suite --domain --profile              Generate an audited graded suite
   score --run --label                   Offline scorecard from artifacts
   report <run-dir>                      Summarize a run folder (--format json|markdown,
-                                        --out <file>; markdown requires --out)
+                                        --out <file>, --replay)
+  report compare --a --b                Compare two ended runs (reference a)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   device serve --socket <path>          Serve the device emulator over a UDS

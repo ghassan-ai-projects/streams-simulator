@@ -17,7 +17,16 @@ module composes `run` (artifact loading), `journal` (stream reading and digests)
 | Verification | Whether the folder's files agree with the digests the run recorded; not a replay | `Verification`, `Check` | `verification.status`: `files_match`, `files_differ`, `not_checked` |
 | Consumer | Who submitted the verdict; its `config_digest` appears only when the verdict recorded one | `Consumer` | `consumer` |
 | Scoring | The offline scorecard, or why there is none | `Scoring` | `scoring.status`: `scored`, `not_scored`, `failed` |
-| Format | The rendering of a report | `FormatJSON`, `FormatMarkdown` | `--format` |
+| Format | The rendering of a report or comparison | `FormatJSON`, `FormatMarkdown` | `--format` |
+| Replay | Whether the recording was replayed and reproduced the run; `not_checked` unless `--replay` asked for it | `Replay`, `ReplayReproduces`, `ReplayDiverges`, `ReplayIncomplete` | `replay.status` |
+| Open question | Something a reader cannot conclude from the run, asked by a rule of the binary in a fixed order | `Question`, `questionsOf` | `open_questions[]` (`code`, `message`) |
+| Handover | The Markdown report read by someone who did not attend the run: purpose, what ran, outcome and integrity as separate rows, evidence coverage, results, plan, open questions | `Markdown` | `--format markdown` |
+| Comparison | Two ended runs set side by side, run A the reference: inputs, plan difference, comparability limits, whole-run results; it never ranks runs | `Comparison`, `Compare` | `run-comparison-v0.1`, `streamsim report compare` |
+| Plan difference | The faults, perturbations, environment faults and effector calls of two runs as identical, different (naming the fields), only in A or only in B | `Diff`, `Changed` | `plan` |
+| Comparability limit | A reason the two runs are not like for like, as a stable code, an optional side and a sentence | `Limit` | `comparability_limits[]` |
+| Presence | Whether a result row exists in both runs or in one | `PresenceBoth`, `PresenceOnlyA`, `PresenceOnlyB` | `presence` |
+| Scope | What a result covers: `whole_run`, each run over its own simulated length; never an event window | `Scope` | `scope`, `windowed_results` |
+| Not ended | A run to compare has no `run.json` or its truth is unreadable, so the comparison is refused | `ErrNotEnded` | `run_not_ended` |
 
 ## Retired words
 

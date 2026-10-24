@@ -23,6 +23,7 @@ var contractCodes = map[Contract]string{
 	ContractNodeControl:     "plantwire_failed",
 	ContractInterruptLog:    "plantwire_failed",
 	ContractTwinReport:      "plantwire_failed",
+	ContractRunComparison:   "report_failed",
 }
 
 func (c Contract) FailureCode() (string, bool) {

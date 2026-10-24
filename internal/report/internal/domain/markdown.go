@@ -33,12 +33,25 @@ func statusLine(report *Report) string {
 
 func sectionsOf(report *Report) []section {
 	sections := []section{
-		{"Run", runLines(report.Run)},
+		{"Purpose", purposeLines(report.Run)},
+		{"What ran", runLines(report.Run)},
+		{"Outcome and integrity", outcomeLines(report)},
+		{"Evidence coverage", countLines(report.Counts)},
+		{"Results", resultsLines(report)},
+	}
+	sections = append(sections, resultSections(report)...)
+	sections = append(sections, section{"Plan", planLines(report)})
+	sections = append(sections, planSections(report)...)
+	return append(sections, closingSections(report)...)
+}
+
+func closingSections(report *Report) []section {
+	return []section{
+		{"Open questions", questionLines(report.OpenQuestions)},
 		{"Digests", digestLines(report.Digests)},
 		{"Verification", verificationLines(report.Verification)},
-		{"Deliveries", countLines(report.Counts)},
 		{"Torn tail", tornLines(report.TornTail)},
+		{"Consumer", consumerLines(report.Consumer)},
+		{"Scoring", scoringLines(report.Scoring)},
 	}
-	sections = append(sections, truthSections(report)...)
-	return append(sections, section{"Consumer", consumerLines(report.Consumer)}, section{"Scoring", scoringLines(report.Scoring)})
 }

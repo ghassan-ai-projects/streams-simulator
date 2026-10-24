@@ -26,23 +26,6 @@ func Build(ctx context.Context, dir string) (*domain.Report, error) {
 	return domain.Assemble(folder, scoring)
 }
 
-var ErrUnknownFormat = errors.New("report: unknown format")
-
-const (
-	JSONFormat = "json"
-	Markdown   = "markdown"
-)
-
-func Render(report *domain.Report, format string) ([]byte, error) {
-	switch format {
-	case JSONFormat:
-		return domain.JSON(report)
-	case Markdown:
-		return domain.Markdown(report), nil
-	}
-	return nil, fmt.Errorf("%w %q", ErrUnknownFormat, format)
-}
-
 func load(ctx context.Context, dir string) (domain.Folder, error) {
 	folder, err := loadConsumerSide(ctx, dir)
 	if err != nil {

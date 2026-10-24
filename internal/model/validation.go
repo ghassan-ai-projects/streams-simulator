@@ -31,6 +31,7 @@ const (
 	ContractNodeControl     Contract = "node-control-v0.1"
 	ContractInterruptLog    Contract = "interrupt-log-v0.1"
 	ContractTwinReport      Contract = "twin-report-v0.1"
+	ContractRunComparison   Contract = "run-comparison-v0.1"
 )
 
 type Issue struct {

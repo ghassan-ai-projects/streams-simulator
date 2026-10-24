@@ -33,6 +33,11 @@ var runJournal []byte
 //go:embed run-report-v0.1.schema.json
 var runReport []byte
 
+//go:embed run-comparison-v0.1.schema.json
+var runComparison []byte
+
+func RunComparison() []byte { return runComparison }
+
 func DomainSpec() []byte { return domainSpec }
 
 func OutputAdapter() []byte { return outputAdapter }

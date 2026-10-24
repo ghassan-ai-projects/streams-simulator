@@ -51,10 +51,11 @@ func assertRecordedAs(t *testing.T, out string, complete bool, reason string) {
 			t.Fatalf("%s closed with incomplete=%v, want %v", file, !complete, !complete)
 		}
 	}
-	got, err := report.Build(t.Context(), out)
+	document, err := report.Produce(t.Context(), report.Request{Dir: out})
 	if err != nil {
 		t.Fatal(err)
 	}
+	got, _ := document.(*report.Report)
 	if got.Run.Complete != complete || !strings.Contains(got.Run.IncompleteReason, reason) || (complete && got.Run.IncompleteReason != "") {
 		t.Fatalf("report run complete=%v reason=%q, want complete=%v with reason containing %q", got.Run.Complete, got.Run.IncompleteReason, complete, reason)
 	}

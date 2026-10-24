@@ -13,8 +13,6 @@ func runLines(run Run) []string {
 func identityFields(run Run) []field {
 	return []field{
 		{"Run ID", code(run.RunID)},
-		{"Name", run.Name},
-		{"Purpose", run.Purpose},
 		{"Mode", run.Mode},
 		{"Complete", yesNo(run.Complete)},
 		{"Incomplete reason", run.IncompleteReason},

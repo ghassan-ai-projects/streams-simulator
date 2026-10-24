@@ -22,7 +22,7 @@ func TestTheReportCarriesTheRequestedEndAndTheTerminationTheRunRecorded(t *testi
 			t.Fatal(err)
 		}
 	})
-	built, err := report.Build(t.Context(), dir)
+	built, err := build(t.Context(), dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestTheReportCarriesTheRequestedEndAndTheTerminationTheRunRecorded(t *testi
 
 func TestTheReportOfARunWithoutIntentHasNeitherField(t *testing.T) {
 	t.Parallel()
-	built, err := report.Build(t.Context(), folderWith(t, func(string, *run.Run) {}))
+	built, err := build(t.Context(), folderWith(t, func(string, *run.Run) {}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func assertReportValid(t *testing.T, built *report.Report, wanted ...string) {
 func TestTheReportOfAFastPlanHasARequestedEndButNoRate(t *testing.T) {
 	t.Parallel()
 	end := model.DefaultStartTimeNS + 600e9
-	built, err := report.Build(t.Context(), folderWith(t, func(_ string, r *run.Run) {
+	built, err := build(t.Context(), folderWith(t, func(_ string, r *run.Run) {
 		if err := r.SetPlan(model.RunPlan{RequestedEndNS: end}); err != nil {
 			t.Fatal(err)
 		}

@@ -71,7 +71,7 @@ func statusOfCheck(t *testing.T, built *report.Report, name string) string {
 func TestTheReportChecksTheFieldTraceAgainstTheDigestTheRunRecorded(t *testing.T) {
 	t.Parallel()
 	dir := folderWithFieldTrace(t)
-	built, err := report.Build(t.Context(), dir)
+	built, err := build(t.Context(), dir)
 	if err != nil || statusOfCheck(t, built, "field_trace") != "match" || built.Verification.Status != "files_match" {
 		t.Fatalf("report = %+v, %v, want the field trace to match the recorded digest", built.Verification, err)
 	}
@@ -81,7 +81,7 @@ func TestTheReportChecksTheFieldTraceAgainstTheDigestTheRunRecorded(t *testing.T
 		t.Fatal(err)
 	}
 	testsupport.WriteFileIn(t, dir, model.FileFieldTrace, append(raw, []byte(`{"ordinal":1,"record":{"type":"DDATA"}}`+"\n")...))
-	built, err = report.Build(t.Context(), dir)
+	built, err = build(t.Context(), dir)
 	if err != nil || statusOfCheck(t, built, "field_trace") != "mismatch" || built.Verification.Status != "files_differ" {
 		t.Fatalf("report = %+v, %v, want the appended record to make the field trace differ", built.Verification, err)
 	}

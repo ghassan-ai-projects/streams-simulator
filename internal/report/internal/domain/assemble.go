@@ -30,7 +30,14 @@ func Assemble(folder Folder, scoring *Scoring) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
-	report := newReport(folder, in, scoring)
+	report, err := withTruthUnlessForeign(newReport(folder, in, scoring), folder, in)
+	if err != nil {
+		return nil, err
+	}
+	return WithReplay(report, Replay{Status: NotChecked}), nil
+}
+
+func withTruthUnlessForeign(report *Report, folder Folder, in streams) (*Report, error) {
 	if folder.Mismatch != "" {
 		return report, nil
 	}

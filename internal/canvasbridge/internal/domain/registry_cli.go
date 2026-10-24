@@ -72,8 +72,12 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "hours", Flag: "--hours", Shape: ShapeNum}}}
 	cliVerify = Action{Name: "run.verify", Kind: KindCLI, Command: []string{"verify"}, Catalog: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}
-	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"},
-		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}}}
+	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"}, Catalog: true,
+		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}, {Key: "format", Flag: "--format", Shape: ShapeText},
+			{Key: "replay", Flag: "--replay", Shape: ShapeFlag}}}
+	cliCompare = Action{Name: "run.compare", Kind: KindCLI, Command: []string{"report", "compare"},
+		CLIArgs: []CLIArg{{Key: "a", Flag: "--a", Shape: ShapeRun, Required: true}, {Key: "b", Flag: "--b", Shape: ShapeRun, Required: true},
+			{Key: "format", Flag: "--format", Shape: ShapeText}}}
 	cliTwinReport = Action{Name: "run.twin_report", Kind: KindCLI, Command: []string{"plantwire", "twin-report"}, Domains: true, Kinds: true, KindsHome: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}, {Key: "domain", Flag: "--domain", Shape: ShapeText, Required: true},
 			{Key: "tolerance", Flag: "--tolerance", Shape: ShapeText}, {Key: "span_fraction", Flag: "--span-fraction", Shape: ShapeNum}}}

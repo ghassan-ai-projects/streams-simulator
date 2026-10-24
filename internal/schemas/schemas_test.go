@@ -28,6 +28,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"scenario-v0.1.schema.json", Scenario()},
 		{"run-journal-v0.1.schema.json", RunJournal()},
 		{"run-report-v0.1.schema.json", RunReport()},
+		{"run-comparison-v0.1.schema.json", RunComparison()},
 		{"component-v0.1.schema.json", Component()},
 		{"instrument-v0.1.schema.json", Instrument()},
 		{"composition-v0.1.schema.json", Composition()},

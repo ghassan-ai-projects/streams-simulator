@@ -191,3 +191,40 @@ func TestRunTwinReportRefusesWhatItCannotRender(t *testing.T) {
 		}
 	}
 }
+
+func TestRunReportTakesAFormatAndAReplaySwitchAndRunCompareTakesTwoRuns(t *testing.T) {
+	t.Parallel()
+	report, err := Lookup("run.report")
+	if err != nil || report.Mutating || !report.Catalog {
+		t.Fatalf("run.report = %+v, %v, want a read-only action that reads the catalog for a replay", report, err)
+	}
+	got, err := report.Argv(map[string]any{"run": "w-1", "format": "markdown", "replay": true})
+	want := []ArgvPart{{Literal: "report"}, {Path: "runs/w-1"}, {Literal: "--format"}, {Literal: "markdown"}, {Literal: "--replay"}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("report argv = %+v, %v, want %+v", got, err, want)
+	}
+	compare, err := Lookup("run.compare")
+	if err != nil || compare.Kind != KindCLI || compare.Mutating || compare.Etag || !reflect.DeepEqual(compare.Command, []string{"report", "compare"}) {
+		t.Fatalf("run.compare = %+v, %v, want a read-only CLI action on report compare", compare, err)
+	}
+	got, err = compare.Argv(map[string]any{"a": "w-1", "b": "w-2", "format": "json"})
+	want = []ArgvPart{{Literal: "report"}, {Literal: "compare"}, {Literal: "--a"}, {Path: "runs/w-1"}, {Literal: "--b"}, {Path: "runs/w-2"}, {Literal: "--format"}, {Literal: "json"}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("compare argv = %+v, %v, want %+v", got, err, want)
+	}
+}
+
+func TestRunCompareRefusesAMissingSideAnUnknownKeyAndARunThatClimbs(t *testing.T) {
+	t.Parallel()
+	compare, _ := Lookup("run.compare")
+	for name, args := range map[string]map[string]any{
+		"no second run":        {"a": "w-1"},
+		"an unknown key":       {"a": "w-1", "b": "w-2", "out": "x"},
+		"a run id that climbs": {"a": "..", "b": "w-2"},
+		"a flag as a format":   {"a": "w-1", "b": "w-2", "format": "--out"},
+	} {
+		if _, err := compare.Argv(args); !errors.Is(err, ErrBadArguments) {
+			t.Errorf("%s: %v, want ErrBadArguments", name, err)
+		}
+	}
+}

@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/run-comparison-v0.1.schema.json",
+  "title": "Streams Simulator Run Comparison v0.1",
+  "description": "The document `streamsim report compare --a <run-dir> --b <run-dir>` prints: what differs between two ended runs (inputs, plan, whole-run results) and why they may not be comparable. Run A is the reference. It is a pure function of the two run folders, carries truth, and never ranks, scores or declares an effect.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "a", "b", "plan", "comparability_limits", "results", "windowed_results"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "a": {"$ref": "#/$defs/run"},
+    "b": {"$ref": "#/$defs/run"},
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["faults", "perturbations", "environment", "effector_calls"],
+      "properties": {
+        "faults": {"$ref": "#/$defs/fault_diff"},
+        "perturbations": {"$ref": "#/$defs/perturbation_diff"},
+        "environment": {"$ref": "#/$defs/environment_diff"},
+        "effector_calls": {"$ref": "#/$defs/call_diff"}
+      }
+    },
+    "comparability_limits": {
+      "type": "array",
+      "description": "Why the two runs are not like for like, in a fixed order: differences of input first, then limits of one run (with `side`), then the limits of the result rows. `single_run_per_side` is always present.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {"enum": ["different_mode", "different_simulator_version", "different_domain", "different_domain_digest", "different_adapter", "different_seed", "different_time_mode", "different_start_time", "different_requested_duration", "different_simulated_length", "stopped_early", "incomplete", "files_unverified", "kpi_truth_absent", "kpi_only_in_one_run", "single_run_per_side"]},
+          "side": {"enum": ["a", "b"]},
+          "message": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kpis", "alarms", "alarm_system"],
+      "properties": {
+        "kpis": {"type": "array", "items": {"$ref": "#/$defs/kpi_row"}},
+        "alarms": {"type": "array", "items": {"$ref": "#/$defs/alarm_row"}},
+        "alarm_system": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["a", "b", "scope"],
+          "properties": {
+            "a": {"oneOf": [{"$ref": "#/$defs/alarm_system"}, {"type": "null"}]},
+            "b": {"oneOf": [{"$ref": "#/$defs/alarm_system"}, {"type": "null"}]},
+            "delta": {"$ref": "#/$defs/alarm_system", "description": "b minus a; present when both runs have KPI truth."},
+            "scope": {"$ref": "#/$defs/scope"}
+          }
+        }
+      }
+    },
+    "windowed_results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "description": "Statistics over an event-relative window. `not_available`: the run report holds whole-run truth only, so none is computed.",
+      "properties": {
+        "status": {"const": "not_available"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {"id": {"type": "string"}, "version": {"type": "string"}, "digest": {"$ref": "#/$defs/digest"}}
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "start_time_ns", "end_time_ns", "simulated_length_ns", "complete", "verification", "kpi_truth"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1, "description": "Authored text, not evidence."},
+        "purpose": {"type": "string", "minLength": 1, "description": "Authored text, not evidence."},
+        "mode": {"enum": ["evaluate", "explore"]},
+        "seed": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
+        "sim_version": {"type": "string"},
+        "domain": {"$ref": "#/$defs/reference"},
+        "adapter": {"$ref": "#/$defs/reference"},
+        "time_mode": {"type": "string"},
+        "start_time_ns": {"type": "integer"},
+        "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0},
+        "end_time_ns": {"type": "integer"},
+        "simulated_length_ns": {"type": "integer", "description": "end_time_ns minus start_time_ns: how far the run actually got."},
+        "termination": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reason", "at_ns"],
+          "properties": {"reason": {"enum": ["completed", "stopped_by_operator"]}, "at_ns": {"type": "integer"}}
+        },
+        "rate": {"type": "number", "exclusiveMinimum": 0},
+        "complete": {"type": "boolean"},
+        "incomplete_reason": {"type": "string", "minLength": 1},
+        "verification": {"enum": ["files_match", "files_differ", "not_checked"]},
+        "kpi_truth": {"type": "boolean", "description": "Whether the run records whole-run KPI truth."}
+      }
+    },
+    "differences": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "description": "Names of the fields in which the paired items differ, sorted."},
+    "fault_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "fault", "onset_ns", "cleared_ns", "cleared_by"],
+      "properties": {
+        "entity_id": {"type": "string"},
+        "fault": {"type": "string"},
+        "onset_ns": {"type": "integer"},
+        "cleared_ns": {"type": ["integer", "null"]},
+        "cleared_by": {"enum": ["command", "pulse_end", "responder", null]}
+      }
+    },
+    "perturbation_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "at_ns"],
+      "properties": {
+        "action": {"enum": ["apply", "clear"]},
+        "perturbation": {"type": "string"},
+        "perturb_id": {"type": "string"},
+        "at_ns": {"type": "integer"},
+        "from_ns": {"type": "integer"},
+        "until_ns": {"type": "integer", "description": "0 for a perturbation without an end."},
+        "params": {"type": "object"}
+      }
+    },
+    "environment_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_ns", "target", "fault"],
+      "properties": {"at_ns": {"type": "integer"}, "target": {"type": "string"}, "fault": {"type": "string"}, "params": {"type": "object"}}
+    },
+    "call_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_ns", "effector"],
+      "properties": {
+        "at_ns": {"type": "integer"},
+        "entity_id": {"type": "string"},
+        "effector": {"type": "string"},
+        "args": {"type": "object"},
+        "outcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "accepted": {"type": "boolean"},
+            "mode": {"type": "string"},
+            "effect_applied": {"type": "boolean"},
+            "ack_latency_ms": {"type": "number"},
+            "refusal": {"type": "string"}
+          }
+        }
+      }
+    },
+    "fault_diff": {
+      "allOf": [{"$ref": "#/$defs/diff"}],
+      "properties": {
+        "identical": {"type": "array", "items": {"$ref": "#/$defs/fault_item"}},
+        "different": {"type": "array", "items": {"type": "object", "required": ["a", "b", "differences"], "properties": {"a": {"$ref": "#/$defs/fault_item"}, "b": {"$ref": "#/$defs/fault_item"}}}},
+        "only_in_a": {"type": "array", "items": {"$ref": "#/$defs/fault_item"}},
+        "only_in_b": {"type": "array", "items": {"$ref": "#/$defs/fault_item"}}
+      }
+    },
+    "perturbation_diff": {
+      "allOf": [{"$ref": "#/$defs/diff"}],
+      "properties": {
+        "identical": {"type": "array", "items": {"$ref": "#/$defs/perturbation_item"}},
+        "different": {"type": "array", "items": {"type": "object", "required": ["a", "b", "differences"], "properties": {"a": {"$ref": "#/$defs/perturbation_item"}, "b": {"$ref": "#/$defs/perturbation_item"}}}},
+        "only_in_a": {"type": "array", "items": {"$ref": "#/$defs/perturbation_item"}},
+        "only_in_b": {"type": "array", "items": {"$ref": "#/$defs/perturbation_item"}}
+      }
+    },
+    "environment_diff": {
+      "allOf": [{"$ref": "#/$defs/diff"}],
+      "properties": {
+        "identical": {"type": "array", "items": {"$ref": "#/$defs/environment_item"}},
+        "different": {"type": "array", "items": {"type": "object", "required": ["a", "b", "differences"], "properties": {"a": {"$ref": "#/$defs/environment_item"}, "b": {"$ref": "#/$defs/environment_item"}}}},
+        "only_in_a": {"type": "array", "items": {"$ref": "#/$defs/environment_item"}},
+        "only_in_b": {"type": "array", "items": {"$ref": "#/$defs/environment_item"}}
+      }
+    },
+    "call_diff": {
+      "allOf": [{"$ref": "#/$defs/diff"}],
+      "properties": {
+        "identical": {"type": "array", "items": {"$ref": "#/$defs/call_item"}},
+        "different": {"type": "array", "items": {"type": "object", "required": ["a", "b", "differences"], "properties": {"a": {"$ref": "#/$defs/call_item"}, "b": {"$ref": "#/$defs/call_item"}}}},
+        "only_in_a": {"type": "array", "items": {"$ref": "#/$defs/call_item"}},
+        "only_in_b": {"type": "array", "items": {"$ref": "#/$defs/call_item"}}
+      }
+    },
+    "diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identical", "different", "only_in_a", "only_in_b"],
+      "description": "Items of one kind in both runs. Identical items are paired first; the rest pair by what they act on (entity and fault, perturbation kind, target and fault, entity and effector) in order of occurrence, and the pair names the fields that differ. Items left over are only in A or only in B. Times are absolute simulated instants.",
+      "properties": {
+        "identical": {"type": "array", "items": {"type": "object"}},
+        "different": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["a", "b", "differences"],
+            "properties": {"a": {"type": "object"}, "b": {"type": "object"}, "differences": {"$ref": "#/$defs/differences"}}
+          }
+        },
+        "only_in_a": {"type": "array", "items": {"type": "object"}},
+        "only_in_b": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "a_simulated_length_ns", "b_simulated_length_ns"],
+      "description": "What the numbers cover: `whole_run` of each run, each over its own simulated length (null when that run records no KPI truth). Never an event window.",
+      "properties": {
+        "kind": {"const": "whole_run"},
+        "a_simulated_length_ns": {"type": ["integer", "null"]},
+        "b_simulated_length_ns": {"type": ["integer", "null"]}
+      }
+    },
+    "presence": {"enum": ["both", "only_in_a", "only_in_b"]},
+    "kpi_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mean", "min", "max", "samples"],
+      "properties": {"mean": {"type": "number"}, "min": {"type": "number"}, "max": {"type": "number"}, "samples": {"type": "integer", "minimum": 0}}
+    },
+    "kpi_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "kpi", "presence", "a", "b", "scope"],
+      "properties": {
+        "entity_id": {"type": "string"},
+        "kpi": {"type": "string"},
+        "presence": {"$ref": "#/$defs/presence"},
+        "a": {"oneOf": [{"$ref": "#/$defs/kpi_stats"}, {"type": "null"}]},
+        "b": {"oneOf": [{"$ref": "#/$defs/kpi_stats"}, {"type": "null"}]},
+        "delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mean", "min", "max"],
+          "description": "b minus a; present when presence is both.",
+          "properties": {"mean": {"type": "number"}, "min": {"type": "number"}, "max": {"type": "number"}}
+        },
+        "relative_delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mean", "min", "max"],
+          "description": "delta divided by the magnitude of a; null where a is zero.",
+          "properties": {"mean": {"type": ["number", "null"]}, "min": {"type": ["number", "null"]}, "max": {"type": ["number", "null"]}}
+        },
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "alarm_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["priority", "activations", "chattering", "active_s", "longest_active_s", "active_at_end"],
+      "properties": {
+        "priority": {"type": "string"},
+        "activations": {"type": "integer", "minimum": 0},
+        "chattering": {"type": "boolean"},
+        "active_s": {"type": "number"},
+        "longest_active_s": {"type": "number"},
+        "active_at_end": {"type": "boolean"}
+      }
+    },
+    "alarm_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_id", "alarm", "presence", "a", "b", "scope"],
+      "properties": {
+        "entity_id": {"type": "string"},
+        "alarm": {"type": "string"},
+        "presence": {"$ref": "#/$defs/presence"},
+        "a": {"oneOf": [{"$ref": "#/$defs/alarm_stats"}, {"type": "null"}]},
+        "b": {"oneOf": [{"$ref": "#/$defs/alarm_stats"}, {"type": "null"}]},
+        "delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["activations", "active_s", "longest_active_s"],
+          "description": "b minus a; present when presence is both.",
+          "properties": {"activations": {"type": "integer"}, "active_s": {"type": "number"}, "longest_active_s": {"type": "number"}}
+        },
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "alarm_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activations", "peak_per_10_min", "flood_intervals", "chattering", "stale", "standing_at_end"],
+      "properties": {
+        "activations": {"type": "integer"},
+        "peak_per_10_min": {"type": "integer"},
+        "flood_intervals": {"type": "integer"},
+        "chattering": {"type": "integer"},
+        "stale": {"type": "integer"},
+        "standing_at_end": {"type": "integer"}
+      }
+    }
+  }
+}

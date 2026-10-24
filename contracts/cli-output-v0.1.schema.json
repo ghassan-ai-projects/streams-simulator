@@ -92,6 +92,12 @@
       "$ref": "#/$defs/report_written"
     },
     {
+      "$ref": "#/$defs/report_markdown"
+    },
+    {
+      "$ref": "#/$defs/run_comparison"
+    },
+    {
       "$ref": "#/$defs/plantwire_node"
     },
     {
@@ -149,6 +155,7 @@
                 "domain_lint",
                 "adapter_verify_failed",
                 "io_failed",
+                "run_not_ended",
                 "catalog_failed",
                 "domain_failed",
                 "adapter_failed",
@@ -849,7 +856,9 @@
         "schema_version",
         "run",
         "verification",
-        "counts"
+        "replay",
+        "counts",
+        "open_questions"
       ],
       "properties": {
         "schema_version": {
@@ -864,17 +873,65 @@
         "verification": {
           "type": "object"
         },
+        "replay": {
+          "type": "object"
+        },
         "counts": {
           "type": "object"
         },
         "truth": {
           "type": "object"
         },
+        "truth_unavailable": {
+          "type": "string"
+        },
+        "torn_tail": {
+          "type": "array"
+        },
         "consumer": {
           "type": "object"
         },
         "scoring": {
           "type": "object"
+        },
+        "open_questions": {
+          "type": "array"
+        }
+      }
+    },
+    "report_markdown": {
+      "type": "object",
+      "description": "report: --format markdown without --out. Stdout stays one JSON document; the markdown is its text.",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "markdown"
+      ],
+      "properties": {
+        "format": {
+          "const": "markdown"
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "run_comparison": {
+      "type": "object",
+      "description": "report compare: the comparison of two ended runs; its full shape is the run-comparison-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "a",
+        "b",
+        "plan",
+        "comparability_limits",
+        "results",
+        "windowed_results"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
         }
       }
     },
