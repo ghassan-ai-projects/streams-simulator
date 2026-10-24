@@ -19,10 +19,24 @@ func (spec CLIArg) renderPath(value any) (ArgvPart, error) {
 	if !ok {
 		return ArgvPart{}, fmt.Errorf("want a workspace path, got %v", value)
 	}
-	if spec.Shape == ShapeRun {
+	switch spec.Shape {
+	case ShapeRun:
 		return spec.renderRun(text)
+	case ShapePlant:
+		return spec.renderPlant(text)
 	}
 	return spec.renderWorkspaceFile(text)
+}
+
+func (spec CLIArg) renderPlant(text string) (ArgvPart, error) {
+	if !strings.Contains(text, "/") {
+		return runPart(text, "")
+	}
+	path, err := ParsePath(text)
+	if err != nil || path.Class != ClassDomain {
+		return ArgvPart{}, fmt.Errorf("want a domain file of the workspace or a run id, got %q", text)
+	}
+	return ArgvPart{Path: path.Rel}, nil
 }
 
 func (spec CLIArg) renderRun(runID string) (ArgvPart, error) {

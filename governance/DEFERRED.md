@@ -524,3 +524,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > of each choice but not whether a person chose or accepted it, so the document states `equals_binary_suggestion` (a fact) and
 > never "accepted" or "chosen". Trigger to fix: the audit's F22 asks that defaults be reviewed; the choices file then records a
 > review per choice and the document reports it.
+> D-119 (**Low**; `domain diff` compares unmodelled members only when nothing else in the item differed): readings, dynamics, commands
+> and faults are compared on the `domain assumptions` view. A member the view does not carry (a dynamics' `dt_ms`, `follow` or a
+> non-lag form's members, an argument schema's `required` or `enum`, the delta amounts of a command effect, a fault's observability)
+> is compared through the raw declaration, reported as `<noun>_changed` on field `definition`, but only when the view found no
+> difference in that item. A change to a modelled and an unmodelled member of one item at once therefore shows the modelled change
+> only. The digest and `section_changed` still differ, and no item is ever reported unchanged when it differs. Trigger to fix: the
+> canvas relies on the list being complete for an item; then the view gains the member or the declaration is compared after the
+> view's members are removed.

@@ -9,3 +9,7 @@ func ValidateDomainAssumptions(raw []byte) error {
 func ValidateDomainLineage(raw []byte) error {
 	return validateAgainst(raw, "domain lineage", ContractDomainLineage, schemas.DomainLineage())
 }
+
+func ValidateDomainDiff(raw []byte) error {
+	return validateAgainst(raw, "domain diff", ContractDomainDiff, schemas.DomainDiff())
+}

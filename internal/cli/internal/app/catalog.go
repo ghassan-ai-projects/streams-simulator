@@ -84,7 +84,7 @@ func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 	return map[string]any{"spec": compiled.Spec, "digest": compiled.Digest}, nil
 }
 
-var domainCommands = map[string]handler{"compose": cmdCompose, "assumptions": cmdAssumptions, "lineage": cmdLineage}
+var domainCommands = map[string]handler{"compose": cmdCompose, "assumptions": cmdAssumptions, "lineage": cmdLineage, "diff": cmdDiff}
 
 func domainCommand(args []string) (handler, bool) {
 	if len(args) == 0 {
@@ -119,7 +119,7 @@ func domainVerb(verb string, args []string, flags *lintFlags) (any, error) {
 	case verb == "lint" && len(args) > 0:
 		return lintDomainFile(args[0], flags)
 	case verb == "" || verb == "validate" || verb == "format" || verb == "lint":
-		return nil, usagef("usage: streamsim domain validate|format|lint <path> | compose <composition> | assumptions <domain> | lineage --domains-dir <dir>")
+		return nil, usagef("usage: streamsim domain validate|format|lint <path> | compose <composition> | assumptions <domain> | lineage --domains-dir <dir> | diff <a> <b>")
 	}
 	return nil, usagef("domain: unknown verb %q", verb)
 }

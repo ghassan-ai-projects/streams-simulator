@@ -50,6 +50,14 @@ func Lineage(lib *Library, dirs WorkspaceDirs, domain string) (*DomainLineage, e
 	return files.Lineage(lib.library, dirs, domain)
 }
 
+func DiffDomains(a, b string) (*DomainDiff, error) {
+	return files.Diff(a, b)
+}
+
+func DiffMarkdown(diff *DomainDiff) []byte {
+	return layer.RenderDiffMarkdown(diff)
+}
+
 func TwinRequirements(kind map[string]any) []Issue {
 	return layer.TwinRequirements(kind)
 }

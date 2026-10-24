@@ -4,6 +4,19 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **What changed between two models (control-plane round R5, audit F24, F25, OP08).** `streamsim domain diff <a> <b>
+  [--format json|markdown]` compares two domains, each a domain file or a run folder (`domain_spec` of `run.json` only;
+  a sealed file is never opened), and prints one deterministic document (`domain-diff-v0.1`, embedded and validated before
+  printing): both sides' id, version, digest and source, `identity` with `same_id_and_version_different_digest` (the model
+  changed and its version did not), and per kind that differs the added, removed and changed readings (compared on the
+  `domain assumptions` view), dynamics (gain, time constant, dead time, clamp, inputs and their coefficients), commands
+  (arguments and bounds, risk class, safe stop, effect, acknowledgement, lease), faults and states, the instances and
+  relations the kind reaches, plus changed links, link types and other top-level members. Each change has a stable `code`,
+  a path-like `subject`, `field`, `before`, `after` and a sentence; a declaration the view does not model is reported as
+  `definition`, so a differing digest never shows an empty list; `unchanged_summary` counts what is equal. The bridge gains
+  `domain.diff {a, b, format?}` (a workspace domain file or a run id per side). One CLI wiring file is registered in
+  `test/architecture/cli_wiring_test.go` (`domain_diff.go`, 45 lines); no cap or allow-list was loosened.
+
 - **Where a plant comes from and what it assumes (control-plane round R2, audit F22, F24, F25, F26, OP08).** Two read-only
   commands, both validated against a new embedded contract before they print. `streamsim domain assumptions <domain>
   [--twin <choices> --kinds-dir <dir>]` (`domain-assumptions-v0.1`) states per reading its instrument (id, version, digest),

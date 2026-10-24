@@ -17,6 +17,7 @@ const (
 	ShapeNum   ArgShape = "number"
 	ShapeFlag  ArgShape = "switch"
 	ShapeStems ArgShape = "stems"
+	ShapePlant ArgShape = "plant"
 )
 
 type CLIArg struct {
@@ -74,6 +75,8 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "twin", Flag: "--twin", Shape: ShapePath, Class: ClassTwin}}}
 	cliLineage = Action{Name: "domain.lineage", Kind: KindCLI, Command: []string{"domain", "lineage"}, Library: true, Folders: true,
 		CLIArgs: []CLIArg{{Key: "domain", Flag: "--domain", Shape: ShapeText}}}
+	cliDiff = Action{Name: "domain.diff", Kind: KindCLI, Command: []string{"domain", "diff"},
+		CLIArgs: []CLIArg{{Key: "a", Shape: ShapePlant, Required: true}, {Key: "b", Shape: ShapePlant, Required: true}, {Key: "format", Flag: "--format", Shape: ShapeText}}}
 	cliVerify = Action{Name: "run.verify", Kind: KindCLI, Command: []string{"verify"}, Catalog: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}
 	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"}, Catalog: true,
@@ -171,7 +174,7 @@ func (spec CLIArg) render(value any) (ArgvPart, error) {
 	switch spec.Shape {
 	case ShapeNum:
 		return renderNumber(value)
-	case ShapePath, ShapeRun:
+	case ShapePath, ShapeRun, ShapePlant:
 		return spec.renderPath(value)
 	case ShapeText:
 		return spec.renderText(value)

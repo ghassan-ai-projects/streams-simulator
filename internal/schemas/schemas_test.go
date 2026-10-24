@@ -31,6 +31,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"run-comparison-v0.1.schema.json", RunComparison()},
 		{"domain-assumptions-v0.1.schema.json", DomainAssumptions()},
 		{"domain-lineage-v0.1.schema.json", DomainLineage()},
+		{"domain-diff-v0.1.schema.json", DomainDiff()},
 		{"component-v0.1.schema.json", Component()},
 		{"instrument-v0.1.schema.json", Instrument()},
 		{"composition-v0.1.schema.json", Composition()},

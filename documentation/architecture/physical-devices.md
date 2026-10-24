@@ -97,6 +97,7 @@ The bridge maps each canvas action to one binary command and holds no rule. The 
 | `kind.capture` | `kind capture` | Takes pasted text or a run's observer journal, never the sealed one. |
 | `component.validate`, `domain.validate` | `component validate`, `domain validate --kinds-dir` | Workspace `kinds/` and `components/` are passed automatically. |
 | `domain.assumptions`, `domain.lineage` | `domain assumptions <domain> [--twin <choices>]`; `domain lineage --domains-dir ...` | Read-only. What a twin or domain assumes and does not model; how each plant is produced (composition or twin), which twins include a device kind file, which runs used an older version of a plant, and the edit route. The bridge passes the workspace folders that exist. |
+| `domain.diff` | `domain diff <a> <b>` | Read-only. What differs between two domains, each a workspace domain file or a run id (read from `run.json` only): per kind the readings, dynamics, commands, faults and states that changed, the instances and relations they reach, and whether the model changed under an unchanged version. |
 | `session.check` | `plantwire connect --check --stdin` | The plan travels on standard input. |
 | `session.start` | `plantwire connect --stdin --out runs/c-<8 hex> --control-socket <path>` | A lasting child the bridge owns, in its own process group; one at a time; the plan is checked first. |
 | `session.status`, `session.stop` | none; interrupt then wait up to 30 s, then kill | `status` never waits; it reports `controls` while the control socket exists. |

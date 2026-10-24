@@ -31,6 +31,8 @@ type TwinFiles = layer.TwinFiles
 
 type DomainLineage = layer.Lineage
 
+type DomainDiff = layer.Diff
+
 type WorkspaceDirs = files.WorkspaceDirs
 
 var (

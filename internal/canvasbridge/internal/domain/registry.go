@@ -73,7 +73,7 @@ var registry = []Action{
 	mcp("job.rate", "sim.job.rate", true, "world_id", "rate"),
 	mcp("job.inject_fault", "sim.job.inject_fault", true, "world_id", "entity_id", "fault"),
 	mcp("job.invoke_effector", "sim.job.invoke_effector", true, "world_id", "entity_id", "effector", "args"),
-	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint, cliAssumptions, cliLineage,
+	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint, cliAssumptions, cliLineage, cliDiff,
 	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliCompare, cliTwinReport, cliScenario,
 	cliSessionCheck, cliSessionStart, cliSessionStatus, cliSessionStop, cliSessionControl,
 }

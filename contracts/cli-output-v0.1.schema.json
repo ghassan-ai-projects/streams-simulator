@@ -104,6 +104,9 @@
       "$ref": "#/$defs/domain_lineage"
     },
     {
+      "$ref": "#/$defs/domain_diff"
+    },
+    {
       "$ref": "#/$defs/plantwire_node"
     },
     {
@@ -907,7 +910,7 @@
     },
     "report_markdown": {
       "type": "object",
-      "description": "report: --format markdown without --out. Stdout stays one JSON document; the markdown is its text.",
+      "description": "report and domain diff: --format markdown without --out. Stdout stays one JSON document; the markdown is its text.",
       "additionalProperties": false,
       "required": [
         "format",
@@ -947,6 +950,25 @@
         "plants",
         "device_kinds",
         "unreadable"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "domain_diff": {
+      "type": "object",
+      "description": "domain diff: what differs between two domain documents (files or run folders), per device kind, with the instances and relations each change affects; its full shape is the domain-diff-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "a",
+        "b",
+        "identity",
+        "kinds",
+        "domain_changes",
+        "summary",
+        "unchanged_summary"
       ],
       "properties": {
         "schema_version": {

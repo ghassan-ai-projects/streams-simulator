@@ -143,6 +143,10 @@ Commands:
                                         and what it does not model; reads files only
   domain lineage --domains-dir <dir>    How each plant is produced (composition or twin), its kind files,
                                         runs and edit route (--kinds-dir --twins-dir --compositions-dir --runs-dir)
+  domain diff <a> <b> [--format]        What differs between two domains, each a domain file or a run folder
+                                        (read from run.json only): per kind readings, dynamics, commands,
+                                        faults, states, affected instances and relations; flags a changed
+                                        model under an unchanged version (--format json|markdown)
   kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
                                         against the plant wire kind schema (--twin: also what a twin needs)
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
