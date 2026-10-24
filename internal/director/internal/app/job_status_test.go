@@ -39,8 +39,9 @@ func TestStatusProgressesWithEachAdvanceAndNeverBlocksBehindOne(t *testing.T) {
 	close(unblock)
 	pacer.release(1)
 	<-pacer.asked
-	if status, _ := d.JobStatus(started.WorldID); status.ReachedNS != started.StartNS+120e9 {
-		t.Fatalf("reached = %d, want the first chunk reached once its advance finished", status.ReachedNS)
+	<-pacer.asked
+	if status, _ := d.JobStatus(started.WorldID); status.ReachedNS != started.StartNS+240e9 {
+		t.Fatalf("reached = %d, want the second chunk reached once its advance finished", status.ReachedNS)
 	}
 	pacer.release(1000)
 	awaitJob(t, d, started.WorldID)
