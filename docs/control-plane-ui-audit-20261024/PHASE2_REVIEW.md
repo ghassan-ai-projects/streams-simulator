@@ -52,3 +52,15 @@ A plan run as a job and the same plan built and run through `RunScenario` give t
 - Round 2.6 in Chrome (verified by Playwright screenshots only); dark mode; other window sizes (Chrome frame was 1841 x 1155).
 - Jobs longer than a few minutes of wall time, a 24 h plan, two browsers at once, and director restart mid-job beyond the unit test.
 - The race detector on the whole repository (run only on the new director packages).
+
+## Gate status at the end of Phase 2
+
+Passing: function length, fmt, docs, tidy, build, vet, lint, gate-ratchet, `make test-ci` (coverage floors satisfied), deadcode (after removing the stale `Director.RunOf` hook entry), fuzz-soak, `make architecture` (Enola: 0 cycle findings, 1 advisory layer insight below the failure policy), behaviour pin, `git diff --check`, and the full canvas `npm run check` (2040 unit tests, 136 e2e).
+
+Not green, and not caused by this work (the same on `main`):
+
+| Gate | Reason | Decision |
+|---|---|---|
+| `make vulncheck` | Installed Go is 1.27.2; GO-2026-6809 (`crypto/x509`) is fixed in 1.27.3 and reachable through the plantwire link. | Needs a toolchain upgrade (`brew upgrade go`); not done without the owner's say-so |
+| `npm audit --audit-level=high` inside `make canvas-check` | New advisories on the transitive `undici` 8.0.0 to 8.12.1; `npm audit fix` is available | A lockfile change; left for the owner because dependency changes get extra review |
+| `TestAPlantWireHostWhoseNodeStopsDuringABarrierWaitPrintsItsReport` (cli/app), `TestAnAcceptedPeerHasNoReadDeadline` (plantwire/uds), `TestAPacedSessionRunsInWallTimeFromItsRecordedStartAndReplays` (plantwire/app) | Intermittent under full-suite load. The first reproduces on a clean `origin/main` 1 run in 3 | A separate task was proposed to fix them |
