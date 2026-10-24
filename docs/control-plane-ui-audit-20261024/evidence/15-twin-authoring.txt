@@ -1,0 +1,191 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "fan" [level=1]
+    - generic: Behaviour
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Device details panel" [pressed]:
+    - text: Device details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Device steps":
+    - list:
+      - button "Interface Valid":
+        - generic: "1"
+        - generic: Interface
+        - generic: Valid
+      - button "Behaviour Ready":
+        - generic: "2"
+        - generic: Behaviour
+        - generic: Ready
+      - button "Check Not run":
+        - generic: "3"
+        - generic: Check
+        - generic: Not run
+  - navigation "Devices in the twin":
+    - heading "Devices in the twin" [level=2]
+    - list:
+      - generic: fan
+      - generic: 1 reading · 2 commands
+      - generic: thermal_sensor
+      - generic: 2 readings · 0 commands
+      - button "Leave thermal_sensor out of the twin":
+      - generic: ble_sensor_node
+      - generic: 5 readings · 0 commands
+      - button "Leave ble_sensor_node out of the twin":
+    - heading "Add another device" [level=2]
+    - button "Add indicator to the twin" [active]:
+      - text: indicator
+  - region "Behaviour of fan":
+    - status "Choices are ready. Create the twin when you are."
+    - button "Create twin":
+      - text: Create twin
+    - paragraph: The twin is a simulated version of your devices. Choose what measures each reading and how each command changes things. The choices are saved as you go.
+    - region "Devices that are not ready for a twin":
+      - paragraph:
+        - text: "indicator is not ready for a twin: A twin does not reproduce this setting."
+      - button "Open indicator"
+      - button "Retry"
+    - region "Twin":
+      - heading "Twin" [level=2]
+      - generic: Twin name
+      - textbox "Twin name": fan-twin
+      - paragraph: The plant made from the twin is saved under this name.
+      - generic: Title
+      - textbox "Title": Twin of fan
+    - region "fan":
+      - heading "fan" [level=2]
+      - generic: Name in the twin
+      - textbox "Name in the twin": fan-01
+      - paragraph: Names this device inside the twin.
+      - heading "Readings" [level=3]
+      - group "Reading level_percent":
+        - heading "level_percent Whole number · % · 0 to 60" [level=4]:
+          - strong: level_percent
+          - generic: Whole number · % · 0 to 60
+        - generic: Instrument
+        - textbox "Instrument": Valve position transmitter (4-20 mA feedback) · % · 0 to 100
+        - button "Change the instrument of level_percent": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - heading "Commands" [level=3]
+      - group "Command set_cooling":
+        - heading "set_cooling Medium risk" [level=4]:
+          - strong: set_cooling
+          - generic: Medium risk
+        - generic: Response
+        - combobox "Response":
+          - option "Has no effect in the twin"
+          - option "Sets a reading straight away" [selected]
+          - option "Sets a reading, and another reading follows gradually"
+        - generic: Reading set by the level percent value
+        - combobox "Reading set by the level percent value":
+          - option "Not used"
+          - option "level_percent" [selected]
+      - paragraph: "stop_fan: a safe stop. The twin handles it itself."
+    - region "thermal_sensor":
+      - heading "thermal_sensor" [level=2]
+      - generic: Name in the twin
+      - textbox "Name in the twin": thermal-sensor-01
+      - paragraph: Names this device inside the twin.
+      - heading "Readings" [level=3]
+      - group "Reading temperature":
+        - heading "temperature Number · Cel · 0 to 50" [level=4]:
+          - strong: temperature
+          - generic: Number · Cel · 0 to 50
+        - generic: Instrument
+        - textbox "Instrument": RTD temperature transmitter (Pt100, 4-20 mA) · -50 to 200 · measured in degC, converted
+        - button "Change the instrument of temperature": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - group "Reading humidity":
+        - heading "humidity Number · % · 20 to 90" [level=4]:
+          - strong: humidity
+          - generic: Number · % · 20 to 90
+        - generic: Instrument
+        - textbox "Instrument": Capacitive humidity sensor · 0 to 100 · measured in %RH, converted
+        - button "Change the instrument of humidity": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - heading "Commands" [level=3]
+    - region "ble_sensor_node":
+      - heading "ble_sensor_node" [level=2]
+      - generic: Name in the twin
+      - textbox "Name in the twin": ble-sensor-node-01
+      - paragraph: Names this device inside the twin.
+      - heading "Readings" [level=3]
+      - group "Reading sensor_1":
+        - heading "sensor_1 Whole number · 1 · 0 to 255" [level=4]:
+          - strong: sensor_1
+          - generic: Whole number · 1 · 0 to 255
+        - generic: Instrument
+        - textbox "Instrument": "No instrument: a plain reading"
+        - button "Change the instrument of sensor_1": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - group "Reading sensor_2":
+        - heading "sensor_2 Whole number · 1 · 0 to 255" [level=4]:
+          - strong: sensor_2
+          - generic: Whole number · 1 · 0 to 255
+        - generic: Instrument
+        - textbox "Instrument": "No instrument: a plain reading"
+        - button "Change the instrument of sensor_2": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - group "Reading sensor_3":
+        - heading "sensor_3 Whole number · 1 · 0 to 255" [level=4]:
+          - strong: sensor_3
+          - generic: Whole number · 1 · 0 to 255
+        - generic: Instrument
+        - textbox "Instrument": "No instrument: a plain reading"
+        - button "Change the instrument of sensor_3": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - group "Reading sensor_4":
+        - heading "sensor_4 Whole number · 1 · 0 to 255" [level=4]:
+          - strong: sensor_4
+          - generic: Whole number · 1 · 0 to 255
+        - generic: Instrument
+        - textbox "Instrument": "No instrument: a plain reading"
+        - button "Change the instrument of sensor_4": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - group "Reading sensor_5":
+        - heading "sensor_5 Whole number · 1 · 0 to 255" [level=4]:
+          - strong: sensor_5
+          - generic: Whole number · 1 · 0 to 255
+        - generic: Instrument
+        - textbox "Instrument": "No instrument: a plain reading"
+        - button "Change the instrument of sensor_5": Change
+        - paragraph: What measures this reading, with its noise and faults.
+        - generic: Starts at
+        - textbox "Starts at"
+        - paragraph: Optional. The true value when the twin starts.
+      - heading "Commands" [level=3]
+  - complementary "Twin details":
+    - heading "Twin details" [level=2]
+    - paragraph: A twin is a plant that behaves like your devices. It is made from the saved devices and your choices, and the binary checks that it offers exactly what each device offers.
+    - generic "Technical details"

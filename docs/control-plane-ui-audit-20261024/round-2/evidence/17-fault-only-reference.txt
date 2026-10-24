@@ -1,0 +1,923 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - button "Factory utilities"
+      - heading "Run w-7" [active] [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Run details panel" [pressed]:
+    - text: Run details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - 'generic "Explore: the truth is visible; not for scoring."':
+    - text: Explore
+  - generic: seed 314 · 30 min
+  - button "About this run":
+  - generic "The files match and the replay reproduces.":
+    - text: Verified
+  - status: Verified
+  - button "Open plant"
+  - button "Set up another run":
+    - text: Set up another run
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Site 2":
+      - generic "Site"
+      - generic: "2"
+    - list:
+      - button "WX-1 weather":
+        - generic: WX-1
+        - generic: weather
+      - button "CAL-1 site calendar":
+        - generic: CAL-1
+        - generic: site calendar
+    - generic "Production hall 5":
+      - generic "Production hall"
+      - generic: "5"
+    - list:
+      - button "M-1 molder":
+        - generic: M-1
+        - generic: molder
+      - button "M-2 molder":
+        - generic: M-2
+        - generic: molder
+      - button "M-3 cnc":
+        - generic: M-3
+        - generic: cnc
+      - button "M-4 packaging line":
+        - generic: M-4
+        - generic: packaging line
+      - button "AHU-1 ahu":
+        - generic: AHU-1
+        - generic: ahu
+    - generic "Compressor room 4":
+      - generic "Compressor room"
+      - generic: "4"
+    - list:
+      - button "AC-1 compressor lead":
+        - generic: AC-1
+        - generic: compressor lead
+      - button "AC-2 compressor lag":
+        - generic: AC-2
+        - generic: compressor lag
+      - button "R-1 air receiver":
+        - generic: R-1
+        - generic: air receiver
+      - button "D-1 air dryer":
+        - generic: D-1
+        - generic: air dryer
+    - generic "Chiller plant 6":
+      - generic "Chiller plant"
+      - generic: "6"
+    - list:
+      - button "CH-1 chiller":
+        - generic: CH-1
+        - generic: chiller
+      - button "CT-1 cooling tower":
+        - generic: CT-1
+        - generic: cooling tower
+      - button "P-1 chw pump":
+        - generic: P-1
+        - generic: chw pump
+      - button "P-2 chw pump":
+        - generic: P-2
+        - generic: chw pump
+      - button "P-3 chw pump":
+        - generic: P-3
+        - generic: chw pump
+      - button "P-4 cw pump":
+        - generic: P-4
+        - generic: cw pump
+    - generic "Substation 6":
+      - generic "Substation"
+      - generic: "6"
+    - list:
+      - button "MB-AIR air meter":
+        - generic: MB-AIR
+        - generic: air meter
+      - button "MB-COOL cooling meter":
+        - generic: MB-COOL
+        - generic: cooling meter
+      - button "MB-PROC process meter":
+        - generic: MB-PROC
+        - generic: process meter
+      - button "MM-1 main meter":
+        - generic: MM-1
+        - generic: main meter
+      - button "TX-1 transformer":
+        - generic: TX-1
+        - generic: transformer
+      - button "G-1 generator":
+        - generic: G-1
+        - generic: generator
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Run w-7":
+    - paragraph
+    - status
+    - button "Play":
+      - text: Play
+    - group "Playback speed":
+      - button "1×"
+      - button "10×"
+      - button "60×" [pressed]
+      - button "600×"
+    - generic: 00:01:00
+    - generic: of 00:30:00
+    - group "Playback steps":
+      - 'button "Previous event: none" [disabled]':
+      - button "Back 10 minutes":
+      - button "Forward 10 minutes":
+      - button "Next event":
+    - 'button "Jump to alarm: none" [disabled]':
+    - generic: 00:00:00
+    - generic: 00:10:00
+    - generic: 00:20:00
+    - generic: 00:30:00
+    - slider "Playback time": "60"
+    - button
+    - button
+    - paragraph: Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
+    - list "Events":
+      - button "00:03:00 CT-1 basin temp · dropout":
+        - generic: 00:03:00 CT-1
+      - button "00:05:00 CT-1 fan failure":
+        - generic: 00:05:00 CT-1
+    - paragraph
+    - paragraph: "First: fault · basin temp · dropout on CT-1 at 00:03:00"
+    - list "Event types":
+      - listitem: Fault starts
+    - generic "14 320 observations · readings start at 00:01:00"
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 40 %
+      - generic: Zoom 40 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "WX-1, weather, 0 inputs, 2 outputs":
+        - generic "WX-1":
+          - generic: WX-1
+        - generic "weather"
+        - term: dry bulb
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: wet bulb
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: +3 more
+        - definition: in Inspect
+      - group "CAL-1, site calendar, 0 inputs, 2 outputs":
+        - generic "CAL-1":
+          - generic: CAL-1
+        - generic "site calendar"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: tariff
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: +1 more
+        - definition: in Inspect
+      - group "M-1, molder, 4 inputs, 3 outputs":
+        - generic "M-1":
+          - generic: M-1
+        - generic "molder"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition: 166kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "M-2, molder, 4 inputs, 3 outputs":
+        - generic "M-2":
+          - generic: M-2
+        - generic "molder"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition: 164kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "M-3, cnc, 4 inputs, 3 outputs":
+        - generic "M-3":
+          - generic: M-3
+        - generic "cnc"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition: 53.1kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "M-4, packaging line, 4 inputs, 3 outputs":
+        - generic "M-4":
+          - generic: M-4
+        - generic "packaging line"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition: 62.4kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "AHU-1, ahu, 3 inputs, 1 output":
+        - generic "AHU-1":
+          - generic: AHU-1
+        - generic "ahu"
+        - term: chw supply in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outdoor temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: occupancy
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cooling load
+        - definition: 66.7kW
+        - term: +1 more
+        - definition: in Inspect
+      - group "AC-1, compressor lead, 1 input, 2 outputs":
+        - generic "AC-1":
+          - generic: AC-1
+        - generic "compressor lead"
+        - term: header pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air flow
+        - definition: 700m³/h
+        - term: power
+        - definition: 75.2kW
+        - term: +5 more
+        - definition: in Inspect
+      - group "AC-2, compressor lag, 1 input, 2 outputs":
+        - generic "AC-2":
+          - generic: AC-2
+        - generic "compressor lag"
+        - term: header pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air flow
+        - definition: 10.8m³/h
+        - term: power
+        - definition: 22.9kW
+        - term: +5 more
+        - definition: in Inspect
+      - group "R-1, air receiver, 2 inputs, 2 outputs":
+        - generic "R-1":
+          - generic: R-1
+        - generic "air receiver"
+        - term: inflow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outlet flow
+        - definition: 838m³/h
+        - term: +3 more
+        - definition: in Inspect
+      - group "D-1, air dryer, 1 input, 3 outputs":
+        - generic "D-1":
+          - generic: D-1
+        - generic "air dryer"
+        - term: inlet flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outlet flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition: "-40.0°C"
+        - term: power
+        - definition: 5.50kW
+        - term: +2 more
+        - definition: in Inspect
+      - group "CH-1, chiller, 4 inputs, 4 outputs":
+        - generic "CH-1":
+          - generic: CH-1
+        - generic "chiller"
+        - term: load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cond water in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: tariff
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat rejected
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw supply
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw return
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition: 44.5kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "CT-1, cooling tower, 3 inputs, 2 outputs":
+        - generic "CT-1":
+          - generic: CT-1
+        - generic "cooling tower"
+        - term: heat in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: wet bulb in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: water flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: basin temp
+        - definition: 22.6°C
+        - term: fan power
+        - definition: 5.00kW
+      - group "P-1, chw pump, 1 input, 4 outputs":
+        - generic "P-1":
+          - generic: P-1
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition: 164m³/h
+        - term: cw flow out
+        - definition: 164m³/h
+        - term: liquid out
+        - definition: 164m³/h
+        - term: power
+        - definition: 16.3kW
+      - group "P-2, chw pump, 1 input, 4 outputs":
+        - generic "P-2":
+          - generic: P-2
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition: 164m³/h
+        - term: cw flow out
+        - definition: 164m³/h
+        - term: liquid out
+        - definition: 164m³/h
+        - term: power
+        - definition: 16.4kW
+      - group "P-3, chw pump, 1 input, 4 outputs":
+        - generic "P-3":
+          - generic: P-3
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition: 165m³/h
+        - term: cw flow out
+        - definition: 165m³/h
+        - term: liquid out
+        - definition: 165m³/h
+        - term: power
+        - definition: 16.4kW
+      - group "P-4, cw pump, 1 input, 4 outputs":
+        - generic "P-4":
+          - generic: P-4
+        - generic "cw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition: 164m³/h
+        - term: cw flow out
+        - definition: 164m³/h
+        - term: liquid out
+        - definition: 164m³/h
+        - term: power
+        - definition: 16.3kW
+      - group "MB-AIR, air meter, 1 input, 1 output":
+        - generic "MB-AIR":
+          - generic: MB-AIR
+        - generic "air meter"
+        - term: loads in
+        - definition: 105kW
+        - term: power out
+        - definition: 105kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "MB-COOL, cooling meter, 1 input, 1 output":
+        - generic "MB-COOL":
+          - generic: MB-COOL
+        - generic "cooling meter"
+        - term: loads in
+        - definition: 116kW
+        - term: power out
+        - definition: 116kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "MB-PROC, process meter, 1 input, 1 output":
+        - generic "MB-PROC":
+          - generic: MB-PROC
+        - generic "process meter"
+        - term: loads in
+        - definition: 446kW
+        - term: power out
+        - definition: 446kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "MM-1, main meter, 1 input, 1 output":
+        - generic "MM-1":
+          - generic: MM-1
+        - generic "main meter"
+        - term: loads in
+        - definition: 661kW
+        - term: power out
+        - definition: 661kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "TX-1, transformer, 1 input, 0 outputs":
+        - generic "TX-1":
+          - generic: TX-1
+        - generic "transformer"
+        - term: load
+        - definition: 681kW
+        - term: +3 more
+        - definition: in Inspect
+      - group "G-1, generator, 1 input, 1 output":
+        - generic "G-1":
+          - generic: G-1
+        - generic "generator"
+        - term: site load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: output
+        - definition: 0.80kW
+        - term: +3 more
+        - definition: in Inspect
+      - generic "Site · 2 nodes":
+        - generic: Site
+        - generic: 2 nodes
+      - generic "Production hall · 5 nodes":
+        - generic: Production
+        - generic: hall
+        - generic: 5 nodes
+      - generic "Compressor room · 4 nodes":
+        - generic: Compressor
+        - generic: room
+        - generic: 4 nodes
+      - generic "Chiller plant · 6 nodes":
+        - generic: Chiller
+        - generic: plant
+        - generic: 6 nodes
+      - generic "Substation · 6 nodes":
+        - generic: Substation
+        - generic: 6 nodes
+  - complementary "Run details":
+    - group "Run details view":
+      - button "Report" [pressed]
+      - button "Inspect"
+    - region "Report":
+      - generic "The files match and the replay reproduces."
+      - paragraph: "Explore run: the true results below were visible while it ran."
+      - region "Disturbances":
+        - heading "Disturbances" [level=2]
+        - table:
+          - rowgroup:
+            - row "Starts Instance Disturbance":
+              - columnheader "Starts"
+              - columnheader "Instance"
+              - columnheader "Disturbance"
+          - rowgroup:
+            - row "00:03:00 CT-1 basin temp · dropout":
+              - rowheader "00:03:00"
+              - cell "CT-1"
+              - cell "basin temp · dropout"
+            - row "00:05:00 CT-1 fan failure":
+              - rowheader "00:05:00"
+              - cell "CT-1"
+              - cell "fan failure"
+      - region "Effector calls":
+        - heading "Effector calls" [level=2]
+        - paragraph: None
+      - region "True results":
+        - heading "True results" [level=2]
+        - paragraph: What really happened in the plant. An outside system could not see it while the run was live; it is shown here once the run has ended.
+        - table:
+          - rowgroup:
+            - row "KPI Mean Unit Range":
+              - columnheader "KPI"
+              - columnheader "Mean"
+              - columnheader "Unit":
+                - generic: Unit
+              - columnheader "Range"
+          - rowgroup:
+            - row "M-1":
+              - rowheader "M-1"
+            - row "Specific power 2.50 kW/% steady":
+              - rowheader "Specific power"
+              - cell "2.50"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 6.02 s 6.00 – 6.16":
+              - rowheader "Cycle time"
+              - cell "6.02"
+              - cell "s"
+              - cell "6.00 – 6.16"
+            - row "Scrap 1.21 % 1.20 – 1.30":
+              - rowheader "Scrap"
+              - cell "1.21"
+              - cell "%"
+              - cell "1.20 – 1.30"
+            - row "M-2":
+              - rowheader "M-2"
+            - row "Specific power 2.50 kW/% steady":
+              - rowheader "Specific power"
+              - cell "2.50"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 6.02 s 6.00 – 6.16":
+              - rowheader "Cycle time"
+              - cell "6.02"
+              - cell "s"
+              - cell "6.00 – 6.16"
+            - row "Scrap 1.21 % 1.20 – 1.30":
+              - rowheader "Scrap"
+              - cell "1.21"
+              - cell "%"
+              - cell "1.20 – 1.30"
+            - row "M-3":
+              - rowheader "M-3"
+            - row "Specific power 0.80 kW/% steady":
+              - rowheader "Specific power"
+              - cell "0.80"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 12.0 s 12.0 – 12.3":
+              - rowheader "Cycle time"
+              - cell "12.0"
+              - cell "s"
+              - cell "12.0 – 12.3"
+            - row "Scrap 1.21 % 1.20 – 1.30":
+              - rowheader "Scrap"
+              - cell "1.21"
+              - cell "%"
+              - cell "1.20 – 1.30"
+            - row "M-4":
+              - rowheader "M-4"
+            - row "Specific power 0.90 kW/% steady":
+              - rowheader "Specific power"
+              - cell "0.90"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 1.01 s 1.00 – 1.04":
+              - rowheader "Cycle time"
+              - cell "1.01"
+              - cell "s"
+              - cell "1.00 – 1.04"
+            - row "Scrap 0.81 % 0.80 – 0.88":
+              - rowheader "Scrap"
+              - cell "0.81"
+              - cell "%"
+              - cell "0.80 – 0.88"
+            - row "AC-1":
+              - rowheader "AC-1"
+            - row "Specific power 0.11 kWh/m³ steady":
+              - rowheader "Specific power"
+              - cell "0.11"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "Load fraction 0.23 0.00 – 1.00":
+              - rowheader "Load fraction"
+              - cell "0.23"
+              - cell
+              - cell "0.00 – 1.00"
+            - row "AC-2":
+              - rowheader "AC-2"
+            - row "Specific power 0.11 kWh/m³ steady":
+              - rowheader "Specific power"
+              - cell "0.11"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "Load fraction 0.01 0.00 – 1.00":
+              - rowheader "Load fraction"
+              - cell "0.01"
+              - cell
+              - cell "0.00 – 1.00"
+            - row "D-1":
+              - rowheader "D-1"
+            - row "Regen duty 0.15 0.05 – 0.98":
+              - rowheader "Regen duty"
+              - cell "0.15"
+              - cell
+              - cell "0.05 – 0.98"
+            - row "CH-1":
+              - rowheader "CH-1"
+            - row "COP 5.02 4.45 – 8.85":
+              - rowheader "COP"
+              - cell "5.02"
+              - cell
+              - cell "4.45 – 8.85"
+            - row "Specific power 0.21 0.12 – 0.23":
+              - rowheader "Specific power"
+              - cell "0.21"
+              - cell
+              - cell "0.12 – 0.23"
+            - row "CT-1":
+              - rowheader "CT-1"
+            - row "Approach 4.55 °C 3.91 – 5.54":
+              - rowheader "Approach"
+              - cell "4.55"
+              - cell "°C"
+              - cell "3.91 – 5.54"
+            - row "P-1":
+              - rowheader "P-1"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-2":
+              - rowheader "P-2"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-3":
+              - rowheader "P-3"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-4":
+              - rowheader "P-4"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "MB-AIR":
+              - rowheader "MB-AIR"
+            - row "Loading 24.3 % 18.4 – 63.0":
+              - rowheader "Loading"
+              - cell "24.3"
+              - cell "%"
+              - cell "18.4 – 63.0"
+            - row "MB-COOL":
+              - rowheader "MB-COOL"
+            - row "Loading 35.4 % 32.8 – 49.5":
+              - rowheader "Loading"
+              - cell "35.4"
+              - cell "%"
+              - cell "32.8 – 49.5"
+            - row "MB-PROC":
+              - rowheader "MB-PROC"
+            - row "Loading 12.7 % 4.50 – 75.7":
+              - rowheader "Loading"
+              - cell "12.7"
+              - cell "%"
+              - cell "4.50 – 75.7"
+            - row "MM-1":
+              - rowheader "MM-1"
+            - row "Loading 10.0 % 6.56 – 35.5":
+              - rowheader "Loading"
+              - cell "10.0"
+              - cell "%"
+              - cell "6.56 – 35.5"
+            - row "TX-1":
+              - rowheader "TX-1"
+            - row "Loading 0.08 0.05 – 0.28":
+              - rowheader "Loading"
+              - cell "0.08"
+              - cell
+              - cell "0.05 – 0.28"
+      - region "Alarms":
+        - heading "Alarms" [level=2]
+        - paragraph: How the alarm system behaved during the run.
+        - table:
+          - rowgroup:
+            - row "Measure Count What it means":
+              - columnheader "Measure"
+              - columnheader "Count"
+              - columnheader "What it means"
+          - rowgroup:
+            - row "Alarms raised 0 Alarms that came on during the run.":
+              - rowheader "Alarms raised"
+              - cell "0"
+              - cell "Alarms that came on during the run."
+            - 'row "Most alarms in 10 minutes 0 The busiest 10-minute spell: how many alarms came on in it."':
+              - rowheader "Most alarms in 10 minutes"
+              - cell "0"
+              - 'cell "The busiest 10-minute spell: how many alarms came on in it."'
+            - row "Overload spells 0 10-minute spells where alarms came too fast for an operator to follow.":
+              - rowheader "Overload spells"
+              - cell "0"
+              - cell "10-minute spells where alarms came too fast for an operator to follow."
+            - row "Repeating alarms 0 Alarms that kept switching on and off in a short time.":
+              - rowheader "Repeating alarms"
+              - cell "0"
+              - cell "Alarms that kept switching on and off in a short time."
+            - row "Stale alarms 0 Alarms still active long after they came on, with no operator action.":
+              - rowheader "Stale alarms"
+              - cell "0"
+              - cell "Alarms still active long after they came on, with no operator action."
+            - row "Still active at the end 0 Alarms still on when the run ended.":
+              - rowheader "Still active at the end"
+              - cell "0"
+              - cell "Alarms still on when the run ended."
+        - generic "For developers"
+      - region "Scoring":
+        - heading "Scoring" [level=2]
+        - paragraph: "Not scored: no outside system is connected to this run."
+        - generic "For developers"
