@@ -112,6 +112,12 @@ export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
 export { observedRows } from "./internal/observedRows";
 export { trendFrame } from "./internal/trend";
+export { isWatched, toggled, watchLimit } from "./internal/watchList";
+export { trendSpanOf, windowChoices, windowWords } from "./internal/trendWindow";
+export { nsAtX, plotFrame, plotsOf, xOf } from "./internal/trendPlot";
+export { readoutOf } from "./internal/trendReadout";
+export { probeKey } from "./internal/trendProbe";
+export { eventLine, overlayOf } from "./internal/trendOverlay";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
 export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
@@ -147,6 +153,14 @@ export {
   runClock,
 } from "./internal/timeline";
 export type {
+  OverlayEvent,
+  PlannedFault,
+  Plot,
+  Readout,
+  Span,
+  TrendSpan,
+  Watched,
+  WindowChoice,
   AlarmActivation,
   Badge,
   BannerWarning,

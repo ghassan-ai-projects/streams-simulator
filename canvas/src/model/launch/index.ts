@@ -13,7 +13,7 @@ export {
   unobserved,
 } from "./internal/job";
 export { planProblems } from "./internal/planProblems";
-export { effectorShownS, showingMarks } from "./internal/showing";
+export { effectorShownS, shownFaults, showingMarks } from "./internal/showing";
 export { draftOf, firstDraft, freshPlanOf, pickedOnGraph, planOf } from "./internal/draft";
 export { runProgressWords } from "./internal/progress";
 export { progressTicks } from "./internal/ticks";

@@ -3,17 +3,20 @@ import type { RunEntry } from "../../../model/workspace";
 import type { Store } from "../../shared";
 import type { ControlSession } from "./controlStore";
 import type { TwinSession } from "./twinStore";
+import type { WatchSession } from "./watchStore";
 import type { ReviewState } from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export type { ReviewPlant } from "./reviewPlant";
 export type { ControlSession, ControlState } from "./controlStore";
 export type { TwinState } from "./twinStore";
+export type { WatchSession } from "./watchStore";
 
 export interface ReviewSession extends Store<ReviewState> {
   readonly index: PlaybackIndex;
   readonly controls: ControlSession;
   readonly twin: TwinSession;
+  readonly watchList: WatchSession;
   open(worldId: string, known?: RunEntry): void;
   openLive(worldId: string, known?: RunEntry): void;
   watch(worldId: string, known?: RunEntry): void;

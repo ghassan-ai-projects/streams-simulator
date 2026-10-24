@@ -1,6 +1,6 @@
 import type { ShowingMarks } from "../../shared/marks";
 import { humanise } from "../../shared/words";
-import type { CallOutcome, LaunchPlan } from "./launch";
+import type { CallOutcome, LaunchPlan, PlannedFault } from "./launch";
 
 export const effectorShownS = 60;
 const effectorHeldMs = 3000;
@@ -35,4 +35,8 @@ function callsAt(calls: readonly CallOutcome[], atS: number, atMs: number): Map<
 export function showingMarks(plan: LaunchPlan, calls: readonly CallOutcome[], atS: number, atMs: number): ShowingMarks {
   const faults = plan.explore ? faultsAt(plan, atS) : new Map<string, readonly string[]>();
   return { faults, effectors: callsAt(calls, atS, atMs) };
+}
+
+export function shownFaults(plan: LaunchPlan): readonly PlannedFault[] {
+  return plan.explore ? plan.faults.filter((planned) => planned.entity !== "" && planned.fault !== "") : [];
 }

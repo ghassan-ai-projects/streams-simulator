@@ -42,3 +42,9 @@ export type {
 } from "./internal/twin";
 export type { TwinChart } from "./internal/twinChart";
 export type { TwinCoverage } from "./internal/twinSelect";
+export type { Watched } from "./internal/watchList";
+export type { Span } from "./internal/trend";
+export type { TrendSpan, WindowChoice } from "./internal/trendWindow";
+export type { Plot } from "./internal/trendPlot";
+export type { Readout } from "./internal/trendReadout";
+export type { OverlayEvent, PlannedFault } from "./internal/trendOverlay";

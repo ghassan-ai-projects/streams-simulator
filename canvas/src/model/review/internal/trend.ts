@@ -4,9 +4,10 @@ export const trendWindowNs = 30 * 60e9;
 export const trendFrame = { width: 120, height: 28 } as const;
 
 const gapFactor = 3;
+const shortestNs = 60e9;
 const buckets = 60;
 
-interface TrendPoint {
+export interface TrendPoint {
   readonly x: number;
   readonly y: number;
 }
@@ -21,23 +22,44 @@ export interface Trend {
   readonly windowNs: number;
 }
 
-interface Run {
+export interface Run {
   readonly times: readonly number[];
   readonly values: readonly number[];
 }
 
-function numeric(values: readonly (number | string | boolean)[]): readonly number[] | null {
+export interface Span {
+  readonly startNs: number;
+  readonly endNs: number;
+}
+
+export interface Frame {
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface Projection {
+  readonly span: Span;
+  readonly frame: Frame;
+  readonly range: { readonly min: number; readonly max: number };
+  readonly buckets: number;
+}
+
+export function numberText(value: number): string {
+  return String(Number(value.toFixed(2)));
+}
+
+export function numeric(values: readonly (number | string | boolean)[]): readonly number[] | null {
   const numbers = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   return numbers.length === values.length ? numbers : null;
 }
 
-function medianInterval(times: readonly number[]): number {
+export function medianInterval(times: readonly number[]): number {
   const intervals = times.slice(1).map((time, at) => time - (times[at] ?? time));
   const sorted = intervals.toSorted((a, b) => a - b);
   return sorted[sorted.length >> 1] ?? 0;
 }
 
-function split(run: Run, medianNs: number): readonly Run[] {
+export function splitGaps(run: Run, medianNs: number): readonly Run[] {
   const runs: { times: number[]; values: number[] }[] = [{ times: [], values: [] }];
   run.times.forEach((time, at) => {
     const previous = run.times[at - 1];
@@ -50,16 +72,18 @@ function split(run: Run, medianNs: number): readonly Run[] {
   return runs;
 }
 
-function bucketOf(time: number, startNs: number): number {
-  return Math.min(buckets - 1, Math.max(0, Math.floor(((time - startNs) / trendWindowNs) * buckets)));
+function bucketOf(time: number, projection: Projection): number {
+  const { span, buckets } = projection;
+  const fraction = (time - span.startNs) / Math.max(1, span.endNs - span.startNs);
+  return Math.min(buckets - 1, Math.max(0, Math.floor(fraction * buckets)));
 }
 
-function keptIndices(run: Run, startNs: number): readonly number[] {
-  if (run.times.length <= buckets * 4) return run.times.map((_, at) => at);
+function keptIndices(run: Run, projection: Projection): readonly number[] {
+  if (run.times.length <= projection.buckets * 4) return run.times.map((_, at) => at);
   const kept = new Set<number>([0, run.times.length - 1]);
   const spans = new Map<number, number[]>();
   run.times.forEach((time, at) => {
-    const bucket = bucketOf(time, startNs);
+    const bucket = bucketOf(time, projection);
     spans.set(bucket, [...(spans.get(bucket) ?? []), at]);
   });
   for (const span of spans.values()) extremes(span, run.values).forEach((at) => kept.add(at));
@@ -71,31 +95,36 @@ function extremes(span: readonly number[], values: readonly number[]): readonly 
   return [span[0] ?? 0, ranked[0] ?? 0, ranked.at(-1) ?? 0, span.at(-1) ?? 0];
 }
 
-function plot(run: Run, startNs: number, range: { readonly min: number; readonly max: number }): TrendPoint[] {
-  const height = trendFrame.height;
-  return keptIndices(run, startNs).map((at) => {
-    const time = run.times[at] ?? startNs;
+export function plotRun(run: Run, projection: Projection): TrendPoint[] {
+  const { span, frame, range } = projection;
+  const width = Math.max(1, span.endNs - span.startNs);
+  return keptIndices(run, projection).map((at) => {
+    const time = run.times[at] ?? span.startNs;
     const value = run.values[at] ?? range.min;
     const level = range.max === range.min ? 0.5 : (value - range.min) / (range.max - range.min);
-    return { x: ((time - startNs) / trendWindowNs) * trendFrame.width, y: height - level * height };
+    return { x: ((time - span.startNs) / width) * frame.width, y: frame.height - level * frame.height };
   });
 }
 
 export function trendOf(index: PlaybackIndex, entity: string, channel: string, endNs: number): Trend | null {
-  const startNs = endNs - trendWindowNs;
-  const window = index.samples(entity, channel, startNs, endNs);
+  const window = index.samples(entity, channel, endNs - trendWindowNs, endNs);
   const values = window === null ? null : numeric(window.values);
   if (window === null || values === null || values.length === 0) return null;
+  const span = {
+    startNs: Math.max(endNs - trendWindowNs, Math.min(window.times[0] ?? endNs, endNs - shortestNs)),
+    endNs,
+  };
   const medianNs = medianInterval(window.times);
-  const runs = split({ times: window.times, values }, medianNs);
+  const runs = splitGaps({ times: window.times, values }, medianNs);
   const range = { min: Math.min(...values), max: Math.max(...values) };
-  const plotted = runs.map((run) => plot(run, startNs, range));
+  const projection = { span, frame: trendFrame, range, buckets };
+  const plotted = runs.map((run) => plotRun(run, projection));
   return {
     segments: plotted.filter((points) => points.length > 1),
     dots: plotted.filter((points) => points.length === 1).flat(),
     ...range,
     gaps: runs.length - 1,
     medianNs,
-    windowNs: trendWindowNs,
+    windowNs: span.endNs - span.startNs,
   };
 }

@@ -80,3 +80,22 @@ Limits of the policy: a trend or a past value older than the retained window is 
 - A real browser (Chrome): jsdom has no layout or paint; the graph is drawn with stubbed sizes. Render counts and React time are meaningful, absolute times are not a frame budget.
 - Several hours of wall time.
 - The inspector's own cost (one entity, at most a dozen channels, a trend over at most 4,096 readings per channel). Its work is a few hundred operations per flush and is not in the table above.
+
+## Round 3B: the Trends panel with six watched channels
+
+Same factory load and harness (`src/test/factoryFixture.ts`, `src/test/livePlantHarness.tsx`), `watch` mode, 30 simulated minutes in 180 flushes of 10 s. The "trends" run has the panel open with six watched channels from four instances (CT-1 basin temp and fan power, CH-1 power and chw supply temp, P-1 flow, AC-1 power) at the default 10-minute window. Three runs each, same machine as above.
+
+| Measure | Without the panel | With the panel, six channels |
+|---|---|---|
+| InstanceNode renders over 180 flushes | 4,102 (23 per flush) | 4,102 (23 per flush) |
+| React commits over 180 flushes | 370 | 369 to 370 |
+| React render time over 180 flushes (Profiler actual duration) | 0.80 to 0.83 s | 0.83 to 0.86 s |
+| Wall time of one flush including the feed, median / p95 | 6.0 to 6.4 ms / 9.6 to 10.1 ms | 7.1 to 7.5 ms / 8.8 to 9.5 ms |
+
+Counts asserted in the default test run (`LivePlantRenders.test.tsx`, "keeps the graph at one redraw per node and the panel at a bounded cost"): one flush that carries a reading for every instance redraws each node at most once (no extra redraw for the panel), costs at most 3 React commits, and asks the index for at most 12 sample windows (six plots, one window each; the plots are cached by `plotsOf` until the index or the window changes, so a re-render caused by the cursor or the probe asks for none). The panel adds about 1 ms to a flush.
+
+Retention: the panel never asks for data older than the index keeps. When a watched series has dropped readings inside the requested window (`PlaybackIndex.trimmedBeforeNs`), the shared axis starts where the oldest watched series' retention ends and the panel says "Window limited: readings before HH:MM:SS are no longer kept while the run is watched".
+
+## Graph nodes spilling their readout rows (found in round 3B)
+
+Cause: the plant screen laid its nodes out with the plain presentation (a node is `max(2, ins, outs)` pin rows tall) while a node of a live plant draws the readout (one row per port, the "+N more in Inspect" row, and a note line). Review already laid out with `reviewView`. Fix: the live plant passes `reviewView` and the fault/effector note line counts to `plantView`, so a node is as tall as the readout it draws and the layout (and the edge handles) are computed from it. Busiest nodes on the factory plant, by readout rows: CH-1 9, M-1 to M-4 8, AHU-1 / R-1 / D-1 5. Measured before the fix, at the default zoom ladder on 1280, 1441 and 1841 px wide windows: 100 to 230 rows outside their node in every zoom step where the readout is drawn; after: 0.

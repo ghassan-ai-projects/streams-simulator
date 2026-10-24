@@ -133,3 +133,38 @@ describe("journal lines", () => {
     expect(journalEntry(JSON.stringify({ ...journalWire[4], line: undefined }))).toBeNull();
   });
 });
+
+describe("the operator's effector calls in the observer journal", () => {
+  const acknowledged = (response: Record<string, unknown>, overrides: Record<string, unknown> = {}) =>
+    JSON.stringify({
+      stream: "observer",
+      type: "effector.acknowledged",
+      seq: 4,
+      at_ns: 250e9,
+      command_id: "c-1",
+      effector: "set_setpoint",
+      entity_id: "CH-1",
+      response: { accepted: true, simulated: true, world_id: "w-1", command_id: "c-1", ...response },
+      ...overrides,
+    });
+
+  it("reads an accepted call with its time, instance and effector", () => {
+    expect(journalEntry(acknowledged({}))).toEqual({
+      kind: "call",
+      call: { atNs: 250e9, entity: "CH-1", effector: "set_setpoint", accepted: true, reason: "" },
+    });
+  });
+
+  it("reads a refused call and the reason the operator was given", () => {
+    expect(journalEntry(acknowledged({ accepted: false, reason: "interlock" }))).toEqual({
+      kind: "call",
+      call: { atNs: 250e9, entity: "CH-1", effector: "set_setpoint", accepted: false, reason: "interlock" },
+    });
+  });
+
+  it("does not read a call that names no instance or effector, or one without a response", () => {
+    expect(journalEntry(acknowledged({}, { entity_id: "" }))).toEqual({ kind: "other", atNs: 250e9 });
+    expect(journalEntry(acknowledged({}, { effector: 3 }))).toEqual({ kind: "other", atNs: 250e9 });
+    expect(journalEntry(acknowledged({}, { response: "ok" }))).toEqual({ kind: "other", atNs: 250e9 });
+  });
+});

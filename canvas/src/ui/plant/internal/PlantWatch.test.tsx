@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { headerHeight } from "../../../model/graph";
 import { stubFlowDom } from "../../../test/dom";
 import { elapse } from "../../../test/launchFixture";
 import { attributeValues, canary, namedBy, roles, runningPlant } from "../../../test/runningPlant";
@@ -84,7 +85,7 @@ describe("the inspector while a run is going", () => {
     await watching(true, ...steady);
     const trend = within(observed()).getByRole("img", { name: /basin temp trend/ });
     expect(trend).toHaveAttribute("data-part", "trend");
-    expect(trend).toHaveAccessibleName(/Last 30 min of simulated time, from 26.1 to 26.6 °C\. No gaps\./);
+    expect(trend).toHaveAccessibleName(/Last 1 min of simulated time, from 26.1 to 26.6 °C\. No gaps\./);
     expect(trend.querySelectorAll("polyline")).toHaveLength(1);
   });
 
@@ -166,5 +167,59 @@ describe("the same inspector in Evaluate", () => {
     expect(roles.map(namedBy)).toEqual(roles.map(() => 0));
     expect(document.body.innerHTML).not.toMatch(canary);
     expect(document.body.textContent).not.toContain("Fault ·");
+  });
+});
+
+const acknowledged = (second: number, accepted: boolean) => ({
+  stream: "observer",
+  type: "effector.acknowledged",
+  seq: 50 + second,
+  at_ns: at(second),
+  command_id: `c-${String(second)}`,
+  effector: "set_fan_speed",
+  entity_id: "CT-1",
+  response: { accepted, simulated: true, world_id: "w-7", command_id: `c-${String(second)}` },
+});
+
+describe("the trends panel in Evaluate", () => {
+  it("shows the operator's own effector calls on the shared axis and nothing of the planned fault anywhere", async () => {
+    await watching(false, ...steady, acknowledged(30, true), acknowledged(45, false));
+    const inspectorNow = within(inspector());
+    fireEvent.click(inspectorNow.getByRole("button", { name: "Watch basin temp" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Trends/ }));
+    const panel = screen.getByRole("region", { name: "Trends" });
+    fireEvent.click(within(panel).getByText(/^Events in this window/));
+    expect(panel).toHaveTextContent("Effector call · CT-1 set fan speed · accepted");
+    expect(panel).toHaveTextContent("Effector call · CT-1 set fan speed · refused");
+    expect(panel.querySelectorAll("[data-kind='fault']")).toHaveLength(0);
+    expect(document.body.textContent).not.toMatch(canary);
+    expect(attributeValues().filter((value) => canary.test(value))).toEqual([]);
+    expect(roles.map(namedBy)).toEqual(roles.map(() => 0));
+    expect(document.body.innerHTML).not.toMatch(canary);
+    expect(document.body.textContent).not.toMatch(/Fault starts|Fault ·/);
+  });
+});
+
+describe("the trends panel in Explore", () => {
+  it("marks the planned faults the run clock has reached, and the operator's calls, on the shared axis", async () => {
+    await watching(true, ...steady, acknowledged(30, true));
+    fireEvent.click(within(inspector()).getByRole("button", { name: "Watch basin temp" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Trends/ }));
+    const panel = screen.getByRole("region", { name: "Trends" });
+    fireEvent.click(within(panel).getByText(/^Events in this window/));
+    expect(panel).toHaveTextContent(/Fault starts · CH-1 /);
+    expect(panel).toHaveTextContent("Effector call · CT-1 set fan speed · accepted");
+    expect(panel.querySelectorAll("[data-kind='fault']")).toHaveLength(1);
+  });
+});
+
+describe("the room a live node has for its readout", () => {
+  it("holds the header, the note line and every readout row it draws", async () => {
+    await watching(true, ...steady);
+    const node = document.querySelector<HTMLElement>('.react-flow__node[data-id="CT-1"]');
+    const rows = node?.querySelectorAll("dl > div").length ?? 0;
+    const height = Number.parseFloat(node?.style.height ?? "0");
+    expect(rows).toBeGreaterThan(0);
+    expect(height).toBeGreaterThanOrEqual(headerHeight("CT-1") + 16 + 24 + rows * 24);
   });
 });

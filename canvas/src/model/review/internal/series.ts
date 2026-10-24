@@ -7,6 +7,7 @@ export interface Series {
   readonly qualities: Quality[];
   readonly lags: number[];
   readonly unit: string;
+  trimmedNs: number | null;
 }
 
 export interface Sample {
@@ -17,7 +18,7 @@ export interface Sample {
 }
 
 export function newSeries(unit: string): Series {
-  return { times: [], values: [], qualities: [], lags: [], unit };
+  return { times: [], values: [], qualities: [], lags: [], unit, trimmedNs: null };
 }
 
 export function append(series: Series, sample: Sample, capacity: number): boolean {
@@ -27,6 +28,7 @@ export function append(series: Series, sample: Sample, capacity: number): boolea
   series.lags.push(sample.lagNs);
   if (series.times.length < capacity * 2) return false;
   const drop = series.times.length - capacity;
+  series.trimmedNs = series.times[drop - 1] ?? sample.atNs;
   series.times.splice(0, drop);
   series.values.splice(0, drop);
   series.qualities.splice(0, drop);
@@ -51,5 +53,12 @@ export function lastAtOrBefore(times: readonly number[], atNs: number): number {
 }
 
 export function firstAtOrAfter(times: readonly number[], atNs: number): number {
-  return lastAtOrBefore(times, atNs - 1) + 1;
+  let low = 0;
+  let high = times.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if ((times[middle] ?? Number.POSITIVE_INFINITY) < atNs) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }

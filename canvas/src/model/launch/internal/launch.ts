@@ -2,7 +2,7 @@ import type { ArgValue } from "../../plant";
 import { humanise } from "../../shared/words";
 import { durationOf } from "../../shared/duration";
 
-interface PlannedFault {
+export interface PlannedFault {
   readonly entity: string;
   readonly fault: string;
   readonly atS: number;

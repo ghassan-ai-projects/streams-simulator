@@ -1,4 +1,5 @@
-import { cx, screen, shared } from "../../primitives";
+import { useMemo } from "react";
+import { cx, screen, shared, useStore } from "../../primitives";
 import type { ComponentProps } from "react";
 import { Network, Radio } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
@@ -7,6 +8,7 @@ import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import { hallCount, plantView } from "../../../model/graph";
 import { plantTitle } from "../../../model/plant";
 import { counted } from "../../../model/workspace";
+import { shownFaults } from "../../../model/launch";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
@@ -14,7 +16,7 @@ import { ZoomBar } from "../../graph";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
-import type { Connected } from "./connected";
+import type { Connected, PlannedFault } from "./connected";
 
 interface RunControls {
   readonly launching: boolean;
@@ -108,14 +110,24 @@ function Bar(props: PlantCentreProps & { readonly running: string | null }) {
         onToggle={run.toggle}
         secondary={connected?.kind === "session"}
       />
+      {connected?.trendsToggle}
       <ZoomBar />
     </div>
   );
 }
 
+const noFaults: readonly PlannedFault[] = [];
+
+function usePlannedFaults(launch: LaunchStore, plant: string): readonly PlannedFault[] {
+  const run = useStore(launch);
+  const plan = run.phase === "running" && run.origin.domain === plant ? run.plan : null;
+  return useMemo(() => (plan === null ? noFaults : shownFaults(plan)), [plan]);
+}
+
 export function PlantCentre(props: PlantCentreProps) {
   const { state, hall, plants, navigation, launch, connected } = props;
   const running = useRunningHere(launch, state.plant.id);
+  const planned = usePlannedFaults(launch, state.plant.id);
   const bar = <Bar {...props} running={running} />;
   return (
     <section
@@ -130,14 +142,19 @@ export function PlantCentre(props: PlantCentreProps) {
           {connected.interrupts}
         </div>
       )}
-      <PlantCanvas
-        state={state}
-        hall={hall}
-        plants={plants}
-        navigation={navigation}
-        launch={launch}
-        {...(connected === undefined ? {} : { connected })}
-      />
+      <div className={styles.work}>
+        <PlantCanvas
+          state={state}
+          hall={hall}
+          plants={plants}
+          navigation={navigation}
+          launch={launch}
+          {...(connected === undefined ? {} : { connected })}
+        />
+        {connected?.trends?.((id) => {
+          plants.select(id);
+        }, planned)}
+      </div>
     </section>
   );
 }

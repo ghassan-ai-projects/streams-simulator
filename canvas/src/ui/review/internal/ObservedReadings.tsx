@@ -5,6 +5,7 @@ import type { ObservedRow } from "../../../model/review";
 import { observedRows, runClock } from "../../../model/review";
 import { shared } from "../../primitives";
 import { ObservedTable } from "./ObservedTable";
+import { useWatch } from "./useWatch";
 
 interface ObservedView {
   readonly rows: readonly ObservedRow[];
@@ -47,11 +48,12 @@ export function ObservedReadings({
   readonly entity: string;
 }) {
   const view = observedView(review, state, plant, entity);
+  const watch = useWatch(review, plant, entity);
   const none = view.live ? "Awaiting first reading" : "Never observed in this run";
   return (
     <section aria-label="Observed readings">
       <h3 className={shared.sectionTitle}>Observed now</h3>
-      {view.rows.length === 0 ? <p>{none}</p> : <ObservedTable rows={view.rows} clock={view.clock} />}
+      {view.rows.length === 0 ? <p>{none}</p> : <ObservedTable rows={view.rows} clock={view.clock} watch={watch} />}
     </section>
   );
 }

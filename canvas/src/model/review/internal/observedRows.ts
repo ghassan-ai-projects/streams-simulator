@@ -9,7 +9,7 @@ import { shortChannel } from "../../shared/words";
 import type { PlaybackIndex, Reading } from "./playback";
 import { runClock } from "./timeline";
 import type { Trend } from "./trend";
-import { trendOf, trendWindowNs } from "./trend";
+import { numberText, trendOf } from "./trend";
 
 type Attention = Shown["attention"];
 
@@ -61,10 +61,6 @@ function absentWords(facts: ObservedFacts, channel: string): string {
   return facts.live ? "Awaiting first reading" : "Never observed in this run";
 }
 
-function numberText(value: number): string {
-  return String(Number(value.toFixed(2)));
-}
-
 function gapWords(trend: Trend): string {
   if (trend.gaps === 0) return "No gaps.";
   const noun = trend.gaps === 1 ? "gap" : "gaps";
@@ -73,7 +69,7 @@ function gapWords(trend: Trend): string {
 }
 
 function trendNote(trend: Trend, unit: string): string {
-  const span = durationOf(trendWindowNs / 1e9);
+  const span = durationOf(trend.windowNs / 1e9);
   const range = `from ${numberText(trend.min)} to ${numberText(trend.max)}${unit === "" ? "" : ` ${unit}`}`;
   return `Last ${span} of simulated time, ${range}. ${gapWords(trend)}`;
 }

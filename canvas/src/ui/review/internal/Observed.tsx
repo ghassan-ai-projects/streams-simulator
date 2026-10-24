@@ -6,6 +6,7 @@ import { deviceOf, effectorAt, faultedAt, isRealBoard, readingWords } from "../.
 import type { ObservedRow, SessionReading } from "../../../model/review";
 import { observedView } from "./ObservedReadings";
 import { ObservedTable } from "./ObservedTable";
+import { useWatch } from "./useWatch";
 import parts from "./ReportParts.module.css";
 import cells from "./ReportTable.module.css";
 import styles from "./Observed.module.css";
@@ -95,6 +96,7 @@ function RealBoardNote({ state, entity }: { readonly state: ReviewState; readonl
 }
 
 export function Observed({ review, state, plant, entity }: ObservedProps) {
+  const watch = useWatch(review, plant, entity);
   if (isRealBoard(state.origins, entity)) return <RealBoardNote state={state} entity={entity} />;
   const { rows, clock } = observedView(review, state, plant, entity);
   if (rows.length === 0) return <HallNote plant={plant} entity={entity} />;
@@ -106,7 +108,7 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
         rows={rows}
         effector={effectorAt(report, state.positionNs).get(entity) ?? ""}
       />
-      <ObservedTable rows={rows} clock={clock} />
+      <ObservedTable rows={rows} clock={clock} watch={watch} />
     </>
   );
 }

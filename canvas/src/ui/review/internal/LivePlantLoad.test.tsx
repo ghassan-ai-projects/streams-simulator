@@ -6,6 +6,7 @@ import { factoryBridge, factoryJournal } from "../../../test/factoryFixture";
 import { fakeClock } from "../../../test/fakeClock";
 import { mountLivePlant, watchedRun } from "../../../test/livePlantHarness";
 import * as graph from "../../../model/graph";
+import { watchSix } from "../../../test/watchSix";
 
 beforeEach(() => {
   stubFlowDom();
@@ -36,11 +37,12 @@ measure("the live plant under the factory load (PERF=1 prints numbers)", () => {
     expect(records).toBe(minutes * 6 * 82);
   });
 
-  it("prints ingest and update cost", async () => {
+  it.each([false, true])("prints ingest and update cost (six watched channels: %s)", async (trends) => {
     const nodes = vi.spyOn(graph, "describeNode");
     const live = await mountLivePlant((review, worldId) => {
       review.watch(worldId);
     });
+    if (trends) watchSix(live.review);
     const perFlush: number[] = [];
     const wall: number[] = [];
     for (let second = 0; second < 1800; second += 10) {
@@ -53,7 +55,7 @@ measure("the live plant under the factory load (PERF=1 prints numbers)", () => {
     const total = perFlush.reduce((sum, count) => sum + count, 0);
     const sorted = [...wall].sort((a, b) => a - b);
     console.info(
-      `PERF flushes=${String(perFlush.length)} nodeRenders=${String(total)} perFlushMedian=${String(
+      `PERF trends=${String(trends)} flushes=${String(perFlush.length)} nodeRenders=${String(total)} perFlushMedian=${String(
         [...perFlush].sort((a, b) => a - b)[perFlush.length >> 1],
       )} commits=${String(live.profile.commits)} phases=${JSON.stringify(live.profile.phases)} actualMs=${live.profile.actualMs.toFixed(0)} baseMs=${live.profile.baseMs.toFixed(0)} flushMsMedian=${(sorted[sorted.length >> 1] ?? 0).toFixed(1)} flushMsP95=${(sorted[Math.floor(sorted.length * 0.95)] ?? 0).toFixed(1)} records=${String(live.review.index.size)}`,
     );

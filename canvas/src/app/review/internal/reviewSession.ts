@@ -6,12 +6,15 @@ import { ControlStore } from "./controlStore";
 import { ReviewStore } from "./reviewStore";
 import type { TwinSession } from "./twinStore";
 import { TwinStore } from "./twinStore";
+import type { WatchSession } from "./watchStore";
+import { WatchStore } from "./watchStore";
 
 const noClipboard: Clipboard = { copy: () => Promise.resolve(false) };
 
 class ControlledReview extends ReviewStore implements ReviewSession {
   readonly controls: ControlSession;
   readonly twin: TwinSession;
+  readonly watchList: WatchSession = new WatchStore();
 
   constructor(
     gateway: ReviewGateway,

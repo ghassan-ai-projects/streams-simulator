@@ -2,6 +2,8 @@ import type { ObservedRow } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
 import { MiniTrend } from "./MiniTrend";
+import type { WatchControls } from "./WatchButton";
+import { WatchButton } from "./WatchButton";
 import cells from "./ReportTable.module.css";
 import styles from "./ObservedTable.module.css";
 
@@ -44,11 +46,14 @@ function When({ row }: { readonly row: ObservedRow }) {
   );
 }
 
-function Row({ row }: { readonly row: ObservedRow }) {
+function Row({ row, watch }: { readonly row: ObservedRow; readonly watch: WatchControls | null }) {
   return (
     <tr data-part="observed-row" data-quality={row.quality === "" ? undefined : row.quality}>
-      <th scope="row" className={cells.label} title={row.key}>
-        {row.label}
+      <th scope="row" className={styles.name} title={row.key}>
+        <span className={styles.nameLine}>
+          {row.label}
+          {watch !== null && row.present && !row.word && <WatchButton row={row} watch={watch} />}
+        </span>
       </th>
       {row.present ? (
         <>
@@ -67,23 +72,40 @@ function Row({ row }: { readonly row: ObservedRow }) {
   );
 }
 
-export function ObservedTable({ rows, clock }: { readonly rows: readonly ObservedRow[]; readonly clock: string }) {
+interface TableProps {
+  readonly rows: readonly ObservedRow[];
+  readonly clock: string;
+  readonly watch?: WatchControls | null;
+}
+
+export function ObservedTable({ rows, clock, watch = null }: TableProps) {
   return (
     <table className={cells.table} data-part="observed">
       <caption className={styles.caption}>{clock}</caption>
-      <thead className="sr-only">
+      <thead className={styles.heads}>
         <tr>
           <th scope="col">Channel</th>
-          <th scope="col">Value</th>
+          <th scope="col" className={styles.valueHead}>
+            Value
+          </th>
           <th scope="col">Observed at</th>
           <th scope="col">Trend</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row) => (
-          <Row key={row.key} row={row} />
+          <Row key={row.key} row={row} watch={watch} />
         ))}
       </tbody>
+      {rows.some((row) => row.outside !== "") && (
+        <tfoot>
+          <tr>
+            <td colSpan={4} className={styles.legend} data-part="outside-legend">
+              <OutsideMark text="Outside the instrument's range" /> marks a value outside the instrument&apos;s range.
+            </td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }

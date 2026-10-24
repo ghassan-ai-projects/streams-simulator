@@ -100,8 +100,12 @@ describe("playback samples carry what the instrument said about them", () => {
     [10, 20, 30, 40, 50].forEach((second) => {
       index.add(sample(second * 1e9, second));
     });
-    expect(index.samples("A", "a.x", 20e9, 40e9)).toEqual({ times: [20e9, 30e9, 40e9], values: [20, 30, 40] });
-    expect(index.samples("A", "a.x", 41e9, 49e9)).toEqual({ times: [], values: [] });
+    expect(index.samples("A", "a.x", 20e9, 40e9)).toEqual({
+      times: [20e9, 30e9, 40e9],
+      values: [20, 30, 40],
+      qualities: ["", "", ""],
+    });
+    expect(index.samples("A", "a.x", 41e9, 49e9)).toEqual({ times: [], values: [], qualities: [] });
     expect(index.samples("A", "nope", 0, 99e9)).toBeNull();
     expect(index.samples("B", "a.x", 0, 99e9)).toBeNull();
   });
@@ -150,5 +154,78 @@ describe("a bounded playback index", () => {
     const index = new PlaybackIndex();
     for (let at = 1; at <= 5000; at += 1) index.add(sample(at * 1e9, at));
     expect(index.samples("A", "a.x", 0, 1e15)?.times.length).toBe(5000);
+  });
+});
+
+describe("what the trends need of the index", () => {
+  const times = [10, 20, 30, 40];
+
+  function held() {
+    const index = new PlaybackIndex();
+    times.forEach((second) => {
+      index.add({ ...sample(second * 1e9, second), quality: second === 30 ? "stale" : "" });
+    });
+    return index;
+  }
+
+  it("slices the quality of each sample with the sample", () => {
+    expect(held().samples("A", "a.x", 20e9, 40e9)?.qualities).toEqual(["", "stale", ""]);
+  });
+
+  it("reads one channel at a time: the newest reading at or before a time, none before the first", () => {
+    const index = held();
+    expect(index.reading("A", "a.x", 35e9)).toMatchObject({ value: 30, atNs: 30e9, quality: "stale" });
+    expect(index.reading("A", "a.x", 5e9)).toBeNull();
+    expect(index.reading("A", "nope", 35e9)).toBeNull();
+    expect(index.reading("B", "a.x", 35e9)).toBeNull();
+  });
+
+  it("steps to the neighbouring reading of one channel in either direction and stops at the ends", () => {
+    const index = held();
+    expect(index.neighbour("A", "a.x", 20e9, 1)).toBe(30e9);
+    expect(index.neighbour("A", "a.x", 25e9, 1)).toBe(30e9);
+    expect(index.neighbour("A", "a.x", 20e9, -1)).toBe(10e9);
+    expect(index.neighbour("A", "a.x", 25e9, -1)).toBe(20e9);
+    expect(index.neighbour("A", "a.x", 40e9, 1)).toBeNull();
+    expect(index.neighbour("A", "a.x", 10e9, -1)).toBeNull();
+    expect(index.neighbour("A", "nope", 10e9, 1)).toBeNull();
+  });
+
+  it("knows its unit and whether it ever dropped readings of a channel", () => {
+    const index = held();
+    expect(index.unitOf("A", "a.x")).toBe("kW");
+    expect(index.unitOf("A", "nope")).toBeNull();
+    expect(index.trimmedBeforeNs("A", "a.x")).toBeNull();
+    const bounded = new PlaybackIndex({ capacity: 3 });
+    for (let at = 1; at <= 10; at += 1) bounded.add(sample(at * 1e9, at));
+    expect(bounded.trimmedBeforeNs("A", "a.x")).toBeGreaterThan(0);
+  });
+
+  it("keeps the operator's calls inside a window and forgets the oldest ones of a bounded index", () => {
+    const call = (second: number) => ({ atNs: second * 1e9, entity: "A", effector: "e", accepted: true, reason: "" });
+    const index = new PlaybackIndex();
+    [5, 15, 25].forEach((second) => {
+      index.addCall(call(second));
+    });
+    expect(index.calls(10e9, 30e9).map((entry) => entry.atNs)).toEqual([15e9, 25e9]);
+    const bounded = new PlaybackIndex({ capacity: 8 });
+    for (let at = 1; at <= 20; at += 1) bounded.addCall(call(at));
+    expect(bounded.calls(0, 100e9).length).toBeLessThan(20);
+    expect(bounded.calls(0, 100e9).at(-1)?.atNs).toBe(20e9);
+  });
+});
+
+describe("sample times as large as a real run's clock", () => {
+  const base = 1_767_225_600e9;
+
+  it("includes the sample that sits exactly at the start of a window and finds the neighbours of a sample", () => {
+    const index = new PlaybackIndex();
+    [0, 10, 20].forEach((second) => {
+      index.add({ ...sample(base + second * 1e9, second) });
+    });
+    expect(index.samples("A", "a.x", base + 10e9, base + 20e9)?.times).toEqual([base + 10e9, base + 20e9]);
+    expect(index.neighbour("A", "a.x", base + 20e9, -1)).toBe(base + 10e9);
+    expect(index.neighbour("A", "a.x", base + 10e9, 1)).toBe(base + 20e9);
+    expect(index.neighbour("A", "a.x", base, -1)).toBeNull();
   });
 });

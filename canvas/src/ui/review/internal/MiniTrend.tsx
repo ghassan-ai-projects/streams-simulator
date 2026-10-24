@@ -1,8 +1,10 @@
 import type { Trend } from "../../../model/review";
 import { trendFrame } from "../../../model/review";
+import { cx } from "../../primitives";
 import styles from "./ObservedTable.module.css";
 
 const { width, height } = trendFrame;
+const denseAbove = width / 2;
 
 function pointsOf(points: Trend["segments"][number]): string {
   return points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
@@ -29,7 +31,11 @@ export function MiniTrend({
     >
       <title>{note}</title>
       {trend.segments.map((points) => (
-        <polyline key={String(points[0]?.x)} className={styles.line} points={pointsOf(points)} />
+        <polyline
+          key={String(points[0]?.x)}
+          className={cx(styles.line, points.length > denseAbove && styles.dense)}
+          points={pointsOf(points)}
+        />
       ))}
       {trend.dots.map((point) => (
         <circle key={String(point.x)} className={styles.dot} cx={point.x} cy={point.y} r={1.6} />

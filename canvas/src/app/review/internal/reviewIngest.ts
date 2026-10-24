@@ -10,6 +10,7 @@ export function indexFor(mode: OpenMode): PlaybackIndex {
 
 export function ingest(index: PlaybackIndex, entry: JournalEntry): void {
   if (entry.kind === "observation") index.add(entry.observation);
+  else if (entry.kind === "call") index.addCall(entry.call);
   else if (entry.kind === "clock") index.advanceClock(entry.atNs);
   else if (entry.kind === "opened") index.markOpened(entry.atNs);
 }

@@ -21,6 +21,29 @@ function every(from: number, to: number, step: number, value: (second: number) =
 
 const endNs = 600e9;
 
+describe("the span a trend covers", () => {
+  it("starts at the channel's first reading while the run is younger than the window, so the line uses the whole frame", () => {
+    const trend = trendOf(indexOf(every(0, 600, 10, (second) => 20 + second / 100)), entity, channel, endNs);
+    const xs = trend?.segments.flat().map((point) => point.x) ?? [];
+    expect(Math.min(...xs)).toBe(0);
+    expect(Math.max(...xs)).toBeCloseTo(trendFrame.width, 6);
+    expect(trend?.windowNs).toBe(600e9);
+  });
+
+  it("keeps the whole window once the run is older than it", () => {
+    const long = 3600e9;
+    const trend = trendOf(indexOf(every(0, 3600, 10, () => 20)), entity, channel, long);
+    expect(trend?.windowNs).toBe(trendWindowNs);
+    expect(Math.min(...(trend?.segments.flat() ?? []).map((point) => point.x))).toBeCloseTo(0, 6);
+  });
+
+  it("never narrows below a minute, so a lone fresh reading is a dot at the right edge", () => {
+    const trend = trendOf(indexOf([[600, 20]]), entity, channel, endNs);
+    expect(trend?.windowNs).toBe(60e9);
+    expect(trend?.dots[0]?.x).toBeCloseTo(trendFrame.width, 6);
+  });
+});
+
 describe("the trend of one channel", () => {
   it("is absent when the channel has no samples in the window or holds words", () => {
     expect(trendOf(indexOf([]), entity, channel, endNs)).toBeNull();
@@ -52,8 +75,8 @@ describe("the trend of one channel", () => {
     expect(trend?.gaps).toBe(1);
     expect(trend?.segments).toHaveLength(2);
     const [before, after] = trend?.segments ?? [];
-    const holeStart = ((200e9 - (endNs - trendWindowNs)) / trendWindowNs) * trendFrame.width;
-    const holeEnd = ((400e9 - (endNs - trendWindowNs)) / trendWindowNs) * trendFrame.width;
+    const holeStart = (200e9 / endNs) * trendFrame.width;
+    const holeEnd = (400e9 / endNs) * trendFrame.width;
     expect(Math.max(...(before ?? []).map((point) => point.x))).toBeLessThanOrEqual(holeStart + 1e-9);
     expect(Math.min(...(after ?? []).map((point) => point.x))).toBeGreaterThanOrEqual(holeEnd - 1e-9);
     expect(trend?.medianNs).toBe(10e9);

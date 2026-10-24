@@ -103,7 +103,16 @@ function projectEntry(entry: Record<string, unknown>): JournalEntry {
   if (entry.type === "origin") return originEntry(entry, atNs);
   if (entry.type === "binding") return bindingEntry(entry, atNs);
   if (entry.type === "clock.advanced") return { kind: "clock", atNs: reachedNs(entry, atNs) };
+  if (entry.type === "effector.acknowledged") return callEntry(entry, atNs);
   return { kind: "other", atNs };
+}
+
+function callEntry(entry: Record<string, unknown>, atNs: number): JournalEntry {
+  const response = record(entry.response);
+  const [entity, effector] = [text(entry.entity_id), text(entry.effector)];
+  if (entity === "" || effector === "" || typeof response.accepted !== "boolean") return { kind: "other", atNs };
+  const call = { atNs, entity, effector, accepted: response.accepted, reason: text(response.reason) };
+  return { kind: "call", call };
 }
 
 function reachedNs(entry: Record<string, unknown>, atNs: number): number {
