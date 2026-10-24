@@ -1,7 +1,7 @@
 import type { Composition } from "../../../model/editor";
 import { domainOf, serialise } from "../../../model/editor";
 import { issueTargets } from "../../../model/editor";
-import type { Draft } from "./editorDraft";
+import type { Draft, Plausibility } from "./editorDraft";
 import type { StoreMemo } from "./editorMemo";
 import { outputEtagOf } from "./editorMemo";
 import type { ComposeSummary, EditorFailure, EditorGateway } from "../../ports";
@@ -54,6 +54,11 @@ export function applySaveResult(draft: Draft, attempt: SaveAttempt, result: Save
   return draft;
 }
 
+export function withPlausibility(draft: Draft, attempt: SaveAttempt, plausibility: Plausibility): Draft {
+  const { save } = draft;
+  return save.kind === "composed" && save.doc === attempt.doc ? { ...draft, save: { ...save, plausibility } } : draft;
+}
+
 function composeFailed(draft: Draft, attempt: SaveAttempt, failure: EditorFailure): Draft {
   const failures = "issues" in failure ? (failure.issues ?? []) : [];
   const issues = issueTargets(attempt.doc, failures);
@@ -66,7 +71,13 @@ function composed(draft: Draft, attempt: SaveAttempt, result: SaveResult & { rea
   return {
     ...draft,
     domain: result.outputEtag === "" ? null : attempt.output,
-    save: { kind: "composed", summary, doc: attempt.doc },
+    save: {
+      kind: "composed",
+      summary,
+      doc: attempt.doc,
+      digest: result.summary.digest,
+      plausibility: { kind: "running" },
+    },
     issues: null,
   };
 }

@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { CircleCheck, CircleHelp, Loader, Minus, TriangleAlert } from "lucide-react";
 import type { CheckFact, CheckRow, Draft, TwinDraft } from "../../../app/devices";
-import { checkFacts, checkRows, checkSummary } from "../../../app/devices";
+import { builtOf, checkFacts, checkRows, checkSummary } from "../../../app/devices";
+import { stemOf, twinPath } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
@@ -76,7 +78,30 @@ function Summary({ draft }: { readonly draft: TwinDraft }) {
   return summary === null ? null : <p className={panel.hint}>{summary}</p>;
 }
 
-export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; readonly device: Draft }) {
+export type AssumptionsSlot = (domain: string, twin: string) => ReactNode;
+
+function Assumed({
+  draft,
+  device,
+  slot,
+}: {
+  readonly draft: TwinDraft;
+  readonly device: Draft;
+  readonly slot: AssumptionsSlot;
+}) {
+  const built = builtOf(draft);
+  return built === null ? null : slot(built.path, twinPath(stemOf(device.path)));
+}
+
+export function CheckPanel({
+  draft,
+  device,
+  assumptions,
+}: {
+  readonly draft: TwinDraft;
+  readonly device: Draft;
+  readonly assumptions: AssumptionsSlot;
+}) {
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="check-title">
       <FormTitle id="check-title" words="Check" />
@@ -91,6 +116,7 @@ export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; reado
           <Item key={row.id} row={row} />
         ))}
       </ul>
+      <Assumed draft={draft} device={device} slot={assumptions} />
       <Details facts={checkFacts(draft)} />
     </section>
   );

@@ -18,7 +18,7 @@ import { createPlantMaker, createPlantSession } from "./app/plant";
 import { createReviewSession } from "./app/review";
 import { createSession } from "./app/session";
 import { createNavigationStore, createPanelStore, createThemeStore } from "./app/shell";
-import { createWorkspaceStore } from "./app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "./app/workspace";
 import { App } from "./ui/shell";
 import "./ui/theme/tokens.css";
 import "./ui/theme/base.css";
@@ -29,6 +29,7 @@ if (root) {
   const preferences = localPreferences(window.localStorage);
   const themes = createThemeStore(preferences, mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")));
   const adapters = bridgeAdapter(browserTransport());
+  const workspace = createWorkspaceStore(adapters.workspace);
   const time = browserClock();
   const panels = createPanelStore(preferences);
   const navigation = createNavigationStore(hashLocation(window));
@@ -46,7 +47,8 @@ if (root) {
         stores={{
           themes,
           session: createSession(adapters.session),
-          workspace: createWorkspaceStore(adapters.workspace),
+          workspace,
+          provenance: createProvenanceSession(adapters.provenance, workspace),
           navigation,
           plants,
           review,

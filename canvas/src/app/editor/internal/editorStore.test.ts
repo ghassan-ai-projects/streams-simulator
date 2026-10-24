@@ -81,10 +81,11 @@ describe("editor store", () => {
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.saved).toBe(state.doc);
-    expect(state.save).toEqual({
+    expect(state.save).toMatchObject({
       kind: "composed",
       summary: "Composed 3 channels, 2 faults, 1 effectors.",
       doc: state.doc,
+      digest: "",
     });
     expect(equipmentOf(state.doc).map((entry) => entry.names[0])).toEqual(["CH-1", "P-1"]);
   });

@@ -77,17 +77,21 @@ export function removeInstance(doc: Composition, id: string): Composition {
   return { ...doc, equipment, connections: connectionRows(doc).filter((wire) => !touches(wire, id)) };
 }
 
-export function moveInstance(doc: Composition, id: string, area: string): Composition {
+export function reshapeInstance(doc: Composition, id: string, change: (row: Row) => Row): Composition {
   const all = equipmentRows(doc);
   const source = all.find((entry) => holds(entry, id));
   if (source === undefined) return doc;
-  const moved = { ...source, names: [id], area };
+  const reshaped = change({ ...source, names: [id] });
   const others = all.filter((entry) => entry !== source);
-  if (namesOf(source).length <= 1 && !others.some((entry) => joinable(entry, moved))) {
-    return { ...doc, equipment: all.map((entry) => (entry === source ? moved : entry)) };
+  if (namesOf(source).length <= 1 && !others.some((entry) => joinable(entry, reshaped))) {
+    return { ...doc, equipment: all.map((entry) => (entry === source ? reshaped : entry)) };
   }
   const rest = all.flatMap((entry) => (entry === source ? withoutName(entry, id) : [entry]));
-  return { ...doc, equipment: placed(rest, moved) };
+  return { ...doc, equipment: placed(rest, reshaped) };
+}
+
+export function moveInstance(doc: Composition, id: string, area: string): Composition {
+  return reshapeInstance(doc, id, (row) => ({ ...row, area }));
 }
 
 export function connect(doc: Composition, from: string, to: string): Composition {

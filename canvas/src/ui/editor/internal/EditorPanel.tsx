@@ -10,6 +10,7 @@ import { AreaEditor } from "./AreaEditor";
 import { AddEquipment } from "./AddEquipment";
 import styles from "./Editor.module.css";
 import { InstanceEditor } from "./InstanceEditor";
+import { SaveReport } from "./SaveReport";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
 
@@ -103,6 +104,7 @@ function Build({ draft, plant, editor, request }: PanelProps) {
         </h2>
       </header>
       <div className={panel.body}>
+        <SaveReport draft={draft} />
         <Issues draft={draft} editor={editor} request={request} />
         {plant.instances.length === 0 && <FirstStep />}
         <AddEquipment draft={draft} plant={plant} editor={editor} request={request} />

@@ -6,6 +6,8 @@ import { jobGateway } from "./jobs";
 import { controlSession } from "./control";
 import { devicesGateway } from "./devices";
 import { followRun } from "./follow";
+import { lintAction } from "./lintAction";
+import { provenanceGateway } from "./provenanceGateway";
 import { requestTwinReport } from "./twinReportGateway";
 import type { FailureMapper, Transport, WireProblem } from "./http";
 import { action, getFile, post, putFile, request } from "./http";
@@ -50,6 +52,7 @@ export function bridgeAdapter(transport: Transport): BridgeAdapters {
     devices: devicesGateway(transport),
     launch: launchGateway(transport),
     review: reviewGateway(transport),
+    provenance: provenanceGateway(transport),
   };
 }
 
@@ -86,6 +89,7 @@ function editorGateway(transport: Transport): BridgeAdapters["editor"] {
     ...fileActions(transport, editorFailure),
     library: () => action(transport, "component.list", {}, library, editorFailure("read")),
     presets: (ref) => action(transport, "component.show", { ref }, presets, editorFailure("read")),
+    lint: lintAction(transport, editorFailure("read")),
   };
 }
 

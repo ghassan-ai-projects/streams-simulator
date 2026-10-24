@@ -40,9 +40,11 @@ export type {
   Instance,
   LibraryEntry,
   Link,
+  ParameterSpec,
   Pin,
   Pins,
   Plant,
   PortSpec,
+  PresetOption,
   Presets,
 } from "./contract";

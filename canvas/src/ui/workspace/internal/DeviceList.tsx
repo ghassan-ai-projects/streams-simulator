@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { DeviceDesk, DeviceRow } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { kindFacts, stemOf } from "../../../model/devices";
-import type { Workspace } from "../../../model/workspace";
+import type { Lineage, Workspace } from "../../../model/workspace";
+import { deviceBadge } from "../../../model/workspace";
 import { shared } from "../../primitives";
 import badgeStyles from "./Badge.module.css";
 import { NewDeviceForm } from "./NewDevice";
@@ -16,6 +17,7 @@ interface DeviceListProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
   readonly desk: DeviceDesk;
+  readonly lineage: Lineage | null;
 }
 
 interface Shown {
@@ -53,14 +55,35 @@ function shownRows(kinds: Workspace["kinds"], rows: readonly DeviceRow[] | null)
   return shown.sort((a, b) => a.row.name.localeCompare(b.row.name));
 }
 
-const statusBadge = {
-  invalid: { words: "Not valid", style: "unfinished" },
-  "needs-twin": { words: "Needs a twin", style: "badge" },
-  "twin-ready": { words: "Twin created", style: "verified" },
-} as const;
+function EditDevice({ row, navigation }: { readonly row: DeviceRow; readonly navigation: NavigationStore }) {
+  return (
+    <span className={rowStyles.actions}>
+      <button
+        type="button"
+        className={shared.secondary}
+        aria-label={`Edit ${row.name}`}
+        onClick={() => {
+          navigation.go({ screen: "device", path: row.path });
+        }}
+      >
+        <Pencil size={13} aria-hidden="true" />
+        Edit
+      </button>
+    </span>
+  );
+}
 
-function DeviceItem({ item, navigation }: { readonly item: Shown; readonly navigation: NavigationStore }) {
+function DeviceItem({
+  item,
+  navigation,
+  lineage,
+}: {
+  readonly item: Shown;
+  readonly navigation: NavigationStore;
+  readonly lineage: Lineage | null;
+}) {
   const { row, loaded } = item;
+  const badge = deviceBadge(row.status, row.path, lineage);
   return (
     <li className={rowStyles.item} title={row.path}>
       <Cpu size={16} aria-hidden="true" className={rowStyles.icon} />
@@ -69,27 +92,13 @@ function DeviceItem({ item, navigation }: { readonly item: Shown; readonly navig
           <span className={rowStyles.name} title={row.name}>
             {row.name}
           </span>
-          {loaded && (
-            <span className={badgeStyles[statusBadge[row.status].style]}>{statusBadge[row.status].words}</span>
-          )}
+          {loaded && <span className={badgeStyles[badge.tone]}>{badge.words}</span>}
         </span>
         <span className={workspaceStyles.meta}>
           {loaded ? kindFacts(row.metrics, row.commands) : "Reading the file…"}
         </span>
       </span>
-      <span className={rowStyles.actions}>
-        <button
-          type="button"
-          className={shared.secondary}
-          aria-label={`Edit ${row.name}`}
-          onClick={() => {
-            navigation.go({ screen: "device", path: row.path });
-          }}
-        >
-          <Pencil size={13} aria-hidden="true" />
-          Edit
-        </button>
-      </span>
+      <EditDevice row={row} navigation={navigation} />
     </li>
   );
 }
@@ -137,7 +146,7 @@ function HeadingActions({ creating, trigger, desk, navigation, onToggle }: Headi
   );
 }
 
-export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
+export function DeviceList({ workspace, navigation, desk, lineage }: DeviceListProps) {
   const rows = useDeviceRows(desk, workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -165,7 +174,7 @@ export function DeviceList({ workspace, navigation, desk }: DeviceListProps) {
       ) : (
         <ul className={rowStyles.rows}>
           {shownRows(workspace.kinds, rows).map((item) => (
-            <DeviceItem key={item.row.path} item={item} navigation={navigation} />
+            <DeviceItem key={item.row.path} item={item} navigation={navigation} lineage={lineage} />
           ))}
         </ul>
       )}

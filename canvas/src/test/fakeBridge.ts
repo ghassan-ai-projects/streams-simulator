@@ -71,6 +71,7 @@ export class FakeBridge {
   readonly devices = this.gateways.devices;
   readonly launch = this.gateways.launch;
   readonly review = this.gateways.review;
+  readonly provenance = this.gateways.provenance;
 
   get jobCalls(): readonly { name: string; args: Args }[] {
     return this.calls.filter((call) => call.name.startsWith("job."));

@@ -20,8 +20,11 @@ describe("plant and editor gateways", () => {
     ["plant", (a: ReturnType<typeof bridgeAdapter>) => a.plant.compose(compose)],
     ["editor", (a: ReturnType<typeof bridgeAdapter>) => a.editor.compose(compose)],
   ])("composes through the %s gateway", async (_name, run) => {
-    const t = answering({ channels: 4, faults: 2, effectors: 1 });
-    expect(await run(bridgeAdapter(t))).toEqual({ ok: true, value: { channels: 4, faults: 2, effectors: 1 } });
+    const t = answering({ channels: 4, faults: 2, effectors: 1, digest: "sha256:ab" });
+    expect(await run(bridgeAdapter(t))).toEqual({
+      ok: true,
+      value: { channels: 4, faults: 2, effectors: 1, digest: "sha256:ab" },
+    });
     expect(lastCall(t)).toEqual({
       url: "/api/actions/domain.compose",
       body: { args: { composition: compose.composition, out: compose.output, etag: "e1" } },

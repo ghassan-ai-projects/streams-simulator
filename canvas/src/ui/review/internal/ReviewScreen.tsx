@@ -4,9 +4,10 @@ import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantSession } from "../../../app/plant";
 import type { ReviewSession } from "../../../app/review";
-import type { WorkspaceStore } from "../../../app/workspace";
+import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 import { cx, shared, useStore } from "../../primitives";
 import { Centre } from "./ReviewCentre";
+import type { ActionsProps } from "./ReviewActions";
 import { ReviewActions } from "./ReviewActions";
 import { Side } from "./ReviewSide";
 import { Header } from "./RunHeader";
@@ -23,14 +24,34 @@ interface ReviewScreenProps {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
+  readonly provenance: ProvenanceSession;
   readonly worldId: string;
   readonly live?: boolean;
+  readonly model?: boolean;
 }
 
 function useScreenLifecycle({ review, plants, workspace, worldId, live = false }: ReviewScreenProps): void {
   useReviewOpen(review, workspace, worldId, live ? "live" : "review");
   useClosePlant(plants, worldId);
   usePlaybackKeys(review);
+}
+
+function HeaderActions(props: ReviewScreenProps & Pick<ActionsProps, "state" | "unit">) {
+  const { review, workspace, navigation, worldId } = props;
+  return (
+    <ReviewActions
+      review={review}
+      workspace={workspace}
+      provenance={props.provenance}
+      modelOpen={props.model === true}
+      onModelClosed={() => {
+        navigation.replace({ screen: "review", worldId });
+      }}
+      state={props.state}
+      worldId={worldId}
+      unit={props.unit}
+    />
+  );
 }
 
 export function ReviewScreen(props: ReviewScreenProps) {
@@ -53,7 +74,7 @@ export function ReviewScreen(props: ReviewScreenProps) {
           hall={hall}
           onHall={setHall}
           plant={view}
-          extra={<ReviewActions review={review} workspace={workspace} state={state} worldId={worldId} unit={unit} />}
+          extra={<HeaderActions {...props} state={state} unit={unit} />}
         />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <Centre

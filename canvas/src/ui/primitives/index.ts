@@ -14,5 +14,6 @@ export { useStore } from "./internal/useStore";
 export { Breadcrumb, CrumbSlot } from "./internal/Breadcrumb";
 export type { Crumb } from "./contract";
 export { default as panel } from "./internal/panel.module.css";
+export { default as records } from "./internal/records.module.css";
 export { default as screen } from "./internal/screen.module.css";
 export { default as shared } from "./internal/shared.module.css";

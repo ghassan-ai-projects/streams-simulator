@@ -6,7 +6,7 @@ import type { Scheduler } from "../../../app/ports";
 import type { ReviewSession } from "../../../app/review";
 import type { Session } from "../../../app/session";
 import type { NavigationStore, PanelStore, ThemeStore } from "../../../app/shell";
-import type { WorkspaceStore } from "../../../app/workspace";
+import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 
 export interface Stores {
   readonly themes: ThemeStore;
@@ -24,5 +24,6 @@ export interface Stores {
   readonly desk: DeviceDesk;
   readonly panels: PanelStore;
   readonly maker: PlantMaker;
+  readonly provenance: ProvenanceSession;
   readonly showDetails: () => void;
 }

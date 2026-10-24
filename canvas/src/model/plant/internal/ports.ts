@@ -68,11 +68,30 @@ export interface PortSpec {
 
 export type Category = "air" | "cool" | "prod" | "elec" | "env";
 
+export interface ParameterSpec {
+  readonly name: string;
+  readonly title: string;
+  readonly unit: string;
+  readonly type: "number" | "integer" | "enum";
+  readonly min: number | null;
+  readonly max: number | null;
+  readonly values: readonly string[];
+  readonly default: number | string | null;
+}
+
+export interface PresetOption {
+  readonly name: string;
+  readonly title: string;
+}
+
 export interface ComponentSpec {
   readonly ports: readonly PortSpec[];
   readonly category: Category;
   readonly title?: string;
   readonly description?: string;
+  readonly parameters?: readonly ParameterSpec[];
+  readonly presets?: readonly PresetOption[];
+  readonly defaultPreset?: string;
 }
 
 export function portsMatching(spec: ComponentSpec | undefined, direction: "in" | "out", type = ""): readonly string[] {

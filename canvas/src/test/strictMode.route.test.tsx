@@ -8,7 +8,7 @@ import type { NavigationStore } from "../app/shell";
 import { createDeviceDesk } from "../app/devices";
 import { createPlantMaker } from "../app/plant";
 import type { WorkspaceStore } from "../app/workspace";
-import { createWorkspaceStore } from "../app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "../app/workspace";
 
 function Route({
   workspace,
@@ -36,6 +36,7 @@ function Route({
         navigation={nav}
         maker={createPlantMaker(bridge.plant)}
         desk={createDeviceDesk(bridge.devices)}
+        provenance={createProvenanceSession(bridge.provenance, workspace)}
         badgeFor={() => null}
       />
     </>

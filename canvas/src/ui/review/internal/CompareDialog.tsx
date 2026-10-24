@@ -2,17 +2,19 @@ import { X } from "lucide-react";
 import { useEffect } from "react";
 import type { CompareState, ReviewSession } from "../../../app/review";
 import { compareFor } from "../../../app/review";
-import type { WorkspaceStore } from "../../../app/workspace";
+import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 import type { Report } from "../../../model/review";
 import { referenceChoices, referenceRole, thisRunRole } from "../../../model/review";
 import { runRows } from "../../../model/workspace";
 import { cx, failureLine, shared, useStore } from "../../primitives";
 import { ComparisonView } from "./ComparisonView";
+import { ModelLink, modelsDiffer } from "./ModelLink";
 import { useModal } from "./useModal";
 import styles from "./Compare.module.css";
 
 interface DialogProps {
   readonly review: ReviewSession;
+  readonly provenance: ProvenanceSession;
   readonly workspace: WorkspaceStore;
   readonly report: Report;
   readonly worldId: string;
@@ -100,8 +102,15 @@ function Outcome({ props, state }: { readonly props: DialogProps; readonly state
         {failureLine(state.failure.diagnostic)}
       </p>
     );
-  if (state.phase === "ready") return <ComparisonView comparison={state.comparison} unit={props.unit} />;
-  return null;
+  if (state.phase !== "ready") return null;
+  return (
+    <>
+      {modelsDiffer(state.comparison) && (
+        <ModelLink session={props.provenance.diff} reference={state.reference} worldId={props.worldId} />
+      )}
+      <ComparisonView comparison={state.comparison} unit={props.unit} />
+    </>
+  );
 }
 
 function DialogHead({ onClose }: { readonly onClose: () => void }) {

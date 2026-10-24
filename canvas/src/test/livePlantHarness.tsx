@@ -1,11 +1,12 @@
 import { act, render } from "@testing-library/react";
 import { Profiler } from "react";
 import { createLaunchStore } from "../app/launch";
-import { createPlantSession } from "../app/plant";
+import { createPlantMaker, createPlantSession } from "../app/plant";
+import type { PlantMaker } from "../app/plant";
 import type { ReviewSession } from "../app/review";
 import { createReviewSession } from "../app/review";
 import { createNavigationStore } from "../app/shell";
-import { createWorkspaceStore } from "../app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "../app/workspace";
 import { PlantScreen } from "../ui/plant";
 import { ConnectedPlant } from "../ui/review";
 import { useStore } from "../ui/primitives";
@@ -15,7 +16,7 @@ import { flushPromises } from "./deferred";
 import { memoryLocation } from "./location";
 import type { FakeBridge } from "./fakeBridge";
 import type { PlantSession } from "../app/plant";
-import type { WorkspaceStore } from "../app/workspace";
+import type { ProvenanceSession, WorkspaceStore } from "../app/workspace";
 import type { NavigationStore } from "../app/shell";
 import type { LaunchStore } from "../app/launch";
 
@@ -27,10 +28,12 @@ interface Parts {
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
   readonly review: ReviewSession;
+  readonly provenance: ProvenanceSession;
+  readonly maker: PlantMaker;
 }
 
 function Screen({ parts }: { readonly parts: Parts }) {
-  const { plants, workspace, navigation, launch, review } = parts;
+  const { plants, workspace, navigation, launch, review, provenance, maker } = parts;
   const state = useStore(plants);
   const ready = state.phase === "ready" && state.path === factoryPath ? state : null;
   return (
@@ -41,6 +44,8 @@ function Screen({ parts }: { readonly parts: Parts }) {
           workspace={workspace}
           navigation={navigation}
           launch={launch}
+          provenance={provenance}
+          maker={maker}
           domain={factoryPath}
           hall={null}
           startLaunching={false}
@@ -89,9 +94,12 @@ export async function mountLivePlant(open: (review: ReviewSession, worldId: stri
   const bridge = factoryBridge();
   const timers = fakeClock();
   const review = createReviewSession(bridge.review, timers, timers);
+  const workspace = createWorkspaceStore(bridge.workspace);
   const parts: Parts = {
     plants: createPlantSession(bridge.plant),
-    workspace: createWorkspaceStore(bridge.workspace),
+    workspace,
+    provenance: createProvenanceSession(bridge.provenance, workspace),
+    maker: createPlantMaker(bridge.plant),
     navigation: createNavigationStore(memoryLocation(`#/plant?domain=${encodeURIComponent(factoryPath)}`)),
     launch: createLaunchStore(bridge.launch, timers, timers),
     review,

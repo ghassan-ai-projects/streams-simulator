@@ -6,6 +6,7 @@ import type { Comparison, Replay, Report } from "../../../model/review";
 import { parseComparisonPayload } from "./compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, list, record, text } from "../../../model/shared/json";
+import { parametersOf, presetsOf } from "./parameterDecoder";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;
@@ -141,11 +142,7 @@ export function library(value: unknown): readonly LibraryEntry[] | null {
 export function presets(value: unknown): Presets | null {
   if (!isRecord(value) || !isRecord(value.document)) return null;
   const document = value.document;
-  const rawPresets = record(document.presets);
-  const options = Object.entries(rawPresets).map(([name, raw]) => ({
-    name,
-    title: text(record(raw).title) || name,
-  }));
+  const options = presetsOf(document);
   return { options, preferred: text(document.default_preset), description: text(document.description) };
 }
 
@@ -173,6 +170,16 @@ export function component(value: unknown): ComponentSpec | null {
     category: category(text(entry.class), tags),
     ...(title === undefined ? {} : { title }),
     ...(description === undefined ? {} : { description }),
+    ...sizesOf(document),
+  };
+}
+
+function sizesOf(document: Record<string, unknown>) {
+  const parameters = parametersOf(document);
+  const presets = presetsOf(document);
+  return {
+    ...(parameters.length === 0 ? {} : { parameters }),
+    ...(presets.length === 0 ? {} : { presets, defaultPreset: text(document.default_preset) }),
   };
 }
 
@@ -225,7 +232,9 @@ export function composeSummary(value: unknown): ComposeSummary | null {
   const channels = finiteNumber(value.channels);
   const faults = finiteNumber(value.faults);
   const effectors = finiteNumber(value.effectors);
-  return channels === null || faults === null || effectors === null ? null : { channels, faults, effectors };
+  return channels === null || faults === null || effectors === null
+    ? null
+    : { channels, faults, effectors, digest: text(value.digest) };
 }
 
 function finiteNumber(value: unknown): number | null {

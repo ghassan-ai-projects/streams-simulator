@@ -52,7 +52,13 @@ describe("save status", () => {
 
   it("puts unsaved changes before the result of an older save", () => {
     const edited = { ...doc, title: "Mine" };
-    const composed: SaveState = { kind: "composed", summary: "Composed.", doc };
+    const composed: SaveState = {
+      kind: "composed",
+      summary: "Composed.",
+      doc,
+      digest: "",
+      plausibility: { kind: "running" },
+    };
     expect(saveStatusOf(savedAs(composed, { doc: edited }))).toMatchObject({ text: "Unsaved changes", tone: "busy" });
     expect(saveStatusOf(savedAs(composed))).toEqual({ text: "Ready to run. Saved.", detail: "Composed.", tone: "ok" });
   });
@@ -80,8 +86,14 @@ describe("save selectors", () => {
   it("counts a draft as checked only when its domain is known or its last compose was of this document", () => {
     expect(checked(draft())).toBe(false);
     expect(checked(draft({ domain: "domains/lab.domain.json" }))).toBe(true);
-    expect(checked(savedAs({ kind: "composed", summary: "", doc }))).toBe(true);
-    expect(checked(savedAs({ kind: "composed", summary: "", doc: { ...doc } }))).toBe(false);
+    expect(
+      checked(savedAs({ kind: "composed", summary: "", doc, digest: "", plausibility: { kind: "running" } })),
+    ).toBe(true);
+    expect(
+      checked(
+        savedAs({ kind: "composed", summary: "", doc: { ...doc }, digest: "", plausibility: { kind: "running" } }),
+      ),
+    ).toBe(false);
     expect(checked(savedAs({ kind: "saving" }, { domain: "domains/lab.domain.json" }))).toBe(false);
     expect(checked(savedAs({ kind: "compose-failed", failure }, { domain: "domains/lab.domain.json" }))).toBe(false);
   });

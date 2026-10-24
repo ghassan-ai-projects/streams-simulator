@@ -8,7 +8,15 @@ function listedRunning(listing: WorkspaceState, worldId: string): boolean {
   return listing.workspace.runs.some((run) => run.worldId === worldId && run.connected === "running");
 }
 
-export function ReviewRoute({ stores, worldId }: { readonly stores: Stores; readonly worldId: string }) {
+export function ReviewRoute({
+  stores,
+  worldId,
+  model,
+}: {
+  readonly stores: Stores;
+  readonly worldId: string;
+  readonly model: boolean;
+}) {
   const held = useStore(stores.liveReview);
   const connected = useStore(stores.launch.connect);
   const listing = useStore(stores.workspace);
@@ -21,6 +29,8 @@ export function ReviewRoute({ stores, worldId }: { readonly stores: Stores; read
       workspace={stores.workspace}
       navigation={stores.navigation}
       launch={stores.launch}
+      provenance={stores.provenance}
+      model={model}
       worldId={worldId}
     />
   );

@@ -7,7 +7,7 @@ import { createReviewSession } from "../app/review";
 import { createSession } from "../app/session";
 import { createNavigationStore, createPanelStore, createThemeStore } from "../app/shell";
 import type { Clipboard, FileSaver } from "../app/ports";
-import { createWorkspaceStore } from "../app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "../app/workspace";
 import { App } from "../ui/shell";
 import type { FakeBridge } from "./fakeBridge";
 import { fakeClock } from "./fakeClock";
@@ -26,10 +26,12 @@ function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard, saver
   const timers = fakeClock();
   bridge.jobs.drive(timers);
   const shown: string[] = [];
+  const workspace = createWorkspaceStore(bridge.workspace);
   const stores = {
     themes: themes(),
     session: createSession(bridge.session),
-    workspace: createWorkspaceStore(bridge.workspace),
+    workspace,
+    provenance: createProvenanceSession(bridge.provenance, workspace),
     navigation: createNavigationStore(location),
     plants: createPlantSession(bridge.plant),
     review: createReviewSession(bridge.review, timers, timers, clipboard, saver),

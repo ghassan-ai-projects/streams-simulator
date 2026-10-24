@@ -1,14 +1,18 @@
+import type { ReactNode } from "react";
 import { screen } from "../../primitives";
 import { ReactFlowProvider } from "@xyflow/react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import type { PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
-import type { WorkspaceStore } from "../../../app/workspace";
+import type { PlantMaker, PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
+import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 import { hallOf, hallsOf } from "../../../model/graph";
+import { plantTitle } from "../../../model/plant";
 import type { RunRow } from "../../../model/workspace";
+import type { Workspace } from "../../../model/workspace";
 import { runRows } from "../../../model/workspace";
 import { useStore } from "../../primitives";
 import { Navigator, Outline } from "../../graph";
+import { provenanceParts, useDrawer } from "./provenanceParts";
 import { LaunchPanel } from "../../launch";
 import { Inspector } from "./Inspector";
 import { PlantCentre } from "./PlantCentre";
@@ -24,6 +28,8 @@ interface PlantScreenProps {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
+  readonly provenance: ProvenanceSession;
+  readonly maker: PlantMaker;
   readonly domain: string;
   readonly hall: string | null;
   readonly startLaunching: boolean;
@@ -36,12 +42,14 @@ function PlantSide({
   plants,
   navigation,
   connected,
+  block,
 }: {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly connected?: Connected;
+  readonly block: ReactNode;
 }) {
   return (
     <div className={screen.side}>
@@ -57,6 +65,7 @@ function PlantSide({
           navigation.go({ screen: "plant", domain: state.path, hall: name });
         }}
       />
+      {block}
       <Navigator />
     </div>
   );
@@ -72,6 +81,7 @@ interface RightProps {
   readonly onClose: () => void;
   readonly plants: PlantSession;
   readonly runs: readonly RunRow[];
+  readonly provenance: ReactNode;
 }
 
 function PlantInspector({ state, hall, navigation, plants, runs, connected }: RightProps) {
@@ -105,7 +115,8 @@ function PlantInspector({ state, hall, navigation, plants, runs, connected }: Ri
 }
 
 function RightPanel(props: RightProps) {
-  const { state, launch, navigation, launching, onClose } = props;
+  const { state, launch, navigation, launching, onClose, provenance } = props;
+  if (!launching && provenance !== null) return provenance;
   if (!launching) return <PlantInspector {...props} />;
   return (
     <LaunchPanel
@@ -139,6 +150,50 @@ function NotReady({
   );
 }
 
+interface ReadyProps {
+  readonly props: PlantScreenProps;
+  readonly state: ReadyPlant;
+  readonly workspace: Workspace | null;
+  readonly run: ReturnType<typeof useLaunching>;
+  readonly drawer: ReturnType<typeof useDrawer>;
+}
+
+function Ready({ props, state, workspace, run, drawer }: ReadyProps) {
+  const { plants, navigation, launch, hall } = props;
+  const childProps = {
+    state,
+    hall,
+    plants,
+    navigation,
+    ...(props.connected === undefined ? {} : { connected: props.connected }),
+  };
+  const parts = provenanceParts({
+    provenance: props.provenance,
+    navigation,
+    maker: props.maker,
+    path: state.path,
+    title: plantTitle(state.plant),
+    workspace,
+    drawer,
+  });
+  return (
+    <ReactFlowProvider>
+      <div className={screen.screen}>
+        <PlantSide {...childProps} block={parts.block} />
+        <PlantCentre {...childProps} launch={launch} run={run} />
+        <RightPanel
+          {...childProps}
+          launch={launch}
+          launching={run.launching}
+          provenance={parts.panel}
+          onClose={run.close}
+          runs={workspace === null ? [] : runRows(workspace, state.plant.id)}
+        />
+      </div>
+    </ReactFlowProvider>
+  );
+}
+
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching, onShowDetails } = props;
   const run = useLaunching(
@@ -147,33 +202,10 @@ export function PlantScreen(props: PlantScreenProps) {
     useConsume(navigation, domain, hall),
   );
   const state = useStore(plants);
+  const drawer = useDrawer(onShowDetails);
   const listing = usePlantLoad(plants, domain, workspace);
   if (state.phase !== "ready" || state.path !== domain)
     return <NotReady state={state} domain={domain} navigation={navigation} />;
-  const childProps = {
-    state,
-    hall,
-    plants,
-    navigation,
-    ...(props.connected === undefined ? {} : { connected: props.connected }),
-  };
-  return (
-    <ReactFlowProvider>
-      <div className={screen.screen}>
-        <PlantSide {...childProps} />
-        <PlantCentre {...childProps} launch={launch} run={run} />
-        <RightPanel
-          {...(props.connected === undefined ? {} : { connected: props.connected })}
-          state={state}
-          hall={hall}
-          launch={launch}
-          navigation={navigation}
-          launching={run.launching}
-          onClose={run.close}
-          plants={plants}
-          runs={listing.phase === "ready" ? runRows(listing.workspace, state.plant.id) : []}
-        />
-      </div>
-    </ReactFlowProvider>
-  );
+  const opened = listing.phase === "ready" ? listing.workspace : null;
+  return <Ready props={props} state={state} workspace={opened} run={run} drawer={drawer} />;
 }

@@ -10,6 +10,8 @@ import { Choice } from "./Choice";
 import { ConnectForm } from "./ConnectForm";
 import { DeleteInstance } from "./DeleteInstance";
 import { Links } from "./InstanceLinks";
+import { Parameters } from "./Parameters";
+import { SaveReport } from "./SaveReport";
 import { Rename } from "./RenameInstance";
 import styles from "./Editor.module.css";
 import type { PanelProps } from "./panelProps";
@@ -63,7 +65,12 @@ function Head({ instance, editor, request }: Pick<EditorProps, "instance" | "edi
 function Editing({ draft, plant, editor, request, instance }: EditorProps) {
   const flagged = (draft.issues?.instances.get(instance.id) ?? []).length > 0;
   if (isTemplate(draft.doc, instance.id)) {
-    return <p className={panel.hint}>Generated from an id template; change it in the composition file.</p>;
+    return (
+      <>
+        <p className={panel.hint}>Generated from an id template; change it in the composition file.</p>
+        <SaveReport draft={draft} />
+      </>
+    );
   }
   return (
     <>
@@ -76,6 +83,8 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
           editor.edit((doc) => moveInstance(doc, instance.id, area));
         }}
       />
+      <Parameters key={`parameters:${instance.id}`} draft={draft} editor={editor} id={instance.id} />
+      <SaveReport draft={draft} />
       <ConnectForm key={`connect:${instance.id}`} {...{ draft, plant, editor, request, instance }} />
     </>
   );

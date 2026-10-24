@@ -9,7 +9,18 @@ describe("simple payloads", () => {
     ["paired false", paired, { paired: false }, false],
     ["file", fileContent, { path: "a", content: "c", etag: "e", extra: 1 }, { path: "a", content: "c", etag: "e" }],
     ["written", written, { path: "a", etag: "e", size: 3 }, { path: "a", etag: "e" }],
-    ["summary", composeSummary, { channels: 3, faults: 2, effectors: 1 }, { channels: 3, faults: 2, effectors: 1 }],
+    [
+      "summary",
+      composeSummary,
+      { channels: 3, faults: 2, effectors: 1, digest: "sha256:ab" },
+      { channels: 3, faults: 2, effectors: 1, digest: "sha256:ab" },
+    ],
+    [
+      "summary without a digest",
+      composeSummary,
+      { channels: 3, faults: 2, effectors: 1 },
+      { channels: 3, faults: 2, effectors: 1, digest: "" },
+    ],
   ])("decodes %s", (_name, decode, wire, expected) => {
     expect(decode(wire)).toEqual(expected);
   });

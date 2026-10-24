@@ -1,18 +1,22 @@
-import { Download, GitCompare } from "lucide-react";
+import { Download, GitCompare, GitPullRequestArrow } from "lucide-react";
 import { useState } from "react";
 import type { ReviewSession } from "../../../app/review";
 import { handoverFor, readyReport } from "../../../app/review";
 import type { ReviewState } from "../../../app/review";
-import type { WorkspaceStore } from "../../../app/workspace";
+import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 import type { Report } from "../../../model/review";
 import { endedGate } from "../../../model/review";
 import { shared, useStore } from "../../primitives";
 import { CompareDialog } from "./CompareDialog";
 import { HandoverNote } from "./HandoverNote";
+import { ModelDiffDialog } from "./ModelDiffDialog";
 
-interface ActionsProps {
+export interface ActionsProps {
   readonly review: ReviewSession;
   readonly workspace: WorkspaceStore;
+  readonly provenance: ProvenanceSession;
+  readonly modelOpen: boolean;
+  readonly onModelClosed: () => void;
   readonly state: ReviewState;
   readonly worldId: string;
   readonly unit: (entity: string, state: string) => string;
@@ -81,31 +85,80 @@ function CompareButton({ report, onOpen }: { readonly report: Report; readonly o
   );
 }
 
+function ModelButton({ report, onOpen }: { readonly report: Report; readonly onOpen: () => void }) {
+  const gate = endedGate(report);
+  return (
+    <button
+      type="button"
+      className={shared.secondary}
+      aria-disabled={!gate.open}
+      title={gate.open ? "Show what changed between the model this run used and the current plant" : gate.why}
+      onClick={() => {
+        if (gate.open) onOpen();
+      }}
+    >
+      <GitPullRequestArrow size={14} aria-hidden="true" />
+      Compare model with the current plant
+    </button>
+  );
+}
+
+type Open = "model" | "compare" | null;
+
+function Dialogs({
+  props,
+  report,
+  open,
+  onClose,
+}: {
+  readonly props: ActionsProps;
+  readonly report: Report;
+  readonly open: Open;
+  readonly onClose: () => void;
+}) {
+  const shared = { provenance: props.provenance, workspace: props.workspace, report, worldId: props.worldId };
+  if (open === "model")
+    return (
+      <ModelDiffDialog
+        {...shared}
+        onClose={() => {
+          onClose();
+          props.onModelClosed();
+        }}
+      />
+    );
+  if (open === "compare")
+    return <CompareDialog {...shared} review={props.review} unit={props.unit} onClose={onClose} />;
+  return null;
+}
+
 export function ReviewActions(props: ActionsProps) {
-  const [comparing, setComparing] = useState(false);
+  const [open, setOpen] = useState<Open>(props.modelOpen ? "model" : null);
   const report = readyReport(props.state);
   if (report === null) return null;
   return (
     <>
+      <ModelButton
+        report={report}
+        onOpen={() => {
+          setOpen("model");
+        }}
+      />
       <CompareButton
         report={report}
         onOpen={() => {
-          setComparing(true);
+          setOpen("compare");
         }}
       />
       <ExportHandover review={props.review} report={report} worldId={props.worldId} />
-      {comparing && (
-        <CompareDialog
-          review={props.review}
-          workspace={props.workspace}
-          report={report}
-          worldId={props.worldId}
-          unit={props.unit}
-          onClose={() => {
-            setComparing(false);
-          }}
-        />
-      )}
+      <Dialogs
+        props={props}
+        report={report}
+        open={open}
+        onClose={() => {
+          setOpen(null);
+        }}
+      />
     </>
   );
 }

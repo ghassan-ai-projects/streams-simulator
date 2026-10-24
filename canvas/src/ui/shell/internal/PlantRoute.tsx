@@ -34,6 +34,8 @@ export function PlantRoute({
     workspace: stores.workspace,
     navigation: stores.navigation,
     launch: stores.launch,
+    provenance: stores.provenance,
+    maker: stores.maker,
     domain: route.domain,
     hall: route.hall,
     startLaunching: route.launch === true,

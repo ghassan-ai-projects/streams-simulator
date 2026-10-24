@@ -3,7 +3,7 @@ import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { createDeviceDesk } from "../../../app/devices";
 import { createPlantMaker } from "../../../app/plant";
-import { createWorkspaceStore } from "../../../app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "../../../app/workspace";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
@@ -277,12 +277,14 @@ describe("workspace screen", () => {
 
   it("shows the loading state and the bridge's failure", async () => {
     const bridge = new FakeBridge();
+    const store = createWorkspaceStore(bridge.workspace);
     render(
       <WorkspaceScreen
-        workspace={createWorkspaceStore(bridge.workspace)}
+        workspace={store}
         navigation={navigation().store}
         maker={createPlantMaker(bridge.plant)}
         desk={createDeviceDesk(bridge.devices)}
+        provenance={createProvenanceSession(bridge.provenance, store)}
         badgeFor={() => null}
       />,
     );
