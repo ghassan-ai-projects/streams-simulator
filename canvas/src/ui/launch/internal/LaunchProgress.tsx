@@ -1,26 +1,21 @@
 import { panel, shared, cx, useFocusOnMount } from "../../primitives";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
-import { planSummary, runProgressWords } from "../../../model/launch";
-import { clockOf, durationOf } from "../../../model/shared/duration";
-import { humanise } from "../../../model/shared/words";
+import { planSummary, progressTicks, runProgressWords } from "../../../model/launch";
+import { durationOf } from "../../../model/shared/duration";
 import styles from "./LaunchPanel.module.css";
 
 export type Running = Extract<LaunchState, { phase: "running" }>;
 
 function ProgressBar({ state }: { readonly state: Running }) {
-  const marks = [
-    ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault, call: false })),
-    ...state.plan.calls.map((call) => ({ ...call, what: call.effector, call: true })),
-  ];
   return (
     <div className={styles.bar}>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      {marks.map((mark, index) => (
+      {progressTicks(state.plan).map((mark, index) => (
         <span
           key={String(index)}
           className={cx(mark.atS <= state.atS ? styles.tickDone : styles.tick, mark.call && styles.tickCall)}
           style={{ left: `${String((mark.atS / state.durationS) * 100)}%` }}
-          title={`${mark.entity} ${humanise(mark.what)} at ${clockOf(mark.atS)}`}
+          title={mark.title}
           aria-hidden="true"
         />
       ))}

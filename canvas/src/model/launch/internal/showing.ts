@@ -33,5 +33,6 @@ function callsAt(calls: readonly CallOutcome[], atS: number, atMs: number): Map<
 }
 
 export function showingMarks(plan: LaunchPlan, calls: readonly CallOutcome[], atS: number, atMs: number): ShowingMarks {
-  return { faults: faultsAt(plan, atS), effectors: callsAt(calls, atS, atMs) };
+  const faults = plan.explore ? faultsAt(plan, atS) : new Map<string, readonly string[]>();
+  return { faults, effectors: callsAt(calls, atS, atMs) };
 }

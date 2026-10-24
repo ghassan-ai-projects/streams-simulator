@@ -200,3 +200,36 @@ test("a planned fault appears on its node when the run clock reaches its minute 
   await expect(panel.getByText(/^Running · 00:(0[5-9]|1\d)/)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
+
+const fanFailure = /fan[ _]failure|Fault ·/i;
+
+test("an Evaluate run shows no planned fault on the page, in its text, tooltips or accessible names, until it is sealed", async ({
+  page,
+}) => {
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Seed", { exact: true }).fill("11");
+  await panel.getByLabel("Duration", { exact: true }).fill("20");
+  await panel.getByRole("radio", { name: /^Evaluate/ }).check();
+  await panel.getByRole("button", { name: "Add fault" }).click();
+  await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
+  await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
+  await panel.getByLabel("Fault 1 starts at minute").fill("5");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  await expect(panel.getByText(/^Running · 00:(0[6-9]|1\d)/)).toBeVisible({ timeout: 30_000 });
+  const text = await page.locator("body").innerText();
+  const attributes = await page.evaluate(() =>
+    [...document.body.querySelectorAll("*")].flatMap((element) => [...element.attributes].map((a) => a.value)),
+  );
+  const names = await page.locator("body").ariaSnapshot();
+  expect(text).not.toMatch(fanFailure);
+  expect(attributes.filter((value) => fanFailure.test(value))).toEqual([]);
+  expect(names).not.toMatch(fanFailure);
+  const node = page.locator(".react-flow__node-instance").filter({ hasText: "CT-1" });
+  await expect(node).not.toContainText("Fault");
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  const disturbances = page
+    .getByRole("complementary", { name: "Run details" })
+    .getByRole("region", { name: "Disturbances" });
+  await expect(disturbances).toContainText("fan failure");
+});
