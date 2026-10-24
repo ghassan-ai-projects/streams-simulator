@@ -2,6 +2,7 @@ export type { CaptureSession, DeviceDesk, DeviceRow, DeviceSession, TwinSession 
 export type { Card, CaptureState, Reviewed } from "./internal/captureState";
 export type { Draft } from "./internal/deviceDraft";
 export type { CheckFact } from "./internal/checkFacts";
-export type { CheckRow } from "./internal/checkRows";
+export type { CheckRow } from "./internal/checkRow";
 export type { Step, StepStatus } from "./internal/stepStatus";
 export type { Held, TwinDraft } from "./internal/twinDraft";
+export type { Exclusion } from "./internal/twinScope";

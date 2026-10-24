@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/report"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -32,7 +31,7 @@ func folderWithInterruptLog(t *testing.T) string {
 func TestTheReportChecksTheInterruptLogAgainstTheDigestTheRunRecorded(t *testing.T) {
 	t.Parallel()
 	dir := folderWithInterruptLog(t)
-	built, err := report.Build(t.Context(), dir)
+	built, err := build(t.Context(), dir)
 	if err != nil || statusOfCheck(t, built, "interrupt_log") != "match" || built.Verification.Status != "files_match" {
 		t.Fatalf("report = %+v, %v, want the interrupt log to match the recorded digest", built.Verification, err)
 	}
@@ -41,7 +40,7 @@ func TestTheReportChecksTheInterruptLogAgainstTheDigestTheRunRecorded(t *testing
 		t.Fatal(err)
 	}
 	testsupport.WriteFileIn(t, dir, model.FileInterruptLog, append(raw, []byte(`{"ordinal":1,"record":{"event":"clock"}}`+"\n")...))
-	built, err = report.Build(t.Context(), dir)
+	built, err = build(t.Context(), dir)
 	if err != nil || statusOfCheck(t, built, "interrupt_log") != "mismatch" || built.Verification.Status != "files_differ" {
 		t.Fatalf("report = %+v, %v, want the appended record to make the interrupt log differ", built.Verification, err)
 	}

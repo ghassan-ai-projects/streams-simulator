@@ -5,7 +5,6 @@ internal/domain/operations.go:LoadAll  tests load the shipped catalog; the binar
 internal/domain/service.go:NewCatalog  tests build a director catalog without the CLI
 internal/director/service.go:New  acceptance tests drive a director without the MCP transport
 internal/director/operations.go:Director.RunOf  acceptance tests read the run behind a world (director-side only)
-internal/director/internal/app/director.go:Director.RunOf  the facade's delegate for the hook above
 internal/mcp/operations.go:NewOperatorServerResolver  acceptance tests serve the operator role in process
 internal/refconsumer/service.go:New  run and acceptance tests drive the reference consumer in process
 internal/refconsumer/service.go:NewMCPOperator  acceptance tests connect the reference consumer to an operator endpoint

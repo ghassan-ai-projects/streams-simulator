@@ -36,29 +36,40 @@ function labelOf(pin: Pin, pins: Pins): string {
 interface Readings {
   readonly shown: readonly Shown[];
   readonly observed: ReadonlySet<string>;
+  readonly phase: ReadoutPhase;
 }
 
-const blank: Omit<Shown, "channel"> = { value: "", unit: "", word: false, attention: null, outside: "" };
+const blank: Omit<Shown, "channel"> = {
+  value: "",
+  unit: "",
+  word: false,
+  attention: null,
+  outside: "",
+  quality: "",
+};
 
-function rowOf(key: string, label: string, reading: Shown | null, observed: boolean): ReadoutRow {
-  const { value, unit, word, attention, outside } = reading ?? blank;
-  return { key, label, present: reading !== null, value, unit, word, attention, outside, observed };
+export type ReadoutPhase = "live" | "ended";
+
+function absentWords(channel: string | null, observed: boolean, phase: ReadoutPhase): string {
+  if (channel === null) return "No measured channel";
+  if (observed) return "No reading yet at this time";
+  return phase === "live" ? "Awaiting first reading" : "Never observed in this run";
+}
+
+function rowOf(key: string, label: string, channel: string | null, readings: Readings): ReadoutRow {
+  const reading = channel === null ? null : (readings.shown.find((entry) => entry.channel === channel) ?? null);
+  const observed = reading !== null || (channel !== null && readings.observed.has(channel));
+  const { value, unit, word, attention, outside, quality } = reading ?? blank;
+  const absent = reading === null ? absentWords(channel, observed, readings.phase) : "";
+  return { key, label, present: reading !== null, value, unit, word, attention, outside, observed, quality, absent };
 }
 
 function portRow(pin: Pin, side: "in" | "out", pins: Pins, readings: Readings): ReadoutRow {
-  const reading = pin.channel === null ? null : (readings.shown.find((entry) => entry.channel === pin.channel) ?? null);
-  const observed = reading !== null || (pin.channel !== null && readings.observed.has(pin.channel));
-  return rowOf(`${side}:${pin.name}`, labelOf(pin, pins), reading, observed);
+  return rowOf(`${side}:${pin.name}`, labelOf(pin, pins), pin.channel, readings);
 }
 
 function channelRow(channel: string, readings: Readings): ReadoutRow {
-  const reading = readings.shown.find((entry) => entry.channel === channel) ?? null;
-  return rowOf(
-    `channel:${channel}`,
-    channelWords(channel),
-    reading,
-    reading !== null || readings.observed.has(channel),
-  );
+  return rowOf(`channel:${channel}`, channelWords(channel), channel, readings);
 }
 
 function listedRows(pins: Pins, channels: readonly string[], readings: Readings): readonly ReadoutRow[] {
@@ -74,9 +85,10 @@ export function readoutBody(
   channels: readonly string[],
   shown: readonly Shown[],
   observed: ReadonlySet<string>,
+  phase: ReadoutPhase = "ended",
 ): ReadoutBody {
   const hidden = hiddenOf(pins, channels).filter((channel) => observed.has(channel));
   const hiddenReadings = shown.filter((entry) => hidden.includes(entry.channel));
-  const rows = listedRows(pins, channels, { shown, observed });
+  const rows = listedRows(pins, channels, { shown, observed, phase });
   return { rows, hidden: hidden.length, hiddenAttention: attentionOf(hiddenReadings) };
 }

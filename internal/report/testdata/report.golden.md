@@ -2,7 +2,11 @@
 
 mode: evaluate | complete: yes | ended: yes | verification: files_match
 
-## Run
+## Purpose
+
+No name or purpose was recorded for this run.
+
+## What ran
 
 | Field | Value |
 |---|---|
@@ -21,30 +25,16 @@ mode: evaluate | complete: yes | ended: yes | verification: files_match
 | End | 2026-01-01T00:02:00Z (+120s) |
 | Entities | 8 |
 
-## Digests
+## Outcome and integrity
 
 | Field | Value |
 |---|---|
-| World | `sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9` |
-| Trace | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
-| Observer journal | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| Director journal | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+| Execution outcome | Ended at 2026-01-01T00:02:00Z (+120s) |
+| Recording integrity | files\_match |
+| Replay | not\_checked |
+| Outside scoring | none |
 
-## Verification
-
-Status: files_match
-
-| Check | Status | Recorded | Computed |
-|---|---|---|---|
-| trace | match | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
-| journal | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| sealed\_journal | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
-| journal\_file | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| sealed\_journal\_file | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
-| ledger | match | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` |
-| history | match | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` |
-
-## Deliveries
+## Evidence coverage
 
 | Field | Value |
 |---|---|
@@ -66,6 +56,21 @@ Status: files_match
 | Reason | Rows |
 |---|---|
 | dropped\_by\_perturbation | 32 |
+
+## Results
+
+| Field | Value |
+|---|---|
+| Objective | Not assessed. The run declares no objective, so nothing is judged against one. |
+
+## Plan
+
+| Field | Value |
+|---|---|
+| Faults | 1 (0 cleared) |
+| Perturbations | 2 |
+| Environment changes | 0 |
+| Effector calls | 2 (0 refused) |
 
 ## Faults
 
@@ -90,6 +95,35 @@ None.
 |---|---|---|---|---|---|---|
 | 3 | 2026-01-01T00:00:40Z (+40s) | act-1 | start\_aerator | site-a/pond-1 | `{"level":1.0,"pond_id":"site-a/pond-1"}` | mode=silent\_no\_effect accepted=yes effect\_applied=yes ack\_latency\_ms=644 |
 | 4 | 2026-01-01T00:01:40Z (+100s) | act-2 | start\_aerator | site-a/pond-2 | `{"level":0.5,"pond_id":"site-a/pond-2"}` | mode=silent\_no\_effect accepted=yes effect\_applied=yes ack\_latency\_ms=491 |
+
+## Open questions
+
+- `replay_not_checked`: The recording was not replayed: file digests agree with the run, but nobody has shown that the run reproduces.
+- `no_kpi_results`: The run records no whole-run KPI results.
+- `no_outside_scoring`: A verdict is recorded but no label was available to score it.
+
+## Digests
+
+| Field | Value |
+|---|---|
+| World | `sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9` |
+| Trace | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
+| Observer journal | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
+| Director journal | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+
+## Verification
+
+Status: files_match
+
+| Check | Status | Recorded | Computed |
+|---|---|---|---|
+| trace | match | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
+| journal | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
+| sealed\_journal | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+| journal\_file | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
+| sealed\_journal\_file | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+| ledger | match | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` |
+| history | match | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` |
 
 ## Consumer
 

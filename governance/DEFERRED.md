@@ -515,3 +515,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > (2026-10-20): until it is fixed, `plantwire connect` refuses a planned disturbance whose fault acts on a state a command of
 > the instance's kind sets (`fault_on_commanded_state`, decided from the domain's effector effects), so no live session
 > scripts a fault the next command would cancel.
+> D-117 (**Low**; `domain lineage` lists plants, not orphans): a twin choices file or composition whose id matches no domain file is not
+> listed (the document has one entry per domain file), so "a twin that was never created" or "a composition never composed" is
+> invisible; its kind files still appear in `device_kinds` and in `twins_including`. Two kind files naming one kind are read by
+> file name and the first one answers for the kind. Trigger to fix: the canvas shows a row for a twin or composition without a
+> plant; then the document gains `unrealised[]`.
+> D-118 (**Low**; `domain assumptions` cannot say who chose a default): `twin-choices-v0.1` records the instrument and response
+> of each choice but not whether a person chose or accepted it, so the document states `equals_binary_suggestion` (a fact) and
+> never "accepted" or "chosen". Trigger to fix: the audit's F22 asks that defaults be reviewed; the choices file then records a
+> review per choice and the document reports it.

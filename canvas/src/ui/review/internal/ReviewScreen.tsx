@@ -7,6 +7,7 @@ import type { ReviewSession } from "../../../app/review";
 import type { WorkspaceStore } from "../../../app/workspace";
 import { cx, shared, useStore } from "../../primitives";
 import { Centre } from "./ReviewCentre";
+import { ReviewActions } from "./ReviewActions";
 import { Side } from "./ReviewSide";
 import { Header } from "./RunHeader";
 import { RunPanel } from "./RunPanel";
@@ -26,16 +27,20 @@ interface ReviewScreenProps {
   readonly live?: boolean;
 }
 
+function useScreenLifecycle({ review, plants, workspace, worldId, live = false }: ReviewScreenProps): void {
+  useReviewOpen(review, workspace, worldId, live ? "live" : "review");
+  useClosePlant(plants, worldId);
+  usePlaybackKeys(review);
+}
+
 export function ReviewScreen(props: ReviewScreenProps) {
-  const { review, plants, workspace, navigation, launch, worldId, live = false } = props;
+  const { review, plants, workspace, navigation, launch, worldId } = props;
   const stored = useStore(review);
   const view = useRunPlant(stored, plants, workspace);
   const { plant } = view;
   const state = useShownOrigins(stored, plant);
   const [hall, setHall] = useState<string | null>(null);
-  useReviewOpen(review, workspace, worldId, live ? "live" : "review");
-  useClosePlant(plants, worldId);
-  usePlaybackKeys(review);
+  useScreenLifecycle(props);
   const unit = useUnitOf(plant);
   return (
     <ReactFlowProvider>
@@ -48,6 +53,7 @@ export function ReviewScreen(props: ReviewScreenProps) {
           hall={hall}
           onHall={setHall}
           plant={view}
+          extra={<ReviewActions review={review} workspace={workspace} state={state} worldId={worldId} unit={unit} />}
         />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <Centre

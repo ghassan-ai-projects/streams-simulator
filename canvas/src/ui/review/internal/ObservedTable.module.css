@@ -1,0 +1,151 @@
+.caption {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.heads th {
+  white-space: nowrap;
+  padding-top: 0;
+  padding-bottom: 2px;
+  border-top: 0;
+  color: var(--text-tertiary);
+  font: 500 var(--text-xs) var(--font-ui);
+  letter-spacing: 0.02em;
+}
+
+.heads .valueHead {
+  text-align: right;
+}
+
+.legend {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-tertiary);
+  font: var(--text-xs) var(--font-ui);
+}
+
+.name {
+  width: 100%;
+  min-width: 4.5em;
+  overflow-wrap: break-word;
+}
+
+.nameLine {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.value {
+  white-space: normal;
+}
+
+.unit {
+  margin-left: 3px;
+  font: 500 var(--text-xs) var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.value-alarm {
+  color: var(--status-alarm);
+}
+
+.value-warn {
+  color: var(--status-warn);
+}
+
+.quality {
+  display: block;
+  width: fit-content;
+  margin-top: 2px;
+  margin-left: auto;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+  font: 600 var(--text-xs) var(--font-ui);
+}
+
+.when {
+  width: 1%;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.age {
+  display: block;
+  color: var(--text-tertiary);
+  font: var(--text-xs) var(--font-ui);
+}
+
+.trendCell {
+  width: 1%;
+  min-width: 72px;
+  padding-right: var(--space-2);
+}
+
+.trend {
+  display: block;
+  width: 72px;
+  height: 24px;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.dense {
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.dot {
+  fill: var(--accent);
+}
+
+.absent {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.watch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.watch:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.watch[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--surface-selected);
+  color: var(--accent-strong);
+}
+
+.watch:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
+  cursor: not-allowed;
+}

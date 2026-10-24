@@ -17,3 +17,7 @@ export interface Location {
 export interface Clipboard {
   copy(text: string): Promise<boolean>;
 }
+
+export interface FileSaver {
+  save(name: string, text: string): boolean;
+}

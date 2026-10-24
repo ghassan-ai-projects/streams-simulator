@@ -1,8 +1,9 @@
-import type { Acknowledgement, ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
+import type { ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
 import type { Workspace } from "../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../model/plant";
-import type { Replay, Report } from "../../../model/review";
+import type { Comparison, Replay, Report } from "../../../model/review";
+import { parseComparisonPayload } from "./compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, list, record, text } from "../../../model/shared/json";
 
@@ -85,6 +86,7 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     worldId: text(entry.world_id),
     ended: entry.ended === true,
     complete: entry.complete === true,
+    running: entry.running === true,
     incompleteReason: text(entry.incomplete_reason),
     explore: entry.explore === true,
     seed: typeof entry.seed === "number" ? entry.seed : null,
@@ -92,7 +94,21 @@ function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | n
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...(text(entry.name) === "" ? {} : { name: text(entry.name) }),
+    ...intentOf(entry),
     ...connectedOf(entry),
+  };
+}
+
+function intentOf(entry: Record<string, unknown>): {
+  readonly requestedS?: number;
+  readonly terminationReason?: string;
+} {
+  return {
+    ...(typeof entry.requested_duration_ns === "number"
+      ? { requestedS: Math.round(entry.requested_duration_ns / 1e9) }
+      : {}),
+    ...(typeof entry.termination_reason === "string" ? { terminationReason: entry.termination_reason } : {}),
   };
 }
 
@@ -216,35 +232,17 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export function acknowledgement(value: unknown): Acknowledgement | null {
-  if (!isRecord(value) || typeof value.accepted !== "boolean") return null;
-  if (value.reason !== undefined && typeof value.reason !== "string") return null;
-  if (value.effect_eta_ns !== undefined && typeof value.effect_eta_ns !== "number") return null;
-  return {
-    accepted: value.accepted,
-    reason: text(value.reason),
-    effectEtaNs: typeof value.effect_eta_ns === "number" ? value.effect_eta_ns : null,
-  };
-}
-
-export function advanceResult(value: unknown): true | null {
-  return isRecord(value) && typeof value.clock === "string" && finiteNumber(value.emitted) !== null ? true : null;
-}
-
-export function faultInjected(value: unknown): true | null {
-  return isRecord(value) && text(value.fault_id) !== "" && value.simulated === true ? true : null;
-}
-
-export function runEnded(value: unknown): true | null {
-  return isRecord(value) && text(value.run_artifact_path) !== "" ? true : null;
-}
-
-export function destroyed(value: unknown): true | null {
-  return isRecord(value) && value.destroyed === true ? true : null;
-}
-
 export function report(value: unknown): Report | null {
   return parseReportPayload(value);
+}
+
+export function comparison(value: unknown): Comparison | null {
+  return parseComparisonPayload(value);
+}
+
+export function markdown(value: unknown): string | null {
+  if (!isRecord(value) || value.format !== "markdown") return null;
+  return typeof value.markdown === "string" && value.markdown !== "" ? value.markdown : null;
 }
 
 export function replay(value: unknown): Replay | null {

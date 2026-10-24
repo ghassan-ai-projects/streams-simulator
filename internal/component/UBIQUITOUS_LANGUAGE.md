@@ -13,6 +13,14 @@ ordinary domain, so a world never depends on the library at run time.
 | Reference | `namespace/name@major`, the key of one library file | `reference` | `use`, `default_instrument` |
 | Composition | A plant built from equipment, sizes, instruments and connections | `Composition`, `Entry`, `Connection` | `*.composition.json`, composition-v0.1 |
 | Target | `<section>/<name>/<path>`, the one field a preset or parameter writes | `workspace.write` | `targets`, `cases` |
+| Assumptions | What a domain, or a twin scaffolded from kind files, declares about each reading (instrument, range, resolution, noise, cadence) and command (response, gain, time constant), where each fact is recorded, and what the model does not reproduce | `Assumptions`, `DescribeAssumptions` | `domain-assumptions-v0.1`, `streamsim domain assumptions` |
+| Recorded in | Where a fact of the assumptions is written: the instance provenance of a composed domain, the twin choices, or the domain file | `RecordedIn…` | `recorded_in` |
+| Equals binary suggestion | The recorded twin choice equals what `kind twin --suggest` proposes; says nothing about whether a person chose or accepted it | `EqualsBinarySuggestion` | `equals_binary_suggestion` |
+| Not modeled | A stable code and sentence for what the model does not reproduce (allow-lists of a twin, first-order responses only, no clamp, no calibration evidence) | `NotModeled` | `not_modeled[]` |
+| Lineage | How each plant of a workspace is produced and what depends on it: composition or twin and whether it still produces the domain, kind files, runs, edit route | `Lineage`, `DescribeLineage`, `Workspace` | `domain-lineage-v0.1`, `streamsim domain lineage` |
+| In sync | A composition or twin choices file that produces the plant's exact current domain digest when composed or scaffolded again in memory | `SourceInSync` | `status: in_sync` |
+| Twin membership | Which twins include a device kind file, and whether a twin of that kind alone exists | `TwinMembership` | `twins_including`, `has_own_twin` |
+| Edit route | The verdict (`editable`, `read_only`), its reason and the action the owner offers: edit the composition, open the device editor, create from an example, copy the domain file | `Editable`, `Route` | `editable` |
 | Reading | An instrument at a point: the unit conversion, the converted range and the span that scales noise and fault magnitudes | `reading`, `conversion` | `observation_gain`, `observation_offset` |
 | Follow | The dynamics entry of a connected consuming state reads the sum of the providing states over a link type | `follow` | `dynamics[].follow` |
 | Twin | A runnable domain scaffolded from kind files: each of its kinds `implements` a kind file, so the simulated device presents the interface of the physical one | `ScaffoldTwin`, `Twin` | `streamsim kind twin` |

@@ -1,9 +1,11 @@
 import type { Category, ChannelRange, ChannelState, Family, Instance, Pins } from "../../plant";
+import type { Quality } from "../../shared/quality";
 
 export interface ReadingValue {
   readonly channel: string;
   readonly value: number | string | boolean;
   readonly unit: string;
+  readonly quality?: Quality;
 }
 
 export type RowCount = (pins: Pins, channels: readonly string[]) => number;
@@ -24,6 +26,7 @@ export interface Shown {
   readonly attention: Attention;
   readonly word: boolean;
   readonly outside: string;
+  readonly quality: string;
 }
 
 export interface ChannelSpec {
@@ -41,6 +44,8 @@ export interface ReadoutRow {
   readonly attention: Attention;
   readonly outside: string;
   readonly observed: boolean;
+  readonly quality: string;
+  readonly absent: string;
 }
 
 export interface ReadoutBody {

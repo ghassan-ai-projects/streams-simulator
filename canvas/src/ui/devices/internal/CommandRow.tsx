@@ -1,3 +1,4 @@
+import { choiceId } from "../../../app/devices";
 import {
   argumentLabel,
   commandFacts,
@@ -17,6 +18,7 @@ import tw from "./Behaviour.module.css";
 import { DriveRows } from "./DriveRows";
 import { Field, ItemIssues, Select } from "./Field";
 import { InterfaceNeeds } from "./InterfaceNeeds";
+import { ChoiceTag } from "./Suggestions";
 import { choose } from "./twinProps";
 import type { Reveal, TwinProps } from "./twinProps";
 
@@ -27,6 +29,7 @@ interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly member: string;
   readonly command: Command;
   readonly choice: CommandChoice;
+  readonly suggested: boolean;
 }
 
 function SetpointButton({ kind, reveal }: Pick<RowProps, "kind" | "reveal">) {
@@ -100,14 +103,18 @@ export function CommandRow(props: RowProps) {
         issues={on("response")}
       >
         {(aria) => (
-          <Select
-            aria={aria}
-            value={choice.response}
-            choices={responseChoices}
-            onChange={(value) => {
-              choose(twin, (all) => pickResponse(all, { member, kind: props.kind, command }, responseOf(value)));
-            }}
-          />
+          <>
+            <Select
+              aria={aria}
+              value={choice.response}
+              choices={responseChoices}
+              onChange={(value) => {
+                choose(twin, (all) => pickResponse(all, { member, kind: props.kind, command }, responseOf(value)));
+                twin.review([choiceId({ path: member, key: command.key, field: "response" })]);
+              }}
+            />
+            <ChoiceTag suggested={props.suggested} />
+          </>
         )}
       </Field>
       <InterfaceNeeds needs={props.needs} part="command" itemKey={command.key} reveal={props.reveal} />

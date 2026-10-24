@@ -23,6 +23,18 @@ describe("breadcrumb", () => {
     expect(within(nav).getByRole("heading", { level: 1, name: long })).toHaveAttribute("title", long);
   });
 
+  it("puts a caption above the heading and describes the heading by it", () => {
+    render(<Breadcrumb trail={[]} here="Run w-4" heading={null} caption="Cooling loss" />);
+    const heading = screen.getByRole("heading", { level: 1, name: "Run w-4" });
+    expect(screen.getByText("Cooling loss")).toHaveAttribute("title", "Cooling loss");
+    expect(heading).toHaveAccessibleDescription("Cooling loss");
+  });
+
+  it("has no caption, and no description, when there is none", () => {
+    render(<Breadcrumb trail={[]} here="Run w-4" heading={null} />);
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveAttribute("aria-describedby");
+  });
+
   it("renders into the top bar slot when one is provided", () => {
     const slot = document.createElement("div");
     document.body.append(slot);

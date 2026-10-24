@@ -81,6 +81,25 @@ describe("scrubber controls and events", () => {
     expect(seek).toHaveBeenLastCalledWith(120e9);
   });
 
+  it("steps a minute at a time as well as ten, and stops at the ends of the run", () => {
+    const seek = vi.fn();
+    render(
+      <Scrubber
+        {...idle}
+        startNs={0}
+        endNs={3_600e9}
+        positionNs={30e9}
+        report={runReport}
+        onSeek={seek}
+        onEvent={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Forward 1 minute" }));
+    expect(seek).toHaveBeenLastCalledWith(90e9);
+    fireEvent.click(screen.getByRole("button", { name: "Back 1 minute" }));
+    expect(seek).toHaveBeenLastCalledWith(0);
+  });
+
   it("selects a fault's event at its own time from its mark on the track, as its label does", () => {
     const seek = vi.fn();
     const onEvent = vi.fn();

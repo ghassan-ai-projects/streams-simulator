@@ -11,6 +11,7 @@ const listed = {
   worldId: "w-1",
   ended: false,
   complete: false,
+  running: false,
   incompleteReason: "",
   explore: false,
   seed: 5,

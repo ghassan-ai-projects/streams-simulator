@@ -36,7 +36,7 @@ func Serve(ctx context.Context, cfg Config) error {
 		return err
 	}
 	_, _ = fmt.Fprintf(cfg.Stderr, "canvas: http://%s\ncanvas: pairing code %s\n", listener.Addr(), domain.FormatCode(bridge.settings.PairingCode))
-	return transport.Serve(ctx, listener, bridge, cfg.UIDir)
+	return transport.Serve(ctx, listener, boundary{bridge}, cfg.UIDir)
 }
 
 func open(cfg Config) (*Bridge, error) {
@@ -64,7 +64,7 @@ func settingsOf(cfg Config) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	return Settings{WorkspaceDir: dir, AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: entropy.PairingCode()}, nil
+	return Settings{WorkspaceDir: dir, WorkspaceAliases: files.Aliases(dir), AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: entropy.PairingCode()}, nil
 }
 
 func wire(workspace *files.Workspace, executable string, settings Settings) *Bridge {

@@ -33,7 +33,7 @@ function instanceLabel(data: InstanceNodeType["data"], selected: boolean): strin
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
-  const { status } = shownOf(data);
+  const { status, fault, effector } = shownOf(data);
   const zoom = useStore((state) => state.transform[2]);
   return (
     <div
@@ -53,7 +53,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="target" position={Position.Left} id="in" className={pins.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={pins.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} zoom={zoom} />
-      {data.live !== null && <Readout body={data.live.readout} fault={data.live.fault} effector={data.live.effector} />}
+      {data.live !== null && <Readout body={data.live.readout} fault={fault} effector={effector} />}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );

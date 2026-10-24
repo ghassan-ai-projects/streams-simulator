@@ -1,0 +1,114 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "fan" [level=1]
+    - generic: Editing
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Device details panel" [pressed]:
+    - text: Device details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Device steps":
+    - list:
+      - button "Interface Valid":
+        - generic: "1"
+        - generic: Interface
+        - generic: Valid
+      - button "Behaviour Not started":
+        - generic: "2"
+        - generic: Behaviour
+        - generic: Not started
+      - button "Check Not run":
+        - generic: "3"
+        - generic: Check
+        - generic: Not run
+  - navigation "Device outline":
+    - list:
+      - button "fan Device":
+        - generic: fan
+        - generic: Device
+    - heading "Readings" [level=2]
+    - button "Add a reading":
+      - text: Add
+    - list:
+      - button "level_percent Whole number · %":
+        - generic: level_percent
+        - generic: Whole number · %
+    - heading "Commands" [level=2]
+    - button "Add a command":
+      - text: Add
+    - list:
+      - button "set_cooling Medium risk" [active]:
+        - generic: set_cooling
+        - generic: Medium risk
+      - button "stop_fan Low risk · safe stop":
+        - generic: stop_fan
+        - generic: Low risk · safe stop
+  - region "Editing fan":
+    - status "1 reading · 2 commands": Saved and valid.
+    - status "Ready for a twin"
+    - button "Revert" [disabled]:
+      - text: Revert
+    - button "Check again":
+      - text: Check again
+    - button "Save" [disabled]:
+      - text: Save
+    - region "Command":
+      - heading "Command" [level=2]
+      - generic: Name
+      - textbox "Name": set_cooling
+      - generic: Description
+      - textbox "Description"
+      - paragraph: Up to 200 characters.
+      - generic: Risk class
+      - combobox "Risk class":
+        - option "Low"
+        - option "Medium" [selected]
+        - option "High"
+        - option "Critical"
+      - paragraph: How much harm a wrong command could do.
+      - generic: Safe stop
+      - checkbox "Safe stop This command stops the device safely"
+      - text: This command stops the device safely
+      - paragraph: A safe-stop command skips the usual timing and policy checks and is never queued. Mark one only if it puts the device in its safe state and is harmless to repeat.
+      - region "Arguments":
+        - heading "Arguments" [level=3]
+        - list:
+          - generic: Name
+          - textbox "Argument 1 name":
+            - /placeholder: name
+            - text: level_percent
+          - generic: Type
+          - combobox "Argument 1 type":
+            - option "Number"
+            - option "Whole number" [selected]
+            - option "On / off"
+            - option "Text"
+          - generic: Min
+          - textbox "Argument 1 minimum":
+            - /placeholder: min
+            - text: "0"
+          - generic: Max
+          - textbox "Argument 1 maximum":
+            - /placeholder: max
+            - text: "60"
+          - checkbox "Required" [checked]
+          - text: Required
+          - button "Remove argument 1":
+        - button "Add argument":
+          - text: Add argument
+      - button "Remove this command":
+        - text: Remove this command
+  - complementary "Device details":
+    - heading "Device details" [level=2]
+    - paragraph: "A device is the interface of a board: what it reports and what it accepts. It is saved in the workspace and checked by the binary each time you save."
+    - generic "Technical details"

@@ -45,7 +45,7 @@ describe("the twin versus board report in a reviewed session", () => {
     const bridge = reviewBridge();
     bridge.actions.set("run.report", success(fieldTraceReportWire));
     mountApp(bridge, reviewHash());
-    await screen.findByRole("region", { name: "Scoring" });
+    await screen.findByRole("region", { name: "This run" });
     expect(screen.queryByRole("button", { name: "Compare with twin" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Twin vs board" })).toBeNull();
   });

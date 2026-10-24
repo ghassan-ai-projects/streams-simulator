@@ -36,10 +36,11 @@ type Edges struct {
 }
 
 type Settings struct {
-	WorkspaceDir  string
-	AdaptersDir   string
-	ComponentDirs []string
-	PairingCode   string
+	WorkspaceDir     string
+	WorkspaceAliases []string
+	AdaptersDir      string
+	ComponentDirs    []string
+	PairingCode      string
 }
 
 type Bridge struct {
@@ -59,6 +60,10 @@ type Bridge struct {
 func New(edges Edges, settings Settings) *Bridge {
 	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
 		running: map[string]bool{}, sessions: map[string]json.RawMessage{}}
+}
+
+func (b *Bridge) workspaceRoots() []string {
+	return append([]string{b.settings.WorkspaceDir}, b.settings.WorkspaceAliases...)
 }
 
 func (b *Bridge) Pair(code string) (string, error) {

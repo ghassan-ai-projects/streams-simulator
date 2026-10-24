@@ -42,5 +42,9 @@ func grade(ctx context.Context, artifact string) (*domain.Scoring, error) {
 }
 
 func insideFolder(err error, dir string) string {
-	return strings.ReplaceAll(err.Error(), filepath.Clean(dir)+string(filepath.Separator), "")
+	return withoutFolder(err.Error(), dir)
+}
+
+func withoutFolder(text, dir string) string {
+	return strings.ReplaceAll(text, filepath.Clean(dir)+string(filepath.Separator), "")
 }

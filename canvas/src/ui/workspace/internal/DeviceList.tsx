@@ -56,7 +56,7 @@ function shownRows(kinds: Workspace["kinds"], rows: readonly DeviceRow[] | null)
 const statusBadge = {
   invalid: { words: "Not valid", style: "unfinished" },
   "needs-twin": { words: "Needs a twin", style: "badge" },
-  "twin-ready": { words: "Twin ready", style: "verified" },
+  "twin-ready": { words: "Twin created", style: "verified" },
 } as const;
 
 function DeviceItem({ item, navigation }: { readonly item: Shown; readonly navigation: NavigationStore }) {

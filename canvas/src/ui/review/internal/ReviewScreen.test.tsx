@@ -86,6 +86,29 @@ describe("the review screen", () => {
     expect(within(observed).getByText(/Chiller power|power/i)).toBeInTheDocument();
   });
 
+  it("ages each reading against the playback cursor and draws its trend, as the inspector does while a run goes", async () => {
+    const app = await reviewing();
+    played(app);
+    await screen.findByRole("group", { name: /^CH-1, chiller/ });
+    act(() => {
+      app.stores.review.seek(25e9);
+      app.stores.review.select("CH-1");
+    });
+    const observed = await screen.findByRole("region", { name: "Observed · CH-1" });
+    const row = within(observed).getByRole("row", { name: /power/ });
+    expect(row).toHaveTextContent("95.1");
+    expect(row).toHaveTextContent("kW");
+    expect(within(row).getByText("00:00:20")).toHaveAttribute("data-part", "observed-at");
+    expect(within(row).getByText("5 s old")).toBeInTheDocument();
+    expect(within(observed).getByText("Cursor 00:00:25 · ages in simulated time")).toBeInTheDocument();
+    expect(within(row).getByRole("img", { name: /power trend/ })).toBeInTheDocument();
+    act(() => {
+      app.stores.review.seek(15e9);
+    });
+    expect(within(observed).getByRole("row", { name: /power/ })).toHaveTextContent("92.7");
+    expect(within(observed).getByText("5 s old")).toBeInTheDocument();
+  });
+
   it("asks for a selection on the Inspect tab when nothing is picked", async () => {
     await reviewing();
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
@@ -160,13 +183,15 @@ describe("the review screen", () => {
     expect(within(observed).getByRole("list", { name: "Active now" })).toHaveTextContent("Effector call: start");
   });
 
-  it("says an instance without readings has none at this time", async () => {
+  it("says an instance the run never observed was never observed, once the run has ended", async () => {
     const app = await reviewing();
     played(app);
     await screen.findByRole("group", { name: /^MB-1, meter/ });
     act(() => {
       app.stores.review.select("MB-1");
     });
-    expect(await screen.findByText("No observation of MB-1 at this time.")).toBeInTheDocument();
+    const observed = await screen.findByRole("region", { name: "Observed · MB-1" });
+    expect(within(observed).getByText("Never observed in this run")).toBeInTheDocument();
+    expect(within(observed).queryByText(/broken|failed|offline/i)).not.toBeInTheDocument();
   });
 });

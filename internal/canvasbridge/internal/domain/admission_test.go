@@ -52,3 +52,47 @@ func TestTheSessionCookieIsReadFromTheCookieHeader(t *testing.T) {
 		t.Fatalf("a cookie with a longer name matched: %q", got)
 	}
 }
+
+func TestAListenAddressNeedsAValidPortAndALoopbackHost(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		addr string
+		ok   bool
+	}{
+		{"127.0.0.1:65535", true},
+		{"127.255.255.254:80", true},
+		{"[::1]:0", true},
+		{"127.0.0.1:65536", false},
+		{"127.0.0.1:-1", false},
+		{"127.0.0.1:http", false},
+		{"127.0.0.1:", false},
+		{"127.0.0.300:80", false},
+		{"127.0.0.x:80", false},
+		{"127.0.0:80", false},
+		{"127.0.0.1.1:80", false},
+		{"128.0.0.1:80", false},
+		{"[::2]:80", false},
+		{"127.0.0.1", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.addr, func(t *testing.T) {
+			t.Parallel()
+			err := AdmitListenAddress(tc.addr)
+			if tc.ok != (err == nil) || (err != nil && !errors.Is(err, ErrNonLoopback)) {
+				t.Fatalf("AdmitListenAddress(%q) = %v, want ok %v", tc.addr, err, tc.ok)
+			}
+		})
+	}
+}
+
+func TestNothingIsAdmittedWhenTheBoundAddressHasNoValidPort(t *testing.T) {
+	t.Parallel()
+	for _, bound := range []string{"127.0.0.1", "127.0.0.1:port", "127.0.0.1:99999"} {
+		t.Run(bound, func(t *testing.T) {
+			t.Parallel()
+			if err := Admit(Request{Host: bound}, bound); !errors.Is(err, ErrNotAdmitted) {
+				t.Fatalf("Admit against bound %q = %v, want ErrNotAdmitted", bound, err)
+			}
+		})
+	}
+}

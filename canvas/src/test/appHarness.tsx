@@ -6,7 +6,7 @@ import { createPlantMaker, createPlantSession } from "../app/plant";
 import { createReviewSession } from "../app/review";
 import { createSession } from "../app/session";
 import { createNavigationStore, createPanelStore, createThemeStore } from "../app/shell";
-import type { Clipboard } from "../app/ports";
+import type { Clipboard, FileSaver } from "../app/ports";
 import { createWorkspaceStore } from "../app/workspace";
 import { App } from "../ui/shell";
 import type { FakeBridge } from "./fakeBridge";
@@ -21,9 +21,10 @@ function themes() {
   );
 }
 
-function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
+function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard, saver?: FileSaver) {
   const location = memoryLocation(hash);
   const timers = fakeClock();
+  bridge.jobs.drive(timers);
   const shown: string[] = [];
   const stores = {
     themes: themes(),
@@ -31,8 +32,9 @@ function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
     workspace: createWorkspaceStore(bridge.workspace),
     navigation: createNavigationStore(location),
     plants: createPlantSession(bridge.plant),
-    review: createReviewSession(bridge.review, timers, timers, clipboard),
-    liveReview: createReviewSession(bridge.review, timers, timers, clipboard),
+    review: createReviewSession(bridge.review, timers, timers, clipboard, saver),
+    liveReview: createReviewSession(bridge.review, timers, timers, clipboard, saver),
+    watchReview: createReviewSession(bridge.review, timers, timers, clipboard, saver),
     launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
     editor: createEditorSession(bridge.editor),
@@ -47,8 +49,8 @@ function appStores(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
   return { stores, location, timers, shown };
 }
 
-export function mountApp(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard) {
-  const mounted = appStores(bridge, hash, clipboard);
+export function mountApp(bridge: FakeBridge, hash = "#/", clipboard?: Clipboard, saver?: FileSaver) {
+  const mounted = appStores(bridge, hash, clipboard, saver);
   const view = render(<App stores={mounted.stores} />);
   return { ...mounted, view };
 }

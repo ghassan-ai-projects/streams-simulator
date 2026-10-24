@@ -11,3 +11,5 @@ export type {
 } from "./internal/twinTypes";
 export type { Choices } from "./internal/words";
 export type { DraftLines } from "./internal/captureDraft";
+export type { HeldIssue } from "./internal/heldDetail";
+export type { Claims } from "./internal/twinClaims";

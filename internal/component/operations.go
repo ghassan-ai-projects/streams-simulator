@@ -36,6 +36,20 @@ func Suggest(lib *Library, kinds map[string]map[string]any) (map[string]any, err
 	return layer.SuggestTwinChoices(lib.library, kinds)
 }
 
+func Assumptions(lib *Library, input AssumptionsInput) (*DomainAssumptions, error) {
+	if lib == nil || lib.library == nil {
+		return nil, ErrNoLibrary
+	}
+	return layer.DescribeAssumptions(lib.library, input)
+}
+
+func Lineage(lib *Library, dirs WorkspaceDirs, domain string) (*DomainLineage, error) {
+	if lib == nil || lib.library == nil {
+		return nil, ErrNoLibrary
+	}
+	return files.Lineage(lib.library, dirs, domain)
+}
+
 func TwinRequirements(kind map[string]any) []Issue {
 	return layer.TwinRequirements(kind)
 }

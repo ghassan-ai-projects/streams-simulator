@@ -26,16 +26,36 @@ func (policy refusalPolicy) keeps(err error) bool {
 	return errors.Is(err, world.ErrInterlockRefused) || errors.Is(err, world.ErrCommandIDReused)
 }
 
+type StepResult struct {
+	Acknowledgement *model.EffectorAcknowledgement
+	FaultID         string
+}
+
 func executeCommand(ctx context.Context, r *Run, cmd *model.Command, policy refusalPolicy) error {
+	_, err := executeObserved(ctx, r, cmd, policy)
+	return err
+}
+
+func executeObserved(ctx context.Context, r *Run, cmd *model.Command, policy refusalPolicy) (StepResult, error) {
+	switch cmd.Op {
+	case model.OpEffectorInvoke:
+		ack, err := applyInvocation(r, cmd.Args, policy)
+		return StepResult{Acknowledgement: ack}, err
+	case model.OpFaultInject:
+		id, err := applyInjection(r, cmd.Args)
+		return StepResult{FaultID: id}, err
+	}
+	return StepResult{}, executeOther(ctx, r, cmd)
+}
+
+func executeOther(ctx context.Context, r *Run, cmd *model.Command) error {
 	switch cmd.Op {
 	case model.OpClockAdvance:
 		return applyAdvance(ctx, r, cmd.Args)
-	case model.OpFaultInject, model.OpFaultClear:
-		return applyFault(r, cmd)
+	case model.OpFaultClear:
+		return r.ClearFault(rules.CommandString(cmd.Args, "fault_id"), rules.CommandTime(cmd.Args, "at_ns"))
 	case model.OpPerturbApply, model.OpPerturbClear:
 		return applyPerturbation(r, cmd)
-	case model.OpEffectorInvoke:
-		return applyInvocation(r, cmd.Args, policy)
 	default:
 		return applyLifecycle(r, cmd)
 	}
@@ -46,13 +66,9 @@ func applyAdvance(ctx context.Context, r *Run, args map[string]any) error {
 	return wrapExecutionError(err)
 }
 
-func applyFault(r *Run, cmd *model.Command) error {
-	args := cmd.Args
-	if cmd.Op == model.OpFaultClear {
-		return r.ClearFault(rules.CommandString(args, "fault_id"), rules.CommandTime(args, "at_ns"))
-	}
-	_, err := r.InjectFault(rules.CommandString(args, "entity_id"), rules.CommandString(args, "fault"), rules.CommandTime(args, "onset_ns"), rules.AsMap(args["params"]))
-	return wrapExecutionError(err)
+func applyInjection(r *Run, args map[string]any) (string, error) {
+	id, err := r.InjectFault(rules.CommandString(args, "entity_id"), rules.CommandString(args, "fault"), rules.CommandTime(args, "onset_ns"), rules.AsMap(args["params"]))
+	return id, wrapExecutionError(err)
 }
 
 func applyPerturbation(r *Run, cmd *model.Command) error {
@@ -64,12 +80,33 @@ func applyPerturbation(r *Run, cmd *model.Command) error {
 	return wrapExecutionError(err)
 }
 
-func applyInvocation(r *Run, args map[string]any, policy refusalPolicy) error {
-	_, err := r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), rules.CommandString(args, "command_id"), rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
+func applyInvocation(r *Run, args map[string]any, policy refusalPolicy) (*model.EffectorAcknowledgement, error) {
+	commandID := rules.CommandString(args, "command_id")
+	result, err := r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), commandID, rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
+	return acknowledgement(r, commandID, result, err, policy)
+}
+
+func acknowledgement(r *Run, commandID string, result *world.InvokeResult, err error, policy refusalPolicy) (*model.EffectorAcknowledgement, error) {
 	if err == nil || policy.keeps(err) {
-		return nil
+		return invocationAcknowledgement(r, commandID, result, err), nil
 	}
-	return wrapExecutionError(err)
+	return nil, wrapExecutionError(err)
+}
+
+func invocationAcknowledgement(r *Run, commandID string, result *world.InvokeResult, err error) *model.EffectorAcknowledgement {
+	switch {
+	case err == nil:
+		return world.Acknowledge(result)
+	case errors.Is(err, world.ErrInterlockRefused):
+		return refusedAcknowledgement(r, commandID, "interlock_refused")
+	case errors.Is(err, world.ErrCommandIDReused):
+		return refusedAcknowledgement(r, commandID, "command_id_reused")
+	}
+	return nil
+}
+
+func refusedAcknowledgement(r *Run, commandID, reason string) *model.EffectorAcknowledgement {
+	return &model.EffectorAcknowledgement{Simulated: true, WorldID: r.World.ID, CommandID: commandID, Reason: reason}
 }
 
 func applyLifecycle(r *Run, cmd *model.Command) error {

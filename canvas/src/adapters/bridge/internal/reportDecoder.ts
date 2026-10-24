@@ -1,16 +1,20 @@
 import type { Replay, Report } from "../../../model/review";
+import type { ArgValue } from "../../../model/plant";
 import type { AlarmActivation } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
+import { questionsOf, replayOf } from "./reportQuestions";
 
 export function parseReportPayload(value: unknown): Report | null {
   if (!isRecord(value) || !isRecord(value.run) || !isRecord(value.counts)) {
     return null;
   }
   if (!isRecord(value.verification) || typeof value.verification.status !== "string") return null;
-  return decodeReport(value);
+  const replay = replayOf(value.replay);
+  const openQuestions = questionsOf(value.open_questions);
+  return replay === null || openQuestions === null ? null : decodeReport(value, { replay, openQuestions });
 }
 
-function decodeReport(value: Record<string, unknown>): Report {
+function decodeReport(value: Record<string, unknown>, asked: Pick<Report, "replay" | "openQuestions">): Report {
   const truth = record(value.truth);
   const counts = record(value.counts);
   const verification = record(value.verification);
@@ -33,12 +37,15 @@ function decodeReport(value: Record<string, unknown>): Report {
     alarmActivations: alarmActivations(kpis.entities),
     scoring: scoring(value.scoring),
     truthUnavailable: text(value.truth_unavailable),
+    ...asked,
   };
 }
 
 function runFacts(run: Record<string, unknown>) {
   return {
     runId: text(run.run_id),
+    name: text(run.name),
+    purpose: text(run.purpose),
     mode: text(run.mode),
     ended: run.ended === true,
     complete: run.complete === true,
@@ -51,7 +58,18 @@ function runFacts(run: Record<string, unknown>) {
     simVersion: text(run.sim_version),
     startNs: number(run.start_time_ns),
     endNs: number(run.end_time_ns),
+    requestedEndNs: typeof run.requested_end_ns === "number" ? run.requested_end_ns : null,
+    rate: typeof run.rate === "number" && run.rate > 0 ? run.rate : null,
+    termination: termination(run.termination),
   };
+}
+
+const terminationReasons = ["completed", "stopped_by_operator"] as const;
+
+function termination(value: unknown): Report["termination"] {
+  const reason = terminationReasons.find((known) => known === record(value).reason);
+  const atNs = record(value).at_ns;
+  return reason === undefined || typeof atNs !== "number" ? null : { reason, atNs };
 }
 
 function faults(truth: Record<string, unknown>) {
@@ -73,6 +91,7 @@ function faults(truth: Record<string, unknown>) {
 function perturbations(truth: Record<string, unknown>) {
   return list(truth.perturbations).map((raw) => {
     const perturbation = record(raw);
+    const until = number(perturbation.until_ns);
     return {
       kind: "perturbation" as const,
       action: text(perturbation.action),
@@ -80,10 +99,25 @@ function perturbations(truth: Record<string, unknown>) {
       onsetNs: number(perturbation.from_ns) || number(perturbation.at_ns),
       target: "delivery",
       name: text(perturbation.perturbation),
+      params: paramValues(perturbation.params),
+      ...(until > 0 ? { untilNs: until } : {}),
       clearedNs: null,
       clearedBy: "",
     };
   });
+}
+
+type Params = NonNullable<Report["disturbances"][number]["params"]>;
+type ParamValue = Params[string];
+
+function paramValues(value: unknown): Params {
+  const kept = Object.entries(record(value)).filter(
+    (entry): entry is [string, ParamValue] =>
+      typeof entry[1] === "number" ||
+      typeof entry[1] === "string" ||
+      (Array.isArray(entry[1]) && entry[1].every((item) => typeof item === "string")),
+  );
+  return Object.fromEntries(kept);
 }
 
 function environment(truth: Record<string, unknown>) {
@@ -102,6 +136,8 @@ function environment(truth: Record<string, unknown>) {
   });
 }
 
+const immediatePrefix = "job-now-";
+
 function effectorCalls(truth: Record<string, unknown>) {
   return list(truth.effector_calls).map((raw) => {
     const call = record(raw);
@@ -110,12 +146,22 @@ function effectorCalls(truth: Record<string, unknown>) {
       atNs: number(call.at_ns),
       entity: text(call.entity_id),
       effector: text(call.effector),
+      args: argValues(call.args),
       outcome: outcomeText(outcome),
+      applied: outcome.accepted === true && outcome.effect_applied === true,
+      immediate: text(call.command_id).startsWith(immediatePrefix),
     };
   });
 }
 
-function outcomeText(outcome: Record<string, unknown>): string {
+function argValues(value: unknown): Record<string, ArgValue> {
+  const scalars = Object.entries(record(value)).filter((entry): entry is [string, ArgValue] =>
+    ["string", "number", "boolean"].includes(typeof entry[1]),
+  );
+  return Object.fromEntries(scalars);
+}
+
+export function outcomeText(outcome: Record<string, unknown>): string {
   if (outcome.accepted !== true) return `refused${text(outcome.refusal) ? `: ${text(outcome.refusal)}` : ""}`;
   return outcome.effect_applied === true
     ? `applied · ${String(Math.round(number(outcome.ack_latency_ms)))} ms`

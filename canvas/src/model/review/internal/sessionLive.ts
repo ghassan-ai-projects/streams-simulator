@@ -1,5 +1,6 @@
 import type { InstanceOrigin } from "../../graph";
 import type { OriginKind } from "../../shared/origin";
+import { codeTitle, withUnit } from "../../shared/units";
 import type { InterruptState } from "./interrupts";
 
 type ReadingState = "good" | "simulated" | "stale" | "disconnected" | "invalid" | "untrusted";
@@ -71,6 +72,7 @@ interface ReadingView {
 interface ReadingWords {
   readonly valueText: string;
   readonly stateWords: string;
+  readonly unitTitle: string;
 }
 
 const environmentOrigins: Readonly<Record<DeviceEnvironment, OriginKind>> = {
@@ -115,8 +117,12 @@ export function readingWords(reading: SessionReading): ReadingWords {
   const plain = reading.quality === "" || reading.quality === reading.state;
   const quality = plain ? "" : ` · ${qualityWords(reading.quality)}`;
   const stateWords = `${state}${quality}`;
-  if (!carriesValue(reading) || reading.value === null) return { valueText: "—", stateWords };
-  return { valueText: `${String(reading.value)} ${reading.unit}`.trim(), stateWords };
+  if (!carriesValue(reading) || reading.value === null) return { valueText: "—", stateWords, unitTitle: "" };
+  return {
+    valueText: withUnit(String(reading.value), reading.unit),
+    stateWords,
+    unitTitle: codeTitle(reading.unit),
+  };
 }
 
 export function deviceReadings(device: SessionDevice): readonly ReadingView[] {

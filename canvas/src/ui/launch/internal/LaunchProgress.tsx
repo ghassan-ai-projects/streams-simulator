@@ -1,26 +1,25 @@
 import { panel, shared, cx, useFocusOnMount } from "../../primitives";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
-import { planSummary, runProgressWords } from "../../../model/launch";
-import { clockOf, durationOf } from "../../../model/shared/duration";
-import { humanise } from "../../../model/shared/words";
+import { planSummary, progressTicks, runProgressWords, runStageWords, runTitle } from "../../../model/launch";
+import type { Plant } from "../../../model/plant";
+import { plantTitle } from "../../../model/plant";
+import { durationOf } from "../../../model/shared/duration";
+import { ActNow } from "./ActNow";
+import { RunControls } from "./RunControls";
 import styles from "./LaunchPanel.module.css";
 
 export type Running = Extract<LaunchState, { phase: "running" }>;
 
 function ProgressBar({ state }: { readonly state: Running }) {
-  const marks = [
-    ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault, call: false })),
-    ...state.plan.calls.map((call) => ({ ...call, what: call.effector, call: true })),
-  ];
   return (
     <div className={styles.bar}>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      {marks.map((mark, index) => (
+      {progressTicks(state.plan).map((mark, index) => (
         <span
           key={String(index)}
           className={cx(mark.atS <= state.atS ? styles.tickDone : styles.tick, mark.call && styles.tickCall)}
           style={{ left: `${String((mark.atS / state.durationS) * 100)}%` }}
-          title={`${mark.entity} ${humanise(mark.what)} at ${clockOf(mark.atS)}`}
+          title={mark.title}
           aria-hidden="true"
         />
       ))}
@@ -31,22 +30,26 @@ function ProgressBar({ state }: { readonly state: Running }) {
 export function Progress({
   state,
   launch,
-  title,
+  plant,
 }: {
   readonly state: Running;
   readonly launch: LaunchStore;
-  readonly title: string;
+  readonly plant: Plant;
 }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
+  const title = runTitle(state.plan, plantTitle(plant));
   const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
         {state.stopping ? "Stopping at the next step…" : words}
       </p>
+      {state.plan.purpose !== undefined && <p className={styles.clock}>{state.plan.purpose}</p>}
       <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
       <ProgressBar state={state} />
-      <p className={styles.clock}>{`Running · ${runProgressWords(state, " simulated")}`}</p>
+      <p className={styles.clock}>{`${runStageWords(state)} · ${runProgressWords(state, " simulated")}`}</p>
+      <RunControls state={state} launch={launch} />
+      <ActNow state={state} launch={launch} plant={plant} />
       <button
         type="button"
         className={cx(shared.secondary, panel.secondary)}

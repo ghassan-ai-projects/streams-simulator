@@ -55,14 +55,6 @@ describe("bridge adapter wiring", () => {
   });
 
   it("narrows one field at a time, and refuses a response it cannot decode", async () => {
-    const partial = await bridgeAdapter(
-      bridgeTransport(() => respond(200, { result: { clock: "c", emitted: 3, extra: true } })),
-    ).launch.advance("w-1", 10);
-    expect(partial).toEqual({ ok: true, value: undefined });
-    const unreadable = await bridgeAdapter(
-      bridgeTransport(() => respond(200, { result: { emitted: 3 } })),
-    ).launch.advance("w-1", 10);
-    expect(unreadable).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
     const corrupt = await bridgeAdapter(bridgeTransport(() => respond(200, { path: "x" }))).editor.readFile("x");
     expect(corrupt).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
   });
@@ -94,7 +86,7 @@ describe("bridge adapter wiring", () => {
     const source = t.sources[0];
     const record = { stream: "observer", type: "clock.advanced", seq: 1, at_ns: 30e9 };
     source?.record(record);
-    expect(follower.entry.mock.calls).toEqual([[{ kind: "other", atNs: 30e9 }]]);
+    expect(follower.entry.mock.calls).toEqual([[{ kind: "clock", atNs: 30e9 }]]);
     source?.end("caught_up");
     expect(follower.caughtUp).toHaveBeenCalledOnce();
     source?.dispatchEvent(new MessageEvent("record", { data: "not json" }));

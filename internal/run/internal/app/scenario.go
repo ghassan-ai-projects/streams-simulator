@@ -68,19 +68,6 @@ func scenarioViolation(cfg Config, scenario *model.Scenario, issues []model.Issu
 	return &model.ValidationError{Contract: model.ContractScenario, Summary: summary, Issues: issues}
 }
 
-func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) error {
-	for index, step := range scenario.Commands {
-		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("run: scenario command %d (%s): %w", index, step.Op, err)
-		}
-		command := model.Command{Op: step.Op, Args: step.Args}
-		if err := executeCommand(ctx, r, &command, keepWorldRefusals); err != nil {
-			return fmt.Errorf("run: scenario command %d (%s): %w", index, step.Op, err)
-		}
-	}
-	return nil
-}
-
 func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
 	return rules.ScenarioFromArtifact(art)
 }
@@ -120,4 +107,8 @@ func violationText(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+func Perturbations() []perturb.KindInfo {
+	return perturb.Describe()
 }

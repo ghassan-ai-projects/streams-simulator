@@ -6,10 +6,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/report/internal/app"
 )
 
-func Build(ctx context.Context, dir string) (*Report, error) {
-	return app.Build(ctx, dir)
+func Produce(ctx context.Context, request Request) (any, error) {
+	return app.Produce(ctx, request)
 }
 
-func Render(report *Report, format string) ([]byte, error) {
-	return app.Render(report, format)
+func Render(document any, format string) ([]byte, error) {
+	return app.Render(document, format)
 }

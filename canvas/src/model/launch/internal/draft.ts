@@ -1,12 +1,19 @@
 import type { Plant } from "../../plant";
 import { callArgs, effectorOf } from "../../plant";
 import type { LaunchPlan } from "./launch";
+import { minutesText } from "./minutes";
+import type { PerturbationKind } from "./perturbation";
+import type { DraftPerturbation } from "./perturbationDraft";
+import { endOf, minutesWhole, perturbationDraftOf, plannedPerturbation } from "./perturbationDraft";
+
+export type { DraftPerturbation } from "./perturbationDraft";
 
 export interface DraftFault {
   readonly key: number;
   readonly entity: string;
   readonly fault: string;
   readonly atMinutes: string;
+  readonly untilMinutes: string;
 }
 
 export interface DraftCall {
@@ -18,31 +25,54 @@ export interface DraftCall {
 }
 
 export interface Draft {
+  readonly name: string;
+  readonly purpose: string;
   readonly seed: string;
   readonly duration: string;
   readonly unit: "minutes" | "hours";
   readonly explore: boolean;
   readonly pace: "watch" | "fast";
   readonly faults: readonly DraftFault[];
+  readonly perturbations: readonly DraftPerturbation[];
   readonly calls: readonly DraftCall[];
   readonly nextKey: number;
 }
 
 export const firstDraft: Draft = {
+  name: "",
+  purpose: "",
   seed: "1",
   duration: "30",
   unit: "minutes",
   explore: true,
   pace: "watch",
   faults: [],
+  perturbations: [],
   calls: [],
   nextKey: 1,
 };
 
+export function freshPlanOf(explore: boolean): LaunchPlan {
+  const { seed, duration, pace } = firstDraft;
+  return {
+    seed: Number(seed),
+    durationS: Number(duration) * 60,
+    explore,
+    pace,
+    faults: [],
+    perturbations: [],
+    calls: [],
+  };
+}
+
 const whole = (text: string, scale: number) => Math.round(Number(text.trim() === "" ? Number.NaN : text) * scale);
 
-export function planOf(draft: Draft, plant: Plant): LaunchPlan {
+const authored = (name: "name" | "purpose", text: string) => (text.trim() === "" ? {} : { [name]: text.trim() });
+
+export function planOf(draft: Draft, plant: Plant, kinds: readonly PerturbationKind[] = []): LaunchPlan {
   return {
+    ...authored("name", draft.name),
+    ...authored("purpose", draft.purpose),
     seed: Number(draft.seed.trim() === "" ? Number.NaN : draft.seed),
     durationS: whole(draft.duration, draft.unit === "hours" ? 3600 : 60),
     explore: draft.explore,
@@ -50,24 +80,28 @@ export function planOf(draft: Draft, plant: Plant): LaunchPlan {
     faults: draft.faults.map((fault) => ({
       entity: fault.entity,
       fault: fault.fault,
-      atS: whole(fault.atMinutes, 60),
+      atS: minutesWhole(fault.atMinutes),
+      ...endOf(fault.untilMinutes),
     })),
+    perturbations: draft.perturbations.map((perturbation) => plannedPerturbation(perturbation, kinds)),
     calls: draft.calls.map((call) => ({
       entity: call.entity,
       effector: call.effector,
-      atS: whole(call.atMinutes, 60),
+      atS: minutesWhole(call.atMinutes),
       args: callArgs(effectorOf(plant, call.entity, call.effector), call.entity, call.values),
     })),
   };
 }
 
-const minutesOf = (seconds: number) => String(Number((seconds / 60).toFixed(2)));
-
 export function draftOf(plan: LaunchPlan): Draft {
   const hours = plan.durationS % 3600 === 0;
+  const faults = plan.faults.length;
+  const calls = plan.calls.length;
   return {
+    name: plan.name ?? "",
+    purpose: plan.purpose ?? "",
     seed: String(plan.seed),
-    duration: hours ? String(plan.durationS / 3600) : minutesOf(plan.durationS),
+    duration: hours ? String(plan.durationS / 3600) : minutesText(plan.durationS),
     unit: hours ? "hours" : "minutes",
     explore: plan.explore,
     pace: plan.pace ?? "watch",
@@ -75,16 +109,18 @@ export function draftOf(plan: LaunchPlan): Draft {
       key: index + 1,
       entity: fault.entity,
       fault: fault.fault,
-      atMinutes: minutesOf(fault.atS),
+      atMinutes: minutesText(fault.atS),
+      untilMinutes: fault.untilS === undefined ? "" : minutesText(fault.untilS),
     })),
     calls: plan.calls.map((call, index) => ({
-      key: plan.faults.length + index + 1,
+      key: faults + index + 1,
       entity: call.entity,
       effector: call.effector,
-      atMinutes: minutesOf(call.atS),
+      atMinutes: minutesText(call.atS),
       values: Object.fromEntries(Object.entries(call.args).map(([name, value]) => [name, String(value)])),
     })),
-    nextKey: plan.faults.length + plan.calls.length + 1,
+    perturbations: plan.perturbations.map((planned, index) => perturbationDraftOf(planned, faults + calls + index + 1)),
+    nextKey: faults + calls + plan.perturbations.length + 1,
   };
 }
 

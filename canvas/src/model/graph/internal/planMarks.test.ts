@@ -7,6 +7,7 @@ const plan: LaunchPlan = {
   seed: 1,
   durationS: 1800,
   explore: true,
+  perturbations: [],
   faults: [
     { entity: "boiler-1", fault: "scaling", atS: 600 },
     { entity: "hall-a/pump-1", fault: "bearing_wear", atS: 900 },
@@ -22,6 +23,7 @@ const call: CallOutcome = {
   accepted: true,
   reason: "",
   effectEtaNs: null,
+  immediate: false,
   atMs: 10_000,
 };
 
@@ -60,5 +62,33 @@ describe("plan marks", () => {
     expect(planMarks(showingMarks(plan, [call], 480, 12_999)).get("pump-2")?.effector).toBe("set speed · accepted");
     expect(planMarks(showingMarks(plan, [call], 480, 13_000)).has("pump-2")).toBe(false);
     expect(planMarks(showingMarks(plan, [call], 299, 11_000)).has("pump-2")).toBe(false);
+  });
+});
+
+describe("plan marks in Evaluate", () => {
+  const canary = "chiller__CANARY_TRUTH_9f3a";
+  const blind: LaunchPlan = {
+    ...plan,
+    explore: false,
+    faults: [{ entity: "boiler-1", fault: canary, atS: 10 }],
+  };
+
+  it("carries no fault, status or hall count while the run is unsealed, whatever the clock says", () => {
+    for (const at of [0, 10, 900, 1800]) {
+      const marks = planMarks(showingMarks(blind, [], at, 0));
+      expect(marks.size).toBe(0);
+      expect(JSON.stringify([...marks])).not.toMatch(/canary/i);
+    }
+  });
+
+  it("keeps the operator's own effector call and its outcome", () => {
+    const marks = planMarks(showingMarks(blind, [call], 310, 10_000));
+    expect(marks.get("pump-2")).toEqual({ status: null, count: 0, fault: "", effector: "set speed · accepted" });
+    expect(marks.has("boiler-1")).toBe(false);
+  });
+
+  it("still shows the same fault in Explore", () => {
+    const marks = planMarks(showingMarks({ ...blind, explore: true }, [], 10, 0));
+    expect(marks.get("boiler-1")?.fault).toBe("CANARY TRUTH 9f3a");
   });
 });

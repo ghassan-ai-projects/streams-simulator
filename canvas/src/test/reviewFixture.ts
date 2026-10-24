@@ -4,8 +4,10 @@ import { report } from "./runFixture";
 export function reviewState(overrides: Partial<ReviewState>): ReviewState {
   return {
     worldId: "w-1",
+    watching: false,
     report: { phase: "ready", value: report },
     verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
+    replayCheck: { phase: "idle" },
     playback: { phase: "ready", records: report.counts.delivered ?? 0 },
     positionNs: 0,
     selected: null,
@@ -18,6 +20,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     origins: new Map(),
     recordedOrigins: new Map(),
     connection: "none",
+    running: false,
     simulated: [],
     sessionDomain: "",
     sessionPolicies: null,

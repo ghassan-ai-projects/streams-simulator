@@ -1,0 +1,187 @@
+{
+  "schema_version": "0.1",
+  "a": {
+    "run_id": "r-3h6wx9adsnlft",
+    "mode": "evaluate",
+    "seed": 7,
+    "sim_version": "0.3.0",
+    "domain": {
+      "id": "aquaculture-pond",
+      "version": "0.1.0",
+      "digest": "sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1"
+    },
+    "adapter": {
+      "id": "native-jsonl",
+      "version": "0.1.0",
+      "digest": "sha256:6c01da6f343fa8e671962f14df015450fdf2327690147413310c8b0242241804"
+    },
+    "time_mode": "stepped",
+    "start_time_ns": 1767225600000000000,
+    "end_time_ns": 1767225720000000000,
+    "simulated_length_ns": 120000000000,
+    "complete": true,
+    "verification": "files_match",
+    "kpi_truth": false
+  },
+  "b": {
+    "run_id": "r-3h6wx9adsnlft",
+    "mode": "evaluate",
+    "seed": 7,
+    "sim_version": "0.3.0",
+    "domain": {
+      "id": "aquaculture-pond",
+      "version": "0.1.0",
+      "digest": "sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1"
+    },
+    "adapter": {
+      "id": "native-jsonl",
+      "version": "0.1.0",
+      "digest": "sha256:6c01da6f343fa8e671962f14df015450fdf2327690147413310c8b0242241804"
+    },
+    "time_mode": "stepped",
+    "start_time_ns": 1767225600000000000,
+    "end_time_ns": 1767225720000000000,
+    "simulated_length_ns": 120000000000,
+    "complete": true,
+    "verification": "files_differ",
+    "kpi_truth": false
+  },
+  "plan": {
+    "faults": {
+      "identical": [],
+      "different": [
+        {
+          "a": {
+            "entity_id": "site-a/pond-1",
+            "fault": "aerator_failure",
+            "onset_ns": 1767225630000000000,
+            "cleared_ns": null,
+            "cleared_by": null
+          },
+          "b": {
+            "entity_id": "site-a/pond-1",
+            "fault": "aerator_failure",
+            "onset_ns": 1767225630000000000,
+            "cleared_ns": 1767225690000000000,
+            "cleared_by": "command"
+          },
+          "differences": [
+            "cleared_by",
+            "cleared_ns"
+          ]
+        }
+      ],
+      "only_in_a": [],
+      "only_in_b": []
+    },
+    "perturbations": {
+      "identical": [
+        {
+          "action": "apply",
+          "perturbation": "drop",
+          "at_ns": 1767225600000000000,
+          "from_ns": 1767225650000000000,
+          "until_ns": 1767225662000000000,
+          "params": {
+            "rate": 1.0
+          }
+        },
+        {
+          "action": "apply",
+          "perturbation": "duplicate_burst",
+          "at_ns": 1767225600000000000,
+          "from_ns": 1767225662000000000,
+          "until_ns": 1767225720000000000,
+          "params": {
+            "rate": 0.5
+          }
+        }
+      ],
+      "different": [],
+      "only_in_a": [],
+      "only_in_b": []
+    },
+    "environment": {
+      "identical": [],
+      "different": [],
+      "only_in_a": [],
+      "only_in_b": []
+    },
+    "effector_calls": {
+      "identical": [
+        {
+          "at_ns": 1767225640000000000,
+          "entity_id": "site-a/pond-1",
+          "effector": "start_aerator",
+          "args": {
+            "level": 1.0,
+            "pond_id": "site-a/pond-1"
+          },
+          "outcome": {
+            "accepted": true,
+            "mode": "silent_no_effect",
+            "effect_applied": true,
+            "ack_latency_ms": 644
+          }
+        }
+      ],
+      "different": [],
+      "only_in_a": [
+        {
+          "at_ns": 1767225700000000000,
+          "entity_id": "site-a/pond-2",
+          "effector": "start_aerator",
+          "args": {
+            "level": 0.5,
+            "pond_id": "site-a/pond-2"
+          },
+          "outcome": {
+            "accepted": true,
+            "mode": "silent_no_effect",
+            "effect_applied": true,
+            "ack_latency_ms": 491
+          }
+        }
+      ],
+      "only_in_b": []
+    }
+  },
+  "comparability_limits": [
+    {
+      "code": "files_unverified",
+      "side": "b",
+      "message": "Run B: its files are not shown to match the digests the run recorded (files_differ)."
+    },
+    {
+      "code": "kpi_truth_absent",
+      "side": "a",
+      "message": "Run A: it records no whole-run KPI results, so it contributes no result rows."
+    },
+    {
+      "code": "kpi_truth_absent",
+      "side": "b",
+      "message": "Run B: it records no whole-run KPI results, so it contributes no result rows."
+    },
+    {
+      "code": "single_run_per_side",
+      "message": "Each side is one run. A difference between two single runs does not establish that a change caused it, and a seed is one draw of the world's randomness."
+    }
+  ],
+  "results": {
+    "kpis": [],
+    "alarms": [],
+    "alarm_system": {
+      "a": null,
+      "b": null,
+      "scope": {
+        "kind": "whole_run",
+        "a_simulated_length_ns": null,
+        "b_simulated_length_ns": null
+      }
+    }
+  },
+  "windowed_results": {
+    "status": "not_available",
+    "reason": "The run report carries whole-run KPI truth only (mean, minimum, maximum and samples over the whole run), so no event-relative window can be computed from it and none is shown."
+  }
+}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestAWorkspaceFolderThatCannotBeListedFailsTheListingNamingIt(t *testing.T)
 			t.Parallel()
 			h := newHarness(t)
 			h.blockFolder(t, folder)
-			if _, err := h.bridge.Workspace(); err == nil || !strings.Contains(err.Error(), "canvasbridge: list "+folder) {
+			if _, err := h.bridge.Workspace(context.Background()); err == nil || !strings.Contains(err.Error(), "canvasbridge: list "+folder) {
 				t.Fatalf("Workspace() = %v, want an error naming %s", err, folder)
 			}
 		})
@@ -39,7 +40,7 @@ func TestARunWhoseJournalCannotBeReadIsListedWithoutASummary(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(h.dir, "runs", "w-1", "journal.jsonl"), 0o750); err != nil {
 		t.Fatal(err)
 	}
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 {
 		t.Fatalf("Workspace() runs = %+v, %v, want the one run listed", listing.Runs, err)
 	}
@@ -77,5 +78,17 @@ func TestADirectorThatCannotStartFailsTheToolCallWithItsError(t *testing.T) {
 	h.bridge.edges.StartDirector = func(context.Context) (Director, error) { return nil, errors.New("no director binary") }
 	if _, err := h.bridge.RunAction(context.Background(), "catalog.list", nil); err == nil || err.Error() != "no director binary" {
 		t.Fatalf("catalog.list without a director = %v, want the start error", err)
+	}
+}
+
+func TestARunWithoutAJournalHasNoRecordedTime(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	h.write(t, "runs/w-1/journal.jsonl", openedLine)
+	if got := h.bridge.recordedAt("runs/w-2/journal.jsonl"); got != "" {
+		t.Fatalf("recordedAt of an absent journal = %q, want none", got)
+	}
+	if got := h.bridge.recordedAt("runs/w-1/journal.jsonl"); !regexp.MustCompile(`^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$`).MatchString(got) {
+		t.Fatalf("recordedAt of a journal = %q, want an RFC 3339 UTC time", got)
 	}
 }

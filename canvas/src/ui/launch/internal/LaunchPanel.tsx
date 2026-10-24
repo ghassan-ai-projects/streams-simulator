@@ -37,7 +37,6 @@ function ToCompletion({ launch, plant, path, selected, onFinished }: CompletePro
   const { proposed, draft, setDraft } = useLaunchDraft(launch, plant, selected);
   return (
     <>
-      {state.phase !== "running" && <ProposalNote proposed={proposed} />}
       <Body
         state={state}
         launch={launch}
@@ -48,6 +47,7 @@ function ToCompletion({ launch, plant, path, selected, onFinished }: CompletePro
         change={setDraft}
         onFinished={onFinished}
         watch={watch}
+        note={<ProposalNote proposed={proposed} />}
       />
     </>
   );

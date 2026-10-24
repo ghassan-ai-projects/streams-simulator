@@ -132,10 +132,18 @@ func controlLog(node *Options, dir string, port *ControlPort) (*interruptFile, e
 func serveNode(ctx context.Context, o ConnectOptions, p *connectPlan, r *run.Run, node Options, file *interruptFile) (ConnectResult, error) {
 	served := serveSession(ctx, r, p.plan.HostSocket, o.BarrierCap, node)
 	stopped := ctx.Err() != nil
+	failure := withoutInterrupt(stopped, served)
 	sealed := file.finish(o.Out)
 	r.SetInterruptLog(file.digest())
+	abandonFailed(r, "plantwire connect", failure)
 	_, ended := r.End(o.Out)
-	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(withoutInterrupt(stopped, served), errors.Join(sealed, ended))
+	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(failure, errors.Join(sealed, ended))
+}
+
+func abandonFailed(r *run.Run, session string, failure error) {
+	if failure != nil {
+		r.Abandon(fmt.Sprintf("%s: %v", session, failure))
+	}
 }
 
 func withoutInterrupt(stopped bool, served error) error {

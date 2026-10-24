@@ -22,6 +22,7 @@ const (
 	codeDomainLint          failureCode = "domain_lint"
 	codeAdapterVerifyFailed failureCode = "adapter_verify_failed"
 	codeIOFailed            failureCode = "io_failed"
+	codeRunNotEnded         failureCode = "run_not_ended"
 )
 
 func commandFailed(command string) failureCode {

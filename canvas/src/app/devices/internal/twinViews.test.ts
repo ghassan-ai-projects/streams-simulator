@@ -90,7 +90,7 @@ describe("the state of each step", () => {
     const status = (state: Parameters<typeof stepStatuses>[1]) => stepStatuses(device, state).check;
     expect(status({ phase: "idle" })).toEqual({ text: "Not run", tone: "" });
     expect(status(twin)).toEqual({ text: "Not run", tone: "" });
-    expect(status(built(twin))).toEqual({ text: "Passed", tone: "ok" });
+    expect(status(built(twin))).toEqual({ text: "Checks passed", tone: "ok" });
     expect(status(built(twin, { implemented: { kind: "checking" } }))).toEqual({ text: "Checking", tone: "busy" });
     const errors = { errors: 2, warnings: 0, findings: [] };
     expect(status(built(twin, { lint: { kind: "done", report: errors } }))).toEqual({ text: "Failed", tone: "warn" });
@@ -189,7 +189,11 @@ describe("the headline of the behaviour step", () => {
 
   it("tells that the twin is ready, being checked, not matching its device, or out of date", async () => {
     const { device, twin } = await drafts();
-    expect(twinStatusOf(built(twin), device)).toEqual({ text: "Twin ready.", tone: "ok", detail: domainPath });
+    expect(twinStatusOf(built(twin), device)).toEqual({
+      text: "Twin created. Interface check passed; plausibility check passed; not calibrated; not compared with a board.",
+      tone: "ok",
+      detail: `Twin created. Interface check passed; plausibility check passed; not calibrated; not compared with a board. (${domainPath})`,
+    });
     expect(twinStatusOf(built(twin, { implemented: { kind: "checking" } }), device).text).toBe("Checking the twin…");
     const failed = built(twin, { implemented: { kind: "failed", failure: refused } });
     expect(twinStatusOf(failed, device)).toMatchObject({ tone: "warn", detail: "refused" });
@@ -213,6 +217,9 @@ describe("the rows of the check", () => {
       ["device", "ok"],
       ["twin", "idle"],
       ["implements", "idle"],
+      ["lint", "idle"],
+      ["calibration", "neutral"],
+      ["hardware", "neutral"],
     ]);
     expect(checkRows(device, twin)[1]?.text).toBe("No twin has been created yet");
   });
@@ -243,7 +250,7 @@ describe("the rows of the check", () => {
       details: ["differs"],
     });
     expect(row({ ...twin, build: { kind: "refused", failure: bare } })).toMatchObject({ notes: ["refused"] });
-    expect(row(built(twin))).toMatchObject({ state: "ok", text: "Twin ready" });
+    expect(row(built(twin))).toMatchObject({ state: "ok", text: "Twin created" });
     const errors = { errors: 1, warnings: 0, findings: [] };
     expect(row(built(twin, { lint: { kind: "done", report: errors } }))).toMatchObject({
       state: "bad",
@@ -264,13 +271,18 @@ describe("the rows of the check", () => {
       notes: ["The twin no longer matches this device"],
       details: ["differs"],
     });
-    expect(rows({})[3]).toMatchObject({ id: "lint", state: "ok", text: "The readings stay plausible" });
+    expect(rows({})[3]).toMatchObject({
+      id: "lint",
+      state: "ok",
+      status: "Passed",
+      text: "Plausibility: readings stay plausible in a nominal day",
+    });
     expect(rows({ lint: { kind: "running" } })[3]).toMatchObject({ state: "pending" });
-    expect(rows({ lint: { kind: "unavailable" } })).toHaveLength(3);
+    expect(rows({ lint: { kind: "unavailable" } })[3]).toMatchObject({ state: "idle", status: "Not run" });
     const warned = { errors: 0, warnings: 2, findings: [{ severity: "warning", entity: "a", detail: "slow" }] };
     expect(rows({ lint: { kind: "done", report: warned } })[3]).toMatchObject({
-      state: "ok",
-      text: "The plausibility check has 2 warnings",
+      state: "warn",
+      status: "Passed with 2 warnings",
       notes: ["a: slow"],
     });
     const findings = Array.from({ length: 8 }, (_unused, index) => ({
@@ -279,7 +291,7 @@ describe("the rows of the check", () => {
       detail: String(index),
     }));
     const failed = rows({ lint: { kind: "done", report: { errors: 8, warnings: 0, findings } } })[3];
-    expect(failed).toMatchObject({ state: "bad", text: "The plausibility check found 8 errors" });
+    expect(failed).toMatchObject({ state: "bad", status: "Failed", text: "Plausibility: the check found 8 errors" });
     expect(failed?.notes).toHaveLength(7);
     expect(failed?.notes.at(-1)).toBe("…and 2 more");
   });

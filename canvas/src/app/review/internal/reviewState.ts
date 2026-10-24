@@ -29,8 +29,14 @@ export interface LiveHistory {
   readonly trimmedBeforeNs: number | null;
 }
 
+export type ReplayCheck =
+  { readonly phase: "idle" } | { readonly phase: "checking" } | { readonly phase: "failed"; readonly message: string };
+
+export type OpenMode = "review" | "watch";
+
 export interface ReviewState {
   readonly following: boolean;
+  readonly watching: boolean;
   readonly newestNs: number;
   readonly live: SessionLive | null;
   readonly liveHistory: LiveHistory | null;
@@ -42,6 +48,7 @@ export interface ReviewState {
   readonly worldId: string | null;
   readonly report: Load<Report>;
   readonly verified: Load<Replay>;
+  readonly replayCheck: ReplayCheck;
   readonly playback: {
     readonly phase: "loading" | "ready" | "failed";
     readonly records: number;
@@ -57,6 +64,7 @@ export interface ReviewState {
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly recordedOrigins: ReadonlyMap<string, InstanceOrigin>;
   readonly connection: Connection;
+  readonly running: boolean;
   readonly simulated: readonly string[];
   readonly sessionDomain: string;
   readonly sessionPolicies: readonly string[] | null;
@@ -65,6 +73,7 @@ export interface ReviewState {
 
 export const idle: ReviewState = {
   following: true,
+  watching: false,
   newestNs: 0,
   live: null,
   liveHistory: null,
@@ -76,6 +85,7 @@ export const idle: ReviewState = {
   worldId: null,
   report: { phase: "loading" },
   verified: { phase: "loading" },
+  replayCheck: { phase: "idle" },
   playback: { phase: "loading", records: 0 },
   positionNs: 0,
   selected: null,
@@ -88,11 +98,16 @@ export const idle: ReviewState = {
   origins: new Map(),
   recordedOrigins: new Map(),
   connection: "none",
+  running: false,
   simulated: [],
   sessionDomain: "",
   sessionPolicies: null,
   binding: null,
 };
+
+export function runGoing(state: ReviewState): boolean {
+  return state.watching || state.running || state.connection === "running";
+}
 
 export function endedSinceReport(state: ReviewState, worldId: string, known: RunEntry | undefined): boolean {
   const { report } = state;
@@ -104,16 +119,26 @@ function connectionOf(known: RunEntry | undefined): Connection {
 }
 
 export function withListedConnection(state: ReviewState, known: RunEntry | undefined): ReviewState {
+  const running = known?.running ?? state.running;
   const listed = known?.connected;
-  if (listed === undefined || listed === state.connection) return state;
-  return { ...state, connection: listed, simulated: known?.simulated ?? state.simulated };
+  if (listed === undefined || listed === state.connection)
+    return running === state.running ? state : { ...state, running };
+  return { ...state, running, connection: listed, simulated: known?.simulated ?? state.simulated };
 }
 
-type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" | "session" }>;
+export function watchEnded(state: ReviewState): ReviewState {
+  return state.watching ? { ...state, watching: false, running: false, following: false } : state;
+}
+
+function closedState(state: ReviewState): ReviewState {
+  if (state.watching) return watchEnded(state);
+  return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
+}
+
+export type SessionEntry = Extract<JournalEntry, { kind: "origin" | "binding" | "closed" | "session" }>;
 
 export function withSessionEntry(state: ReviewState, entry: SessionEntry): ReviewState {
-  if (entry.kind === "closed")
-    return state.connection === "running" ? { ...state, connection: "saved", following: false } : state;
+  if (entry.kind === "closed") return closedState(state);
   const connection = state.connection === "none" ? "saved" : state.connection;
   if (entry.kind === "session")
     return {
@@ -170,7 +195,20 @@ function absentLoads(known: RunEntry | undefined): Pick<ReviewState, "verified" 
   };
 }
 
-export function visitState(worldId: string, known: RunEntry | undefined, openedAt: number): ReviewState {
+export function visitState(
+  worldId: string,
+  known: RunEntry | undefined,
+  visit: { readonly openedAt: number; readonly mode: OpenMode },
+): ReviewState {
   const simulated = known?.simulated ?? [];
-  return { ...idle, worldId, openedAt, connection: connectionOf(known), simulated, ...absentLoads(known) };
+  return {
+    ...idle,
+    worldId,
+    openedAt: visit.openedAt,
+    watching: visit.mode === "watch",
+    connection: connectionOf(known),
+    running: known?.running ?? false,
+    simulated,
+    ...absentLoads(known),
+  };
 }

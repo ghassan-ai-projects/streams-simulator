@@ -1,0 +1,148 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - button "Audit fan thermal response"
+      - heading "Run w-3" [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Run details panel" [pressed]:
+    - text: Run details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - 'generic "Evaluate: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends."':
+    - text: Evaluate
+  - generic: seed 1 · 10 min
+  - button "About this run":
+  - generic "The files match and the replay reproduces.":
+    - text: Verified
+  - status: Verified
+  - button "Open plant"
+  - button "Set up another run":
+    - text: Set up another run
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Plant 3":
+      - generic "Plant"
+      - generic: "3"
+    - list:
+      - button "fan-01 fan":
+        - generic: fan-01
+        - generic: fan
+      - button "thermal-sensor-01 thermal sensor":
+        - generic: thermal-sensor-01
+        - generic: thermal sensor
+      - button "ble-sensor-node-01 ble sensor node":
+        - generic: ble-sensor-node-01
+        - generic: ble sensor node
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Run w-3":
+    - paragraph
+    - status
+    - button "Play":
+      - text: Play
+    - group "Playback speed":
+      - button "1×"
+      - button "10×"
+      - button "60×" [pressed]
+      - button "600×"
+    - generic: 00:10:00
+    - generic: of 00:10:00
+    - group "Playback steps":
+      - button "Previous event":
+      - button "Back 10 minutes":
+      - button "Forward 10 minutes":
+      - 'button "Next event: none" [disabled]':
+    - 'button "Jump to alarm: none" [disabled]':
+    - generic: 00:00:00
+    - generic: 00:10:00
+    - slider "Playback time" [active]: "600"
+    - button
+    - paragraph: Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
+    - list "Events":
+      - button "00:01:00 fan-01 set cooling":
+        - generic: 00:01:00 fan-01
+    - paragraph
+    - paragraph: "First: effector call · set cooling on fan-01 at 00:01:00"
+    - list "Event types":
+      - listitem: Effector call
+    - generic "800 observations"
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 100 %
+      - generic: Zoom 100 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph: thermal-sensor-01, thermal sensor, 0 inputs, 0 outputs, selected
+    - application "Plant graph":
+      - group "fan-01, fan, 0 inputs, 0 outputs":
+        - generic "fan-01"
+        - generic "fan"
+        - term: level percent
+        - definition: 40.0%
+      - group "thermal-sensor-01, thermal sensor, 0 inputs, 0 outputs, selected":
+        - generic "thermal-sensor-01"
+        - generic "thermal sensor"
+        - term: temperature
+        - definition: 26.0Cel
+        - term: humidity
+        - definition: 55.0%
+      - group "ble-sensor-node-01, ble sensor node, 0 inputs, 0 outputs":
+        - generic "ble-sensor-node-01"
+        - generic "ble sensor node"
+        - term: sensor 1
+        - definition: "1281"
+        - term: sensor 2
+        - definition: "1281"
+        - term: sensor 3
+        - definition: "1281"
+        - term: sensor 4
+        - definition: "1281"
+        - term: +1 more
+        - definition: in Inspect
+      - generic "Plant · 3 nodes":
+        - generic: Plant
+        - generic: 3 nodes
+  - complementary "Run details":
+    - group "Run details view":
+      - button "Report"
+      - button "Inspect · thermal-sensor-01" [pressed]
+    - region "Inspect":
+      - region "Observed · thermal-sensor-01":
+        - heading "Observed · thermal-sensor-01 at 00:10:00" [level=2]:
+          - text: Observed ·
+          - generic: thermal-sensor-01
+          - generic: at 00:10:00
+        - table "Observed at 00:10:00":
+          - caption: Observed at 00:10:00
+          - rowgroup:
+            - row "Channel Value Observed at":
+              - columnheader "Channel"
+              - columnheader "Value"
+              - columnheader "Observed at"
+          - rowgroup:
+            - row "temperature 26.0Cel run time of this observation":
+              - rowheader "temperature"
+              - cell "26.0Cel"
+              - cell "run time of this observation"
+            - row "humidity 55.0% run time of this observation":
+              - rowheader "humidity"
+              - cell "55.0%"
+              - cell "run time of this observation"
+      - region "True results":
+        - heading "True results" [level=2]
+        - generic: thermal-sensor-01
+        - paragraph: No true results for thermal-sensor-01.

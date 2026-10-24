@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { TwinChart, TwinCoverage } from "../../../model/review";
 import { chartFrame, chartOf, metricLine, truncationNote } from "../../../model/review";
+import { codeTitle, displayUnit } from "../../../model/shared/units";
 import styles from "./Twin.module.css";
 
 type Series = Extract<TwinCoverage, { kind: "series" }>;
@@ -101,11 +102,15 @@ interface ChartViewProps {
 export function TwinChartView({ series, startNs, cursorNs }: ChartViewProps) {
   const { metric, divergences, undrawn } = series;
   const chart = chartOf(metric, divergences, startNs, cursorNs);
-  const unit = metric.unit === "" ? "" : ` (${metric.unit})`;
+  const symbol = displayUnit(metric.unit);
+  const unit = symbol === "" ? "" : ` (${symbol})`;
   const truncated = truncationNote(metric.series, undrawn);
   return (
     <figure className={styles.figure}>
-      <figcaption className={styles.heading}>{`${metric.metric}${unit}`}</figcaption>
+      <figcaption
+        className={styles.heading}
+        title={codeTitle(metric.unit) || undefined}
+      >{`${metric.metric}${unit}`}</figcaption>
       <svg
         className={styles.chart}
         viewBox={`0 0 ${String(width)} ${String(height)}`}

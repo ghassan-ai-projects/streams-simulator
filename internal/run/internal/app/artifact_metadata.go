@@ -85,6 +85,7 @@ func (r *Run) attachArtifactState(artifact *model.RunArtifact, commands []model.
 	artifact.Counts = counts
 	artifact.AppliedPerturbations = r.appliedPerturbations()
 	r.attachArtifactJournal(artifact)
+	r.attachArtifactIntent(artifact)
 }
 
 func (r *Run) attachArtifactJournal(artifact *model.RunArtifact) {

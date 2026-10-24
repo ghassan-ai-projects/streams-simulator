@@ -179,3 +179,25 @@ func TestModifiedReadsAFilesTimeAndNamesAnAbsentFile(t *testing.T) {
 		t.Fatalf("missing = %v", err)
 	}
 }
+
+func TestAliasesNameTheSymlinkResolvedWorkspaceAndNothingElse(t *testing.T) {
+	t.Parallel()
+	real := t.TempDir()
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(real, link); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := filepath.EvalSymlinks(real)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Aliases(link); len(got) != 1 || got[0] != resolved {
+		t.Errorf("Aliases(symlink) = %q, want [%q]", got, resolved)
+	}
+	if got := Aliases(resolved); got != nil {
+		t.Errorf("Aliases(resolved dir) = %q, want none", got)
+	}
+	if got := Aliases(filepath.Join(resolved, "absent")); got != nil {
+		t.Errorf("Aliases(absent dir) = %q, want none", got)
+	}
+}

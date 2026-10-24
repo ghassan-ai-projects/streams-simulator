@@ -1,9 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
 import type { PlanProblem } from "./planProblems";
-import { disturbanceWords, modeWords, planCue, planSummary, problemWords } from "./words";
+import {
+  disturbanceWords,
+  freshSettingsWords,
+  modeWords,
+  planCue,
+  planSummary,
+  problemWords,
+  unrecoveredWords,
+} from "./words";
 
-const plan: LaunchPlan = { seed: 1, durationS: 1800, explore: true, pace: "watch", faults: [], calls: [] };
+const plan: LaunchPlan = {
+  seed: 1,
+  durationS: 1800,
+  explore: true,
+  pace: "watch",
+  faults: [],
+  perturbations: [],
+  calls: [],
+};
 
 const faulted = (count: number): LaunchPlan["faults"] =>
   Array.from({ length: count }, (_, index) => ({ entity: "CT-1", fault: "fan", atS: 5 + index }));
@@ -13,7 +29,7 @@ const called = (count: number): LaunchPlan["calls"] =>
 
 describe("launch words", () => {
   it("tells what each mode does with the true results", () => {
-    expect(modeWords(true)).toBe("The truth is visible after the run; not for scoring.");
+    expect(modeWords(true)).toBe("The truth is visible while the run is going; this run is not for scoring.");
     expect(modeWords(false)).toMatch(/^The true results stay hidden from the outside system while it runs/);
   });
 
@@ -59,5 +75,19 @@ describe("launch words", () => {
     expect(planSummary({ ...plan, calls: called(1) }, "30 min")).toBe(
       "30 min of simulated time · Explore · no faults · 1 effector call",
     );
+  });
+
+  it("says why fresh settings are fresh and which mode the run opened with", () => {
+    expect(freshSettingsWords(false)).toBe(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings. The mode is the one the run opened with: Evaluate.",
+    );
+    expect(freshSettingsWords(true)).toMatch(/opened with: Explore\.$/);
+  });
+
+  it("says a session plan could not be recovered without naming a mode", () => {
+    expect(unrecoveredWords).toBe(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings.",
+    );
+    expect(freshSettingsWords(true).startsWith(unrecoveredWords)).toBe(true);
   });
 });

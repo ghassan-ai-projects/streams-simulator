@@ -1,0 +1,184 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - heading "Workspace" [active] [level=1]
+  - status
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - generic: Workspace folder
+  - heading "streamsim-ui-audit-20261024" [level=2]
+  - generic: 12 plants · 3 runs
+  - region "Plants":
+    - heading "Plants" [level=2]
+    - generic: "12"
+    - button "New plant":
+      - text: New plant
+    - list:
+      - listitem "domains/aquaculture-pond.domain.json":
+        - generic "Aquaculture pond water quality"
+        - generic: aquaculture-pond
+        - generic: read-only
+        - generic: 8 instances · no runs yet
+        - button "Open Aquaculture pond water quality": Open
+        - button "Run Aquaculture pond water quality":
+          - text: Run
+      - listitem "domains/thermal-board.domain.json":
+        - generic "Arduino thermal bench twin"
+        - generic: arduino-thermal
+        - generic: read-only
+        - generic: 3 instances · no runs yet
+        - button "Open Arduino thermal bench twin": Open
+        - button "Run Arduino thermal bench twin":
+          - text: Run
+      - listitem "domains/cc2640r2f-ble-node.domain.json":
+        - generic "CC2640R2F Bluetooth sensor node twin"
+        - generic: cc2640r2f-ble-node
+        - generic: read-only
+        - generic: 1 instance · no runs yet
+        - button "Open CC2640R2F Bluetooth sensor node twin": Open
+        - button "Run CC2640R2F Bluetooth sensor node twin":
+          - text: Run
+      - listitem "compositions/chiller-pilot.composition.json domains/chiller-pilot.domain.json":
+        - generic "Chiller pilot"
+        - generic: chiller-pilot
+        - generic: 4 instances · no runs yet
+        - button "Open Chiller pilot": Open
+        - button "Edit Chiller pilot":
+          - text: Edit
+        - button "Run Chiller pilot":
+          - text: Run
+      - listitem "domains/cold-chain-transit.domain.json":
+        - generic "Cold-chain reefer transit"
+        - generic: cold-chain-transit
+        - generic: read-only
+        - generic: 12 instances · no runs yet
+        - button "Open Cold-chain reefer transit": Open
+        - button "Run Cold-chain reefer transit":
+          - text: Run
+      - listitem "domains/discrete-line-oee.domain.json":
+        - generic "Discrete assembly line OEE"
+        - generic: discrete-line-oee
+        - generic: read-only
+        - generic: 4 instances · no runs yet
+        - button "Open Discrete assembly line OEE": Open
+        - button "Run Discrete assembly line OEE":
+          - text: Run
+      - listitem "compositions/factory-utilities.composition.json domains/factory-utilities.domain.json":
+        - generic "Factory utilities"
+        - generic: factory-utilities
+        - generic: 23 instances · 3 runs · last 24 Oct 2026, 11:34
+        - button "Open Factory utilities": Open
+        - button "Edit Factory utilities":
+          - text: Edit
+        - button "Run Factory utilities":
+          - text: Run
+      - listitem "domains/host-system-health.domain.json":
+        - generic "Host system health"
+        - generic: host-system-health
+        - generic: read-only
+        - generic: 12 instances · no runs yet
+        - button "Open Host system health": Open
+        - button "Run Host system health":
+          - text: Run
+      - listitem "domains/k8s-cluster.domain.json":
+        - generic "Kubernetes cluster health"
+        - generic: k8s-cluster
+        - generic: read-only
+        - generic: 8 instances · no runs yet
+        - button "Open Kubernetes cluster health": Open
+        - button "Run Kubernetes cluster health":
+          - text: Run
+      - listitem "domains/open-field-irrigation.domain.json":
+        - generic "Open-field irrigation control"
+        - generic: open-field-irrigation
+        - generic: read-only
+        - generic: 6 instances · no runs yet
+        - button "Open Open-field irrigation control": Open
+        - button "Run Open-field irrigation control":
+          - text: Run
+      - listitem "domains/rotating-machinery.domain.json":
+        - generic "Rotating machinery condition monitoring"
+        - generic: rotating-machinery
+        - generic: read-only
+        - generic: 8 instances · no runs yet
+        - button "Open Rotating machinery condition monitoring": Open
+        - button "Run Rotating machinery condition monitoring":
+          - text: Run
+      - listitem "domains/shipment-exception.domain.json":
+        - generic "Shipment exception and ETA forecast"
+        - generic: shipment-exception
+        - generic: read-only
+        - generic: 12 instances · no runs yet
+        - button "Open Shipment exception and ETA forecast": Open
+        - button "Run Shipment exception and ETA forecast":
+          - text: Run
+  - region "Devices":
+    - heading "Devices" [level=2]
+    - generic: "4"
+    - button "Capture from a board":
+      - text: Capture from a board
+    - button "Create device":
+      - text: Create device
+    - list:
+      - listitem "kinds/ble_sensor_node.kind.json":
+        - generic "ble_sensor_node"
+        - generic: Needs a twin
+        - generic: 5 readings · 0 commands
+        - button "Edit ble_sensor_node":
+          - text: Edit
+      - listitem "kinds/fan.kind.json":
+        - generic "fan"
+        - generic: Needs a twin
+        - generic: 1 reading · 2 commands
+        - button "Edit fan":
+          - text: Edit
+      - listitem "kinds/indicator.kind.json":
+        - generic "indicator"
+        - generic: Needs a twin
+        - generic: 1 reading · 2 commands
+        - button "Edit indicator":
+          - text: Edit
+      - listitem "kinds/thermal_sensor.kind.json":
+        - generic "thermal_sensor"
+        - generic: Needs a twin
+        - generic: 2 readings · 0 commands
+        - button "Edit thermal_sensor":
+          - text: Edit
+  - region "Runs":
+    - heading "Runs" [level=2]
+    - generic: "3"
+    - paragraph: Runs are checked when you open their review.
+    - status
+    - list:
+      - generic "Factory utilities"
+      - text: Connected session
+      - generic "c-6dc5acbb · 24 Oct 2026, 11:34 · seed 1 · no faults":
+        - generic: c-6dc5acbb ·
+        - generic: 24 Oct 2026, 11:34 ·
+        - generic: seed 1 ·
+        - text: no faults
+      - button "Review c-6dc5acbb": Review
+      - generic "Factory utilities"
+      - text: Connected session
+      - generic "c-093f3e8c · 24 Oct 2026, 11:34 · seed 1 · no faults":
+        - generic: c-093f3e8c ·
+        - generic: 24 Oct 2026, 11:34 ·
+        - generic: seed 1 ·
+        - text: no faults
+      - button "Review c-093f3e8c": Review
+      - generic "Factory utilities"
+      - text: Explore
+      - generic "w-1 · 24 Oct 2026, 11:32 · 30 min · seed 42 · 2 faults":
+        - generic: w-1 ·
+        - generic: 24 Oct 2026, 11:32 ·
+        - generic: 30 min ·
+        - generic: seed 42 ·
+        - text: 2 faults
+      - generic: Verified
+      - button "Review w-1": Review

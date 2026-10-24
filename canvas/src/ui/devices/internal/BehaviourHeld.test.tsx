@@ -53,7 +53,9 @@ describe("a device that is not ready for a twin", () => {
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
     fireEvent.click(screen.getByRole("button", { name: "Add pump_monitor to the twin" }));
     const notice = within(await screen.findByRole("region", { name: "Devices that are not ready for a twin" }));
-    expect(notice.getByText("pump_monitor still needs a unit and a resolution.")).toBeInTheDocument();
+    expect(notice.getByText("Reading 'pressure' needs a unit.")).toBeInTheDocument();
+    expect(notice.getByText("Reading 'pressure' needs a resolution.")).toBeInTheDocument();
+    expect(notice.getByText(/^pump_monitor is left out of the twin as a whole/)).toBeInTheDocument();
     expect(notice.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "Reading pressure" })).toBeNull();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
@@ -71,7 +73,7 @@ describe("a device that is not ready for a twin", () => {
     const fake = withPump();
     const { location } = await behaviourOf(fake);
     fireEvent.click(screen.getByRole("button", { name: "Add pump_monitor to the twin" }));
-    await screen.findByText("pump_monitor still needs a unit and a resolution.");
+    await screen.findByText("Reading 'pressure' needs a unit.");
     fake.addFile(pumpPath, finished, "k4");
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("group", { name: "Reading pressure" })).toBeInTheDocument();

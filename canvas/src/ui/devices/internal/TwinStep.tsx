@@ -97,15 +97,17 @@ interface UnavailableProps extends Omit<FrameProps, "children"> {
   readonly navigation: NavigationStore;
   readonly failure: string;
   readonly held: readonly Held[];
+  readonly lead: string;
+  readonly reveal: Reveal;
 }
 
-function Unavailable({ twin, navigation, failure, held, ...frame }: UnavailableProps) {
+function Unavailable({ twin, navigation, failure, held, lead, reveal, ...frame }: UnavailableProps) {
   return (
     <Frame {...frame}>
       <div className={cx(panel.body, styles.form)}>
         <FormTitle id="unavailable-title" words="The behaviour cannot be opened yet" interim />
         {held.length > 0 ? (
-          <HeldNotice held={held} twin={twin} navigation={navigation} />
+          <HeldNotice held={held} twin={twin} navigation={navigation} lead={lead} reveal={reveal} />
         ) : (
           <>
             <p className={notes.unavailable} role="alert">
@@ -154,7 +156,18 @@ export function TwinStep({ draft, devices, navigation, tabs, step, reveal }: Ste
     );
     if (twinNeedsOf(draft).length > 0) return <Lacking device={draft} tabs={tabs} bar={bar} reveal={reveal} />;
     const failure = `The behaviour could not be opened: ${failureLine(state.failure.diagnostic)}`;
-    const props = { name: stemOf(draft.path), tabs, bar, twin: session, navigation, failure, held: state.held };
+    const held = state.held;
+    const props = {
+      name: stemOf(draft.path),
+      tabs,
+      bar,
+      twin: session,
+      navigation,
+      failure,
+      held,
+      lead: draft.path,
+      reveal,
+    };
     return <Unavailable {...props} />;
   }
   return <Waiting tabs={tabs} words="Opening the behaviour…" />;

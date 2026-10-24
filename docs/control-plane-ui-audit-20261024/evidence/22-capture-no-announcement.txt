@@ -1,0 +1,40 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "Capture from a board" [level=1]
+  - status
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - region "Where is the board's announcement?":
+    - heading "Where is the board's announcement?" [level=2]
+    - paragraph: A board announces the devices it carries when it connects. Paste that announcement or load it from a file, or read it from a run that was recorded with a board.
+    - form "Paste an announcement":
+      - generic: Announcement text
+      - textbox "Announcement text"
+      - generic: Or load it from a file
+      - button "Or load it from a file"
+      - button "Read the announcement" [disabled]
+      - generic: Paste an announcement first.
+    - paragraph: or
+    - form "Read a recorded run":
+      - generic: Recorded run
+      - combobox "Recorded run":
+        - option "w-2 · Audit fan thermal response · 24 Oct 2026, 11:38" [selected]
+        - option "c-6dc5acbb · Factory utilities · 24 Oct 2026, 11:34"
+        - option "c-093f3e8c · Factory utilities · 24 Oct 2026, 11:34"
+        - option "w-1 · Factory utilities · 24 Oct 2026, 11:32"
+      - button "Read this run"
+  - status
+  - region "No announcement found":
+    - heading "No announcement found" [level=2]
+    - alert [active]: There is no announcement from a board in what was read. Copy the announcement again from the board, or choose a run that was recorded with one.
+    - paragraph: Nothing was saved.
+    - generic "Details"
+    - button "Retry"

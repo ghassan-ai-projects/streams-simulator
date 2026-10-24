@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
 import type { Badge, Report } from "../../../model/review";
 import { badgeLabels, badgeOf, bindingLine, connectionWords, modeWords } from "../../../model/review";
-import { integrityLine, reportFacts, runIdentity } from "../../../model/review";
+import { integrityLine, reportFacts, runIdentity, terminationWords } from "../../../model/review";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunStatus.module.css";
@@ -33,6 +33,15 @@ function Chip({ badge, label, title }: { readonly badge: Badge; readonly label: 
     <span className={styles[badge]} title={title} data-part="status-chip">
       <Icon size={13} aria-hidden="true" />
       {label}
+    </span>
+  );
+}
+
+function RunningChip() {
+  return (
+    <span className={styles.chip} title="The run is still going." data-part="status-chip">
+      <Loader size={13} aria-hidden="true" />
+      Running
     </span>
   );
 }
@@ -94,6 +103,7 @@ function Mode({ report, state }: { readonly report: Report; readonly state: Revi
     );
   }
   const explore = report.mode === "explore";
+  const ending = terminationWords(report);
   return (
     <>
       <span className={explore ? styles.truth : styles.chip} title={explore ? modeWords.explore : modeWords.evaluate}>
@@ -101,6 +111,7 @@ function Mode({ report, state }: { readonly report: Report; readonly state: Revi
         {explore ? "Explore" : "Evaluate"}
       </span>
       <span className={styles.facts}>{reportFacts(report)}</span>
+      {ending !== "" && <span className={styles.facts}>{ending}</span>}
       <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
   );
@@ -120,6 +131,15 @@ export function Status({ state, now }: { readonly state: ReviewState; readonly n
     return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
+  if (state.running && badge === "incomplete") {
+    return (
+      <>
+        <Mode report={report} state={state} />
+        <RunningChip />
+        <Announce text="Running" />
+      </>
+    );
+  }
   const shown = badgeLabels[badge];
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : shown;
   return (

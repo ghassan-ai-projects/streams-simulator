@@ -22,3 +22,11 @@ section.withInterrupts {
 .top > :first-child {
   min-height: 40px;
 }
+
+.work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}

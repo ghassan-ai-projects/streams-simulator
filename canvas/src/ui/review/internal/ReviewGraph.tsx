@@ -9,6 +9,7 @@ import type { Report } from "../../../model/review";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { screen } from "../../primitives";
 import { GraphBar } from "./GraphBar";
+import { TrendsToggle } from "./TrendsToggle";
 import type { HallProps } from "./RunHeader";
 import { useLive } from "./useLive";
 import parts from "./ReportParts.module.css";
@@ -33,6 +34,17 @@ function anchorOf(view: PlantView | null, report: Report | null): string | null 
   return view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)));
 }
 
+function Bar({ review, state, plant }: Pick<GraphProps, "review" | "state" | "plant">) {
+  return (
+    <GraphBar
+      state={state}
+      opening={review.index.opening()}
+      startNs={startNsOf(state, review)}
+      trends={<TrendsToggle review={review} plant={plant} />}
+    />
+  );
+}
+
 export function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const report = readyReport(state);
@@ -47,7 +59,7 @@ export function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   if (view === null || state.report.phase === "loading") return <OpeningPlant state={state} />;
   return (
     <div className={styles.graphArea}>
-      <GraphBar state={state} opening={review.index.opening()} startNs={startNsOf(state, review)} />
+      <Bar review={review} state={state} plant={plant} />
       <div ref={ref} className={screen.graphHost}>
         <PlantGraph
           anchor={anchor}

@@ -1,9 +1,38 @@
-export { failureWords, keepKnownFaults, outcomeOf, paceOf, stepsFor, watchWords } from "./internal/launch";
+export { keepKnownFaults, watchWords } from "./internal/launch";
+export {
+  jobActive,
+  jobFailureWords,
+  jobPaused,
+  jobRequestOf,
+  lostWords,
+  observedCalls,
+  pacedRate,
+  plannedS,
+  reachedS,
+  recoveredPlanOf,
+  startFailureWords,
+  unobserved,
+} from "./internal/job";
 export { planProblems } from "./internal/planProblems";
-export { effectorShownS, showingMarks } from "./internal/showing";
-export { draftOf, firstDraft, pickedOnGraph, planOf } from "./internal/draft";
-export { runProgressWords } from "./internal/progress";
-export { modeWords, planCue, planSummary, problemWords } from "./internal/words";
+export { agendaOf } from "./internal/agenda";
+export { faultCategoryOf, faultGroups } from "./internal/faultGroups";
+export { kindNamed } from "./internal/perturbation";
+export { readinessOf } from "./internal/readiness";
+export { effectorShownS, shownFaults, showingMarks } from "./internal/showing";
+export { draftOf, firstDraft, freshPlanOf, pickedOnGraph, planOf } from "./internal/draft";
+export { runProgressWords, runStageWords, runTitle } from "./internal/progress";
+export {
+  exploreOnlyFaultsWords,
+  idleControl,
+  pendingWords,
+  refusalWords,
+  speedChoices,
+  speedValue,
+} from "./internal/controls";
+export { nowLines, outcomeWords } from "./internal/nowWords";
+export { emptyNowDraft, nowCallOf, nowCallProblem } from "./internal/nowCall";
+export { progressTicks } from "./internal/ticks";
+export { freshSettingsWords, modeWords, planCue, planSummary, problemWords, unrecoveredWords } from "./internal/words";
 export {
   filledFromDefault,
   isPolicyIssue,
@@ -45,18 +74,34 @@ export {
   staleCheckWords,
 } from "./internal/sessionWords";
 export type {
-  Acknowledgement,
+  AgendaItem,
+  AgendaLane,
+  ArgValue,
   BindingNote,
   CallOutcome,
   Draft,
   DraftCall,
   DraftFault,
+  ControlName,
+  DeliveryProblem,
+  DraftPerturbation,
+  FaultCategories,
+  FaultCategory,
+  ImmediateCall,
+  InjectedFault,
+  JobRequest,
+  JobStatus,
   LaunchPlan,
-  LaunchStep,
+  NowDraft,
+  RunControl,
   CallProblem,
   PlanIssue,
   PlanMember,
+  PlannedFault,
   PlannedInstance,
+  PerturbationKind,
+  PerturbationParamSpec,
+  PerturbParams,
   PlanProblem,
   PolicyNote,
   RealRow,

@@ -24,6 +24,15 @@ function metricIssues(metric: Record<string, unknown>, at: number, twin: boolean
     const message = 'needs "resolution"';
     issues.push({ pointer: `${pointer}/resolution`, message, keyword: "twin_member_required", member: "resolution" });
   }
+  if (twin && metric.scan_class !== undefined) {
+    const message = "is not part of the interface a twin reproduces";
+    issues.push({
+      pointer: `${pointer}/scan_class`,
+      message,
+      keyword: "twin_member_unsupported",
+      member: "scan_class",
+    });
+  }
   return issues;
 }
 

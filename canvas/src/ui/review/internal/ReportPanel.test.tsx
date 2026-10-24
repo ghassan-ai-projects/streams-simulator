@@ -78,11 +78,31 @@ describe("report panel", () => {
     expect(within(screen.getByRole("region", { name: "True results" })).getByText("4.65 – 8.85")).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "True results" })).getByText("5.95")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        "Not scored: no outside system is connected to this run.",
-      ),
+      within(screen.getByRole("region", { name: "This run" })).getByText("Not scored: no outside system is connected"),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
+  });
+
+  it("labels a call the operator gave during the run, and no other", () => {
+    const given = {
+      atNs: 60e9,
+      entity: "CH-1",
+      effector: "start",
+      args: {},
+      outcome: "applied · 20 ms",
+      applied: true,
+      immediate: true,
+    };
+    render(
+      <ReportPanel
+        report={{ ...report, effectorCalls: [given, ...report.effectorCalls.slice(1, 2)] }}
+        unit={() => ""}
+        entity={null}
+      />,
+    );
+    const calls = within(screen.getByRole("region", { name: "Effector calls" }));
+    expect(calls.getByText("applied · 20 ms · by the operator during the run")).toBeInTheDocument();
+    expect(calls.getByText("refused: interlock")).toBeInTheDocument();
   });
 
   it("says None for an empty section and shows a scoring result", () => {
@@ -94,7 +114,7 @@ describe("report panel", () => {
       />,
     );
     expect(within(screen.getByRole("region", { name: "Effector calls" })).getByText("None")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Scoring" })).getByText("scored")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "This run" })).getByText("Scored")).toBeInTheDocument();
   });
 
   it("marks the disturbance row the picked mark stands for, and no row otherwise", () => {
@@ -127,9 +147,7 @@ describe("report panel", () => {
       within(screen.getByRole("region", { name: "True results" })).getByText("Not available: the run is still sealed"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        "Not scored: no outside system is connected to this run.",
-      ),
+      within(screen.getByRole("region", { name: "This run" })).getByText("Not scored: no outside system is connected"),
     ).toBeInTheDocument();
   });
 
@@ -153,7 +171,21 @@ describe("report panel", () => {
 
   it("words the true results of a connected session as one, never as an Evaluate run", () => {
     render(<ReportPanel report={report} unit={() => ""} entity={null} connection="saved" />);
-    expect(screen.getByText(/^Connected session: the true results below/)).toBeInTheDocument();
+    expect(screen.getByText(/^Connected session: the true results are the simulator's own record/)).toBeInTheDocument();
     expect(screen.queryByText(/^Evaluate run/)).toBeNull();
   });
+
+  it.each([undefined, "kpi"] as const)(
+    "says in the true results that a run which did not finish shows values up to where it stopped (%s view)",
+    (only) => {
+      const props = { unit: () => "", entity: null, ...(only === undefined ? {} : { only }) };
+      const { rerender } = render(<ReportPanel report={{ ...report, complete: false }} {...props} />);
+      const results = screen.getByRole("region", { name: "True results" });
+      expect(results).toHaveTextContent(
+        "This run did not finish. These are the plant's recorded values up to where it stopped, not the result of a completed run.",
+      );
+      rerender(<ReportPanel report={report} {...props} />);
+      expect(screen.getByRole("region", { name: "True results" })).not.toHaveTextContent("did not finish");
+    },
+  );
 });

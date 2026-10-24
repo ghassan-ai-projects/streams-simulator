@@ -1,2 +1,2 @@
 export { ReviewScreen } from "./internal/ReviewScreen";
-export { ConnectedPlant, LiveSessionHold } from "./internal/ConnectedPlant";
+export { ConnectedPlant, LiveSessionHold, RunWatchHold } from "./internal/ConnectedPlant";

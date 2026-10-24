@@ -6,6 +6,7 @@ import { interruptOf } from "./interruptSelect";
 import { modeLine } from "./interruptWords";
 import type { PlaybackIndex } from "./playback";
 import { readoutBody } from "./reviewRows";
+import type { ReadoutPhase } from "./reviewRows";
 import type { SessionLive } from "./sessionLive";
 import { deviceOf, deviceReadings } from "./sessionLive";
 
@@ -30,6 +31,7 @@ export interface LiveFacts {
   readonly effectors: ReadonlyMap<string, string>;
   readonly origins: ReadonlyMap<string, InstanceOrigin>;
   readonly positionNs: number;
+  readonly phase?: ReadoutPhase;
 }
 
 const noReadout: ReadoutBody = { rows: [], hidden: 0, hiddenAttention: null };
@@ -56,7 +58,7 @@ function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
 
 function readoutOf(facts: LiveFacts, id: string, shown: readonly Shown[], observed: ReadonlySet<string>): ReadoutBody {
   const node = facts.view?.nodes.find((entry) => entry.id === id);
-  return node === undefined ? noReadout : readoutBody(node.pins, node.channels, shown, observed);
+  return node === undefined ? noReadout : readoutBody(node.pins, node.channels, shown, observed, facts.phase);
 }
 
 function interruptShown(facts: LiveFacts, id: string): NodeInterrupt | null {

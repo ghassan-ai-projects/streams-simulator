@@ -13,7 +13,7 @@ dynamics, faults and effectors. What an observer later receives is the
 | Hidden state | A true physical quantity the consumer never sees directly | `StateValue` | state names in the domain spec |
 | Reading | The noise-free value of a channel (the observed form is a native event) | `Reading` | – |
 | Native event | One emission of a channel, before any perturbation | `model.SimEvent` | `sim-event-v0.1` |
-| Fault | A declared physical fault injected on an entity at an onset time | `InjectFault`, `FaultInfo` | `fault_id` |
+| Fault | A declared physical fault injected on an entity at an onset time | `InjectFault`, `FaultInfo`, `FaultID` (the id of the Nth fault a world accepts is `FaultID(N)`, counted from 0) | `fault_id` |
 | Effector | A declared, risk-classed actuation a consumer may invoke | `InvokeEffector` | `effector` |
 | Command id | The idempotency key of one effector invocation | `commandID` | `command_id` |
 | Effector call | The director-side record of one invocation, the scoring authority | `EffectorCall` | `effector_calls` |

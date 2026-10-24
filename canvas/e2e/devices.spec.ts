@@ -151,8 +151,8 @@ test("a device gets a twin: what it still needs is found before the behaviour, t
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole("button", { name: "Create twin" }).click();
-  await expect(verdict(page, "Twin ready.")).toBeVisible();
-  await expect(step(page, /^Check/)).toContainText("Passed");
+  await expect(verdict(page, /^Twin created\./)).toBeVisible();
+  await expect(step(page, /^Check/)).toContainText("Checks passed");
   expect(existsSync(join(lab.workspace, "domains", "e2e-cooler-twin.domain.json"))).toBe(true);
   const choices = JSON.parse(readFileSync(join(lab.workspace, "twins", "e2e_cooler.twin.json"), "utf8")) as unknown;
   expect(choices).toMatchObject({ id: "e2e-cooler-twin", kinds: [{ kind: "e2e_cooler" }] });
@@ -160,7 +160,7 @@ test("a device gets a twin: what it still needs is found before the behaviour, t
   await step(page, /^Check/).click();
   await expect(page.getByRole("heading", { level: 2, name: "Check", exact: true })).toBeFocused();
   const check = page.getByRole("region", { name: "Check of e2e_cooler" });
-  await expect(check.getByText("The twin matches its device")).toBeVisible();
+  await expect(check.getByText("Interface: the twin matches its device")).toBeVisible();
   await check.getByText("Technical details").click();
   await expect(check.getByText("domains/e2e-cooler-twin.domain.json")).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
@@ -175,11 +175,11 @@ test("a device gets a twin: what it still needs is found before the behaviour, t
   const again = page.getByRole("group", { name: "Effect 1 of set_duty" });
   await expect(again.getByLabel("Time constant")).toHaveValue("180");
   await expect(again.getByLabel("Gain")).toHaveValue("-0.1");
-  await expect(verdict(page, "Twin ready.")).toBeVisible();
+  await expect(verdict(page, /^Twin created\./)).toBeVisible();
   await expect(page.getByRole("button", { name: "Create twin" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Replace twin" }).click();
-  await expect(verdict(page, "Twin ready.")).toBeVisible();
+  await expect(verdict(page, /^Twin created\./)).toBeVisible();
   await page.getByRole("button", { name: "Open as a plant" }).click();
   await expect(page).toHaveURL(/#\/plant\?domain=domains%2Fe2e-cooler-twin\.domain\.json/);
 });

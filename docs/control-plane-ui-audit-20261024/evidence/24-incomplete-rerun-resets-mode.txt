@@ -1,0 +1,121 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "Audit fan thermal response" [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Inspector panel" [pressed]:
+    - text: Inspector
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Plant 3":
+      - generic "Plant"
+      - generic: "3"
+    - list:
+      - button "fan-01 fan":
+        - generic: fan-01
+        - generic: fan
+      - button "thermal-sensor-01 thermal sensor":
+        - generic: thermal-sensor-01
+        - generic: thermal sensor
+      - button "ble-sensor-node-01 ble sensor node":
+        - generic: ble-sensor-node-01
+        - generic: ble sensor node
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Plant audit-fan-thermal":
+    - generic: 3 instances · 1 link · some links record no ports
+    - button "Run plant" [pressed]:
+      - text: Run plant
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 100 %
+      - generic: Zoom 100 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "fan-01, fan, 0 inputs, 0 outputs":
+        - generic "fan-01"
+        - generic "fan"
+        - generic: no port data
+      - group "thermal-sensor-01, thermal sensor, 0 inputs, 0 outputs":
+        - generic "thermal-sensor-01"
+        - generic "thermal sensor"
+        - generic: no port data
+      - group "ble-sensor-node-01, ble sensor node, 0 inputs, 0 outputs":
+        - generic "ble-sensor-node-01"
+        - generic "ble sensor node"
+        - generic: no port data
+      - generic "Plant · 3 nodes":
+        - generic: Plant
+        - generic: 3 nodes
+  - complementary "Run Audit fan thermal response":
+    - heading "Run Audit fan thermal response" [level=2]
+    - button "Close the run panel":
+    - group "How this run goes":
+      - generic: How this run goes
+      - radio "To completion Simulate the plant for a set duration, then save the run for review." [checked] [active]
+      - strong: To completion
+      - generic: Simulate the plant for a set duration, then save the run for review.
+      - radio "Connected session Link the plant to a plant wire host, and through a gateway to real boards, until you stop it."
+      - strong: Connected session
+      - generic: Link the plant to a plant wire host, and through a gateway to real boards, until you stop it.
+    - form "Run plan":
+      - group "Run":
+        - generic: Run
+        - generic: Seed
+        - textbox "Seed": "1"
+        - button "Pick a new seed":
+        - generic: The same seed, plant, faults and simulator version give the same run.
+        - generic: Duration
+        - textbox "Duration": "30"
+        - combobox "Duration unit":
+          - option "minutes" [selected]
+          - option "hours"
+      - group "Mode":
+        - generic: Mode
+        - radio "Explore The truth is visible after the run; not for scoring." [checked]
+        - strong: Explore
+        - generic: The truth is visible after the run; not for scoring.
+        - radio "Evaluate The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends."
+        - strong: Evaluate
+        - generic: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.
+      - group "Run speed":
+        - generic: Run speed
+        - 'radio "Watch: about 30 s The run plays out in about 30 s, so you can follow its time, faults and calls while it runs." [checked]'
+        - strong: "Watch: about 30 s"
+        - generic: The run plays out in about 30 s, so you can follow its time, faults and calls while it runs.
+        - radio "As fast as possible The run is made in one go; the review is ready as soon as it ends."
+        - strong: As fast as possible
+        - generic: The run is made in one go; the review is ready as soon as it ends.
+      - group "Faults to inject":
+        - generic: Faults to inject
+        - paragraph: "None: no fault is scheduled for this run."
+        - list
+        - button "Add fault":
+          - text: Add fault
+      - group "Effector calls":
+        - generic: Effector calls
+        - paragraph: "None: nothing is commanded. A call is made when the run reaches its minute; the simulator may refuse it, and the result says why."
+        - list
+        - button "Add effector call":
+          - text: Add effector call
+      - paragraph: Start simulates 30 min of plant time in Explore mode with no faults, paced to take about 30 s, then saves the run and opens its review.
+      - status
+      - button "Start the run"

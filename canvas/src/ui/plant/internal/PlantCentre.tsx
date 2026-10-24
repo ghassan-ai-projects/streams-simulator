@@ -1,4 +1,5 @@
-import { cx, screen, shared } from "../../primitives";
+import { useMemo } from "react";
+import { cx, screen, shared, useStore } from "../../primitives";
 import type { ComponentProps } from "react";
 import { Network, Radio } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
@@ -7,14 +8,16 @@ import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import { hallCount, plantView } from "../../../model/graph";
 import { plantTitle } from "../../../model/plant";
 import { counted } from "../../../model/workspace";
+import { shownFaults } from "../../../model/launch";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { ZoomBar } from "../../graph";
+import type { RunningHere } from "./PlantActions";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantBar.module.css";
-import type { Connected } from "./connected";
+import type { Connected, PlannedFault } from "./connected";
 
 interface RunControls {
   readonly launching: boolean;
@@ -92,7 +95,7 @@ function LiveViewButton({
   );
 }
 
-function Bar(props: PlantCentreProps & { readonly running: string | null }) {
+function Bar(props: PlantCentreProps & { readonly running: RunningHere | null }) {
   const { state, hall, navigation, run, connected, running } = props;
   return (
     <div className={screen.bar}>
@@ -100,29 +103,41 @@ function Bar(props: PlantCentreProps & { readonly running: string | null }) {
       <Crumbs state={state} hall={hall} navigation={navigation} />
       <span className={styles.summary}>{summary(state, hall)}</span>
       <EditButton composition={state.composition} running={running} navigation={navigation} />
-      {connected !== undefined && <LiveViewButton connected={connected} navigation={navigation} />}
+      {connected?.kind === "session" && <LiveViewButton connected={connected} navigation={navigation} />}
       <RunButton
         launching={run.launching}
         running={running}
         button={run.button}
         onToggle={run.toggle}
-        secondary={connected !== undefined}
+        secondary={connected?.kind === "session"}
       />
+      {connected?.trendsToggle}
       <ZoomBar />
     </div>
   );
 }
 
+const noFaults: readonly PlannedFault[] = [];
+
+function usePlannedFaults(launch: LaunchStore, plant: string): readonly PlannedFault[] {
+  const run = useStore(launch);
+  const here = run.phase === "running" && run.origin.domain === plant ? run : null;
+  const plan = here?.plan ?? null;
+  const injected = here?.injected ?? noFaults;
+  return useMemo(() => (plan === null ? noFaults : shownFaults(plan, injected)), [plan, injected]);
+}
+
 export function PlantCentre(props: PlantCentreProps) {
   const { state, hall, plants, navigation, launch, connected } = props;
   const running = useRunningHere(launch, state.plant.id);
+  const planned = usePlannedFaults(launch, state.plant.id);
   const bar = <Bar {...props} running={running} />;
   return (
     <section
-      className={cx(screen.center, connected !== undefined && styles.withInterrupts)}
+      className={cx(screen.center, connected?.kind === "session" && styles.withInterrupts)}
       aria-label={`Plant ${state.plant.id}`}
     >
-      {connected === undefined ? (
+      {connected?.kind !== "session" ? (
         bar
       ) : (
         <div className={styles.top}>
@@ -130,14 +145,19 @@ export function PlantCentre(props: PlantCentreProps) {
           {connected.interrupts}
         </div>
       )}
-      <PlantCanvas
-        state={state}
-        hall={hall}
-        plants={plants}
-        navigation={navigation}
-        launch={launch}
-        {...(connected === undefined ? {} : { connected })}
-      />
+      <div className={styles.work}>
+        <PlantCanvas
+          state={state}
+          hall={hall}
+          plants={plants}
+          navigation={navigation}
+          launch={launch}
+          {...(connected === undefined ? {} : { connected })}
+        />
+        {connected?.trends?.((id) => {
+          plants.select(id);
+        }, planned)}
+      </div>
     </section>
   );
 }

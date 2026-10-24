@@ -1,0 +1,51 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "fan" [level=1]
+    - generic: Check
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Device details panel" [pressed]:
+    - text: Device details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Device steps":
+    - list:
+      - button "Interface Valid":
+        - generic: "1"
+        - generic: Interface
+        - generic: Valid
+      - button "Behaviour Created":
+        - generic: "2"
+        - generic: Behaviour
+        - generic: Created
+      - button "Check Passed":
+        - generic: "3"
+        - generic: Check
+        - generic: Passed
+  - region "Check of fan":
+    - status "domains/audit-fan-thermal.domain.json": Twin ready.
+    - button "Open as a plant":
+      - text: Open as a plant
+    - button "Replace twin":
+      - text: Replace twin
+    - region "Check":
+      - heading "Check" [active] [level=2]
+      - list:
+        - generic: The device definition is valid
+        - generic: Twin ready
+        - generic: The twin matches its device
+        - generic: The readings stay plausible
+      - generic "Technical details"
+  - complementary "Twin details":
+    - heading "Twin details" [level=2]
+    - paragraph: A twin is a plant that behaves like your devices. It is made from the saved devices and your choices, and the binary checks that it offers exactly what each device offers.
+    - generic "Technical details"

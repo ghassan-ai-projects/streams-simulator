@@ -110,9 +110,17 @@ export {
 } from "./internal/sessionWords";
 export { bannerWarnings } from "./internal/banners";
 export { hallLiveOf, isRealBoard } from "./internal/live";
+export { observedRows } from "./internal/observedRows";
+export { trendFrame } from "./internal/trend";
+export { isWatched, toggled, watchLimit } from "./internal/watchList";
+export { trendSpanOf, windowChoices, windowWords } from "./internal/trendWindow";
+export { nsAtX, plotFrame, plotsOf, xOf } from "./internal/trendPlot";
+export { readoutOf } from "./internal/trendReadout";
+export { probeKey } from "./internal/trendProbe";
+export { eventLine, overlayOf } from "./internal/trendOverlay";
 export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
-export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
+export { badgeLabels, badgeOf, immediateWords, replayLine, runSpan } from "./internal/report";
 export {
   fileLine,
   integrityLine,
@@ -121,10 +129,26 @@ export {
   kpiSteady,
   kpiWords,
   kpisOf,
-  rerunOf,
   reportFacts,
   runIdentity,
+  terminationWords,
+  unfinishedTruthWords,
 } from "./internal/reportViews";
+export { rerunOf } from "./internal/rerun";
+export { storyOf, storyWindow } from "./internal/actionStory";
+export { planLanes } from "./internal/comparePlan";
+export { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "./internal/compareTables";
+export { referenceChoices, referenceRole, thisRunRole } from "./internal/compareChoices";
+export {
+  endedGate,
+  evidenceWords,
+  executionWords,
+  openedReplayWords,
+  purposeWords,
+  replayStatusWords,
+  scoringWords,
+  visibilityWords,
+} from "./internal/thisRun";
 export { firstEventNode } from "./internal/reviewAnchor";
 export { reviewView } from "./internal/reviewRows";
 export { alarmRow, modeWords } from "./internal/words";
@@ -143,6 +167,38 @@ export {
   runClock,
 } from "./internal/timeline";
 export type {
+  ActionStory,
+  AlarmLine,
+  KpiLine,
+  PlanLane,
+  PlanRow,
+  SystemLine,
+  Table,
+  AlarmStats,
+  ComparabilityLimit,
+  ComparedAlarm,
+  ComparedAlarmSystem,
+  ComparedCall,
+  ComparedEnvironment,
+  ComparedFault,
+  ComparedKpi,
+  ComparedPerturbation,
+  ComparedRun,
+  Comparison,
+  Diff,
+  KpiStats,
+  Paired,
+  Presence,
+  Scope,
+  SystemCounts,
+  OverlayEvent,
+  PlannedFault,
+  Plot,
+  Readout,
+  Span,
+  TrendSpan,
+  Watched,
+  WindowChoice,
   AlarmActivation,
   Badge,
   BannerWarning,
@@ -152,10 +208,16 @@ export type {
   JournalEntry,
   KpiRow,
   MarkKind,
+  OpenQuestion,
   Opening,
+  ObservedRow,
+  Quality,
   Replay,
+  ReplayStatus,
   Report,
+  ReportReplay,
   Rerun,
   TimedBinding,
+  Trend,
   VerifyState,
 } from "./contract";

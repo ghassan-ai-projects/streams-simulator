@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Minus, Plus } from "lucide-react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { Report } from "../../../model/review";
@@ -72,6 +72,8 @@ function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
     <div className={runStyles.steps} role="group" aria-label="Playback steps">
       {button("Previous event", <ChevronsLeft size={14} aria-hidden="true" />, previous)}
       {button("Back 10 minutes", <ChevronLeft size={14} aria-hidden="true" />, clamp(positionNs - 600e9))}
+      {button("Back 1 minute", <Minus size={14} aria-hidden="true" />, clamp(positionNs - minuteNs))}
+      {button("Forward 1 minute", <Plus size={14} aria-hidden="true" />, clamp(positionNs + minuteNs))}
       {button("Forward 10 minutes", <ChevronRight size={14} aria-hidden="true" />, clamp(positionNs + 600e9))}
       {button("Next event", <ChevronsRight size={14} aria-hidden="true" />, next)}
     </div>

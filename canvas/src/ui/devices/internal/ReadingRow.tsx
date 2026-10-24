@@ -1,3 +1,4 @@
+import { choiceId } from "../../../app/devices";
 import {
   chooseInstrument,
   placeKey,
@@ -22,13 +23,17 @@ interface RowProps extends Pick<TwinProps, "twin" | "issues" | "needs"> {
   readonly metric: Metric;
   readonly choice: MetricChoice;
   readonly instruments: readonly Instrument[] | null;
+  readonly suggested: boolean;
 }
 
-type NumericFields = Pick<RowProps, "twin" | "member" | "metric" | "choice" | "instruments" | "reveal"> & {
+type NumericFields = Pick<
+  RowProps,
+  "twin" | "member" | "metric" | "choice" | "instruments" | "reveal" | "suggested"
+> & {
   readonly on: (field: string) => readonly string[];
 };
 
-function InstrumentField({ twin, member, metric, choice, instruments, reveal, on }: NumericFields) {
+function InstrumentField({ twin, member, metric, choice, instruments, reveal, suggested, on }: NumericFields) {
   const place = (field: string) => placeKey({ scope: "metric", kind: member, key: metric.key, field });
   return (
     <Field
@@ -43,6 +48,7 @@ function InstrumentField({ twin, member, metric, choice, instruments, reveal, on
           metric={metric.name}
           value={choice.instrument}
           instruments={instruments}
+          suggested={suggested}
           reveal={
             reveal === null
               ? null
@@ -53,6 +59,7 @@ function InstrumentField({ twin, member, metric, choice, instruments, reveal, on
           aria={aria}
           onPick={(ref) => {
             choose(twin, (choices) => chooseInstrument(choices, member, metric.key, ref));
+            twin.review([choiceId({ path: member, key: metric.key, field: "instrument" })]);
           }}
         />
       )}
@@ -83,9 +90,9 @@ function InitialField({ twin, member, metric, choice, on }: NumericFields) {
   );
 }
 
-function Numeric({ twin, issues, member, metric, choice, instruments, reveal }: RowProps) {
+function Numeric({ twin, issues, member, metric, choice, instruments, reveal, suggested }: RowProps) {
   const on = (field: string) => twinIssuesOn(issues, { scope: "metric", kind: member, key: metric.key, field });
-  const fields = { twin, member, metric, choice, instruments, reveal, on };
+  const fields = { twin, member, metric, choice, instruments, reveal, suggested, on };
   return (
     <>
       <InstrumentField {...fields} />

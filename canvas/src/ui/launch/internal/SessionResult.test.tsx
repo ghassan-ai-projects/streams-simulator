@@ -156,4 +156,25 @@ describe("setting up another run", () => {
     expect(screen.getByLabelText("Host socket")).toHaveValue("");
     expect(screen.getByText("Kept from the previous run: 2 digests.")).toBeInTheDocument();
   });
+
+  it("opens the session plan with fresh settings and says the plan could not be recovered, until it is left", () => {
+    const fake = sessionBridge();
+    const { launch } = launchHarness(fake);
+    launch.connect.setUpFresh("mini");
+    const open = () =>
+      render(
+        <LaunchPanel launch={launch} plant={parsePlant(domain)} path="p" onClose={vi.fn()} onFinished={vi.fn()} />,
+      );
+    const first = open();
+    expect(screen.getByRole("radio", { name: /^Connected session/ })).toBeChecked();
+    expect(screen.getByLabelText("Host socket")).toHaveValue("");
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent(
+      "The plan of this run could not be recovered because it did not finish; these are fresh settings.",
+    );
+    expect(formOf().firstElementChild).toContainElement(note);
+    first.unmount();
+    open();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
 });

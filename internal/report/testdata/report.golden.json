@@ -79,6 +79,9 @@
       }
     ]
   },
+  "replay": {
+    "status": "not_checked"
+  },
   "counts": {
     "emitted": 52,
     "observed": 21,
@@ -172,5 +175,19 @@
     "version": "1.0.0",
     "arm": "baseline",
     "config_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-  }
+  },
+  "open_questions": [
+    {
+      "code": "replay_not_checked",
+      "message": "The recording was not replayed: file digests agree with the run, but nobody has shown that the run reproduces."
+    },
+    {
+      "code": "no_kpi_results",
+      "message": "The run records no whole-run KPI results."
+    },
+    {
+      "code": "no_outside_scoring",
+      "message": "A verdict is recorded but no label was available to score it."
+    }
+  ]
 }

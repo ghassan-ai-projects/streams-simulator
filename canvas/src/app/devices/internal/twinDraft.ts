@@ -1,4 +1,4 @@
-import type { Instrument, Member, TwinChoices, TwinIssue } from "../../../model/devices";
+import type { HeldIssue, Instrument, Member, TwinChoices, TwinIssue } from "../../../model/devices";
 import type { KindEntry } from "../../../model/workspace";
 import type { DeviceFailure, DomainChecked, LintReport, TwinMade } from "../../ports";
 
@@ -40,6 +40,7 @@ export interface Held {
   readonly path: string;
   readonly name: string;
   readonly words: string;
+  readonly issues: readonly HeldIssue[];
   readonly adding: boolean;
 }
 
@@ -61,6 +62,7 @@ export interface TwinDraft {
   readonly build: Build;
   readonly issues: readonly TwinIssue[];
   readonly held: readonly Held[];
+  readonly reviewed: readonly string[];
 }
 
 export type TwinState =

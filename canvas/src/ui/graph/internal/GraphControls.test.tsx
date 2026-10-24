@@ -27,7 +27,7 @@ describe("graph controls legend", () => {
       </ReactFlowProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
-    expect(screen.queryByText("Not reported by this run")).not.toBeInTheDocument();
+    expect(screen.queryByText("No reading from this run for this row (its words say why)")).not.toBeInTheDocument();
     unmount();
     render(
       <ReactFlowProvider>
@@ -35,7 +35,7 @@ describe("graph controls legend", () => {
       </ReactFlowProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
-    expect(screen.getByText("Not reported by this run")).toBeInTheDocument();
+    expect(screen.getByText("No reading from this run for this row (its words say why)")).toBeInTheDocument();
     expect(screen.getByText("No reading yet at this time")).toBeInTheDocument();
   });
 

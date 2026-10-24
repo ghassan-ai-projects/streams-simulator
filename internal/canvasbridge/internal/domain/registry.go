@@ -28,6 +28,7 @@ type Action struct {
 	Withheld  []string   `json:"-"`
 	Catalog   bool       `json:"-"`
 	Domains   bool       `json:"-"`
+	Folders   bool       `json:"-"`
 	Library   bool       `json:"-"`
 	Kinds     bool       `json:"-"`
 	Etag      bool       `json:"-"`
@@ -42,6 +43,7 @@ func mcp(name, tool string, mutating bool, keys ...string) Action {
 var registry = []Action{
 	mcp("catalog.list", "sim.catalog.list", false, "group"),
 	mcp("catalog.describe", "sim.catalog.describe", false, "domain"),
+	mcp("catalog.perturbations", "sim.catalog.perturbations", false),
 	mcp("adapter.list", "sim.adapter.list", false),
 	withholding(mcp("world.create", "sim.world.create", true, "domain", "seed", "entities", "scenario_profile", "adapter", "time_mode",
 		"start_time", "label", "explore"), "token", "operator_endpoint"),
@@ -60,8 +62,19 @@ var registry = []Action{
 	mcp("run.end", "sim.run.end", true, "world_id"),
 	mcp("truth.reveal", "sim.truth.reveal", false, "run_id"),
 	mcp("truth.status", "sim.truth.seal_status", false, "run_id"),
-	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint,
-	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliTwinReport, cliScenario,
+	withholding(mcp("job.start", "sim.job.start", true, "name", "purpose", "domain", "seed", "explore", "duration_s", "rate", "faults", "perturbations", "calls"),
+		"token", "operator_endpoint"),
+	mcp("job.status", "sim.job.status", false, "world_id"),
+	mcp("job.stop", "sim.job.stop", true, "world_id"),
+	mcp("job.list", "sim.job.list", false),
+	mcp("job.pause", "sim.job.pause", true, "world_id"),
+	mcp("job.resume", "sim.job.resume", true, "world_id"),
+	mcp("job.step", "sim.job.step", true, "world_id"),
+	mcp("job.rate", "sim.job.rate", true, "world_id", "rate"),
+	mcp("job.inject_fault", "sim.job.inject_fault", true, "world_id", "entity_id", "fault"),
+	mcp("job.invoke_effector", "sim.job.invoke_effector", true, "world_id", "entity_id", "effector", "args"),
+	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint, cliAssumptions, cliLineage,
+	cliKindValidate, cliKindCheck, cliKindCapture, cliKindSuggest, cliKindTwin, cliVerify, cliReport, cliCompare, cliTwinReport, cliScenario,
 	cliSessionCheck, cliSessionStart, cliSessionStatus, cliSessionStop, cliSessionControl,
 }
 

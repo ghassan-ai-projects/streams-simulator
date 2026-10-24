@@ -1,4 +1,4 @@
-import type { JournalEntry } from "../../../model/review";
+import type { JournalEntry, Quality } from "../../../model/review";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
 import { names } from "./decodeKit";
 import { issueList } from "./http";
@@ -102,7 +102,21 @@ function projectEntry(entry: Record<string, unknown>): JournalEntry {
   if (entry.type === "run.closed") return { kind: "closed", atNs, incomplete: entry.incomplete === true };
   if (entry.type === "origin") return originEntry(entry, atNs);
   if (entry.type === "binding") return bindingEntry(entry, atNs);
+  if (entry.type === "clock.advanced") return { kind: "clock", atNs: reachedNs(entry, atNs) };
+  if (entry.type === "effector.acknowledged") return callEntry(entry, atNs);
   return { kind: "other", atNs };
+}
+
+function callEntry(entry: Record<string, unknown>, atNs: number): JournalEntry {
+  const response = record(entry.response);
+  const [entity, effector] = [text(entry.entity_id), text(entry.effector)];
+  if (entity === "" || effector === "" || typeof response.accepted !== "boolean") return { kind: "other", atNs };
+  const call = { atNs, entity, effector, accepted: response.accepted, reason: text(response.reason) };
+  return { kind: "call", call };
+}
+
+function reachedNs(entry: Record<string, unknown>, atNs: number): number {
+  return typeof entry.to_ns === "number" && Number.isFinite(entry.to_ns) ? entry.to_ns : atNs;
 }
 
 function originEntry(entry: Record<string, unknown>, atNs: number): JournalEntry {
@@ -137,8 +151,21 @@ function observation(entry: Record<string, unknown>, atNs: number): JournalEntry
       channel: text(line.channel),
       value: typeof raw === "number" || typeof raw === "boolean" ? raw : text(raw),
       unit: text(line.unit),
+      quality: qualityOf(line.quality),
+      lagNs: lagOf(line.event_time, atNs),
     },
   };
+}
+
+const qualities: readonly Quality[] = ["suspect", "out_of_range", "stale", "disconnected"];
+
+function qualityOf(value: unknown): Quality {
+  return qualities.find((quality) => quality === value) ?? "";
+}
+
+function lagOf(eventTime: unknown, atNs: number): number {
+  const eventMs = typeof eventTime === "string" ? Date.parse(eventTime) : Number.NaN;
+  return Number.isNaN(eventMs) ? 0 : Math.max(0, atNs - eventMs * 1e6);
 }
 
 function parseJson(value: string): unknown {

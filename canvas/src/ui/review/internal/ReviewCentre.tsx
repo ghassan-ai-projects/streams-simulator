@@ -11,6 +11,7 @@ import { Scrubber } from "./Scrubber";
 import styles from "./ReviewScreen.module.css";
 import { Interrupts } from "./Interrupts";
 import { LiveControls } from "./LiveControls";
+import { TrendsPanel } from "./TrendsPanel";
 
 function handlers(review: ReviewSession, running: boolean) {
   return {
@@ -95,6 +96,14 @@ export function Centre(props: CentreProps) {
           <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />
         )}
       </div>
+      <TrendsPanel
+        review={review}
+        state={state}
+        plant={plant}
+        onPick={(entity, atNs) => {
+          review.reveal(atNs, entity);
+        }}
+      />
     </section>
   );
 }

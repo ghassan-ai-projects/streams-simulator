@@ -10,8 +10,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
 
-func (s *Server) workspace(w http.ResponseWriter, _ *http.Request) {
-	listing, err := s.service.Workspace()
+func (s *Server) workspace(w http.ResponseWriter, r *http.Request) {
+	listing, err := s.service.Workspace(r.Context())
 	if err != nil {
 		writeError(w, err)
 		return

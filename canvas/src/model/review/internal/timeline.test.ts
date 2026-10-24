@@ -102,8 +102,24 @@ describe("event lane", () => {
 
   it("lists an effector call on its target for 60 s of simulated time after it", () => {
     const calls = [
-      { atNs: 100e9, entity: "CP-3", effector: "stop", outcome: "applied · 371 ms" },
-      { atNs: 130e9, entity: "CP-3", effector: "start", outcome: "refused: busy" },
+      {
+        atNs: 100e9,
+        entity: "CP-3",
+        effector: "stop",
+        args: {},
+        outcome: "applied · 371 ms",
+        applied: true,
+        immediate: false,
+      },
+      {
+        atNs: 130e9,
+        entity: "CP-3",
+        effector: "start",
+        args: {},
+        outcome: "refused: busy",
+        applied: false,
+        immediate: false,
+      },
     ];
     const run = { ...parsed, effectorCalls: calls };
     expect(effectorAt(run, 99e9).size).toBe(0);

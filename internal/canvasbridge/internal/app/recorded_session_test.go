@@ -1,6 +1,9 @@
 package app
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestConnectedSessionClassificationAndPlanSurviveBridgeMemoryLoss(t *testing.T) {
 	t.Parallel()
@@ -9,7 +12,7 @@ func TestConnectedSessionClassificationAndPlanSurviveBridgeMemoryLoss(t *testing
 		"{\"type\":\"run.opened\",\"mode\":\"evaluate\",\"domain\":{\"id\":\"arduino-thermal\"}}\n"+
 			"{\"type\":\"session\",\"stream\":\"observer\",\"mode\":\"connected\",\"plan\":"+sessionCheck+"}\n"+
 			"{\"type\":\"run.closed\",\"at_ns\":20}\n")
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 {
 		t.Fatalf("recorded session listing = %+v, %v", listing, err)
 	}

@@ -1,6 +1,7 @@
 package run
 
 import (
+	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/app"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -28,6 +29,16 @@ type ScenarioRunOptions = layer.ScenarioRunOptions
 type RunSummary = layer.RunSummary
 
 type ScenarioCheckError = layer.ScenarioCheckError
+
+type ScenarioHooks = layer.ScenarioHooks
+
+type ScenarioOutcome = layer.ScenarioOutcome
+
+type StepResult = layer.StepResult
+
+type PerturbationKind = perturb.KindInfo
+
+const CategoryDelivery = perturb.CategoryDelivery
 
 var (
 	ErrFieldTrace          = layer.ErrFieldTrace

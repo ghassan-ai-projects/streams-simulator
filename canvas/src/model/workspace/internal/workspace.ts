@@ -1,5 +1,5 @@
 import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "./types";
-import { durationOf } from "../../shared/duration";
+import { lengthFacts } from "./length";
 import { counted, seedWords } from "../../shared/words";
 
 function firstText(...values: readonly (string | undefined)[]): string {
@@ -32,6 +32,11 @@ export function unfinishedReason(run: RunEntry): string {
   return run.incompleteReason || "the run did not close.";
 }
 
+export function openRunWords(run: RunEntry): string {
+  if (run.ended) return "";
+  return run.running ? "Running" : "Did not finish";
+}
+
 export function outcomeWords(run: RunEntry): string {
   if (run.connected === "running") return "";
   return run.ended && !run.complete ? `Did not finish: ${unfinishedReason(run)}` : "";
@@ -44,9 +49,7 @@ export function runModeWords(run: RunEntry): string {
 }
 
 export function runFacts(run: RunEntry): readonly string[] {
-  return [durationOf(run.durationS), seedWords(run.seed), faultWords(run), outcomeWords(run)].filter(
-    (part) => part !== "",
-  );
+  return [...lengthFacts(run), seedWords(run.seed), faultWords(run), outcomeWords(run)].filter((part) => part !== "");
 }
 
 export function plantFacts(plant: PlantEntry): string {

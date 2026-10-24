@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { sessionGate, showBuild } from "../../../app/shell";
+import { resumeRun, sessionGate, showBuild } from "../../../app/shell";
 import type { Route } from "../../../model/shell";
 import { DeviceScreen } from "../../devices";
 import { EditorScreen } from "../../editor";
@@ -19,9 +19,10 @@ import { Unreachable } from "./Unreachable";
 import { useStore } from "../../primitives";
 import { useTheme } from "./useTheme";
 
-function useSession({ session, workspace }: Stores) {
+function useSession({ session, workspace, launch }: Stores) {
   const state = useStore(session);
   useEffect(() => sessionGate(session, workspace), [session, workspace]);
+  useEffect(() => resumeRun(launch, workspace), [launch, workspace]);
   return state;
 }
 

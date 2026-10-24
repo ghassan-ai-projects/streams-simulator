@@ -8,7 +8,7 @@ function pin(name: string, channel: string | null): Pin {
 }
 
 function reading(channel: string, attention: Shown["attention"] = null): Shown {
-  return { channel, value: "7.0", unit: "kW", attention, word: false, outside: "" };
+  return { channel, value: "7.0", unit: "kW", attention, word: false, outside: "", quality: "" };
 }
 
 const none = new Set<string>();
@@ -64,5 +64,23 @@ describe("review rows", () => {
     expect(reviewView.rows(pins, ["power", "heat"])).toBe(3);
     expect(reviewView.rows(pins, ["power", "heat", "vibration"])).toBe(4);
     expect(reviewView.rows({ ins: [], outs: [] }, [])).toBe(1);
+  });
+
+  it("says why a row has no reading without guessing at a cause", () => {
+    const seen = new Set(["heat"]);
+    const words = (phase: "live" | "ended") =>
+      readoutBody(pins, ["power", "heat"], [], seen, phase).rows.map((row) => row.absent);
+    expect(words("live")).toEqual(["Awaiting first reading", "No measured channel", "No reading yet at this time"]);
+    expect(words("ended")).toEqual([
+      "Never observed in this run",
+      "No measured channel",
+      "No reading yet at this time",
+    ]);
+  });
+
+  it("carries the quality of a reading to its row", () => {
+    const flagged: Shown = { ...reading("power"), quality: "suspect" };
+    const body = readoutBody(pins, ["power", "heat"], [flagged], none);
+    expect(body.rows[0]).toMatchObject({ present: true, quality: "suspect", absent: "" });
   });
 });
