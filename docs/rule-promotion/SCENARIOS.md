@@ -140,10 +140,15 @@ Pass: B has no damage on fault types it has learned; the remainder is the same a
 
 ### S6 Cascade
 
-Story: a supply-grid dip throws all 8 pumps into overload at once (`correlated_cascade`). Truth: `reduce_load` on
-each pump within 1 h, so a rule firing per pump is correct.
-Without learning: 8 episodes at once, with capacity deferral. With learning: 8 rule recommendations, no LLM call.
-Pass: all 8 handled before the deadline in both arms; B makes no LLM call for them.
+Story: a supply-grid dip throws all 8 pumps into overload at once (`correlated_cascade`). Truth (changed after the
+onsite review): a fleet-wide event is not eight copies of a single-pump overload. Throttling every pump on the
+common header at once starves it, and an operator would refuse; the correct response is to defer to a human with
+one fleet-level case. The domain needs a header-flow state and this truth before the scenario runs (README §5).
+Without learning: 8 episodes at once, with capacity deferral. With learning: the overload rule matches 8 pumps,
+exceeds its fleet cap (decision 18), fires on none of them, and raises one fleet-level case for the LLM and the
+human.
+Pass: no rule recommends `reduce_load` on more pumps than its fleet cap; the human gets one fleet-level case, not
+eight; the header never falls below its minimum because of a rule.
 
 ### S7 New probes
 
