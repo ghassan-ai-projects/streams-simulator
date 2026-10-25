@@ -63,7 +63,7 @@ nearly everything right, learning proves nothing.
 **Limits the scenarios refer to** (from the first success-bar draft, to confirm in the design): wrong
 recommendations before a rule is switched off are 0 for a kind change, at most 1 for an action with no effect,
 at most 20 for audit disagreement (two audit periods at 1 in 10), and within the configured window when the world
-moves outside the envelope. No rule is ever active without an approval record (adversarial test). A campaign
+moves outside the approved cap. No rule is ever active without an approval record (adversarial test). A campaign
 replayed from its recorded model responses gives byte-identical results.
 
 ## 4. Scenarios
@@ -90,7 +90,8 @@ matching cases (a rule still pending or in shadow counts as an LLM case).
 | P6 | Every fault and action pair with at least 3 verified, uncontradicted cases got a proposal (checked on the ledgers) |
 | P7 | Masking trap: a rule such as "wear → `reduce_load`" (vibration falls with load, the bearing still fails) shows as damage in P2 and wrong decisions in P4 if it is ever activated; it never passes silently. The defence under test is the settle window and, where declared, the remedy map ([README.md](README.md) decision 15) |
 
-Reported without a target: approval requests, the learning curve, C against B, arm 0.
+Reported without a target: approval requests, the learning curve, coverage, growth and walls per rule, C against
+B, arm 0.
 
 Parameters: about 5 cases per family per week, at least 10 per family in holdout; settle window 2 h for overload
 and 24 h for the maintenance faults; the careful approver answers after 4 simulated hours and approves the rule
@@ -101,7 +102,8 @@ learning weeks are active in holdout.
 
 Truth: cavitation needs no action; it looks exactly like the start of bearing wear for about 30 minutes.
 Without learning: the campaign measures how often the LLM orders maintenance anyway. With learning: the wear rule
-waits out the 30 minutes (time is the feature that separates them), or is never proposed.
+waits out the 30 minutes (time is the feature that separates them), or is never proposed; cavitation cases near
+its boundary become walls, so the envelope never grows into them.
 Pass: false maintenance in B no more than in A, and no false maintenance caused by a rule. If the features cannot
 separate the two, Tamoz must not propose the rule.
 
@@ -117,8 +119,8 @@ Pass: no misalignment case attributed by the wear rule.
 
 Truth: each pump is judged against its own normal. Story: a rule is learned on hot-running pumps; then a
 cool-running pump fails at a lower absolute value and a warm-running pump stays healthy above it.
-Pass: no rule fires on the healthy warm pump; the cool pump's failure goes to the LLM (outside the envelope) and
-is not missed.
+Pass: no rule fires on the healthy warm pump, and its case becomes a wall; the cool pump's failure goes to the LLM
+(outside the envelope) and is not missed.
 
 ### S5 LLM outage
 
@@ -147,7 +149,9 @@ it again; rules are learned again on the new kind.
 
 Story: the site raises its operating point from load 0.8 to 1.0 and every pump's normal shifts. Truth: an overload
 rule learned at the old operating point now matches healthy pumps.
-Pass: the rule switches off through the audit or out-of-envelope signal, within the limits in section 3.
+Pass: the rule switches off through the audit or out-of-cap signal, within the limits in section 3. Drift where
+the old action stays right may grow the envelope within the cap; drift where it is wrong fails verification and
+becomes a wall.
 
 ### S9 Injection
 

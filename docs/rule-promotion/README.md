@@ -26,10 +26,10 @@ sealed ground truth judges both.
 | # | Decision |
 |---|---|
 | 1 | **A human approves every new rule**, including rules that only recommend. There is no automatic promotion. Tamoz never promotes its own rule (Tamoz invariant 34, `docs/P12_SELF_HEALING_PLAN.md`). |
-| 2 | **Rule shape**: a playbook rule has a `when` condition in the restricted, deterministic CEL Agentic Stream already uses (`internal/spec/internal/domain/cel.go`); an `envelope` of the feature ranges seen in its source cases, computed by the compiler (widening it is a separate approved change); a `recommend` limited to an operator-declared intent and preset (no free parameter values); a `mode` (shadow or active); and provenance (source episodes, approval digest). When two rules match, none fires and the case goes to the LLM. A sampled share of rule-handled cases still runs an audit episode in shadow. |
+| 2 | **Rule shape**: a playbook rule has a `when` condition in the restricted, deterministic CEL Agentic Stream already uses (`internal/spec/internal/domain/cel.go`); an `envelope` of the feature ranges seen in its source cases, computed by the compiler, which grows only within an approved cap (decision 16); a `recommend` limited to an operator-declared intent and preset (no free parameter values); a `mode` (shadow or active); and provenance (source episodes, approval digest). When two rules match, none fires and the case goes to the LLM. A sampled share of rule-handled cases still runs an audit episode in shadow. |
 | 3 | **Kind pinning**: each rule is pinned to the device `kind_digest` it was learned on. A device that is born again with another kind digest puts every rule pinned to the old digest back to shadow until a human approves it again. |
 | 4 | **The playbook is its own file**, `<site>.playbook.yaml`, next to the site's SituationSpec in the customer workspace, compiled with it into one spec digest. Engineers author the spec; Tamoz proposes changes to the playbook only. |
-| 5 | **Per-rule circuit** in Agentic Stream: a rule is switched off automatically when its kind digest changes, when a sampled audit episode disagrees, when its recommended action had no effect on the device's own readings, or when most cases matching its condition fall outside its envelope. Switching it back on needs a human. The circuit state lives in the deployment's database, never in the playbook file. The audit rate is set per rule at approval; the default is 1 in 10. |
+| 5 | **Per-rule circuit** in Agentic Stream: a rule is switched off automatically when its kind digest changes, when a sampled audit episode disagrees, when its recommended action had no effect on the device's own readings, or when most cases matching its condition fall outside its approved cap (decision 16). Switching it back on needs a human. The circuit state lives in the deployment's database, never in the playbook file. The audit rate is set per rule at approval; the default is 1 in 10. |
 | 6 | **When Tamoz may propose**: 3 verified cases by default (a per-site setting) with the same situation type, kind digest, intent and preset, each outcome verified by the device's readings; no contradicting case inside the proposed envelope; a replay report over the site's history attached; one pending proposal per situation type; no new proposal after a rejection without new evidence. How a proposal is made is decision 14; what verified means is decision 15. |
 | 7 | **The success bar is a complex simulation**, not the real board: the rotating-machinery world as a 10-week campaign, with four arms (see [SCENARIOS.md](SCENARIOS.md)). The nine scenarios there were agreed before any solution design. |
 | 8 | **Harness split**: the simulator owns a generic phased scenario suite and its grading; Agentic Stream owns the campaign driver, the scripted approvers and the campaign score; Tamoz tests its proposal step on its own in `tamoz-evals`; a real-board run, if any, stays a runbook. Model responses are recorded so a campaign replays exactly. |
@@ -40,6 +40,7 @@ sealed ground truth judges both.
 | 13 | **Hand edits to the playbook file are allowed and recorded.** On load a hand change is compiled and linted like a spec change and recorded in the approval ledger as changed outside the flow, with its diff and author; rules keep their state. Agentic Stream writes the file only if its digest is still the one it last loaded; otherwise it refuses and checks any pending proposal again against the new file. |
 | 14 | **Proposal flow.** Tamoz has no access to the workspace. Agentic Stream sends a bounded "draft a rule" episode with the cases and the current playbook (read only) and receives a typed rule proposal; it compiles it, computes the envelope from the recorded features, replays it over the site's history, stores it as pending and notifies the approvers. |
 | 15 | **Verified is not correct.** Each situation type declares a settle window in the spec (for example 24 h for bearing faults, 2 h for overload). A case is verified only when its action took effect and no situation of the same type reopens on that entity within the window; the replay report shows the reopen rate of every source case. Optionally, a site declares a remedy map (which intents are valid remedies for which diagnosis), and Tamoz cannot propose a rule that pairs a diagnosis with an undeclared remedy. |
+| 16 | **Envelope and coverage.** The envelope covers only the features the rule's `when` uses plus a short list of context features the site declares (for example the operating point). With the rule, the human approves a cap: the outer limit per feature the envelope may ever reach (Agentic Stream proposes it from the replay; the human may tighten it). A case outside the envelope but inside the cap goes to the LLM as usual; when the LLM chooses the rule's action and the case is verified (settle window included), the envelope grows to include it. A boundary case with another action or a failed verification becomes a wall the envelope never grows past in that direction. The proposal shows the share of past cases the rule would have covered at its first envelope and at the cap; an active rule reports coverage, growth and walls every week. Widening the cap is a new approval. |
 
 ## 3. Where things live
 
@@ -62,17 +63,17 @@ byte-identically and pinned by digest). The rules never enter that contract.
 
 Ranked by how much each could undermine the result.
 
-### Design gaps (settle next)
+### Design gaps
 
-1. **Narrow envelopes against coverage.** An envelope built from 3 cases is tight, so many holdout cases fall just
-   outside it and go to the LLM anyway: safety and value pull apart, and P1 (B at most 50% of A's LLM calls) can
-   fail with everything working as designed. Widening needs another approval, which adds approver load.
-   Candidate: an envelope grows from new verified cases that agree with the rule, up to a cap set at approval, and
-   its coverage is reported week by week.
-2. **Every internal check compares the rule with the LLM, not with the world.** The shadow exit means "agrees with
-   the LLM", the audit signal means "disagrees with the LLM"; only the settle window is grounded in the world. A
-   fault the LLM gets consistently wrong is copied into a rule that passes every check. The truth catches it in
-   scoring, the system has no defence. The honest claim is "as good as the LLM and cheaper", never "better".
+1. **Narrow envelopes against coverage. Settled by decision 16 (2026-10-26).** An envelope built from 3 cases over
+   every feature was so tight that most holdout cases would fall outside it, so P1 could fail with everything
+   working as designed. A smaller envelope, growth within an approved cap with walls, and visible coverage answer
+   it.
+2. **Every internal check compares the rule with the LLM, not with the world (settle next).** The shadow exit means
+   "agrees with the LLM", the audit signal means "disagrees with the LLM", and envelope growth (decision 16) needs
+   LLM agreement; only the settle window is grounded in the world. A fault the LLM gets consistently wrong is
+   copied into a rule that passes every check, and growth widens its reach. The truth catches it in scoring, the
+   system has no defence. The honest claim is "as good as the LLM and cheaper", never "better".
 
 ### Honest evaluation (settle before any run)
 
