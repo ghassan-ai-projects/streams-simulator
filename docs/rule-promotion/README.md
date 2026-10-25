@@ -69,11 +69,14 @@ Ranked by how much each could undermine the result.
    every feature was so tight that most holdout cases would fall outside it, so P1 could fail with everything
    working as designed. A smaller envelope, growth within an approved cap with walls, and visible coverage answer
    it.
-2. **Every internal check compares the rule with the LLM, not with the world (settle next).** The shadow exit means
-   "agrees with the LLM", the audit signal means "disagrees with the LLM", and envelope growth (decision 16) needs
-   LLM agreement; only the settle window is grounded in the world. A fault the LLM gets consistently wrong is
-   copied into a rule that passes every check, and growth widens its reach. The truth catches it in scoring, the
-   system has no defence. The honest claim is "as good as the LLM and cheaper", never "better".
+2. **Every internal check compares the rule with the LLM, not with the world. Accepted as a known limit
+   (owner, 2026-10-26).** The shadow exit means "agrees with the LLM", the audit signal means "disagrees with the
+   LLM", and envelope growth (decision 16) needs LLM agreement; only the settle window is grounded in the world. A
+   fault the LLM gets consistently wrong is copied into a rule that passes every check, and growth widens its
+   reach. Example in this world: maintenance ordered on cavitation looks verified, because cavitation settles by
+   itself. The truth catches it in scoring (S1 P7, S2), the system has no defence. The honest claim is "as good as
+   the LLM and cheaper", never "better". Considered and set aside as too deep for now: a wait before acting, a
+   recovery check against each intent's declared effect, and inspection findings.
 
 ### Honest evaluation (settle before any run)
 
