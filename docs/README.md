@@ -226,6 +226,7 @@ anything else; it may never remove these.
 | [MCP_INTERACTION_REVIEW.md](MCP_INTERACTION_REVIEW.md) | External live-interaction review of the MCP surface |
 | [reviews/ARCHITECTURE_REVIEW.md](reviews/ARCHITECTURE_REVIEW.md) | Architecture and quality review (2026-09-30 second pass, snapshot `4e26cc1`): five initial lenses, seven further perspectives, corrected evidence, six new findings, reproducible probes and ordered acceptance gates |
 | [simulation-canvas/ui-architecture-20261016/](simulation-canvas/ui-architecture-20261016/README.md) | Accepted modular Canvas architecture: layers, feature modules, typed boundaries, React and CSS patterns, async ownership, constraints, tests and staged migration |
+| [rule-promotion/README.md](rule-promotion/README.md) | Rule promotion (Tamoz drafts, a human approves, Agentic Stream runs): owner decisions, where rules live, open design points, and the agreed rotating-machinery acceptance campaign with four arms and nine scenarios |
 | [simulation-ideas/README.md](simulation-ideas/README.md) | Candidate simulation-idea portfolio: method, raw candidate pool and four-angle research notes, five-lens review evidence, and ten ideas scored against the quality bar (none met it; best 80/100) |
 
 ## 8. Technology
