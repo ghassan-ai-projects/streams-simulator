@@ -64,3 +64,19 @@ approving each command, motor supply disconnected with power off, LED and sensor
 - **`verify-run` says `fail`** (`unresolved_action_outcomes=2`): the two failed LED commands leave their verifications unresolved, so a
   run with any refused or failed command fails verification (W15). The simulator's `verify` matches. Zero quarantines, readings 2.01 s mean.
 - Correction to an earlier remark in the session: the first LED command was not an approval-window expiry; it was approved and reached the board.
+
+## Real rung, third session: fan connected, with the fixes (2026-10-25)
+
+Run folder `~/my-projects/.e2e-run/fan-p4-20261025T160108` (canvas run `c-0e26955c`), Agentic Stream `fan-w15` (W15 fix), gateway with the
+quiet-window hold, canvas with D-120 fixed, owner approving each command. Archived outside git: `~/my-projects/.e2e-run/archive/fan-real-run3-20261025.tar.gz`.
+
+- `show_state alert` (15:04:53) and `set_cooling 45` (15:05:42) each queued, approved, accepted, `DRESULT succeeded`; the fan read
+  `level_percent` 45 at 15:05:43 and 0 at 15:05:48; verified by the board's reading. **No silent-board event, no `not_ready`.**
+- **`verify-run` pass** and `streams-simulator verify` matches (the first session's two failed commands in session 2 had made it fail: W15).
+  Zero quarantines, readings 2.01 s mean, max gap 2.0 s.
+- The gateway still logged 18 `firmware_answer_unmatched` pairs (`command_id` unknown) in 9 minutes: the 30-byte state polls are
+  also damaged when they land in the firmware's busy window; they are not held by the quiet window and lose nothing. A follow-up is to send
+  polls in the window too.
+- **Twin vs board** (the review page): `fan-01.level_percent` agrees (184 readings, 0 beyond ±3 %); `zone-01.temperature` diverges (the twin
+  rests at 34 C, the bench at 22 to 29 C: the twin's ambient is not this bench's); `zone-01.humidity` diverges (the twin holds 42 %, the
+  board read 47 to 72 % while the sensor was warmed by hand); `led-01.state` cannot be judged (an enum, no numeric tolerance).
