@@ -5,7 +5,7 @@ import { channelOf } from "../../plant";
 import { interruptOf } from "./interruptSelect";
 import { modeLine } from "./interruptWords";
 import type { PlaybackIndex } from "./playback";
-import { readoutBody } from "./reviewRows";
+import { deviceReadoutBody, readoutBody } from "./reviewRows";
 import type { ReadoutPhase } from "./reviewRows";
 import type { SessionLive } from "./sessionLive";
 import { deviceOf, deviceReadings } from "./sessionLive";
@@ -58,7 +58,9 @@ function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
 
 function readoutOf(facts: LiveFacts, id: string, shown: readonly Shown[], observed: ReadonlySet<string>): ReadoutBody {
   const node = facts.view?.nodes.find((entry) => entry.id === id);
-  return node === undefined ? noReadout : readoutBody(node.pins, node.channels, shown, observed, facts.phase);
+  if (node === undefined) return noReadout;
+  if (isRealBoard(facts.origins, id) && shown.length > 0) return deviceReadoutBody(node.pins, node.channels, shown);
+  return readoutBody(node.pins, node.channels, shown, observed, facts.phase);
 }
 
 function interruptShown(facts: LiveFacts, id: string): NodeInterrupt | null {

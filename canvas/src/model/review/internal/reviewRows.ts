@@ -92,3 +92,28 @@ export function readoutBody(
   const rows = listedRows(pins, channels, { shown, observed, phase });
   return { rows, hidden: hidden.length, hiddenAttention: attentionOf(hiddenReadings) };
 }
+
+function deviceRow(reading: Shown): ReadoutRow {
+  const { channel, value, unit, word, attention, outside, quality } = reading;
+  const key = `reading:${channel}`;
+  return {
+    key,
+    label: channelWords(channel),
+    present: true,
+    value,
+    unit,
+    word,
+    attention,
+    outside,
+    observed: true,
+    quality,
+    absent: "",
+  };
+}
+
+export function deviceReadoutBody(pins: Pins, channels: readonly string[], shown: readonly Shown[]): ReadoutBody {
+  const room = reviewRowCount(pins, channels);
+  const listed = shown.length <= room ? shown.length : Math.max(1, room - 1);
+  const rest = shown.slice(listed);
+  return { rows: shown.slice(0, listed).map(deviceRow), hidden: rest.length, hiddenAttention: attentionOf(rest) };
+}
