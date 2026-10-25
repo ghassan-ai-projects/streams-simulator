@@ -4,6 +4,111 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A reloaded run keeps its live actions; the run row names a running job; the stop question reads as a clock (control-plane
+  review of the live diagnosis).** The job status gains `planned_calls` (`{entity_id, effector, args, at_s}`, the plan's effector
+  calls in plan order, executed or not, always a list, visible in Evaluate jobs too because they are the operator's own commands)
+  and, for Explore jobs, a fault injected with `job.inject_fault` is appended to `faults` with `immediate: true`, `at_s` (the
+  simulated second it was injected) and its `fault_id`; a planned fault whose clear has run carries `cleared_at_s` (a clear the
+  world made by itself is not seen by the director and carries none). `JobStatusView` stays the single redaction point: an active
+  Evaluate job still returns empty `faults` and `perturbations`. The bridge listing of a run whose job is still running takes
+  `name`, `plant` and `explore` from the job status (`sim.job.list`), never for a world it did not start as a job; once the job
+  ends the recorded files speak as before. The `stopped_early` open question, the comparison limit of the same name, the Markdown
+  scope sentence and the comparison's length sentences print simulated time as `hh:mm:ss` (`at 00:04:00 of the requested
+  00:30:00`) instead of `+240s`; table cells that pair an instant with its offset keep `(+Ns)`. No cap or allow-list was loosened.
+
+- **What changed between two models (control-plane round R5, audit F24, F25, OP08).** `streamsim domain diff <a> <b>
+  [--format json|markdown]` compares two domains, each a domain file or a run folder (`domain_spec` of `run.json` only;
+  a sealed file is never opened), and prints one deterministic document (`domain-diff-v0.1`, embedded and validated before
+  printing): both sides' id, version, digest and source, `identity` with `same_id_and_version_different_digest` (the model
+  changed and its version did not), and per kind that differs the added, removed and changed readings (compared on the
+  `domain assumptions` view), dynamics (gain, time constant, dead time, clamp, inputs and their coefficients), commands
+  (arguments and bounds, risk class, safe stop, effect, acknowledgement, lease), faults and states, the instances and
+  relations the kind reaches, plus changed links, link types and other top-level members. Each change has a stable `code`,
+  a path-like `subject`, `field`, `before`, `after` and a sentence; a declaration the view does not model is reported as
+  `definition`, so a differing digest never shows an empty list; `unchanged_summary` counts what is equal. The bridge gains
+  `domain.diff {a, b, format?}` (a workspace domain file or a run id per side). One CLI wiring file is registered in
+  `test/architecture/cli_wiring_test.go` (`domain_diff.go`, 45 lines); no cap or allow-list was loosened.
+
+- **Where a plant comes from and what it assumes (control-plane round R2, audit F22, F24, F25, F26, OP08).** Two read-only
+  commands, both validated against a new embedded contract before they print. `streamsim domain assumptions <domain>
+  [--twin <choices> --kinds-dir <dir>]` (`domain-assumptions-v0.1`) states per reading its instrument (id, version, digest),
+  range, resolution, noise and cadence and per command its response, gain and time constant, where each fact is recorded
+  (`composition`, `twin_choices`, `domain_file`), whether a twin choice equals what `kind twin --suggest` proposes, and a
+  `not_modeled` list of stable codes (the twin allow-lists, first-order responses only, no clamp, no calibration evidence).
+  Twin choices that no longer produce the domain are reported `out_of_sync` and nothing is taken from them. `streamsim
+  domain lineage --domains-dir <dir> [--kinds-dir --twins-dir --compositions-dir --runs-dir] [--domain <id>]`
+  (`domain-lineage-v0.1`) says per plant which composition or twin produces it and whether it still does (both are
+  composed or scaffolded again in memory and their digest compared), the kind files it implements with their digests, the
+  runs that used it and whether they used its current version (`run.json` and the first observer journal line only), and a
+  computed edit verdict with the route the owner offers; per kind file it lists `twins_including` and `has_own_twin`. The
+  bridge gains `domain.assumptions` and `domain.lineage`. `kernel` gains `DirectoryNames`. No gate was changed.
+
+- **An Evaluate job no longer shows its plan while it runs (truth boundary fix).** Round 4a's job status listed the planned
+  `faults` and `perturbations`, which for an Evaluate job (`explore` false) are the injected cause and reached the browser
+  through the bridge before the run was sealed. Every job status the director returns (`sim.job.start`, `status`, `list`,
+  `stop`, `pause`, `resume`, `step`, `rate`, `inject_fault`, `invoke_effector`) now carries empty `faults` and `perturbations`
+  lists while an Evaluate job is running, paused or stopping, and the plan once it has completed, stopped or failed; Explore
+  jobs are unchanged. `sim.job.inject_fault` is refused on an Evaluate job with the new code `evaluate_blind`. Acceptance
+  test: the raw bridge responses of a polled, paused, stepped and re-rated Evaluate job never contain the canary fault or
+  perturbation names.
+
+- **The report answers what a reader cannot conclude, and two runs can be compared (control-plane round 4c, audit F19, F20, R16, R17, R20).**
+  `streamsim report` gains `open_questions`: rules of the binary ask, in a fixed order and with stable codes, whether the run
+  is not ended or unsealed, incomplete, stopped early, differs from its recorded digests, was never replayed or does not
+  reproduce, has no observations, has a torn tail, records no KPI results or was scored by no outside system. `replay` is
+  new: `--replay` replays the recording (with `--domains-dir` and `--adapters-dir`) and reports `reproduces`,
+  `does_not_reproduce`, `incomplete` or `not_checked`. The Markdown report now reads as a handover (purpose, what ran,
+  execution outcome and recording integrity as separate rows, evidence coverage, results with an explicit `Not assessed`
+  objective, plan, open questions), and `--format markdown` without `--out` prints the text inside the one JSON document
+  `{"format", "markdown"}` instead of failing. `streamsim report compare --a <run-dir> --b <run-dir>` (new contract
+  `run-comparison-v0.1`) sets two ended runs side by side with A as the reference: both runs' inputs, the plan difference
+  (faults, perturbations, environment, effector calls as identical, different, only in A or only in B), stable
+  comparability limits (different domain digest or seed, a run stopped early, incomplete or unverified, and always the
+  single-run caution), and whole-run KPI, alarm and alarm-system rows with deltas, relative deltas and their scope.
+  `windowed_results` is `not_available`: the report holds whole-run truth only. It refuses with the new `run_not_ended`
+  unless both runs ended and their truth is readable. The canvas bridge gains `run.compare` and `run.report` takes
+  `format` and `replay`.
+
+- **A run plan can be named, recover a fault and carry delivery conditions (control-plane round 4a, audit F12 and F13).** `sim.job.start`
+  gains optional `name` (80 characters) and `purpose` (500), plain text kept in the run's `plan` (`plan.name`, `plan.purpose`),
+  the job status, the run report (`run.name`, `run.purpose`, markdown included) and the workspace listing entry (`name`); they
+  are authored text and never enter the trace or the truth. A planned fault gains `until_s`: the plan clears it at that time
+  with the run's own `fault.clear`, naming the fault by the id the world gives it (`world.FaultID`); when an immediate fault was
+  injected first, the job retargets the clear to the planned fault's real id so it never reaches another one. The plan gains
+  `perturbations[]` (`kind`, `params`, `at_s`, `until_s`), each one `perturb.apply` with its window. The set of kinds and their
+  parameter bounds is the delivery layer's own: `sim.catalog.perturbations` (bridge action `catalog.perturbations`) lists them
+  with category `delivery`, a description, `requires_end` and the parameter contract, which now also drives validation (integer
+  parameters refuse a fraction). `sim.catalog.describe` adds `fault_categories` (`world`, `measurement`,
+  `world_and_measurement`). The job status lists the planned `faults` (with `fault_id` once injected) and `perturbations`.
+  Impossible plans (clear or window ending before it starts, unknown kind, parameter out of range) are refused before any
+  world exists. A job with clears and perturbations has the same trace, world and command log as `RunScenario` of its built
+  scenario, replays, verifies, and rebuilds exactly from its report.
+
+- **A running job can be paused, stepped, re-rated and given commands now (control-plane round 3b, audit F08).** The director's
+  job gains the simulator-owned controls `sim.job.pause`, `sim.job.resume`, `sim.job.step`, `sim.job.rate`,
+  `sim.job.inject_fault` and `sim.job.invoke_effector`, and the canvas bridge the matching `job.*` actions. A paused job
+  (`paused` is a new job state and counts as active) parks at its next command boundary; resuming re-anchors the wall pacer so
+  simulated time continues at the configured rate instead of catching up; a step releases one clock chunk; a rate change
+  re-anchors at the reached instant. The immediate commands run at the run's current clock through the run's own command
+  methods (new `InjectFaultNow` and `InvokeAcknowledgedNow`), so they enter the command log in execution order and replay;
+  a refused immediate effector call is a recorded `calls[]` outcome flagged `immediate`. Pause, step and rate never reach the
+  world: a plain run and a run with pauses, steps and rate changes have the same trace digest and command log. New refusal
+  codes are `job_not_running` and `job_not_paused`.
+
+- **The canvas bridge exposes the jobs (control-plane round 2.3).** `job.start`, `job.status`, `job.stop` and `job.list` map to the
+  director's `sim.job.*` tools. A started job's world is tracked as running like a created world, every job result settles the
+  running flag of its world, and the workspace listing asks a running director for its jobs, so a job that finished while no
+  browser was open is listed ended and its sealed evidence opens. A director that died takes its jobs with it: the listing then
+  shows them neither running nor ended. Acceptance tests drive a completed job, a stopped job, a reloaded browser and refused
+  plans through the real binary.
+
+- **The director runs a planned experiment as a job (control-plane round 2.2).** `sim.job.start` takes a run plan (domain, seed,
+  duration, rate, faults, effector calls), checks it as a scenario, creates an ordinary world and runs the plan on a goroutine
+  the director owns, paced against the wall clock by the new `runner` edge; `sim.job.status`, `sim.job.stop` and `sim.job.list`
+  read and end it without waiting behind an advance. A stopped job closes its run with the commands it executed and a
+  `stopped_by_operator` termination; a refused effector call is an outcome, not a failure. The scenario executor's hooks gain
+  an `After` hook that hands over each command's effector acknowledgement. `job_active` is a new refusal code.
+
 - **Review fixes, the Lows (fan S11b).** `kind validate` accepts board mappings (`*.board.json`) and lists each with its
   `board_digest` in `boards`. The check document says `gateway` (the canvas reads it instead of the environment word). The
   wall pacer counts on the monotonic clock. A scaled raw value within floating-point error of a whole number is that number,

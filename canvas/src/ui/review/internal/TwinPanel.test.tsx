@@ -93,7 +93,7 @@ describe("the twin comparison in the review", () => {
     fireEvent.click(compare());
     const list = await screen.findByRole("list", { name: "Divergences" });
     expect(list).toHaveTextContent(
-      "00:06:40 to 00:08:20 · 2 readings · worst error 8 Cel at 00:08:20 (board 30 Cel, twin 22 Cel)",
+      "00:06:40 to 00:08:20 · 2 readings · worst error 8 °C at 00:08:20 (board 30 °C, twin 22 °C)",
     );
     expect(list).toHaveTextContent("Commands in force: cmd-1");
     fireEvent.click(within(list).getByRole("button", { name: "Go to the start of sensor.temperature#1" }));
@@ -105,7 +105,7 @@ describe("the twin comparison in the review", () => {
     fireEvent.click(compare());
     const list = await screen.findByRole("list", { name: "Metrics and tolerances" });
     expect(list).toHaveTextContent("sensor.temperature");
-    expect(list).toHaveTextContent("5 readings compared · 2 beyond tolerance · ±2.5 Cel (default share of the range)");
+    expect(list).toHaveTextContent("5 readings compared · 2 beyond tolerance · ±2.5 °C (default share of the range)");
     expect(list).toHaveTextContent("Not compared: 2 × readings before the first command was applied to the twin.");
   });
 

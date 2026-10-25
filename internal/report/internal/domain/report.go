@@ -17,16 +17,20 @@ type Report struct {
 	Run              Run          `json:"run"`
 	Digests          *Digests     `json:"digests,omitempty"`
 	Verification     Verification `json:"verification"`
+	Replay           Replay       `json:"replay"`
 	Counts           Counts       `json:"counts"`
 	Truth            *Truth       `json:"truth,omitempty"`
 	TruthUnavailable string       `json:"truth_unavailable,omitempty"`
 	TornTail         []string     `json:"torn_tail,omitempty"`
 	Consumer         *Consumer    `json:"consumer,omitempty"`
 	Scoring          *Scoring     `json:"scoring,omitempty"`
+	OpenQuestions    []Question   `json:"open_questions"`
 }
 
 type Run struct {
 	RunID            string             `json:"run_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Purpose          string             `json:"purpose,omitempty"`
 	Mode             string             `json:"mode"`
 	Complete         bool               `json:"complete"`
 	IncompleteReason string             `json:"incomplete_reason,omitempty"`
@@ -40,6 +44,9 @@ type Run struct {
 	TimeMode         string             `json:"time_mode,omitempty"`
 	StartTimeNS      int64              `json:"start_time_ns,omitempty"`
 	EndTimeNS        int64              `json:"end_time_ns,omitempty"`
+	RequestedEndNS   int64              `json:"requested_end_ns,omitempty"`
+	Rate             float64            `json:"rate,omitempty"`
+	Termination      *model.Termination `json:"termination,omitempty"`
 	EntityCount      int                `json:"entity_count,omitempty"`
 }
 

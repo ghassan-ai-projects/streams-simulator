@@ -17,6 +17,7 @@ function liveBridge() {
     worldId: "c-9",
     ended: false,
     complete: false,
+    running: true,
     incompleteReason: "",
     explore: false,
     seed: 1,
@@ -48,7 +49,7 @@ describe("a running connected session across screens", () => {
     });
     const instance = await screen.findByRole("region", { name: "Live instance" });
     expect(within(instance).getByText("Online · board uno-07 · boot 61", { exact: true })).toBeInTheDocument();
-    expect(within(instance).getByText("28 degC · good")).toBeInTheDocument();
+    expect(within(instance).getByText("28 °C · good")).toBeInTheDocument();
     const history = app.stores.liveReview.snapshot().liveHistory;
     fireEvent.click(open);
     expect(await screen.findByText("Live · following newest record", { exact: true })).toBeInTheDocument();

@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { success } from "../../ports";
 import { fakeClock } from "../../../test/fakeClock";
-import { launchBridge } from "../../../test/launchFixture";
+import { elapse, launchBridge } from "../../../test/launchFixture";
 import { LaunchStore } from "./launchStore";
 
 const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
-const plan = { seed: 3, durationS: 120, explore: false, faults: [], calls: [] };
+const plan = { seed: 3, durationS: 120, explore: false, faults: [], perturbations: [], calls: [] };
 
 function setup() {
   const timers = fakeClock();
-  return { timers, launch: new LaunchStore(launchBridge("w-4").launch, timers, timers) };
+  const fake = launchBridge("w-4");
+  fake.jobs.drive(timers);
+  return { timers, launch: new LaunchStore(fake.launch, timers, timers) };
 }
 
 describe("run watch", () => {
@@ -19,6 +20,7 @@ describe("run watch", () => {
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
     await launch.start(origin, plan);
+    await elapse(timers, 500);
     expect(watch.shows(launch.snapshot())).toBe(true);
     timers.advance(1999);
     expect(then).not.toHaveBeenCalled();
@@ -31,6 +33,7 @@ describe("run watch", () => {
   it("does not hold a run it did not watch, and leaves it to be shown as a form", async () => {
     const { launch, timers } = setup();
     await launch.start(origin, plan);
+    await elapse(timers, 500);
     const watch = launch.watch("factory");
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
@@ -48,6 +51,7 @@ describe("run watch", () => {
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
     await running;
+    await elapse(timers, 500);
     timers.advance(2000);
     expect(then).toHaveBeenCalledWith("w-4");
     release();
@@ -59,6 +63,7 @@ describe("run watch", () => {
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
     await launch.start(origin, plan);
+    await elapse(timers, 500);
     expect(watch.shows(launch.snapshot())).toBe(false);
     timers.advance(10_000);
     expect(then).not.toHaveBeenCalled();
@@ -68,12 +73,13 @@ describe("run watch", () => {
   it("shows the result of a run with effector calls and leaves it for the person to open", async () => {
     const timers = fakeClock();
     const fake = launchBridge("w-4");
-    fake.actions.set("effector.invoke", success({ accepted: true, reason: "", command_id: "director-1" }));
+    fake.jobs.drive(timers);
     const launch = new LaunchStore(fake.launch, timers, timers);
     const watch = launch.watch("factory");
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
     await launch.start(origin, { ...plan, calls: [{ entity: "CH-1", effector: "start", atS: 0, args: {} }] });
+    await elapse(timers, 500);
     expect(watch.shows(launch.snapshot())).toBe(true);
     timers.advance(10_000);
     expect(then).not.toHaveBeenCalled();
@@ -86,6 +92,7 @@ describe("run watch", () => {
     const then = vi.fn<(worldId: string) => void>();
     const release = watch.holdFinished(then);
     await launch.start(origin, plan);
+    await elapse(timers, 500);
     release();
     timers.advance(10_000);
     expect(then).not.toHaveBeenCalled();

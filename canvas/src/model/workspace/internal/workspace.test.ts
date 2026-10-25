@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Workspace } from "./types";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import {
+  openRunWords,
   outcomeWords,
   runModeWords,
   plantFacts,
@@ -20,6 +21,7 @@ const run = (worldId: string, plant: string, recordedAt: string) => ({
   recordedAt,
   ended: true,
   complete: true,
+  running: false,
   incompleteReason: "",
   explore: false,
   seed: null,
@@ -120,6 +122,7 @@ describe("workspace catalogue", () => {
       worldId: "w",
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: true,
       seed: 7,
@@ -129,6 +132,9 @@ describe("workspace catalogue", () => {
       faults: 0,
     };
     expect(runFacts(finished)).toEqual(["30 min", "seed 7", "no faults"]);
+    expect(
+      runFacts({ ...finished, durationS: 540, requestedS: 1800, terminationReason: "stopped_by_operator" }),
+    ).toEqual(["9 of 30 min", "stopped", "seed 7", "no faults"]);
     expect(runFacts({ ...finished, seed: null })).toEqual(["30 min", "no faults"]);
     const abandoned = { ...finished, complete: false, incompleteReason: "run was stopped", faults: 2 };
     expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);
@@ -142,11 +148,21 @@ describe("workspace catalogue", () => {
     expect(outcomeWords({ ...abandoned, ended: false })).toBe("");
   });
 
+  it.each([
+    ["ended", { ended: true, complete: true, running: false }, ""],
+    ["ended and incomplete", { ended: true, complete: false, running: false }, ""],
+    ["running", { ended: false, complete: false, running: true }, "Running"],
+    ["neither ended nor running", { ended: false, complete: false, running: false }, "Did not finish"],
+  ])("names a run that is %s in its status words", (_name, state, words) => {
+    expect(openRunWords({ ...run("w", "p", ""), ...state })).toBe(words);
+  });
+
   it("says how many faults a finished run injected", () => {
     const finished = {
       worldId: "w",
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: true,
       seed: null,

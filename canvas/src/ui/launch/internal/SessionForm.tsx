@@ -1,4 +1,4 @@
-import type { SyntheticEvent } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useEffect, useRef } from "react";
 import type { ConnectSession, ConnectState } from "../../../app/launch";
 import type { PlanIssue, SessionDraft } from "../../../model/launch";
@@ -17,6 +17,7 @@ interface SessionFormProps {
   readonly change: (next: SessionDraft) => void;
   readonly state: ConnectState;
   readonly connect: ConnectSession;
+  readonly note: ReactNode;
 }
 
 function liveIssues(state: ConnectState): readonly PlanIssue[] {
@@ -88,7 +89,7 @@ function SessionFooter({ checking, trust, onCheck }: FooterProps) {
   );
 }
 
-export function SessionForm({ plant, draft, change, state, connect }: SessionFormProps) {
+export function SessionForm({ plant, draft, change, state, connect, note }: SessionFormProps) {
   const issues = liveIssues(state);
   const checking = state.phase === "checking";
   const form = useFocusOnRefusal(state);
@@ -107,6 +108,7 @@ export function SessionForm({ plant, draft, change, state, connect }: SessionFor
       aria-label="Session plan"
     >
       <div className={cx(launch.scroll, shared.scrolls)}>
+        {note}
         <SessionFields draft={draft} change={change} issues={issues} defaults={defaults} />
         <RealRows plant={plant} draft={draft} change={change} issues={issues} />
         <CheckResult state={state} connect={connect} domain={plant.id} />

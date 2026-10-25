@@ -18,15 +18,19 @@ type WorldRequest struct {
 }
 
 func (d *Director) worldAdapter(req WorldRequest) (*model.Adapter, error) {
-	id := req.Adapter
-	if id == "" {
-		id = "native-jsonl"
-	}
+	id := worldAdapterID(req)
 	adapter, ok := d.Adapters[id]
 	if !ok {
 		return nil, rules.ToolErrorf(rules.CodeAdapterInvalid, "unknown adapter %q", id)
 	}
 	return adapter, nil
+}
+
+func worldAdapterID(req WorldRequest) string {
+	if req.Adapter == "" {
+		return "native-jsonl"
+	}
+	return req.Adapter
 }
 
 func configuredWorld(spec *domain.Compiled, adapter *model.Adapter, req WorldRequest) run.Config {

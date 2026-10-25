@@ -1,0 +1,25 @@
+.live {
+  display: contents;
+}
+
+.saved,
+.failed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 36ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.saved {
+  color: var(--status-ok);
+  font-weight: 600;
+}
+
+.failed {
+  color: var(--status-alarm);
+  font-weight: 600;
+}

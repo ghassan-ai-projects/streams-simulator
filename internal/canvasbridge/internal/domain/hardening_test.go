@@ -40,11 +40,11 @@ func TestWorkspacePathsAreScrubbedFromMessages(t *testing.T) {
 		"in /work/space":  "in .",
 		"nothing to hide": "nothing to hide",
 	} {
-		if got := Scrub(text, root); got != want {
+		if got := Scrub(text, []string{root}); got != want {
 			t.Errorf("Scrub(%q) = %q, want %q", text, got, want)
 		}
 	}
-	if Scrub("/a/b", "") != "/a/b" {
+	if Scrub("/a/b", []string{""}) != "/a/b" {
 		t.Error("an empty root scrubs nothing")
 	}
 }

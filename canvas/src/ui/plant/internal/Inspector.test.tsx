@@ -33,10 +33,9 @@ describe("plant inspector", () => {
     expect(
       within(screen.getByRole("region", { name: "Links in" })).getByText("CT-1 basin out → CH-1 cond in"),
     ).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Faults" })).getByText("fouling")).toHaveAttribute(
-      "title",
-      "chiller__fouling",
-    );
+    expect(
+      within(screen.getByRole("region", { name: "Faults this component can have" })).getByText("fouling"),
+    ).toHaveAttribute("title", "chiller__fouling");
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 
@@ -65,7 +64,9 @@ describe("plant inspector", () => {
 
   it("says None for an instance whose kind has nothing to list", () => {
     render(<Inspector {...handlers} plant={parsePlant(domain)} selected="MB-1" />);
-    expect(within(screen.getByRole("region", { name: "Faults" })).getByText("None")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Faults this component can have" })).getByText("None"),
+    ).toBeInTheDocument();
   });
 
   it("lists cross-hall receivers in order and lets the operator select one", () => {

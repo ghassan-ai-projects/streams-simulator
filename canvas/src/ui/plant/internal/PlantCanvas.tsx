@@ -9,12 +9,13 @@ import type { PlanMark, PlantView } from "../../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
 import type { Connected } from "./connected";
+import { useNoteLines } from "./useNoteLines";
 
 function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, PlanMark> | undefined {
   const run = useStore(launch);
   return useMemo(() => {
     if (run.phase !== "running" || run.origin.domain !== plant) return undefined;
-    return planMarks(showingMarks(run.plan, run.calls, run.atS, run.atMs));
+    return planMarks(showingMarks(run.plan, run.calls, run.atS, run.atMs, run.injected));
   }, [run, plant]);
 }
 
@@ -59,6 +60,27 @@ function PlantViewGraph({
   );
 }
 
+function useLaidOutPlant(
+  state: ReadyPlant,
+  hall: string | null,
+  aspect: number | undefined,
+  connected: Connected | undefined,
+  marks: ReadonlyMap<string, PlanMark> | undefined,
+): PlantView {
+  const presentation = connected?.view;
+  const notes = useNoteLines(connected?.notes, marks);
+  return useMemo(
+    () =>
+      plantView(state.plant, state.specs, {
+        open: hall,
+        aspect,
+        ...(presentation === undefined ? {} : { view: presentation }),
+        notes,
+      }),
+    [state.plant, state.specs, hall, aspect, presentation, notes],
+  );
+}
+
 export function PlantCanvas({
   state,
   hall,
@@ -76,10 +98,7 @@ export function PlantCanvas({
 }) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
-  const view = useMemo(
-    () => plantView(state.plant, state.specs, { open: hall, aspect }),
-    [state.plant, state.specs, hall, aspect],
-  );
+  const view = useLaidOutPlant(state, hall, aspect, connected, marks);
   return (
     <div ref={ref} className={screen.graphHost}>
       <PlantViewGraph

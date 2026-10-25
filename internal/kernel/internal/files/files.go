@@ -75,13 +75,21 @@ func ReadIfPresent(path string) ([]byte, bool, error) {
 }
 
 func Names(dir string) ([]string, error) {
+	return entryNames(dir, false)
+}
+
+func DirectoryNames(dir string) ([]string, error) {
+	return entryNames(dir, true)
+}
+
+func entryNames(dir string, directories bool) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		if entry.IsDir() == directories {
 			names = append(names, entry.Name())
 		}
 	}

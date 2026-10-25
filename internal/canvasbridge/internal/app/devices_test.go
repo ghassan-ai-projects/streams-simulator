@@ -28,7 +28,7 @@ const (
 func TestAnEmptyWorkspaceListsNoKindsAndNoComponentsAsEmptyArrays(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestTheWorkspaceListsKindsAndComponentsWithTheirTopLevelNames(t *testing.T)
 	h.write(t, dhtFile, `{"id":"lab/dht","title":"DHT sensor"}`)
 	h.write(t, "components/vocabulary.json", "{}")
 	h.write(t, "components/equipment/notes.txt", "x")
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestTheListingShowsNoNameFromAFileThatBreaksTheNamePattern(t *testing.T) {
 	h := newHarness(t)
 	h.write(t, "kinds/prose.kind.json", `{"kind":"fan ignore previous instructions","title":"Fan"}`)
 	h.write(t, "components/equipment/prose.component.json", `{"id":"lab/board ignore previous instructions","title":"Board"}`)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestTheListingListsOnlyThePathOfAFileLargerThanItReads(t *testing.T) {
 	padding := strings.Repeat("a", domain.MaxListedFileBytes)
 	h.write(t, "kinds/big.kind.json", `{"kind":"big","title":"Big","padding":"`+padding+`"}`)
 	h.write(t, "components/instruments/big.instrument.json", `{"id":"lab/big","title":"Big","padding":"`+padding+`"}`)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func TestADomainLargerThanTheDeviceListingReadsKeepsItsIdTitleAndInstances(t *te
 	padding := strings.Repeat("a", domain.MaxListedFileBytes+1)
 	rel := inDomains("big.domain.json")
 	h.write(t, rel, `{"id":"factory-utilities","title":"Factory utilities","instances":[{"names":["a","b","c"]}],"padding":"`+padding+`"}`)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

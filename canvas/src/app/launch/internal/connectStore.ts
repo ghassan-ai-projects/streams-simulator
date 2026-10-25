@@ -21,6 +21,7 @@ export class ConnectStore extends Observable<ConnectState> {
   private unpoll: (() => void) | null = null;
   private readonly drafts = new Map<string, SessionDraft>();
   private readonly kinds = new Map<string, RunKind>();
+  private readonly unrecoveredPlans = new Set<string>();
   readonly defaults: PolicyDefault;
 
   constructor(
@@ -46,6 +47,21 @@ export class ConnectStore extends Observable<ConnectState> {
   setUpNext(domain: string, policies: readonly string[]): void {
     this.drafts.set(domain, keptFromRecord(policies));
     this.kinds.set(domain, "session");
+    this.unrecoveredPlans.delete(domain);
+  }
+
+  setUpFresh(domain: string): void {
+    this.drafts.set(domain, firstSessionDraft);
+    this.kinds.set(domain, "session");
+    this.unrecoveredPlans.add(domain);
+  }
+
+  unrecovered(domain: string): boolean {
+    return this.unrecoveredPlans.has(domain);
+  }
+
+  forgetUnrecovered(domain: string): void {
+    this.unrecoveredPlans.delete(domain);
   }
 
   keepDraft(domain: string, draft: SessionDraft): void {

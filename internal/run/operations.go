@@ -97,6 +97,14 @@ func (r *Run) InvokeEffectorNow(effector, entityID, commandID string, args map[s
 	return r.run.InvokeEffectorNow(effector, entityID, commandID, args)
 }
 
+func (r *Run) InjectFaultNow(entityID, faultID string, params map[string]any) (string, int64, error) {
+	return r.run.InjectFaultNow(entityID, faultID, params)
+}
+
+func (r *Run) InvokeAcknowledgedNow(effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, int64, error) {
+	return r.run.InvokeAcknowledgedNow(effector, entityID, commandID, args)
+}
+
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	return r.run.RetireEntity(entityID, reason, atNS)
 }
@@ -225,6 +233,18 @@ func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) err
 	return r.run.ExecuteScenario(ctx, scenario)
 }
 
+func (r *Run) ExecuteScenarioWith(ctx context.Context, scenario *model.Scenario, hooks ScenarioHooks) (ScenarioOutcome, error) {
+	return r.run.ExecuteScenarioWith(ctx, scenario, hooks)
+}
+
+func (r *Run) SetPlan(plan model.RunPlan) error {
+	return r.run.SetPlan(plan)
+}
+
+func (r *Run) SetTermination(termination model.Termination) error {
+	return r.run.SetTermination(termination)
+}
+
 func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
 	return layer.LoadInputs(domainsDir, adaptersDir, domainID, adapterID)
 }
@@ -243,6 +263,10 @@ func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*Re
 
 func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
 	return layer.RunScenario(ctx, scenario, options)
+}
+
+func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) error {
+	return layer.CheckScenarioPlan(ctx, cfg, scenario)
 }
 
 func CheckDomain(check model.DomainCheck, spec *model.DomainSpec) ([]model.ImplementsChecked, error) {

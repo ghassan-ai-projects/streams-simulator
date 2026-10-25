@@ -1,4 +1,5 @@
 import { list, record } from "../../shared/json";
+import { displayUnit } from "../../shared/units";
 import { spaced } from "../../shared/words";
 
 export type ArgValue = string | number | boolean;
@@ -10,6 +11,7 @@ export interface EffectorArg {
   readonly options: readonly string[];
   readonly min: number | null;
   readonly max: number | null;
+  readonly unit: string;
 }
 
 export interface EffectorSpec {
@@ -33,6 +35,7 @@ function argOf(name: string, schema: unknown, required: readonly unknown[]): Eff
     options: list(entry.enum).map(String),
     min: bound(entry.minimum),
     max: bound(entry.maximum),
+    unit: typeof entry.unit === "string" ? entry.unit : "",
   };
 }
 
@@ -80,6 +83,11 @@ function rangeWords(arg: EffectorArg): string {
   if (arg.min !== null && arg.max !== null) return ` from ${String(arg.min)} to ${String(arg.max)}`;
   if (arg.min !== null) return ` of ${String(arg.min)} or more`;
   return arg.max === null ? "" : ` of ${String(arg.max)} or less`;
+}
+
+export function argLabel(arg: EffectorArg): string {
+  const symbol = displayUnit(arg.unit);
+  return symbol === "" ? spaced(arg.name) : `${spaced(arg.name)} (${symbol})`;
 }
 
 export function rangeHint(arg: EffectorArg): string {

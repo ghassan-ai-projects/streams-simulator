@@ -20,6 +20,7 @@ export interface ComposeSummary {
   readonly channels: number;
   readonly faults: number;
   readonly effectors: number;
+  readonly digest: string;
 }
 
 declare const domainDocumentBrand: unique symbol;

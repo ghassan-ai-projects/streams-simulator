@@ -1,4 +1,4 @@
-export { argProblem, callArgs, rangeHint } from "./internal/effectors";
+export { argLabel, argProblem, callArgs, rangeHint } from "./internal/effectors";
 export { parseDomainFile } from "./internal/domainFile";
 export { searchLibrary } from "./internal/library";
 export { linkRefusal } from "./internal/linkRefusal";
@@ -7,6 +7,7 @@ export {
   areaOf,
   channelOf,
   effectorNamesOf,
+  argUnitOf,
   effectorOf,
   endpointOf,
   faultsOf,
@@ -39,9 +40,11 @@ export type {
   Instance,
   LibraryEntry,
   Link,
+  ParameterSpec,
   Pin,
   Pins,
   Plant,
   PortSpec,
+  PresetOption,
   Presets,
 } from "./contract";

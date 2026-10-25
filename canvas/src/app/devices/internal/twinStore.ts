@@ -136,6 +136,10 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
     }));
   }
 
+  review(choices: readonly string[]): void {
+    this.update((draft) => ({ ...draft, reviewed: [...new Set([...draft.reviewed, ...choices])] }));
+  }
+
   async retry(): Promise<void> {
     const state = this.snapshot();
     if (state.phase === "failed") return this.restart(state.path);

@@ -1,0 +1,416 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/domain-diff-v0.1.schema.json",
+  "title": "Streams Simulator Domain Diff v0.1",
+  "description": "The document `streamsim domain diff <a> <b>` prints: what differs between two domain documents, each a domain file or the domain_spec recorded in a run folder. Per device kind the added, removed and changed readings, dynamics, commands, faults and states, the instances the kind affects, and the relations; whether the model changed under an unchanged id and version; and a count of everything that is the same, so a reader can see the comparison is complete. A pure function of the two documents; it reads run.json only, never a sealed file. It compares what the documents declare, never calibration or hardware validity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "a",
+    "b",
+    "identity",
+    "kinds",
+    "domain_changes",
+    "summary",
+    "unchanged_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "a": {
+      "$ref": "#/$defs/side"
+    },
+    "b": {
+      "$ref": "#/$defs/side"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "same_id",
+        "same_version",
+        "same_digest",
+        "same_id_and_version_different_digest"
+      ],
+      "properties": {
+        "same_id": {
+          "type": "boolean"
+        },
+        "same_version": {
+          "type": "boolean"
+        },
+        "same_digest": {
+          "type": "boolean"
+        },
+        "same_id_and_version_different_digest": {
+          "type": "boolean",
+          "description": "The model changed and its version did not: a silent edit."
+        }
+      }
+    },
+    "kinds": {
+      "type": "array",
+      "description": "Only kinds that differ, ordered by kind name.",
+      "items": {
+        "$ref": "#/$defs/kind"
+      }
+    },
+    "domain_changes": {
+      "type": "array",
+      "description": "Relations (links, link types) and every top-level member the document does not itemise.",
+      "items": {
+        "$ref": "#/$defs/change"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changes",
+        "kinds_changed",
+        "kinds_added",
+        "kinds_removed"
+      ],
+      "properties": {
+        "changes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kinds_changed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kinds_added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kinds_removed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unchanged_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kinds",
+        "readings",
+        "dynamics",
+        "commands",
+        "faults",
+        "states",
+        "instance_sets",
+        "links",
+        "link_types"
+      ],
+      "properties": {
+        "kinds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "readings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dynamics": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "commands": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "faults": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "states": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "instance_sets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "links": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "link_types": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "side": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "title",
+        "digest",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "label"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "file",
+                "run"
+              ],
+              "description": "file: a domain file; run: the domain_spec recorded in run.json of a run folder."
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "instance_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "names",
+        "id_templates"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "status",
+        "instances",
+        "relations",
+        "changes"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "changed",
+            "added",
+            "removed"
+          ]
+        },
+        "instances": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "before",
+            "after"
+          ],
+          "description": "The instances the kind affects, from the instance declarations of each side.",
+          "properties": {
+            "before": {
+              "$ref": "#/$defs/instance_summary"
+            },
+            "after": {
+              "$ref": "#/$defs/instance_summary"
+            }
+          }
+        },
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/change"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "description": "The relations (link types and their links) the kind takes part in, on the side that still has the kind.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "from_kind",
+              "to_kind",
+              "links"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "from_kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to_kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "from>to instance names"
+              }
+            }
+          }
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "subject",
+        "section",
+        "field",
+        "before",
+        "after",
+        "sentence"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "kind_added",
+            "kind_removed",
+            "kind_changed",
+            "reading_added",
+            "reading_removed",
+            "reading_changed",
+            "instrument_changed",
+            "unit_changed",
+            "range_changed",
+            "resolution_changed",
+            "noise_changed",
+            "cadence_changed",
+            "availability_changed",
+            "dynamics_added",
+            "dynamics_removed",
+            "dynamics_changed",
+            "gain_changed",
+            "time_constant_changed",
+            "dead_time_changed",
+            "clamp_changed",
+            "input_added",
+            "input_removed",
+            "input_changed",
+            "command_added",
+            "command_removed",
+            "command_changed",
+            "argument_added",
+            "argument_removed",
+            "argument_changed",
+            "safe_stop_changed",
+            "risk_class_changed",
+            "sets_changed",
+            "lease_changed",
+            "latency_changed",
+            "failure_modes_changed",
+            "state_changes_changed",
+            "fault_added",
+            "fault_removed",
+            "fault_changed",
+            "state_added",
+            "state_removed",
+            "state_changed",
+            "instances_changed",
+            "link_added",
+            "link_removed",
+            "link_type_added",
+            "link_type_removed",
+            "link_type_changed",
+            "section_changed"
+          ]
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "description": "kind/section/key[/child-section/child-key], or links/key, link_types/name, domain/member."
+        },
+        "section": {
+          "enum": [
+            "readings",
+            "dynamics",
+            "commands",
+            "faults",
+            "states",
+            "instances",
+            "kind",
+            "links",
+            "link_types",
+            "domain"
+          ]
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The member that differs; a dotted path inside commands (effect.dead_time_s); coef for the coefficient of a dynamics input; definition for a declaration the view does not model; the noun itself for an added or removed item."
+        },
+        "before": {
+          "description": "JSON value on side a; null when absent."
+        },
+        "after": {
+          "description": "JSON value on side b; null when absent."
+        },
+        "sentence": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

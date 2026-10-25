@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestARunIsSummarisedFromItsJournalOpeningAndClosing(t *testing.T) {
 	t.Parallel()
@@ -11,9 +14,9 @@ func TestARunIsSummarisedFromItsJournalOpeningAndClosing(t *testing.T) {
 		first, tail []byte
 		want        RunSummary
 	}{
-		"closed":            {opened, closed, RunSummary{Plant: "factory", Explore: true, Closed: true, DurationNs: 60}},
-		"closed incomplete": {opened, abandoned, RunSummary{Plant: "factory", Explore: true, Closed: true, Incomplete: true, DurationNs: 60}},
-		"still open":        {opened, []byte(`{"type":"observation"}`), RunSummary{Plant: "factory", Explore: true}},
+		"closed":            {opened, closed, RunSummary{Plant: "factory", Explore: true, StartNs: 5, Closed: true, DurationNs: 60}},
+		"closed incomplete": {opened, abandoned, RunSummary{Plant: "factory", Explore: true, StartNs: 5, Closed: true, Incomplete: true, DurationNs: 60}},
+		"still open":        {opened, []byte(`{"type":"observation"}`), RunSummary{Plant: "factory", Explore: true, StartNs: 5}},
 		"not a run":         {[]byte(`{"type":"observation"}`), closed, RunSummary{}},
 		"unreadable":        {[]byte(`{`), closed, RunSummary{}},
 		"empty journal":     {nil, nil, RunSummary{}},
@@ -81,5 +84,62 @@ func TestANewRunEntryIsCompleteOnlyWhenItEndedWithoutBeingAbandoned(t *testing.T
 				t.Fatalf("NewRunEntry = %+v, want %+v", got, c.want)
 			}
 		})
+	}
+}
+
+func TestARunArtifactCarriesTheRequestedEndAndTheTerminationReason(t *testing.T) {
+	t.Parallel()
+	stopped := ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":1800000000000},"termination":{"reason":"stopped_by_operator","at_ns":5}}`))
+	if stopped.RequestedEndNs() != 1800000000000 || stopped.TerminationReason() != "stopped_by_operator" {
+		t.Fatalf("stopped run.json = %d, %q", stopped.RequestedEndNs(), stopped.TerminationReason())
+	}
+	older := ParseRunArtifact([]byte(`{"seed":1}`))
+	if older.RequestedEndNs() != 0 || older.TerminationReason() != "" {
+		t.Fatalf("older run.json = %d, %q", older.RequestedEndNs(), older.TerminationReason())
+	}
+}
+
+func TestARunEntryStatesTheRequestedLengthFromTheRunsStartAndOnlyWhenTheRunKeptIt(t *testing.T) {
+	t.Parallel()
+	artifact := ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":1800000000005},"termination":{"reason":"stopped_by_operator"}}`))
+	stopped := wireOf(t, NewRunEntry("w", RunSummary{Closed: true, StartNs: 5, DurationNs: 540000000000}, false, artifact))
+	if stopped["requested_duration_ns"] != 1.8e12 || stopped["termination_reason"] != "stopped_by_operator" {
+		t.Fatalf("stopped entry = %v", stopped)
+	}
+	plain := wireOf(t, NewRunEntry("w", RunSummary{Closed: true}, false, RunArtifact{}))
+	for _, field := range []string{"requested_duration_ns", "termination_reason"} {
+		if _, has := plain[field]; has {
+			t.Fatalf("plain entry = %v", plain)
+		}
+	}
+}
+
+func wireOf(t *testing.T, entry RunEntry) map[string]any {
+	t.Helper()
+	encoded, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]any
+	if err := json.Unmarshal(encoded, &fields); err != nil {
+		t.Fatal(err)
+	}
+	return fields
+}
+
+func TestARunEntryCarriesTheNameTheOperatorGaveTheRunAndOmitsItWhenThereIsNone(t *testing.T) {
+	t.Parallel()
+	named := ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":9,"name":"Cooling loss","purpose":"Observe the chiller."}}`))
+	if named.Name() != "Cooling loss" {
+		t.Fatalf("Name = %q", named.Name())
+	}
+	entry := wireOf(t, NewRunEntry("w", RunSummary{Closed: true}, false, named))
+	if entry["name"] != "Cooling loss" {
+		t.Fatalf("entry = %v, want the name", entry)
+	}
+	for _, artifact := range []RunArtifact{{}, ParseRunArtifact([]byte(`{"plan":{"requested_end_ns":9}}`))} {
+		if _, has := wireOf(t, NewRunEntry("w", RunSummary{Closed: true}, false, artifact))["name"]; has {
+			t.Fatal("an unnamed run lists a name")
+		}
 	}
 }

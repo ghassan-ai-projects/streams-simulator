@@ -1,0 +1,95 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "Audit fan thermal response" [active] [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Inspector panel" [pressed]:
+    - text: Inspector
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Plant 3":
+      - generic "Plant"
+      - generic: "3"
+    - list:
+      - button "fan-01 fan":
+        - generic: fan-01
+        - generic: fan
+      - button "thermal-sensor-01 thermal sensor":
+        - generic: thermal-sensor-01
+        - generic: thermal sensor
+      - button "ble-sensor-node-01 ble sensor node":
+        - generic: ble-sensor-node-01
+        - generic: ble sensor node
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Plant audit-fan-thermal":
+    - generic: 3 instances · 1 link · some links record no ports
+    - button "Run plant":
+      - text: Run plant
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 100 %
+      - generic: Zoom 100 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "fan-01, fan, 0 inputs, 0 outputs":
+        - generic "fan-01"
+        - generic "fan"
+        - generic: no port data
+      - group "thermal-sensor-01, thermal sensor, 0 inputs, 0 outputs":
+        - generic "thermal-sensor-01"
+        - generic "thermal sensor"
+        - generic: no port data
+      - group "ble-sensor-node-01, ble sensor node, 0 inputs, 0 outputs":
+        - generic "ble-sensor-node-01"
+        - generic "ble sensor node"
+        - generic: no port data
+      - generic "Plant · 3 nodes":
+        - generic: Plant
+        - generic: 3 nodes
+  - complementary "Inspector":
+    - heading "Audit fan thermal response" [level=2]
+    - paragraph: 3 instances in 1 area · 1 link
+    - paragraph: Select an instance to see its channels (the values measured on it, one for each port and state), links, faults and effectors.
+    - region "Recent runs":
+      - heading "Recent runs 0" [level=3]:
+        - text: Recent runs
+        - generic: "0"
+      - paragraph: "No runs yet: use Run plant."
+      - list
+    - region "Areas":
+      - heading "Areas 1" [level=3]:
+        - text: Areas
+        - generic: "1"
+      - list:
+        - generic: Plant
+        - generic: "3"
+    - region "Kinds":
+      - heading "Kinds 3" [level=3]:
+        - text: Kinds
+        - generic: "3"
+      - list:
+        - generic: ble sensor node
+        - generic: "1"
+        - generic: fan
+        - generic: "1"
+        - generic: thermal sensor
+        - generic: "1"

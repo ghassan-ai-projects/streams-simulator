@@ -33,6 +33,26 @@ var runJournal []byte
 //go:embed run-report-v0.1.schema.json
 var runReport []byte
 
+//go:embed run-comparison-v0.1.schema.json
+var runComparison []byte
+
+func RunComparison() []byte { return runComparison }
+
+//go:embed domain-assumptions-v0.1.schema.json
+var domainAssumptions []byte
+
+//go:embed domain-lineage-v0.1.schema.json
+var domainLineage []byte
+
+//go:embed domain-diff-v0.1.schema.json
+var domainDiff []byte
+
+func DomainAssumptions() []byte { return domainAssumptions }
+
+func DomainDiff() []byte { return domainDiff }
+
+func DomainLineage() []byte { return domainLineage }
+
 func DomainSpec() []byte { return domainSpec }
 
 func OutputAdapter() []byte { return outputAdapter }

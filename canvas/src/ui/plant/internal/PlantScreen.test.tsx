@@ -2,8 +2,6 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
 import { mountApp } from "../../../test/appHarness";
-import { deferred } from "../../../test/deferred";
-import type { Canned } from "../../../test/fakeFailures";
 import { stubFlowDom } from "../../../test/dom";
 import { campusBridge, campusHash, miniBridge, miniWorkspace, planHash } from "../../../test/screenFixture";
 
@@ -213,19 +211,18 @@ describe("a plant with a run going", () => {
     durationS: 3600,
     explore: true,
     faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 0 }],
+    perturbations: [],
     calls: [],
   };
 
   async function running() {
     const bridge = miniBridge();
-    const gate = deferred<Canned<unknown>>();
-    bridge.handlers.set("clock.advance", () => gate.promise);
     const app = await opened(planHash(), bridge);
     act(() => {
       void app.stores.launch.start(origin, plan);
     });
     await screen.findByRole("button", { name: /^Running · / });
-    return { ...app, gate };
+    return app;
   }
 
   it("shows the run's clock on the Run button and marks the instances its faults hit", async () => {
@@ -233,6 +230,19 @@ describe("a plant with a run going", () => {
     expect(screen.getByRole("button", { name: /^Running · 00:00:00/ })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /^CH-1, Fault: fouling/ })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /^CT-1, tower/ })).toBeInTheDocument();
+  });
+
+  it("says Paused with the frozen clock on the Run button, and marks a fault injected now like a planned one", async () => {
+    const app = await running();
+    await act(async () => {
+      await app.stores.launch.pause();
+    });
+    expect(screen.getByRole("button", { name: /^Paused · 00:00:00/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Running · / })).toBeNull();
+    await act(async () => {
+      await app.stores.launch.injectNow("CT-1", "tower__scaling");
+    });
+    expect(screen.getByRole("group", { name: /^CT-1, Fault: scaling/ })).toBeInTheDocument();
   });
 
   it("holds the editor until the run is over", async () => {

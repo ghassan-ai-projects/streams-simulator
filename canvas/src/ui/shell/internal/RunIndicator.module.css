@@ -2,6 +2,7 @@
 .run-done,
 .run-failed {
   display: flex;
+  max-width: 22rem;
   align-items: center;
   height: 30px;
   border: 1px solid var(--border-strong);
@@ -23,6 +24,7 @@
 .runOpen,
 .runDismiss {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-2);
   height: 100%;
@@ -44,4 +46,21 @@
 .runDismiss {
   padding: 0 var(--space-2);
   border-left: 1px solid var(--border-subtle);
+}
+
+.runName {
+  flex: 0 1 auto;
+  min-width: 2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runTail {
+  flex: none;
+  white-space: nowrap;
+}
+
+.runOpen svg {
+  flex: none;
 }

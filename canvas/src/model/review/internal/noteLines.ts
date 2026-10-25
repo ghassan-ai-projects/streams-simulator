@@ -1,16 +1,6 @@
+import { noteLineCount } from "../../graph";
 import type { Report } from "./report";
 import { callWords, faultNames } from "./report";
-
-const charsPerLine = 16;
-
-function linesOf(text: string): number {
-  return text === "" ? 0 : Math.ceil(text.length / charsPerLine);
-}
-
-function noteLinesOf(fault: string, effector: string): number {
-  const cause = fault === "" ? "" : `Fault · ${fault}`;
-  return Math.max(1, linesOf(cause) + linesOf(effector));
-}
 
 function faultsOf(report: Report): Map<string, string> {
   return new Map([...faultNames(report)].map(([entity, names]) => [entity, names.join(", ")] as const));
@@ -31,6 +21,6 @@ export function noteLinesByEntity(report: Report | null): ReadonlyMap<string, nu
   const calls = callsOf(report);
   const entities = new Set([...faults.keys(), ...calls.keys()]);
   return new Map(
-    [...entities].map((entity) => [entity, noteLinesOf(faults.get(entity) ?? "", calls.get(entity) ?? "")]),
+    [...entities].map((entity) => [entity, noteLineCount(faults.get(entity) ?? "", calls.get(entity) ?? "")]),
   );
 }

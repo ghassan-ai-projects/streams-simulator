@@ -41,6 +41,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/wall/wall_clock.go":                           {uses: []string{"call:time.Now"}, why: "the declared wall-clock seam"},
 	"internal/sink/internal/httppush/httppush.go":           {uses: []string{"import:net/http"}, why: "http-push sink: POST each line"},
 	"internal/director/internal/capability/capability.go":   {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},
+	"internal/director/internal/runner/runner.go":           {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Until", "go-statement"}, why: "the wall pacer that makes a job's simulated time follow wall time at its rate, and the goroutine a job runs on"},
 	"internal/mcp/internal/transport/transport.go":          {uses: []string{"go-statement", "import:net", "import:net/http"}, why: "operator role bound over streamable HTTP and the director session served until its transport closes"},
 	"internal/canvasbridge/internal/entropy/entropy.go":     {uses: []string{"import:crypto/rand"}, why: "canvas pairing codes and session ids"},
 	"internal/canvasbridge/internal/files/files.go":         {uses: []string{"call:filepath.Abs", "import:os"}, why: "the canvas workspace opened as one os.Root; reads and listings inside it"},

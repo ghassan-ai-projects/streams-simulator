@@ -34,7 +34,7 @@ var moduleShapes = map[string][]string{
 	"internal/grading":      {"domain", "app", "files"},
 	"internal/release":      {"domain", "app", "files"},
 	"internal/report":       {"domain", "app", "files"},
-	"internal/director":     {"domain", "app", "capability"},
+	"internal/director":     {"domain", "app", "capability", "runner"},
 	"internal/mcp":          {"protocol", "transport"},
 	"internal/cli":          {"app", "files", "process"},
 	"internal/canvasbridge": {"domain", "app", "transport", "files", "process", "entropy"},

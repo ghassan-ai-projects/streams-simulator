@@ -1,7 +1,6 @@
 import { success } from "../app/ports";
 import { FakeBridge } from "./fakeBridge";
 import { campus, chillerPorts, componentShown, composition, domain, towerPorts } from "./plantFixture";
-import { launchActions } from "./launchFixture";
 import { journalWire, reportWire } from "./runFixture";
 import { sampleWorkspace } from "./workspaceFixture";
 
@@ -24,7 +23,6 @@ export function miniBridge() {
   fake.handlers.set("component.show", ({ ref }) =>
     success(componentShown(ref === "lib/tower" ? towerPorts : chillerPorts)),
   );
-  launchActions().forEach((outcome, name) => fake.actions.set(name, outcome));
   return fake;
 }
 

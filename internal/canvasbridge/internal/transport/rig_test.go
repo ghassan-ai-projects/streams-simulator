@@ -56,7 +56,7 @@ func (f *fakeService) Pair(code string) (string, error) {
 
 func (f *fakeService) Admits(session string) bool { return session == goodSession }
 
-func (f *fakeService) Workspace() (domain.Listing, error) {
+func (f *fakeService) Workspace(context.Context) (domain.Listing, error) {
 	f.note("Workspace")
 	return domain.Listing{Name: "ws"}, f.fileErr
 }

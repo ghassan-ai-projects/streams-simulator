@@ -32,3 +32,7 @@ func Acknowledge(result *InvokeResult) *model.EffectorAcknowledgement {
 func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
 	return layer.PopulationIDs(spec, firstSetCount)
 }
+
+func FaultID(ordinal int) string {
+	return layer.FaultID(ordinal)
+}

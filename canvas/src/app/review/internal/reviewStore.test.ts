@@ -45,7 +45,7 @@ describe("review store", () => {
     expect(store.snapshot().tab).toBe("report");
   });
 
-  it("reveals a mark by seeking and selecting without changing the tab, on either tab", () => {
+  it("reveals a mark by seeking, selecting and opening the report, where its story is, from either tab", () => {
     const { store } = setup();
     store.open("w-1");
     store.reveal(600e9, "CT-1");
@@ -57,7 +57,7 @@ describe("review store", () => {
     });
     store.showTab("inspect");
     store.reveal(900e9, "CH-1");
-    expect(store.snapshot()).toMatchObject({ positionNs: 900e9, selected: "CH-1", tab: "inspect" });
+    expect(store.snapshot()).toMatchObject({ positionNs: 900e9, selected: "CH-1", tab: "report" });
   });
 
   it("asks the binary for the report and verification and streams the observer journal", async () => {
@@ -219,6 +219,7 @@ const entry = {
   worldId: "w-9",
   ended: true,
   complete: true,
+  running: false,
   incompleteReason: "the run did not close.",
   explore: false,
   seed: 5,

@@ -141,7 +141,7 @@ function interruptUnreadableAfter(current: number | null, items: readonly LiveIt
 }
 
 function followsNewest(state: ReviewState): boolean {
-  return state.following && state.connection === "running";
+  return state.following && (state.connection === "running" || state.watching);
 }
 
 function withLiveBatch(state: ReviewState, items: readonly LiveItem[], nowMs: number): ReviewState {
@@ -200,7 +200,20 @@ export function playStart(state: ReviewState, index: PlaybackIndex): ReviewState
   return { ...atPosition(state, fresh ? start : state.positionNs), playing: true, following: false };
 }
 
+const blankEntry = {
+  incompleteReason: "",
+  explore: false,
+  seed: null,
+  plant: "",
+  durationS: 0,
+  recordedAt: "",
+  faults: 0,
+};
+
 export function liveEntry(worldId: string, known: RunEntry | undefined): RunEntry {
-  const base = { incompleteReason: "", explore: false, seed: null, plant: "", durationS: 0, recordedAt: "", faults: 0 };
-  return { ...base, ...known, worldId, ended: false, complete: false, connected: "running" };
+  return { ...blankEntry, ...known, worldId, ended: false, complete: false, running: true, connected: "running" };
+}
+
+export function watchEntry(worldId: string, known: RunEntry | undefined): RunEntry {
+  return { ...blankEntry, ...known, worldId, ended: false, complete: false, running: true };
 }

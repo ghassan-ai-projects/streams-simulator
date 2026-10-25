@@ -1,6 +1,10 @@
 package domain
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func runLines(run Run) []string {
 	return fieldTable(append(identityFields(run), inputFields(run)...))
@@ -18,6 +22,10 @@ func identityFields(run Run) []field {
 }
 
 func inputFields(run Run) []field {
+	return append(sourceFields(run), spanFields(run)...)
+}
+
+func sourceFields(run Run) []field {
 	return []field{
 		{"Simulator version", run.SimVersion},
 		{"Domain", reference(run.Domain)},
@@ -25,10 +33,25 @@ func inputFields(run Run) []field {
 		{"Seed", seedText(run.Seed)},
 		{"Sink", run.Sink},
 		{"Time mode", run.TimeMode},
+	}
+}
+
+func spanFields(run Run) []field {
+	return []field{
 		{"Start", instant(run.StartTimeNS, 0)},
 		{"End", instant(run.EndTimeNS, run.StartTimeNS)},
+		{"Requested end", instant(run.RequestedEndNS, run.StartTimeNS)},
+		{"Pace", rateText(run.Rate)},
+		{"Termination", terminationText(run)},
 		{"Entities", countText(run.EntityCount)},
 	}
+}
+
+func rateText(rate float64) string {
+	if rate <= 0 {
+		return ""
+	}
+	return strconv.FormatFloat(rate, 'f', -1, 64) + " simulated s per wall s"
 }
 
 func seedText(seed *uint64) string {
@@ -86,4 +109,15 @@ func reasonTable(lines []string, title string, counts map[string]int64) []string
 		return lines
 	}
 	return append(append(lines, "", "### "+title, ""), countTable("Reason", counts)...)
+}
+
+func terminationText(run Run) string {
+	if run.Termination == nil {
+		return ""
+	}
+	label := "Completed"
+	if run.Termination.Reason == model.TerminationStoppedByOperator {
+		label = "Stopped by operator"
+	}
+	return label + " at " + instant(run.Termination.AtNS, run.StartTimeNS)
 }

@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { isSuggested } from "../../../app/devices";
 import {
   askedCommands,
   catalogueKey,
@@ -43,6 +44,7 @@ function Readings({ twin, draft, issues, needs, kind, choice, reveal }: CardProp
           metric={metric}
           choice={metricChoiceOf(choice, metric.key)}
           instruments={draft.instruments[catalogueKey(metric)] ?? null}
+          suggested={isSuggested(draft, { path: choice.kind, key: metric.key, field: "instrument" })}
         />
       ))}
     </>
@@ -66,6 +68,7 @@ function Commands({ twin, draft, issues, needs, kind, choice, reveal }: CardProp
           member={choice.kind}
           command={command}
           choice={commandChoiceOf(choice, command.key)}
+          suggested={isSuggested(draft, { path: choice.kind, key: command.key, field: "response" })}
         />
       ))}
       {stops.length > 0 && (

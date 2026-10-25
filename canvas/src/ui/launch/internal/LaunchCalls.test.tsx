@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { success } from "../../../test/outcome";
 import { parsePlant } from "../../../model/plant";
 import type { FakeBridge } from "../../../test/fakeBridge";
-import { launchBridge, launchHarness } from "../../../test/launchFixture";
+import { flushPromises } from "../../../test/deferred";
+import { elapse, launchBridge, launchHarness } from "../../../test/launchFixture";
 import { domain } from "../../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
@@ -26,11 +26,7 @@ const plant = parsePlant({
 
 function bridge() {
   const fake = launchBridge();
-  fake.handlers.set("effector.invoke", (args) =>
-    args.effector === "start"
-      ? success({ accepted: false, reason: "interlock_refused", command_id: "director-1" })
-      : success({ accepted: true, effect_eta_ns: 1e9, command_id: "director-2" }),
-  );
+  fake.jobs.refuse("start", "interlock_refused");
   return fake;
 }
 
@@ -39,11 +35,11 @@ function change(label: string, value: string) {
 }
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
-  const { launch } = launchHarness(fake);
+  const { launch, timers } = launchHarness(fake);
   const view = render(
     <LaunchPanel launch={launch} plant={plant} path="p.json" onClose={vi.fn()} onFinished={onFinished} />,
   );
-  return { view, onFinished };
+  return { view, onFinished, timers };
 }
 
 describe("effector calls in the run plan", () => {
@@ -71,7 +67,7 @@ describe("effector calls in the run plan", () => {
 
   it("keeps the review closed until the user has read what the plant accepted and refused", async () => {
     const fake = bridge();
-    const { onFinished } = renderPanel(fake);
+    const { onFinished, timers } = renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Add effector call" }));
     change("Effector call 1 instance", "CH-1");
     change("Effector call 1 effector", "start");
@@ -83,19 +79,18 @@ describe("effector calls in the run plan", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-      await Promise.resolve();
+      await flushPromises();
+      await elapse(timers, 500);
     });
     const list = await screen.findByRole("list", { name: "Effector call results" });
     expect(list).toHaveTextContent("00:00:00 · CH-1 · start: command not accepted: interlock_refused");
     expect(list).toHaveTextContent("00:10:00 · CH-1 · set setpoint: accepted");
     expect(screen.getByRole("status")).toHaveTextContent("1 of 2 effector calls were not accepted.");
     expect(onFinished).not.toHaveBeenCalled();
-    expect(fake.calls.filter((call) => call.name === "effector.invoke")[1]?.args).toEqual({
-      world_id: "w-7",
-      entity_id: "CH-1",
-      effector: "set_setpoint",
-      args: { chiller_id: "CH-1", setpoint_c: 7 },
-    });
+    expect(fake.jobCalls[0]?.args.calls).toEqual([
+      { entity_id: "CH-1", effector: "start", at_s: 0, args: { chiller_id: "CH-1" } },
+      { entity_id: "CH-1", effector: "set_setpoint", at_s: 600, args: { chiller_id: "CH-1", setpoint_c: 7 } },
+    ]);
     fireEvent.click(screen.getByRole("button", { name: "Open the review" }));
     expect(onFinished).toHaveBeenCalledWith("w-7");
   });

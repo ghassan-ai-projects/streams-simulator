@@ -1,6 +1,6 @@
-import type { CallProblem, DraftCall } from "../../../model/launch";
+import type { CallProblem, NowDraft } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
-import { effectorOf, rangeHint } from "../../../model/plant";
+import { argLabel, effectorOf, rangeHint } from "../../../model/plant";
 import { spaced } from "../../../model/shared/words";
 import { invalid } from "./RowParts";
 import styles from "./LaunchPanel.module.css";
@@ -23,7 +23,7 @@ function ArgField({ arg, label, value, problem, id, onChange }: ArgFieldProps) {
   const shared = { "aria-label": `${label} ${spaced(arg.name)}`, value, ...invalid(problem, id) };
   return (
     <label>
-      {spaced(arg.name)}
+      {argLabel(arg)}
       {options.length > 0 ? (
         <select
           {...shared}
@@ -62,11 +62,11 @@ export function CallArgs({
   update,
 }: {
   readonly plant: Plant;
-  readonly call: DraftCall;
+  readonly call: NowDraft;
   readonly label: string;
   readonly id: string;
   readonly problem: CallProblem | null;
-  readonly update: (next: Partial<DraftCall>) => void;
+  readonly update: (next: Partial<NowDraft>) => void;
 }) {
   const spec = effectorOf(plant, call.entity, call.effector);
   const shown = (spec?.args ?? []).filter((arg) => arg.type !== "other");

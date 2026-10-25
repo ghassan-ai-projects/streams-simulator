@@ -1,0 +1,1933 @@
+{
+  "schema_version": "0.1",
+  "domain": {
+    "id": "chiller-pilot",
+    "version": "0.1.0",
+    "digest": "sha256:c1fb0164a86c53728022766c161fdea56caad9847892b2fdae07afb12370ef9a"
+  },
+  "origin": {
+    "kind": "composition"
+  },
+  "kinds": [
+    {
+      "kind": "chiller_large",
+      "instances": [
+        {
+          "names": [
+            "CH-1",
+            "CH-2"
+          ],
+          "area": "Chiller hall"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "chiller_large.chw_supply_temp",
+          "observes": "chw_supply",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 25
+          },
+          "resolution": 0.1,
+          "initial": 6.5,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_large.chw_return_temp",
+          "observes": "chw_return",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 35
+          },
+          "resolution": 0.1,
+          "initial": 9.73729,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_large.cond_temp",
+          "observes": "cond_temp",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 10,
+            "max": 60
+          },
+          "resolution": 0.1,
+          "initial": 31.9931,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_large.power",
+          "observes": "power",
+          "unit": "kW",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 1100
+          },
+          "resolution": 0.1,
+          "initial": 184.902,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 2.2
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 15
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "JT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/power-meter",
+            "version": 1,
+            "ref": "streamsim/power-meter@1",
+            "digest": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_large.chw_flow",
+          "observes": "chw_flow",
+          "unit": "m3/h",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 800
+          },
+          "resolution": 0.1,
+          "initial": 440,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 2.4
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 5
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "FT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/mag-flow-meter",
+            "version": 1,
+            "ref": "streamsim/mag-flow-meter@1",
+            "digest": "sha256:e233724c219cba8709bd042ccfad87bb053391d8d5854cbd638716a7dd5a6e3a"
+          },
+          "recorded_in": "composition"
+        }
+      ],
+      "dynamics": [
+        {
+          "target": "load",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "cond_water_in",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "tariff",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "chw_flow",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "idle",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cooling",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "part_load",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "cooling",
+              "coef": 0.000355492
+            }
+          ]
+        },
+        {
+          "target": "supply_error",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "chw_supply",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 300,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "setpoint",
+              "coef": 1
+            },
+            {
+              "state": "supply_error",
+              "coef": 1
+            },
+            {
+              "state": "idle",
+              "coef": 5
+            }
+          ]
+        },
+        {
+          "target": "delta_t",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "chw_flow",
+              "coef": 0.00227273
+            }
+          ]
+        },
+        {
+          "target": "chw_return",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "chw_supply",
+              "coef": 1
+            },
+            {
+              "state": "delta_t",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "specific_power",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "power",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 1
+            },
+            {
+              "state": "specific_power",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cop_curve",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cop",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "cop_curve",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cond_temp",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 600,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            },
+            {
+              "state": "running",
+              "coef": 3
+            },
+            {
+              "state": "part_load",
+              "coef": 3
+            }
+          ]
+        },
+        {
+          "target": "heat_rejected",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 120,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "cooling",
+              "coef": 1
+            },
+            {
+              "state": "power",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cost_rate",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1
+            },
+            {
+              "state": "tariff",
+              "coef": 1
+            }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "name": "chiller_large__set_setpoint",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            },
+            {
+              "name": "setpoint_c",
+              "type": "number",
+              "minimum": 4,
+              "maximum": 12
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [
+            {
+              "argument": "setpoint_c",
+              "state": "setpoint"
+            }
+          ],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 0 s."
+        },
+        {
+          "name": "chiller_large__start",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 30,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 30 s."
+        },
+        {
+          "name": "chiller_large__stop",
+          "risk_class": "high",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 10,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 10 s."
+        }
+      ],
+      "faults": [
+        {
+          "id": "chiller_large__condenser_fouling",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "cond_temp",
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_large__refrigerant_undercharge",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_supply",
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_large__compressor_wear",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_large__load_swing",
+          "negative_class": true,
+          "onset_shape": "intermittent",
+          "affects": [
+            "load"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "chw_supply_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_supply_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_supply_temp"
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_supply_temp"
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_supply_temp"
+        },
+        {
+          "id": "chiller_large__chw_return_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "chw_return_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_return_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_return_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_return_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_return_temp"
+        },
+        {
+          "id": "chiller_large__chw_return_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_return_temp"
+        },
+        {
+          "id": "chiller_large__chw_return_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_return_temp"
+        },
+        {
+          "id": "chiller_large__cond_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "cond_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__cond_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "cond_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__cond_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.cond_temp"
+        },
+        {
+          "id": "chiller_large__cond_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.cond_temp"
+        },
+        {
+          "id": "chiller_large__cond_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.cond_temp"
+        },
+        {
+          "id": "chiller_large__power__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "power__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__power__ct_ratio",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.power"
+        },
+        {
+          "id": "chiller_large__power__stale",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.power"
+        },
+        {
+          "id": "chiller_large__power__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.power"
+        },
+        {
+          "id": "chiller_large__power__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.power"
+        },
+        {
+          "id": "chiller_large__chw_flow__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "chw_flow__bias"
+          ]
+        },
+        {
+          "id": "chiller_large__chw_flow__empty_pipe",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_flow"
+        },
+        {
+          "id": "chiller_large__chw_flow__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_flow"
+        },
+        {
+          "id": "chiller_large__chw_flow__air_bubbles",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_flow"
+        },
+        {
+          "id": "chiller_large__chw_flow__calibration",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_large.chw_flow"
+        }
+      ]
+    },
+    {
+      "kind": "chiller_small",
+      "instances": [
+        {
+          "names": [
+            "CH-3"
+          ],
+          "area": "Chiller hall"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "chiller_small.chw_supply_temp",
+          "observes": "chw_supply",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 25
+          },
+          "resolution": 0.1,
+          "initial": 7,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_small.chw_return_temp",
+          "observes": "chw_return",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 35
+          },
+          "resolution": 0.1,
+          "initial": 9.53289,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_small.cond_temp",
+          "observes": "cond_temp",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 10,
+            "max": 60
+          },
+          "resolution": 0.1,
+          "initial": 31.8816,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "chiller_small.power",
+          "observes": "power",
+          "unit": "kW",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 150
+          },
+          "resolution": 0.1,
+          "initial": 23.9077,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.3
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 15
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "JT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/power-meter",
+            "version": 1,
+            "ref": "streamsim/power-meter@1",
+            "digest": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81"
+          },
+          "recorded_in": "composition"
+        }
+      ],
+      "dynamics": [
+        {
+          "target": "load",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "cond_water_in",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "tariff",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "chw_flow",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "idle",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cooling",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "part_load",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "cooling",
+              "coef": 0.00263158
+            }
+          ]
+        },
+        {
+          "target": "supply_error",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "chw_supply",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 300,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "setpoint",
+              "coef": 1
+            },
+            {
+              "state": "supply_error",
+              "coef": 1
+            },
+            {
+              "state": "idle",
+              "coef": 5
+            }
+          ]
+        },
+        {
+          "target": "delta_t",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "chw_flow",
+              "coef": 0.0169492
+            }
+          ]
+        },
+        {
+          "target": "chw_return",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "chw_supply",
+              "coef": 1
+            },
+            {
+              "state": "delta_t",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "specific_power",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "power",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 1
+            },
+            {
+              "state": "specific_power",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cop_curve",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cop",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "cop_curve",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cond_temp",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 600,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            },
+            {
+              "state": "running",
+              "coef": 3
+            },
+            {
+              "state": "part_load",
+              "coef": 3
+            }
+          ]
+        },
+        {
+          "target": "heat_rejected",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 120,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "cooling",
+              "coef": 1
+            },
+            {
+              "state": "power",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "cost_rate",
+          "tier": "F1",
+          "form": "product",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1
+            },
+            {
+              "state": "tariff",
+              "coef": 1
+            }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "name": "chiller_small__set_setpoint",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            },
+            {
+              "name": "setpoint_c",
+              "type": "number",
+              "minimum": 4,
+              "maximum": 12
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [
+            {
+              "argument": "setpoint_c",
+              "state": "setpoint"
+            }
+          ],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 0 s."
+        },
+        {
+          "name": "chiller_small__start",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 30,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 30 s."
+        },
+        {
+          "name": "chiller_small__stop",
+          "risk_class": "high",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "chiller_id",
+              "type": "string"
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 10,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 10 s."
+        }
+      ],
+      "faults": [
+        {
+          "id": "chiller_small__condenser_fouling",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "cond_temp",
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_small__refrigerant_undercharge",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_supply",
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_small__compressor_wear",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "power",
+            "cop"
+          ]
+        },
+        {
+          "id": "chiller_small__load_swing",
+          "negative_class": true,
+          "onset_shape": "intermittent",
+          "affects": [
+            "load"
+          ]
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "chw_supply_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_supply_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_supply_temp"
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_supply_temp"
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_supply_temp"
+        },
+        {
+          "id": "chiller_small__chw_return_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "chw_return_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__chw_return_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "chw_return_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__chw_return_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_return_temp"
+        },
+        {
+          "id": "chiller_small__chw_return_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_return_temp"
+        },
+        {
+          "id": "chiller_small__chw_return_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.chw_return_temp"
+        },
+        {
+          "id": "chiller_small__cond_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "cond_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__cond_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "cond_temp__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__cond_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.cond_temp"
+        },
+        {
+          "id": "chiller_small__cond_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.cond_temp"
+        },
+        {
+          "id": "chiller_small__cond_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.cond_temp"
+        },
+        {
+          "id": "chiller_small__power__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "power__bias"
+          ]
+        },
+        {
+          "id": "chiller_small__power__ct_ratio",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.power"
+        },
+        {
+          "id": "chiller_small__power__stale",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.power"
+        },
+        {
+          "id": "chiller_small__power__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.power"
+        },
+        {
+          "id": "chiller_small__power__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "chiller_small.power"
+        }
+      ]
+    },
+    {
+      "kind": "ahu",
+      "instances": [
+        {
+          "names": [
+            "AHU-1"
+          ],
+          "area": "Office block"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "ahu.supply_air_temp",
+          "observes": "supply_air",
+          "unit": "degC",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 40
+          },
+          "resolution": 0.1,
+          "initial": 13,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.05
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/rtd",
+            "version": 1,
+            "ref": "streamsim/rtd@1",
+            "digest": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
+          },
+          "recorded_in": "composition"
+        },
+        {
+          "channel": "ahu.cooling_load",
+          "observes": "cooling_load",
+          "unit": "kW",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 300
+          },
+          "resolution": 0.1,
+          "initial": 63.5172,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.6
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 15
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "JT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/power-meter",
+            "version": 1,
+            "ref": "streamsim/power-meter@1",
+            "digest": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81"
+          },
+          "recorded_in": "composition"
+        }
+      ],
+      "dynamics": [
+        {
+          "target": "occupancy",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "outdoor_temp",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "chw_supply_in",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "envelope_gain",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "occ_gain",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "occupancy",
+              "coef": 60
+            }
+          ]
+        },
+        {
+          "target": "outdoor_factor",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "outdoor_temp",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "outdoor_load",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "outdoor_factor",
+              "coef": 90
+            }
+          ]
+        },
+        {
+          "target": "cooling_load",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "occ_gain",
+              "coef": 1
+            },
+            {
+              "state": "outdoor_load",
+              "coef": 1
+            },
+            {
+              "state": "envelope_gain",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "coil_margin",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "supply_air_sp",
+              "coef": 1
+            },
+            {
+              "state": "chw_supply_in",
+              "coef": -1
+            }
+          ]
+        },
+        {
+          "target": "shortfall",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "coil_margin",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "supply_air",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 120,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "supply_air_sp",
+              "coef": 1
+            },
+            {
+              "state": "shortfall",
+              "coef": 1
+            }
+          ]
+        },
+        {
+          "target": "humidity_base",
+          "tier": "F0",
+          "inputs": []
+        },
+        {
+          "target": "return_humidity",
+          "tier": "F1",
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "humidity_base",
+              "coef": 1
+            },
+            {
+              "state": "occupancy",
+              "coef": 6
+            }
+          ]
+        },
+        {
+          "target": "supply_humidity",
+          "tier": "F1",
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "supply_air",
+              "coef": 1
+            }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "name": "ahu__set_supply_air_setpoint",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "ahu_id",
+              "type": "string"
+            },
+            {
+              "name": "supply_air_c",
+              "type": "number",
+              "minimum": 10,
+              "maximum": 18
+            }
+          ],
+          "response": "declared",
+          "recorded_in": "domain_file",
+          "sets": [
+            {
+              "argument": "supply_air_c",
+              "state": "supply_air_sp"
+            }
+          ],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 300,
+            "latency_ms_sigma": 50,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 0.97
+              },
+              {
+                "mode": "slow",
+                "probability": 0.02
+              },
+              {
+                "mode": "ack_lost",
+                "probability": 0.01
+              }
+            ]
+          },
+          "statement": "Applies 1 state change(s) after a dead time of 0 s and a time constant of 0 s."
+        }
+      ],
+      "faults": [
+        {
+          "id": "ahu__coil_fouling",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "supply_air"
+          ]
+        },
+        {
+          "id": "ahu__damper_stuck_open",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "outdoor_load"
+          ]
+        },
+        {
+          "id": "ahu__coil_valve_stuck_closed",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "supply_air",
+            "cooling_load"
+          ]
+        },
+        {
+          "id": "ahu__afterhours_event",
+          "negative_class": true,
+          "onset_shape": "intermittent",
+          "affects": [
+            "occupancy"
+          ]
+        },
+        {
+          "id": "ahu__supply_air_temp__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "supply_air_temp__bias"
+          ]
+        },
+        {
+          "id": "ahu__supply_air_temp__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "supply_air_temp__bias"
+          ]
+        },
+        {
+          "id": "ahu__supply_air_temp__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.supply_air_temp"
+        },
+        {
+          "id": "ahu__supply_air_temp__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.supply_air_temp"
+        },
+        {
+          "id": "ahu__supply_air_temp__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.supply_air_temp"
+        },
+        {
+          "id": "ahu__cooling_load__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "cooling_load__bias"
+          ]
+        },
+        {
+          "id": "ahu__cooling_load__ct_ratio",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.cooling_load"
+        },
+        {
+          "id": "ahu__cooling_load__stale",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.cooling_load"
+        },
+        {
+          "id": "ahu__cooling_load__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.cooling_load"
+        },
+        {
+          "id": "ahu__cooling_load__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "ahu.cooling_load"
+        }
+      ]
+    }
+  ],
+  "not_modeled": [
+    {
+      "code": "instrument_semantics_unchecked",
+      "scope": "domain",
+      "sentence": "A library instrument was checked for unit and range only; that it measures what the reading means is not checked."
+    },
+    {
+      "code": "no_calibration_evidence",
+      "scope": "domain",
+      "sentence": "No calibration or hardware validation is attached; a passing check shows a valid interface and plausible output, not that the physics match."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_large.chw_supply",
+      "sentence": "chiller_large.chw_supply follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_large.cond_temp",
+      "sentence": "chiller_large.cond_temp follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_large.heat_rejected",
+      "sentence": "chiller_large.heat_rejected follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_small.chw_supply",
+      "sentence": "chiller_small.chw_supply follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_small.cond_temp",
+      "sentence": "chiller_small.cond_temp follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "chiller_small.heat_rejected",
+      "sentence": "chiller_small.heat_rejected follows its inputs without a clamp: no saturation or physical limit is declared."
+    },
+    {
+      "code": "saturation_not_declared",
+      "scope": "ahu.supply_air",
+      "sentence": "ahu.supply_air follows its inputs without a clamp: no saturation or physical limit is declared."
+    }
+  ]
+}

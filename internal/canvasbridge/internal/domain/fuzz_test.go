@@ -34,7 +34,7 @@ func checkPath(t *testing.T, rel string) {
 		t.Fatalf("RunJournal(%q) = %+v", rel, journal)
 	}
 	_ = SummarizeRun([]byte(rel), []byte(rel))
-	_ = Scrub(rel, "/work")
+	_ = Scrub(rel, []string{"/work"})
 	parsed, err := ParsePath(rel)
 	if err != nil {
 		if !errors.Is(err, ErrBadPath) {

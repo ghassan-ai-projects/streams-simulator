@@ -31,17 +31,17 @@ describe("creating the twin from the screen", () => {
     stubResizeObserver();
     const { fake, location, view } = await behaviourOf();
     createTwin();
-    expect(await screen.findByText("Twin ready.")).toHaveAttribute("title", domainPath);
+    expect(await screen.findByText(/^Twin created\./)).toHaveAttribute("title", expect.stringContaining(domainPath));
     expect(stepChip(/^Behaviour/)).toHaveTextContent("Created");
-    expect(stepChip(/^Check/)).toHaveTextContent("Passed");
+    expect(stepChip(/^Check/)).toHaveTextContent("Checks passed");
     expect(fake.calls.map((call) => call.name)).toContain("kind.twin");
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
     for (const row of [
       "The device definition is valid",
-      "Twin ready",
-      "The twin matches its device",
-      "The readings stay plausible",
+      "Twin created",
+      "Interface: the twin matches its device",
+      "Plausibility: readings stay plausible in a nominal day",
     ]) {
       expect(await check.findByText(row)).toBeInTheDocument();
     }
@@ -52,7 +52,7 @@ describe("creating the twin from the screen", () => {
     expect(within(details as HTMLElement).getByText("twins/cooler.twin.json")).toBeInTheDocument();
     expect(within(details as HTMLElement).getByText("3 readings · 2 commands")).toBeInTheDocument();
     expect(
-      within(details as HTMLElement).getByText(/^temperature: No instrument: a plain reading$/),
+      within(details as HTMLElement).getByText(/^temperature: No instrument: a plain reading \(suggested\)$/),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Open as a plant" }));
@@ -77,7 +77,7 @@ describe("creating the twin from the screen", () => {
     expect(await screen.findByText("Creating the twin…")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "true");
     gate.resolve(success(madeWire));
-    expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
+    expect(await screen.findByText(/^Twin created\./)).toBeInTheDocument();
   });
 
   it("puts the binary's issue in plain words on the field it names, moves to it, and drops it when the value is corrected", async () => {
@@ -102,7 +102,7 @@ describe("creating the twin from the screen", () => {
     expect(screen.getByText(/Choices are ready/)).toBeInTheDocument();
     fake.handlers.set("kind.twin", () => success(madeWire));
     createTwin();
-    expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
+    expect(await screen.findByText(/^Twin created\./)).toBeInTheDocument();
   });
 
   it("puts what the binary says of another device's reading on that device, with no way to the interface", async () => {
@@ -147,7 +147,7 @@ describe("creating the twin from the screen", () => {
     fake.handlers.delete("kind.twin");
     fake.actions.set("kind.twin", success(madeWire));
     fireEvent.click(screen.getByRole("button", { name: "Replace it" }));
-    expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
+    expect(await screen.findByText(/^Twin created\./)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Replace it" })).toBeNull();
   });
 
@@ -170,12 +170,12 @@ describe("creating the twin from the screen", () => {
     await behaviourOf(fake);
     createTwin();
     expect(await screen.findByText("Twin created, but it does not match its device.")).toBeInTheDocument();
-    expect(screen.queryByText("Twin ready.")).toBeNull();
+    expect(screen.queryByText(/^Twin created\./)).toBeNull();
     expect(screen.queryByRole("button", { name: "Open as a plant" })).toBeNull();
     expect(stepChip(/^Check/)).toHaveTextContent("Failed");
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
-    expect(check.getByText("The twin does not match its device")).toBeInTheDocument();
+    expect(check.getByText("Interface: the twin does not match its device")).toBeInTheDocument();
     expect(check.getByText("The twin no longer matches this device")).toBeInTheDocument();
     expect(check.getByText("differs from the kind file")).toBeInTheDocument();
   });
@@ -191,19 +191,19 @@ describe("creating the twin from the screen", () => {
     await behaviourOf(fake);
     createTwin();
     expect(await screen.findByText("Twin created, but the plausibility check found 1 error.")).toBeInTheDocument();
-    expect(screen.queryByText("Twin ready.")).toBeNull();
+    expect(screen.queryByText(/^Twin created\./)).toBeNull();
     expect(screen.queryByRole("button", { name: "Open as a plant" })).toBeNull();
     expect(stepChip(/^Check/)).toHaveTextContent("Failed");
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
-    expect(await check.findByText("The plausibility check found 1 error")).toBeInTheDocument();
+    expect(await check.findByText("Plausibility: the check found 1 error")).toBeInTheDocument();
     expect(check.getByText("cooler-01: pinned at its bound")).toBeInTheDocument();
   });
 
   it("calls the twin out of date as soon as a choice changes", async () => {
     await behaviourOf();
     createTwin();
-    await screen.findByText("Twin ready.");
+    await screen.findByText(/^Twin created\./);
     const group = inReading("temperature");
     fireEvent.change(group.getByLabelText("Starts at"), { target: { value: "25" } });
     expect(screen.getByText(/Choices changed since the twin was created/)).toBeInTheDocument();

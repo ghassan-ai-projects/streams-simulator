@@ -12,14 +12,14 @@ describe("a twin that already exists", () => {
   it("is shown as created when the device is reopened, offered as a plant, and replaced rather than created", async () => {
     stubResizeObserver();
     const { location, fake } = await behaviourOf(withPlant(twinBridge()));
-    expect(await screen.findByText("Twin ready.")).toHaveAttribute("title", domainPath);
+    expect(await screen.findByText(/^Twin created\./)).toHaveAttribute("title", expect.stringContaining(domainPath));
     expect(chip(/^Behaviour/)).toHaveTextContent("Created");
-    expect(chip(/^Check/)).toHaveTextContent("Passed");
+    expect(chip(/^Check/)).toHaveTextContent("Checks passed");
     expect(screen.queryByRole("button", { name: "Create twin" })).toBeNull();
     expect(fake.calls.filter((call) => call.name === "kind.twin")).toEqual([]);
     pickStep(/^Check/);
     const check = within(await screen.findByRole("region", { name: "Check of cooler" }));
-    await check.findByText("The twin matches its device");
+    await check.findByText("Interface: the twin matches its device");
     fireEvent.click(check.getByText("Technical details"));
     expect(check.getByText("sha256:t")).toBeInTheDocument();
     expect(check.queryByText("Parts")).toBeNull();
@@ -29,12 +29,12 @@ describe("a twin that already exists", () => {
 
   it("is replaced over the version on disk when the choices change", async () => {
     const { fake } = await behaviourOf(withPlant(twinBridge()));
-    await screen.findByText("Twin ready.");
+    await screen.findByText(/^Twin created\./);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Cooler B" } });
     expect(screen.getByRole("button", { name: "Replace twin" })).toHaveAttribute("aria-disabled", "false");
     expect(screen.queryByRole("button", { name: "Open as a plant" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Replace twin" }));
-    expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
+    expect(await screen.findByText(/^Twin created\./)).toBeInTheDocument();
     expect(fake.calls.filter((call) => call.name === "kind.twin").map((call) => call.args.etag)).toEqual(["d5"]);
   });
 
@@ -42,7 +42,7 @@ describe("a twin that already exists", () => {
     await behaviourOf();
     expect(screen.getByRole("button", { name: "Create twin" })).toBeInTheDocument();
     createTwin();
-    await screen.findByText("Twin ready.");
+    await screen.findByText(/^Twin created\./);
     expect(screen.getByRole("button", { name: "Replace twin" })).toBeInTheDocument();
     pickStep(/^Interface/);
     pickStep(/^Behaviour/);

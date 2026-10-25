@@ -1,0 +1,24 @@
+.lines {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+
+.line {
+  display: contents;
+}
+
+.lines dt {
+  color: var(--text-secondary);
+}
+
+.lines dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.scoring {
+  font-weight: 600;
+}

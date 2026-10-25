@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { localPreferences, mediaSystemTheme } from "..";
+import { localPreferences, mediaSystemTheme, sessionPreferences } from "..";
 
 describe("browser adapters", () => {
   it("reads and writes preferences and survives a storage that throws", () => {
@@ -17,6 +17,23 @@ describe("browser adapters", () => {
     expect(localPreferences(broken).read("k")).toBeNull();
     expect(() => {
       localPreferences(broken).write("k", "dark");
+    }).not.toThrow();
+  });
+
+  it("keeps viewer preferences for the tab only, and is silent when the browser refuses session storage", () => {
+    const store = sessionPreferences(window);
+    store.write("t", "1");
+    expect(store.read("t")).toBe("1");
+    expect(window.localStorage.getItem("t")).toBeNull();
+    const blocked = {
+      get sessionStorage(): Storage {
+        throw new Error("blocked");
+      },
+    } as unknown as Window;
+    const refused = sessionPreferences(blocked);
+    expect(refused.read("t")).toBeNull();
+    expect(() => {
+      refused.write("t", "2");
     }).not.toThrow();
   });
 

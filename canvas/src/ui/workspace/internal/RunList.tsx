@@ -6,7 +6,16 @@ import type { Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
-import { counted, plantsOf, runFacts, runModeWords, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
+import {
+  counted,
+  openRunWords,
+  plantsOf,
+  runFacts,
+  runModeWords,
+  runRows,
+  unfinishedReason,
+  whenOf,
+} from "../../../model/workspace";
 import { SectionHeading } from "./SectionHeading";
 import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
@@ -27,22 +36,30 @@ function moreLabel(count: number): string {
 }
 
 function detailParts(row: RunRow): readonly string[] {
-  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "");
+  return [
+    row.run.name === undefined ? "" : row.plantTitle,
+    row.run.worldId,
+    whenOf(row.run.recordedAt),
+    ...runFacts(row.run),
+  ].filter((part) => part !== "");
 }
 
 function detail(row: RunRow): string {
   return detailParts(row).join(" · ");
 }
 
+function OpenStatus({ row }: { readonly row: RunRow }) {
+  const running = row.run.running;
+  return (
+    <span className={running ? badgeStyles.running : badgeStyles.unfinished}>
+      <Radio size={running ? 14 : 12} aria-hidden="true" />
+      {openRunWords(row.run)}
+    </span>
+  );
+}
+
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
-  if (!row.run.ended) {
-    return (
-      <span className={badgeStyles.unfinished}>
-        <Radio size={12} aria-hidden="true" />
-        {row.run.connected === "running" ? "Running" : "Did not finish"}
-      </span>
-    );
-  }
+  if (!row.run.ended) return <OpenStatus row={row} />;
   if (!row.run.complete) {
     return (
       <span className={badgeStyles.badge} title={unfinishedReason(row.run)}>
@@ -83,8 +100,8 @@ function Row({
     <li className={rowStyles.item}>
       <span className={rowStyles.lines}>
         <span className={rowStyles.line}>
-          <span className={rowStyles.name} title={row.plantTitle}>
-            {row.plantTitle}
+          <span className={rowStyles.name} title={row.run.name ?? row.plantTitle}>
+            {row.run.name ?? row.plantTitle}
           </span>
           <ModeBadge row={row} />
         </span>

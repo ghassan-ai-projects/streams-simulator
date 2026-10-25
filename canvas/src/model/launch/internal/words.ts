@@ -12,25 +12,35 @@ function callCountWords(plan: LaunchPlan): string {
   return plan.calls.length === 0 ? "" : counted(plan.calls.length, "effector call");
 }
 
+function deliveryCountWords(plan: LaunchPlan): string {
+  return plan.perturbations.length === 0 ? "" : counted(plan.perturbations.length, "delivery condition");
+}
+
 export function disturbanceWords(plan: LaunchPlan): string {
-  const faults = faultCountWords(plan);
-  const calls = callCountWords(plan);
-  return calls === "" ? faults : `${faults} and ${calls}`;
+  const parts = [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)].filter((part) => part !== "");
+  return parts.length < 2 ? (parts[0] ?? "") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1) ?? ""}`;
+}
+
+function disturbanceParts(plan: LaunchPlan): readonly string[] {
+  if (plan.recovered === true && !plan.explore) return [callCountWords(plan)];
+  return [faultCountWords(plan), deliveryCountWords(plan), callCountWords(plan)];
 }
 
 export function planSummary(plan: LaunchPlan, length: string): string {
-  return [
-    `${length} of simulated time`,
-    plan.explore ? "Explore" : "Evaluate",
-    faultCountWords(plan),
-    callCountWords(plan),
-  ]
+  return [`${length} of simulated time`, plan.explore ? "Explore" : "Evaluate", ...disturbanceParts(plan)]
     .filter((part) => part !== "")
     .join(" · ");
 }
 
 export function modeWords(explore: boolean): string {
-  return explore ? "The truth is visible after the run; not for scoring." : evaluateRule;
+  return explore ? "The truth is visible while the run is going; this run is not for scoring." : evaluateRule;
+}
+
+export const unrecoveredWords =
+  "The plan of this run could not be recovered because it did not finish; these are fresh settings.";
+
+export function freshSettingsWords(explore: boolean): string {
+  return `${unrecoveredWords} The mode is the one the run opened with: ${explore ? "Explore" : "Evaluate"}.`;
 }
 
 export function problemWords(problems: readonly PlanProblem[]): string {
@@ -53,7 +63,10 @@ function fieldName(problem: PlanProblem): string {
     case "call":
       return `Effector call ${String(problem.index + 1)}`;
     case "fault":
+    case "faultEnd":
       return `Fault ${String(problem.index + 1)}`;
+    case "delivery":
+      return `Delivery condition ${String(problem.index + 1)}`;
   }
 }
 

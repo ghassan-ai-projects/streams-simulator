@@ -13,6 +13,10 @@ import (
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	return r.injectFault(entityID, faultID, onsetNS, params)
+}
+
+func (r *Run) injectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	if err := r.refuseWhenFinished("InjectFault"); err != nil {
 		return "", err
 	}

@@ -1,0 +1,90 @@
+{
+  "a": {
+    "digest": "sha256:5435a778e54391caddf1454bf4df24f68e3f97900b0ac5af22b92369e40e043c",
+    "id": "arduino-thermal-twin",
+    "source": {
+      "kind": "file",
+      "label": "workspace/before.domain.json"
+    },
+    "title": "Arduino thermal bench twin, scaffolded",
+    "version": "0.1.0"
+  },
+  "b": {
+    "digest": "sha256:36551cb9c4ec8dc72c7c64edd36c75c908ab1e3731512f3822d4996a27db073f",
+    "id": "arduino-thermal-twin",
+    "source": {
+      "kind": "file",
+      "label": "workspace/after.domain.json"
+    },
+    "title": "Arduino thermal bench twin, scaffolded",
+    "version": "0.1.0"
+  },
+  "domain_changes": [],
+  "identity": {
+    "same_digest": false,
+    "same_id": true,
+    "same_id_and_version_different_digest": true,
+    "same_version": true
+  },
+  "kinds": [
+    {
+      "changes": [
+        {
+          "after": -0.03,
+          "before": -0.02,
+          "code": "gain_changed",
+          "field": "coef",
+          "section": "dynamics",
+          "sentence": "thermal_sensor/dynamics/temperature_value/inputs/duty_permille_value@fan_drives_thermal_sensor: coef changed from -0.02 to -0.03.",
+          "subject": "thermal_sensor/dynamics/temperature_value/inputs/duty_permille_value@fan_drives_thermal_sensor"
+        }
+      ],
+      "instances": {
+        "after": {
+          "count": 1,
+          "id_templates": [],
+          "names": [
+            "zone-01"
+          ]
+        },
+        "before": {
+          "count": 1,
+          "id_templates": [],
+          "names": [
+            "zone-01"
+          ]
+        }
+      },
+      "kind": "thermal_sensor",
+      "relations": [
+        {
+          "from_kind": "fan",
+          "links": [
+            "fan-01\u003ezone-01"
+          ],
+          "to_kind": "thermal_sensor",
+          "type": "fan_drives_thermal_sensor"
+        }
+      ],
+      "status": "changed"
+    }
+  ],
+  "schema_version": "0.1",
+  "summary": {
+    "changes": 1,
+    "kinds_added": 0,
+    "kinds_changed": 1,
+    "kinds_removed": 0
+  },
+  "unchanged_summary": {
+    "commands": 4,
+    "dynamics": 0,
+    "faults": 14,
+    "instance_sets": 3,
+    "kinds": 2,
+    "link_types": 1,
+    "links": 1,
+    "readings": 5,
+    "states": 8
+  }
+}

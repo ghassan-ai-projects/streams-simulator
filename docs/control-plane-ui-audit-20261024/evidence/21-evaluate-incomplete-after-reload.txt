@@ -1,0 +1,150 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - button "Audit fan thermal response"
+      - heading "Run w-2" [active] [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Run details panel" [pressed]:
+    - text: Run details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - 'generic "Evaluate: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends."':
+    - text: Evaluate
+  - generic: 6 min
+  - button "About this run":
+  - 'generic "Incomplete: run.json is absent: the run is still open or did not end"':
+    - text: Did not finish
+  - 'generic "run.json is absent: the run is still open or did not end"'
+  - status: Did not finish
+  - button "Open plant"
+  - button "Set up another run":
+    - text: Set up another run
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Plant 3":
+      - generic "Plant"
+      - generic: "3"
+    - list:
+      - button "fan-01 fan":
+        - generic: fan-01
+        - generic: fan
+      - button "thermal-sensor-01 thermal sensor":
+        - generic: thermal-sensor-01
+        - generic: thermal sensor
+      - button "ble-sensor-node-01 ble sensor node":
+        - generic: ble-sensor-node-01
+        - generic: ble sensor node
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Run w-2":
+    - paragraph
+    - status
+    - button "Play":
+      - text: Play
+    - group "Playback speed":
+      - button "1×"
+      - button "10×"
+      - button "60×" [pressed]
+      - button "600×"
+    - generic: 00:00:00
+    - generic: of 00:06:00
+    - group "Playback steps":
+      - 'button "Previous event: none" [disabled]':
+      - button "Back 10 minutes":
+      - button "Forward 10 minutes":
+      - 'button "Next event: none" [disabled]':
+    - 'button "Jump to alarm: none" [disabled]':
+    - generic: 00:00:00
+    - slider "Playback time": "0"
+    - paragraph: Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
+    - list "Events"
+    - paragraph
+    - paragraph: No faults or effector calls in this run
+    - generic "474 observations · loading"
+    - 'alert "Not checked: this run could not be replayed for its verdict. the run is incomplete: the run did not close."':
+      - generic: "Not checked: this run could not be replayed for its verdict."
+      - generic: "the run is incomplete: the run did not close."
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 100 %
+      - generic: Zoom 100 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "fan-01, fan, 0 inputs, 0 outputs":
+        - generic "fan-01"
+        - generic "fan"
+        - term: level percent
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+      - group "thermal-sensor-01, thermal sensor, 0 inputs, 0 outputs":
+        - generic "thermal-sensor-01"
+        - generic "thermal sensor"
+        - term: temperature
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+        - term: humidity
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+      - group "ble-sensor-node-01, ble sensor node, 0 inputs, 0 outputs":
+        - generic "ble-sensor-node-01"
+        - generic "ble sensor node"
+        - term: sensor 1
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+        - term: sensor 2
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+        - term: sensor 3
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+        - term: sensor 4
+        - definition:
+          - generic "no reading yet":
+            - text: –
+            - generic: no reading yet
+        - term: +1 more
+        - definition: in Inspect
+      - generic "Plant · 3 nodes":
+        - generic: Plant
+        - generic: 3 nodes
+  - complementary "Run details":
+    - group "Run details view":
+      - button "Report" [pressed]
+      - button "Inspect"
+    - region "Report":
+      - 'generic "Incomplete: run.json is absent: the run is still open or did not end"'
+      - region "True results":
+        - heading "True results" [level=2]
+        - paragraph: "Not available: sealed until the run ends"
+      - region "Scoring":
+        - heading "Scoring" [level=2]
+        - paragraph: "Not scored: no outside system is connected to this run."
+        - generic "For developers"

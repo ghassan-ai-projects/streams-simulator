@@ -1,5 +1,6 @@
 import type { ComponentSpec } from "../../model/plant";
 import type { LibraryEntry, Presets } from "../../model/plant";
+import type { LintReport } from "./devices";
 import type { ComposeSummary, Diagnostic, FileContent, Outcome, CompositionIssue } from "./shared";
 
 export type EditorFailure =
@@ -15,6 +16,7 @@ export interface EditorGateway {
   library(): Promise<Outcome<readonly LibraryEntry[], EditorFailure>>;
   component(ref: string): Promise<Outcome<ComponentSpec, EditorFailure>>;
   presets(ref: string): Promise<Outcome<Presets, EditorFailure>>;
+  lint(path: string): Promise<Outcome<LintReport, EditorFailure>>;
   writeFile(
     path: string,
     content: string,

@@ -4,10 +4,14 @@ import {
   kindFacts,
   metricChoiceOf,
   partsWords,
+  suggestedWords,
+  chosenWords,
   takesInstrument,
 } from "../../../model/devices";
 import type { Built, TwinDraft } from "./twinDraft";
+import { scopeOf } from "./twinScope";
 import { builtOf, pairsOf } from "./twinSelectors";
+import { isSuggested } from "./twinSuggestions";
 
 export interface CheckFact {
   readonly label: string;
@@ -24,7 +28,11 @@ function instrumentLines(twin: TwinDraft): readonly string[] {
       .filter((metric) => metric.name !== "" && takesInstrument(metric))
       .map((metric) => {
         const chosen = metricChoiceOf(choice, metric.key).instrument;
-        return `${metric.name}: ${chosenInstrumentWords(chosen, twin.instruments[catalogueKey(metric)] ?? [])}`;
+        const words = chosenInstrumentWords(chosen, twin.instruments[catalogueKey(metric)] ?? []);
+        const label = isSuggested(twin, { path: choice.kind, key: metric.key, field: "instrument" })
+          ? suggestedWords
+          : chosenWords;
+        return `${metric.name}: ${words} (${label.toLowerCase()})`;
       }),
   );
 }
@@ -57,11 +65,21 @@ function builtFacts(built: Built): readonly CheckFact[] {
   ];
 }
 
+function scopeFacts(twin: TwinDraft): readonly CheckFact[] {
+  const { excluded, blocked } = scopeOf(twin);
+  const reasons = (list: typeof excluded) => list.map(({ name, reason }) => `${name}: ${reason}`);
+  return [
+    ...(excluded.length === 0 ? [] : [fact("Left out of the twin", ...reasons(excluded))]),
+    ...(blocked.length === 0 ? [] : [fact("Blocking the twin", ...reasons(blocked))]),
+  ];
+}
+
 export function checkFacts(twin: TwinDraft): readonly CheckFact[] {
   const lines = instrumentLines(twin);
   const built = builtOf(twin);
   return [
     fact("Choices file", twin.choicesPath),
+    ...scopeFacts(twin),
     fact("Readings and commands", countsOf(twin)),
     fact("Instruments", ...(lines.length === 0 ? ["None: every reading is a plain reading"] : lines)),
     ...(built === null ? [] : builtFacts(built)),

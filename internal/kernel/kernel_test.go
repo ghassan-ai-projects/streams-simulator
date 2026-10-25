@@ -41,6 +41,9 @@ func TestTheKernelFacadeReachesEveryEdge(t *testing.T) {
 	if names, err := Names(dir); err != nil || len(names) != 1 {
 		t.Fatalf("names %v %v", names, err)
 	}
+	if names, err := DirectoryNames(filepath.Dir(dir)); err != nil || len(names) != 1 || names[0] != "out" {
+		t.Fatalf("directory names %v %v", names, err)
+	}
 	if raw, err := ReadRegular(path, 1); string(raw) != "2" || err != nil {
 		t.Fatalf("regular read %q %v", raw, err)
 	}

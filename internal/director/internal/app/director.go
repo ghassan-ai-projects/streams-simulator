@@ -44,13 +44,14 @@ type Director struct {
 	OutDir           string
 	ctx              context.Context
 	seq              int
+	jobs             *jobRegistry
 }
 
 func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Adapter, outDir string) *Director {
 	d := &Director{
 		domains: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
 		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
-		OutDir: outDir, ctx: ctx,
+		OutDir: outDir, ctx: ctx, jobs: newJobRegistry(),
 	}
 	d.Truth = truth.NewStore(d.runIsOpen)
 	return d

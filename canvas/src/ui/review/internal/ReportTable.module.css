@@ -31,7 +31,7 @@
 .table .id {
   min-width: 8ch;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .table .number,
@@ -81,14 +81,15 @@
 }
 
 .effector {
-  overflow-wrap: anywhere;
+  min-width: 9ch;
+  overflow-wrap: break-word;
 }
 
 .outcome {
-  width: 1%;
-  min-width: 7em;
+  width: 40%;
+  min-width: 8em;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .text {

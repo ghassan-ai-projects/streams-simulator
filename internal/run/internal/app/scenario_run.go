@@ -36,13 +36,20 @@ func RunScenario(ctx context.Context, scenario *model.Scenario, options Scenario
 		return RunSummary{}, err
 	}
 	cfg := ScenarioConfig(scenario, spec, adap, options.SinkName, options.SinkTarget)
-	if err := CheckScenario(ctx, cfg, scenario); err != nil {
-		return RunSummary{}, &ScenarioCheckError{Err: err}
+	if err := CheckScenarioPlan(ctx, cfg, scenario); err != nil {
+		return RunSummary{}, err
 	}
 	cfg.JournalDir, cfg.Explore = options.OutDir, options.Explore
 	summary, err := execute(ctx, cfg, scenario, options.OutDir)
 	summary.ImplementsChecked = checked
 	return summary, err
+}
+
+func CheckScenarioPlan(ctx context.Context, cfg Config, scenario *model.Scenario) error {
+	if err := CheckScenario(ctx, cfg, scenario); err != nil {
+		return &ScenarioCheckError{Err: err}
+	}
+	return nil
 }
 
 func loadChecked(scenario *model.Scenario, options ScenarioRunOptions) (*domain.Compiled, *model.Adapter, []model.ImplementsChecked, error) {

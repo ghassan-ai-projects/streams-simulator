@@ -1,6 +1,6 @@
 import { cx, panel, shared } from "../../primitives";
 import { Plus } from "lucide-react";
-import type { CallProblem, Draft, DraftCall, PlanProblem } from "../../../model/launch";
+import type { CallProblem, Draft, DraftCall, NowDraft, PlanProblem } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { effectorNamesOf, hasEffectors } from "../../../model/plant";
 import { humanise } from "../../../model/shared/words";
@@ -21,14 +21,14 @@ interface CallRowProps {
 
 interface EffectorPickProps {
   readonly plant: Plant;
-  readonly call: DraftCall;
+  readonly call: NowDraft;
   readonly label: string;
   readonly id: string;
   readonly problem: string;
-  readonly update: (next: Partial<DraftCall>) => void;
+  readonly update: (next: Partial<NowDraft>) => void;
 }
 
-function EffectorPick({ plant, call, label, id, problem, update }: EffectorPickProps) {
+export function EffectorPick({ plant, call, label, id, problem, update }: EffectorPickProps) {
   return (
     <span className={styles.sentence}>
       calls{" "}

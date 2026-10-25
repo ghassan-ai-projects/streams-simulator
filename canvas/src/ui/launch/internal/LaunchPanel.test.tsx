@@ -6,8 +6,7 @@ import { parsePlant } from "../../../model/plant";
 import type { FakeBridge } from "../../../test/fakeBridge";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { stubScrollMetrics } from "../../../test/dom";
-import { HeldBridge } from "../../../test/heldBridge";
-import { launchBridge, launchHarness } from "../../../test/launchFixture";
+import { elapse, launchBridge, launchHarness } from "../../../test/launchFixture";
 import { domain } from "../../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
@@ -62,16 +61,27 @@ describe("launch panel", () => {
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
       await Promise.resolve();
     });
+    await act(async () => {
+      await elapse(timers, 500);
+    });
     act(() => {
       timers.advance(2000);
     });
     expect(onFinished).toHaveBeenCalledWith("w-7");
-    expect(fake.calls[0]).toEqual({ name: "world.create", args: { domain: "mini", seed: 9, explore: false } });
-    expect(fake.calls.find((call) => call.name === "fault.inject")?.args).toEqual({
-      world_id: "w-7",
-      entity_id: "CH-1",
-      fault: "chiller__fouling",
+    expect(fake.jobCalls[0]).toEqual({
+      name: "job.start",
+      args: {
+        domain: "mini",
+        seed: 9,
+        explore: false,
+        duration_s: 1800,
+        rate: 0,
+        faults: [{ entity_id: "CH-1", fault: "chiller__fouling", at_s: 600 }],
+        perturbations: [],
+        calls: [],
+      },
     });
+    expect(fake.calls.map((call) => call.name)).not.toContain("fault.inject");
   });
 
   it("offers to watch the run by default, says how long that takes, and can run as fast as possible", () => {
@@ -98,7 +108,7 @@ describe("launch panel", () => {
       "Fault 1 needs an instance and a fault.",
     );
     expect(screen.getByRole("status")).toHaveTextContent(/^2 to fix before starting/);
-    expect(fake.calls).toEqual([]);
+    expect(fake.jobCalls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Remove fault 1" }));
     expect(screen.getByRole("button", { name: "Add fault" })).toHaveFocus();
     expect(screen.getByText("None: no fault is scheduled for this run.")).toBeInTheDocument();
@@ -117,18 +127,18 @@ describe("launch panel", () => {
     const fault = screen.getByLabelText("Fault 1 fault");
     expect(fault).toHaveFocus();
     expect(fault).toHaveAccessibleDescription("Fault 1 needs a fault.");
-    expect(fake.calls).toEqual([]);
+    expect(fake.jobCalls).toEqual([]);
   });
 
   it("shows the binary's refusal and returns to the plan", async () => {
     const fake = launchBridge();
-    fake.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad domain")));
+    fake.actions.set("job.start", failed(cannedFailure("domain_invalid", 422, "bad domain")));
     renderPanel(fake);
     change("Seed", "4");
     fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The run did not finish. The run stopped before it finished.",
+      "The run did not start. bad domain. Check the plan and start again.",
     );
     expect(screen.getByText("bad domain")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change the plan" })).toHaveFocus();
@@ -137,35 +147,39 @@ describe("launch panel", () => {
   });
 
   it("shows progress and stops early, keeping the shorter run and opening it", async () => {
-    const fake = new HeldBridge();
+    const fake = launchBridge();
     const { onFinished, timers } = renderPanel(fake);
-    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
     expect(screen.getByText("30 min of simulated time · Explore · no faults")).toBeInTheDocument();
-    expect(screen.getByText("Running · 00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
+    expect(screen.getByText("Running · 00:00:00 of 00:30:00 simulated · 60 s per s")).toBeInTheDocument();
     await act(async () => {
-      fake.release();
-      await Promise.resolve();
+      await elapse(timers, 5000);
     });
-    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00/);
+    expect(screen.getByText("Running · 00:05:00 of 00:30:00 simulated · 60 s per s")).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
+      await elapse(timers, 500);
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:05:00 of 00:30:00/);
     act(() => {
       timers.advance(2000);
     });
     expect(onFinished).toHaveBeenCalledWith("w-7");
-    expect(fake.calls.at(-1)?.name).toBe("run.end");
+    expect(fake.calls.some((call) => call.name === "job.stop")).toBe(true);
   });
 
-  it("says which partial run was kept when the binary refuses a step", async () => {
+  it("says which partial run was kept when the job fails", async () => {
     const fake = launchBridge();
-    fake.actions.set("clock.advance", failed(cannedFailure("world_gone", 404, "the world is gone")));
-    renderPanel(fake);
-    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
+    const { timers } = renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The run did not finish. The run stopped before it finished. Check the plan and start again. What ran before the failure is kept as run w-7.",
+    await screen.findByText("Running Mini plant as run w-7");
+    fake.jobs.fail("job failed: the world is gone");
+    await act(async () => {
+      await elapse(timers, 500);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The run did not finish. job failed: the world is gone. Check the plan and start again. What ran before the failure is kept as run w-7.",
     );
   });
 });
@@ -198,11 +212,12 @@ describe("launch panel picking", () => {
 
 describe("launch panel lifetime", () => {
   it("does not jump to a run that finished while nobody watched it", async () => {
-    const { launch } = launchHarness(launchBridge());
+    const { launch, timers } = launchHarness(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
-      { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
+      { seed: 1, durationS: 60, explore: true, faults: [], perturbations: [], calls: [] },
     );
+    await elapse(timers, 500);
     expect(launch.snapshot()).toMatchObject({ phase: "done" });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
@@ -219,6 +234,7 @@ describe("launch panel lifetime", () => {
       durationS: 7200,
       explore: false,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
+      perturbations: [],
       calls: [],
     });
     const view = render(
@@ -241,8 +257,8 @@ describe("launch panel lifetime", () => {
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
-      { seed: 5, durationS: 90, explore: true, faults, calls: [] },
-      ["1 delivery perturbation"],
+      { seed: 5, durationS: 90, explore: true, faults, perturbations: [], calls: [] },
+      ["1 environment change"],
       "w-4",
     );
     render(
@@ -251,7 +267,7 @@ describe("launch panel lifetime", () => {
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");
     expect(screen.getByRole("note")).toHaveTextContent(
-      "Prefilled from w-4: seed, duration, mode and faults. Change them if needed. Not copied: 1 delivery perturbation.",
+      "Prefilled from w-4: name, purpose, seed, duration, mode, pace, faults with their ends, delivery conditions and effector calls. Change them if needed. Not copied: 1 environment change.",
     );
   });
 });

@@ -150,7 +150,7 @@ func TestAStartChecksThePlanThenRunsAChildTheBridgeOwnsWithItsOwnRunFolder(t *te
 	if status.Domain != "arduino-thermal" || status.State != domain.SessionRunning || !rig.bridge.runIsRunning("c-1") {
 		t.Fatalf("status = %+v, want the session's own domain and plan, counted as a running run", status)
 	}
-	listing, err := rig.bridge.Workspace()
+	listing, err := rig.bridge.Workspace(context.Background())
 	if err != nil || len(listing.Runs) != 1 || !listing.Runs[0].Connected || !listing.Runs[0].Running ||
 		string(listing.Runs[0].Plan) != sessionCheck {
 		t.Fatalf("runs = %+v, %v, want c-1 listed as a running connected session with its plan check", listing.Runs, err)

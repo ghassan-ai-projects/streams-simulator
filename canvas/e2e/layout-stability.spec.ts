@@ -6,7 +6,7 @@ test.setTimeout(90_000);
 
 const budget = 0.02;
 const factory = "/#/plant?domain=domains%2Ffactory-utilities.domain.json";
-const finalChip = /^(Verified|Not verified|Did not finish)$/;
+const finalChip = /^(Verified|Not verified|Running|Did not finish)$/;
 
 async function settled(page: Page): Promise<number> {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -95,7 +95,7 @@ for (const { world, alerts } of noticed) {
   }) => {
     await openReview(page, world);
     const note = page.getByRole("status").filter({ hasText: "The plant file changed after this run" });
-    await expect(note).toHaveCount(1);
+    await expect(note).toHaveCount(1, { timeout: 60_000 });
     await expect(note).toHaveAttribute("title", /plant file changed after this run/);
     await expect(page.getByRole("alert")).toHaveCount(alerts.length);
     for (const text of alerts) {

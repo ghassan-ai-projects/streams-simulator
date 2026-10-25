@@ -1,6 +1,7 @@
 import type { AreaRef } from "../../shared/areaTree";
 import { groupBy } from "../../shared/collect";
 import { list, record, text } from "../../shared/json";
+import { displayUnit } from "../../shared/units";
 import type { EffectorSpec } from "./effectors";
 import { parseEffectors } from "./effectors";
 
@@ -215,6 +216,11 @@ export function faultsOf(plant: Plant, entity: string): readonly string[] | null
 
 export function effectorOf(plant: Plant, entity: string, effector: string): EffectorSpec | undefined {
   return kindOfEntity(plant, entity)?.effectorSpecs.find((spec) => spec.name === effector);
+}
+
+export function argUnitOf(plant: Plant, entity: string, effector: string, arg: string): string {
+  const declared = effectorOf(plant, entity, effector)?.args.find((each) => each.name === arg)?.unit ?? "";
+  return displayUnit(declared);
 }
 
 export function effectorNamesOf(plant: Plant, entity: string): readonly string[] {

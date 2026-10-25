@@ -66,7 +66,20 @@ describe("a device that is not ready for a twin cannot hold another one back", (
     await twin.include(pumpPath);
     expect(ready(twin).members.map((member) => member.path)).toEqual([coolerPath]);
     expect(ready(twin).held).toEqual([
-      { path: pumpPath, name: "pump_monitor", words: "pump_monitor still needs a unit and a resolution", adding: true },
+      {
+        path: pumpPath,
+        name: "pump_monitor",
+        words: "pump_monitor still needs a unit and a resolution",
+        issues: [
+          expect.objectContaining({
+            owner: "reading",
+            ownerName: "pressure",
+            sentence: "Reading 'pressure' needs a unit.",
+          }),
+          expect.objectContaining({ sentence: "Reading 'pressure' needs a resolution." }),
+        ] as unknown[],
+        adding: true,
+      },
     ]);
     expect(suggestions(fake).at(-1)).toEqual({ kinds: ["cooler", "pump_monitor"] });
     expect(createBlock(ready(twin), { phase: "idle" })).toBeNull();
@@ -83,7 +96,7 @@ describe("a device that is not ready for a twin cannot hold another one back", (
     const { twin } = await opened(fake);
     await twin.include(pumpPath);
     expect(ready(twin).held).toEqual([
-      { path: pumpPath, name: "pump_monitor", words: "pump_monitor could not be read", adding: true },
+      { path: pumpPath, name: "pump_monitor", words: "pump_monitor could not be read", issues: [], adding: true },
     ]);
     twin.leave(pumpPath);
     expect(ready(twin).held).toEqual([]);
@@ -98,7 +111,16 @@ describe("a device that is not ready for a twin cannot hold another one back", (
     const { twin } = await opened(fake);
     expect(ready(twin).members).toHaveLength(2);
     expect(ready(twin).held).toEqual([
-      { path: sensorPath, name: "sensor", words: "sensor still needs a unit and a resolution", adding: false },
+      {
+        path: sensorPath,
+        name: "sensor",
+        words: "sensor still needs a unit and a resolution",
+        issues: [
+          expect.objectContaining({ ownerName: "humidity" }),
+          expect.objectContaining({ ownerName: "humidity" }),
+        ] as unknown[],
+        adding: false,
+      },
     ]);
     expect(createBlock(ready(twin), { phase: "idle" })).toBe("sensor still needs a unit and a resolution.");
     fake.addFile(sensorPath, sensorDocument, "k10");

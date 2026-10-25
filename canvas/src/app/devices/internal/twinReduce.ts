@@ -24,6 +24,7 @@ export function fresh(path: string, loaded: Loaded): TwinDraft {
     build: { kind: "idle" },
     issues: [],
     held: loaded.held,
+    reviewed: [],
   };
 }
 

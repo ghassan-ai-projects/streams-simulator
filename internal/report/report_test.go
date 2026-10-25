@@ -11,7 +11,7 @@ import (
 
 func TestBuildAndRenderTheFacadeCoverBothFormats(t *testing.T) {
 	t.Parallel()
-	built, err := report.Build(t.Context(), testsupport.ReportRun())
+	built, err := build(t.Context(), testsupport.ReportRun())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestBuildAndRenderTheFacadeCoverBothFormats(t *testing.T) {
 
 func TestRenderNamesAFormatItDoesNotKnow(t *testing.T) {
 	t.Parallel()
-	built, err := report.Build(t.Context(), testsupport.ReportRun())
+	built, err := build(t.Context(), testsupport.ReportRun())
 	if err != nil {
 		t.Fatal(err)
 	}

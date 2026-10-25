@@ -13,6 +13,7 @@ export interface Equipment {
   readonly use: string;
   readonly as: string;
   readonly preset: string;
+  readonly parameters: Readonly<Record<string, unknown>>;
   readonly names: readonly string[];
   readonly area: string;
 }
@@ -48,6 +49,7 @@ export function equipmentOf(doc: Composition): readonly Equipment[] {
       use: text(entry.use),
       as: text(entry.as),
       preset: text(entry.preset),
+      parameters: record(entry.parameters),
       names: names.length > 0 ? names : [text(entry.id_template)].filter(Boolean),
       area: text(entry.area),
     };

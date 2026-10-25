@@ -48,11 +48,14 @@ const command: SessionCommand = {
 
 describe("session readings", () => {
   it.each([
-    [reading("good", "good"), { valueText: "28 degC", stateWords: "good" }],
-    [reading("simulated", "good"), { valueText: "28 degC", stateWords: "simulated · good" }],
-    [reading("stale", "stale"), { valueText: "—", stateWords: "stale" }],
-    [reading("untrusted", "warming_up"), { valueText: "—", stateWords: "untrusted · warming up" }],
-    [reading("good", "", null), { valueText: "—", stateWords: "good" }],
+    [reading("good", "good"), { valueText: "28 °C", stateWords: "good", unitTitle: "unit code: degC" }],
+    [
+      reading("simulated", "good"),
+      { valueText: "28 °C", stateWords: "simulated · good", unitTitle: "unit code: degC" },
+    ],
+    [reading("stale", "stale"), { valueText: "—", stateWords: "stale", unitTitle: "" }],
+    [reading("untrusted", "warming_up"), { valueText: "—", stateWords: "untrusted · warming up", unitTitle: "" }],
+    [reading("good", "", null), { valueText: "—", stateWords: "good", unitTitle: "" }],
   ])("words a reading without showing a value that is not current", (shown, words) => {
     expect(readingWords(shown)).toEqual(words);
   });

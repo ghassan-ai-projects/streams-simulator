@@ -1,6 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { browserClipboard, browserClock, hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
+import {
+  browserClipboard,
+  browserClock,
+  browserFileSaver,
+  documentDownloads,
+  hashLocation,
+  localPreferences,
+  mediaSystemTheme,
+  sessionPreferences,
+} from "./adapters/browser";
 import { bridgeAdapter, browserTransport } from "./adapters/bridge";
 import { createDeviceDesk, createDeviceSession } from "./app/devices";
 import { createEditorSession } from "./app/editor";
@@ -9,7 +18,7 @@ import { createPlantMaker, createPlantSession } from "./app/plant";
 import { createReviewSession } from "./app/review";
 import { createSession } from "./app/session";
 import { createNavigationStore, createPanelStore, createThemeStore } from "./app/shell";
-import { createWorkspaceStore } from "./app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "./app/workspace";
 import { App } from "./ui/shell";
 import "./ui/theme/tokens.css";
 import "./ui/theme/base.css";
@@ -20,25 +29,31 @@ if (root) {
   const preferences = localPreferences(window.localStorage);
   const themes = createThemeStore(preferences, mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")));
   const adapters = bridgeAdapter(browserTransport());
+  const workspace = createWorkspaceStore(adapters.workspace);
   const time = browserClock();
   const panels = createPanelStore(preferences);
   const navigation = createNavigationStore(hashLocation(window));
   const plants = createPlantSession(adapters.plant);
   const editor = createEditorSession(adapters.editor);
   const clipboard = browserClipboard(window.navigator.clipboard);
-  const review = createReviewSession(adapters.review, time, time, clipboard);
-  const liveReview = createReviewSession(adapters.review, time, time, clipboard);
+  const saver = browserFileSaver(documentDownloads(window));
+  const viewer = sessionPreferences(window);
+  const review = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
+  const liveReview = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
+  const watchReview = createReviewSession(adapters.review, time, time, clipboard, saver, viewer);
   createRoot(root).render(
     <StrictMode>
       <App
         stores={{
           themes,
           session: createSession(adapters.session),
-          workspace: createWorkspaceStore(adapters.workspace),
+          workspace,
+          provenance: createProvenanceSession(adapters.provenance, workspace),
           navigation,
           plants,
           review,
           liveReview,
+          watchReview,
           launch: createLaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,

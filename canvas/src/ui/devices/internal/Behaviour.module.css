@@ -172,6 +172,10 @@
   color: var(--status-alarm);
 }
 
+.checkWarn {
+  color: var(--status-warn);
+}
+
 .checkIdle {
   color: var(--text-secondary);
 }

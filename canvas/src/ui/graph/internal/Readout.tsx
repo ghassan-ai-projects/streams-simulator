@@ -3,23 +3,23 @@ import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
 import styles from "./readout.module.css";
 
-function Missing({ observed }: { readonly observed: boolean }) {
-  const words = observed ? "no reading yet" : "not observed";
+function Missing({ row }: { readonly row: ReadoutRow }) {
   return (
-    <span className={styles.notObserved} title={words}>
-      <span aria-hidden="true">{observed ? "–" : "·"}</span>
-      <span className="sr-only">{words}</span>
+    <span className={styles.notObserved} title={row.absent}>
+      <span aria-hidden="true">{row.observed ? "–" : "·"}</span>
+      <span className="sr-only">{row.absent}</span>
     </span>
   );
 }
 
 function Value({ row }: { readonly row: ReadoutRow }) {
-  if (!row.present) return <Missing observed={row.observed} />;
+  if (!row.present) return <Missing row={row} />;
   return (
     <>
       {row.value}
       {row.unit !== "" && <span className={styles.unit}>{row.unit}</span>}
       <OutsideMark text={row.outside} />
+      {row.quality !== "" && <span className="sr-only">{`, ${row.quality}`}</span>}
     </>
   );
 }
@@ -29,7 +29,11 @@ function ReadoutRowItem({ row }: { readonly row: ReadoutRow }) {
   return (
     <div className={cx(attention !== null && styles[attention], !row.present && !row.observed && styles.unobserved)}>
       <dt title={row.label}>{row.label}</dt>
-      <dd className={row.word ? styles.word : undefined} title={row.word ? row.value : undefined}>
+      <dd
+        className={cx(row.word && styles.word, row.quality !== "" && styles.flagged)}
+        title={row.quality === "" ? (row.word ? row.value : undefined) : `Reported as ${row.quality}`}
+        data-quality={row.quality === "" ? undefined : row.quality}
+      >
         <Value row={row} />
       </dd>
     </div>

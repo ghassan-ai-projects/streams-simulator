@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { sessionGate, showBuild } from "../../../app/shell";
+import { resumeRun, sessionGate, showBuild } from "../../../app/shell";
 import type { Route } from "../../../model/shell";
 import { DeviceScreen } from "../../devices";
 import { EditorScreen } from "../../editor";
 import { CaptureScreen, WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
+import { AssumptionsDisclosure } from "../../plant";
 import { PlantRoute } from "./PlantRoute";
 import { CrumbSlot } from "../../primitives";
 import { KeyHelp } from "./KeyHelp";
@@ -19,9 +20,10 @@ import { Unreachable } from "./Unreachable";
 import { useStore } from "../../primitives";
 import { useTheme } from "./useTheme";
 
-function useSession({ session, workspace }: Stores) {
+function useSession({ session, workspace, launch }: Stores) {
   const state = useStore(session);
   useEffect(() => sessionGate(session, workspace), [session, workspace]);
+  useEffect(() => resumeRun(launch, workspace), [launch, workspace]);
   return state;
 }
 
@@ -35,7 +37,17 @@ function Authoring({
   if (route.screen === "edit") {
     return <EditorScreen editor={stores.editor} navigation={stores.navigation} composition={route.composition} />;
   }
-  return <DeviceScreen devices={stores.devices} navigation={stores.navigation} path={route.path} />;
+  return (
+    <DeviceScreen
+      devices={stores.devices}
+      navigation={stores.navigation}
+      path={route.path}
+      assumptions={(domain, twin) => (
+        <AssumptionsDisclosure session={stores.provenance.assumptions} path={domain} twin={twin} />
+      )}
+      {...(route.step === undefined ? {} : { step: route.step })}
+    />
+  );
 }
 
 function Home({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
@@ -48,6 +60,7 @@ function Home({ stores, route }: { readonly stores: Stores; readonly route: Rout
       navigation={stores.navigation}
       maker={stores.maker}
       desk={stores.desk}
+      provenance={stores.provenance}
       badgeFor={(worldId) => stores.review.badgeFor(worldId)}
     />
   );
@@ -58,7 +71,8 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
     return <PlantRoute stores={stores} route={route} />;
   }
   if (route.screen === "edit" || route.screen === "device") return <Authoring stores={stores} route={route} />;
-  if (route.screen === "review") return <ReviewRoute stores={stores} worldId={route.worldId} />;
+  if (route.screen === "review")
+    return <ReviewRoute stores={stores} worldId={route.worldId} model={route.model === true} />;
   return <Home stores={stores} route={route} />;
 }
 

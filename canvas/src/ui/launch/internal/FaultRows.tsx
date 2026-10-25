@@ -1,11 +1,11 @@
-import { cx, panel, shared } from "../../primitives";
-import { Plus } from "lucide-react";
-import type { Draft, DraftFault, PlanProblem } from "../../../model/launch";
+import { panel } from "../../primitives";
+import type { Draft, DraftFault, FaultCategories, PlanProblem } from "../../../model/launch";
+import { faultGroups } from "../../../model/launch";
 import { faultsOf } from "../../../model/plant";
 import type { Plant } from "../../../model/plant";
 import { humanise } from "../../../model/shared/words";
 import type { Change } from "./RowParts";
-import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";
+import { AddRow, InstancePick, invalid, ProblemNote, RowTail, RowTimes, useAdding } from "./RowParts";
 import styles from "./LaunchPanel.module.css";
 
 export type { Change } from "./RowParts";
@@ -16,10 +16,29 @@ interface FaultPickProps {
   readonly label: string;
   readonly id: string;
   readonly problem: string;
+  readonly categories: FaultCategories;
   readonly update: (next: Partial<DraftFault>) => void;
 }
 
-function FaultPick({ plant, fault, label, id, problem, update }: FaultPickProps) {
+function FaultOptions({ plant, fault, categories }: Pick<FaultPickProps, "plant" | "fault" | "categories">) {
+  const kind = plant.instances.find((instance) => instance.id === fault.entity)?.kind ?? "";
+  return faultGroups(faultsOf(plant, fault.entity) ?? [], categories[kind]).map((group) => {
+    const options = group.faults.map((name) => (
+      <option key={name} value={name}>
+        {humanise(name)}
+      </option>
+    ));
+    return group.label === "" ? (
+      options
+    ) : (
+      <optgroup key={group.label} label={group.label}>
+        {options}
+      </optgroup>
+    );
+  });
+}
+
+function FaultPick({ plant, fault, label, id, problem, categories, update }: FaultPickProps) {
   return (
     <select
       aria-label={`${label} fault`}
@@ -31,11 +50,7 @@ function FaultPick({ plant, fault, label, id, problem, update }: FaultPickProps)
       }}
     >
       <option value="">Choose a fault</option>
-      {(faultsOf(plant, fault.entity) ?? []).map((name) => (
-        <option key={name} value={name}>
-          {humanise(name)}
-        </option>
-      ))}
+      <FaultOptions plant={plant} fault={fault} categories={categories} />
     </select>
   );
 }
@@ -45,6 +60,8 @@ interface FaultRowProps {
   readonly fault: DraftFault;
   readonly index: number;
   readonly problem: string;
+  readonly endProblem: string;
+  readonly categories: FaultCategories;
   readonly change: (change: Change) => void;
   readonly fresh: boolean;
   readonly onRemoved: () => void;
@@ -61,22 +78,15 @@ function useFaultEdit(change: (change: Change) => void, key: number, onRemoved: 
   return { update, remove };
 }
 
-function FaultRow({ plant, fault, index, problem, change, fresh, onRemoved }: FaultRowProps) {
-  const label = `Fault ${String(index + 1)}`;
-  const id = `launch-fault-${String(index + 1)}`;
-  const { update, remove } = useFaultEdit(change, fault.key, onRemoved);
-  const complete = fault.entity !== "" && fault.fault !== "";
+type TargetProps = Omit<FaultPickProps, "update"> & {
+  readonly fresh: boolean;
+  readonly update: (next: Partial<DraftFault>) => void;
+};
+
+function FaultTarget({ fresh, ...pick }: TargetProps) {
+  const { plant, fault, label, id, problem, update } = pick;
   return (
-    <li className={styles.faultRow} aria-label={label}>
-      <AtMinute
-        value={fault.atMinutes}
-        label={label}
-        id={id}
-        problem={complete ? problem : ""}
-        onChange={(atMinutes) => {
-          update({ atMinutes });
-        }}
-      />
+    <>
       <InstancePick
         plant={plant}
         entity={fault.entity}
@@ -89,28 +99,52 @@ function FaultRow({ plant, fault, index, problem, change, fresh, onRemoved }: Fa
         }}
       />
       <span className={styles.sentence}>
-        has a <FaultPick plant={plant} fault={fault} label={label} id={id} problem={problem} update={update} />
+        has a <FaultPick {...pick} />
       </span>
+    </>
+  );
+}
+
+function FaultRow({ plant, fault, index, problem, endProblem, categories, change, fresh, onRemoved }: FaultRowProps) {
+  const label = `Fault ${String(index + 1)}`;
+  const id = `launch-fault-${String(index + 1)}`;
+  const { update, remove } = useFaultEdit(change, fault.key, onRemoved);
+  const complete = fault.entity !== "" && fault.fault !== "";
+  return (
+    <li className={styles.faultRow} aria-label={label}>
+      <RowTimes
+        label={label}
+        id={id}
+        atMinutes={fault.atMinutes}
+        untilMinutes={fault.untilMinutes}
+        startProblem={complete ? problem : ""}
+        endProblem={endProblem}
+        endPlaceholder="never"
+        update={update}
+      />
+      <FaultTarget {...{ plant, fault, label, id, problem, categories, fresh, update }} />
       <RowTail label={label} id={id} problem={problem} onRemove={remove} />
+      <ProblemNote id={`${id}-end`} text={endProblem} />
     </li>
   );
 }
 
-const problemOf = (problems: readonly PlanProblem[], index: number) =>
-  problems.find((problem) => problem.field === "fault" && problem.index === index)?.text ?? "";
+const problemOf = (problems: readonly PlanProblem[], field: "fault" | "faultEnd", index: number) =>
+  problems.find((problem) => problem.field === field && problem.index === index)?.text ?? "";
 
 interface FaultRowsProps {
   readonly plant: Plant;
   readonly draft: Draft;
   readonly problems: readonly PlanProblem[];
+  readonly categories: FaultCategories;
   readonly selected: string | null;
   readonly change: (change: Change) => void;
 }
 
-export function FaultRows({ plant, draft, problems, selected, change }: FaultRowsProps) {
+export function FaultRows({ plant, draft, problems, categories, selected, change }: FaultRowsProps) {
   const { added, addButton, add } = useAdding(change, (d, key) => ({
     ...d,
-    faults: [...d.faults, { key, entity: selected ?? "", fault: "", atMinutes: "0" }],
+    faults: [...d.faults, { key, entity: selected ?? "", fault: "", atMinutes: "0", untilMinutes: "" }],
   }));
   return (
     <fieldset className={panel.group}>
@@ -123,7 +157,9 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
             plant={plant}
             fault={fault}
             index={index}
-            problem={problemOf(problems, index)}
+            problem={problemOf(problems, "fault", index)}
+            endProblem={problemOf(problems, "faultEnd", index)}
+            categories={categories}
             change={change}
             fresh={fault.key === added}
             onRemoved={() => {
@@ -132,17 +168,13 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
           />
         ))}
       </ol>
-      <button
-        type="button"
-        ref={addButton}
-        className={cx(shared.secondary, panel.secondary)}
-        onClick={() => {
+      <AddRow
+        label={selected === null ? "Add fault" : `Add fault on ${selected}`}
+        buttonRef={addButton}
+        onAdd={() => {
           add(draft.nextKey);
         }}
-      >
-        <Plus size={14} aria-hidden="true" />
-        {selected === null ? "Add fault" : `Add fault on ${selected}`}
-      </button>
+      />
     </fieldset>
   );
 }

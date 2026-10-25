@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc --build && vite build",
     "typecheck": "tsc --build --noEmit",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --max-warnings 0 --concurrency auto",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "deps": "depcruise src --config .dependency-cruiser.cjs",

@@ -92,6 +92,21 @@
       "$ref": "#/$defs/report_written"
     },
     {
+      "$ref": "#/$defs/report_markdown"
+    },
+    {
+      "$ref": "#/$defs/run_comparison"
+    },
+    {
+      "$ref": "#/$defs/domain_assumptions"
+    },
+    {
+      "$ref": "#/$defs/domain_lineage"
+    },
+    {
+      "$ref": "#/$defs/domain_diff"
+    },
+    {
       "$ref": "#/$defs/plantwire_node"
     },
     {
@@ -149,6 +164,7 @@
                 "domain_lint",
                 "adapter_verify_failed",
                 "io_failed",
+                "run_not_ended",
                 "catalog_failed",
                 "domain_failed",
                 "adapter_failed",
@@ -849,7 +865,9 @@
         "schema_version",
         "run",
         "verification",
-        "counts"
+        "replay",
+        "counts",
+        "open_questions"
       ],
       "properties": {
         "schema_version": {
@@ -864,17 +882,115 @@
         "verification": {
           "type": "object"
         },
+        "replay": {
+          "type": "object"
+        },
         "counts": {
           "type": "object"
         },
         "truth": {
           "type": "object"
         },
+        "truth_unavailable": {
+          "type": "string"
+        },
+        "torn_tail": {
+          "type": "array"
+        },
         "consumer": {
           "type": "object"
         },
         "scoring": {
           "type": "object"
+        },
+        "open_questions": {
+          "type": "array"
+        }
+      }
+    },
+    "report_markdown": {
+      "type": "object",
+      "description": "report and domain diff: --format markdown without --out. Stdout stays one JSON document; the markdown is its text.",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "markdown"
+      ],
+      "properties": {
+        "format": {
+          "const": "markdown"
+        },
+        "markdown": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "domain_assumptions": {
+      "type": "object",
+      "description": "domain assumptions: what a domain or twin declares about each reading and command and what it does not model; its full shape is the domain-assumptions-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "domain",
+        "origin",
+        "kinds",
+        "not_modeled"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "domain_lineage": {
+      "type": "object",
+      "description": "domain lineage: for each plant of a workspace its composition or twin, device kind files, runs and edit route; its full shape is the domain-lineage-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "plants",
+        "device_kinds",
+        "unreadable"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "domain_diff": {
+      "type": "object",
+      "description": "domain diff: what differs between two domain documents (files or run folders), per device kind, with the instances and relations each change affects; its full shape is the domain-diff-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "a",
+        "b",
+        "identity",
+        "kinds",
+        "domain_changes",
+        "summary",
+        "unchanged_summary"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        }
+      }
+    },
+    "run_comparison": {
+      "type": "object",
+      "description": "report compare: the comparison of two ended runs; its full shape is the run-comparison-v0.1 contract.",
+      "required": [
+        "schema_version",
+        "a",
+        "b",
+        "plan",
+        "comparability_limits",
+        "results",
+        "windowed_results"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
         }
       }
     },

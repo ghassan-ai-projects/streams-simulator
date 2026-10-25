@@ -46,7 +46,7 @@ test("a command refused for its policy shows the host's digest, copies it on req
 }) => {
   addThermalBench(lab);
   const open = openScriptedBench(lab.binary, [
-    { id: "pol-a", afterS: 20, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "pol-a", afterS: 10, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   bench = open;
   const panel = await openSessionPanel(page);

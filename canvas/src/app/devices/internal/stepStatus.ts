@@ -1,6 +1,7 @@
 import type { DeviceState } from "./deviceDraft";
 import { isDirty } from "./deviceSelectors";
-import type { TwinState } from "./twinDraft";
+import type { TwinDraft, TwinState } from "./twinDraft";
+import { partialOf } from "./twinScope";
 import { builtOf, isBuilding, problemsOf, verdictOf } from "./twinSelectors";
 import { twinStatusOf } from "./twinStatus";
 
@@ -34,6 +35,10 @@ export function twinReadiness(device: DeviceState, extra = 0): StepStatus {
   return state("", "");
 }
 
+function createdWords(twin: TwinDraft): string {
+  return partialOf(twin) === "" ? "Created" : "Created (partial)";
+}
+
 function behaviourStatus(twin: TwinState, device: DeviceState): StepStatus {
   if (twin.phase === "loading") return state("Opening", "busy");
   if (twin.phase !== "ready") return state("Not started", "");
@@ -42,7 +47,8 @@ function behaviourStatus(twin: TwinState, device: DeviceState): StepStatus {
     return state(problemsOf(twin).length > 0 ? "Needs choices" : "Needs attention", "warn");
   }
   const built = builtOf(twin);
-  if (built !== null) return verdictOf(built) === "pending" ? state("Checking", "busy") : state("Created", "ok");
+  if (built !== null)
+    return verdictOf(built) === "pending" ? state("Checking", "busy") : state(createdWords(twin), "ok");
   return twin.touched ? state("Ready", "") : state("Not started", "");
 }
 
@@ -51,7 +57,7 @@ function checkStatus(twin: TwinState): StepStatus {
   if (built === null) return state("Not run", "");
   const verdict = verdictOf(built);
   if (verdict === "pending") return state("Checking", "busy");
-  return verdict === "ready" ? state("Passed", "ok") : state("Failed", "warn");
+  return verdict === "ready" ? state("Checks passed", "ok") : state("Failed", "warn");
 }
 
 export function stepStatuses(device: DeviceState, twin: TwinState): Readonly<Record<Step, StepStatus>> {

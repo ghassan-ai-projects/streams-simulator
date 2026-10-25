@@ -113,10 +113,10 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   const ports = Number(inputs) + Number(outputs);
   const rows = await chiller.locator("dl > div").count();
   expect([ports, ports + 1]).toContain(rows);
-  await expect(chiller.locator("dl")).toContainText("not observed");
+  await expect(chiller.locator("dl")).toContainText("Never observed in this run");
   await expect(chiller.locator("dl")).not.toContainText("–");
   await page.getByRole("button", { name: "Legend" }).click();
-  await expect(page.getByText("Not reported by this run")).toBeVisible();
+  await expect(page.getByText("No reading from this run for this row (its words say why)")).toBeVisible();
   await expect(page.getByText("No reading yet at this time")).toBeVisible();
   await page.getByRole("button", { name: "Legend" }).click();
   const graph = page.getByRole("application", { name: "Plant graph" });
@@ -127,7 +127,7 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   }
 });
 
-test("clicking a mark seeks and selects its instance and leaves the Report open with the call's row marked", async ({
+test("clicking a mark seeks, selects its instance and opens the Report, with the call's row marked, even from Inspect", async ({
   page,
 }) => {
   await page.goto("/#/review?world=w-boiler");
@@ -146,7 +146,8 @@ test("clicking a mark seeks and selects its instance and leaves the Report open 
   await expect(details.getByRole("region", { name: "Disturbances" }).locator("tr[aria-current='true']")).toHaveCount(1);
   await details.getByRole("button", { name: /^Inspect/ }).click();
   await page.getByRole("button", { name: /^00:10:00 boiler-1 scaling/ }).click();
-  await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "false");
 });
 
 test("the report's effector calls and disturbances fit the panel at 1280 px", async ({ page }) => {

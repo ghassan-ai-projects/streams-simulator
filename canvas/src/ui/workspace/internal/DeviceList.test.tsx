@@ -61,7 +61,7 @@ describe("the devices section", () => {
     bridge.addFile("twins/heater.twin.json", { id: "heater-twin", kinds: [] });
     await show(bridge);
     const row = (name: string) => within(devices().getByText(name).closest("li") as HTMLElement);
-    expect(await row("heater").findByText("Twin ready")).toBeInTheDocument();
+    expect(await row("heater").findByText("Twin created")).toBeInTheDocument();
     expect(row("fan").getByText("Needs a twin")).toBeInTheDocument();
     expect(row("pump").getByText("Not valid")).toBeInTheDocument();
   });

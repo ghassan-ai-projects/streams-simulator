@@ -9,17 +9,24 @@ import (
 
 const withheld = "Truth withheld: the run has not ended (no run.json)."
 
-func truthSections(report *Report) []section {
+func planSections(report *Report) []section {
 	truth, start := report.Truth, report.Run.StartTimeNS
 	if truth == nil {
 		return []section{{"Truth", []string{withheldReason(report)}}}
 	}
-	return append([]section{
+	return []section{
 		{"Faults", listOrNone(len(truth.Faults), faultLines(truth.Faults, start))},
 		{"Perturbations", listOrNone(len(truth.Perturbations), perturbationLines(truth.Perturbations, start))},
 		{"Environment", listOrNone(len(truth.Environment), environmentLines(truth.Environment, start))},
 		{"Effector calls", listOrNone(len(truth.EffectorCalls), effectorLines(truth.EffectorCalls, start))},
-	}, kpiSections(truth.KPIs)...)
+	}
+}
+
+func resultSections(report *Report) []section {
+	if report.Truth == nil {
+		return nil
+	}
+	return kpiSections(report.Truth.KPIs)
 }
 
 func withheldReason(report *Report) string {

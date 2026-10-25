@@ -9,11 +9,15 @@ export interface RunEntry {
   readonly worldId: string;
   readonly ended: boolean;
   readonly complete: boolean;
+  readonly running: boolean;
   readonly incompleteReason: string;
   readonly explore: boolean;
   readonly seed: number | null;
   readonly plant: string;
   readonly durationS: number;
+  readonly name?: string;
+  readonly requestedS?: number;
+  readonly terminationReason?: string;
   readonly recordedAt: string;
   readonly faults: number;
   readonly connected?: "running" | "saved";

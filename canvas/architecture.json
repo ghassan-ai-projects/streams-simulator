@@ -175,6 +175,7 @@
         "app/workspace",
         "model/devices",
         "model/graph",
+        "model/launch",
         "model/plant",
         "model/review",
         "model/workspace",
@@ -413,7 +414,7 @@
         "ui/primitives"
       ],
       "entrypoint": "src/ui/plant/index.ts",
-      "callers": ["ui/shell"]
+      "callers": ["test", "ui/shell"]
     },
     "ui/editor": {
       "kind": "ui",
@@ -465,7 +466,7 @@
         "ui/primitives"
       ],
       "entrypoint": "src/ui/review/index.ts",
-      "callers": ["ui/shell"]
+      "callers": ["test", "ui/shell"]
     },
     "ui/shell": {
       "kind": "ui",

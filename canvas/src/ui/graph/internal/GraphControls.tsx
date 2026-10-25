@@ -24,7 +24,7 @@ function ReadingKeys() {
         <span className={styles.glyph} aria-hidden="true">
           ·
         </span>
-        Not reported by this run
+        No reading from this run for this row (its words say why)
       </li>
       <li>
         <span className={styles.glyph} aria-hidden="true">

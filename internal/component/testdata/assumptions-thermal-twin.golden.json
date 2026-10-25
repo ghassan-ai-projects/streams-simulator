@@ -1,0 +1,573 @@
+{
+  "schema_version": "0.1",
+  "domain": {
+    "id": "arduino-thermal-twin",
+    "version": "0.1.0",
+    "digest": "sha256:5435a778e54391caddf1454bf4df24f68e3f97900b0ac5af22b92369e40e043c"
+  },
+  "origin": {
+    "kind": "twin",
+    "twin": {
+      "id": "arduino-thermal-twin",
+      "version": "0.1.0",
+      "status": "in_sync"
+    }
+  },
+  "kinds": [
+    {
+      "kind": "thermal_sensor",
+      "implements": "thermal_sensor",
+      "instances": [
+        {
+          "names": [
+            "zone-01"
+          ],
+          "area": "thermal-bench"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "temperature",
+          "observes": "temperature_value",
+          "unit": "Cel",
+          "value_type": "number",
+          "range": {
+            "min": 0,
+            "max": 50
+          },
+          "resolution": 1,
+          "initial": 34,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.1
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 10
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "TT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/thermistor",
+            "version": 1,
+            "ref": "streamsim/thermistor@1",
+            "digest": "sha256:56409529a0d31d13b825da9e631f0c4890cc22cb86606661946d7edc3495c0a5"
+          },
+          "recorded_in": "twin_choices",
+          "equals_binary_suggestion": false
+        },
+        {
+          "channel": "humidity",
+          "observes": "humidity_value",
+          "unit": "%",
+          "value_type": "number",
+          "range": {
+            "min": 20,
+            "max": 90
+          },
+          "resolution": 1,
+          "initial": 42,
+          "noise": {
+            "model": "gaussian",
+            "sigma": 0.3
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 30
+          },
+          "availability": {
+            "uptime": 0.999,
+            "mttr_s": 600
+          },
+          "absence": "signal",
+          "tag": "MT",
+          "basis": "library_instrument",
+          "instrument": {
+            "id": "streamsim/humidity",
+            "version": 1,
+            "ref": "streamsim/humidity@1",
+            "digest": "sha256:6557071134b78db80037458f3aff16ff693ccf92c8e57705180a07d638bfb4fb"
+          },
+          "recorded_in": "twin_choices",
+          "equals_binary_suggestion": true
+        }
+      ],
+      "dynamics": [
+        {
+          "target": "temperature_value",
+          "tier": "F1",
+          "form": "first_order_lag",
+          "gain": 1,
+          "time_constant_s": 180,
+          "dead_time_s": 0,
+          "inputs": [
+            {
+              "state": "temperature_rest",
+              "coef": 1
+            },
+            {
+              "state": "duty_permille_value",
+              "coef": -0.02,
+              "link": "fan_drives_thermal_sensor"
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 50
+          }
+        }
+      ],
+      "commands": [],
+      "faults": [
+        {
+          "id": "thermal_sensor__temperature__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "temperature__bias"
+          ]
+        },
+        {
+          "id": "thermal_sensor__temperature__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "temperature__bias"
+          ]
+        },
+        {
+          "id": "thermal_sensor__temperature__open_circuit",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "temperature"
+        },
+        {
+          "id": "thermal_sensor__temperature__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "temperature"
+        },
+        {
+          "id": "thermal_sensor__temperature__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "temperature"
+        },
+        {
+          "id": "thermal_sensor__humidity__offset",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [
+            "humidity__bias"
+          ]
+        },
+        {
+          "id": "thermal_sensor__humidity__drift",
+          "negative_class": false,
+          "onset_shape": "ramp",
+          "affects": [
+            "humidity__bias"
+          ]
+        },
+        {
+          "id": "thermal_sensor__humidity__saturated",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "humidity"
+        },
+        {
+          "id": "thermal_sensor__humidity__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "humidity"
+        },
+        {
+          "id": "thermal_sensor__humidity__noise_burst",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "humidity"
+        },
+        {
+          "id": "thermal_sensor__humidity__calibration",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "humidity"
+        }
+      ]
+    },
+    {
+      "kind": "indicator",
+      "implements": "indicator",
+      "instances": [
+        {
+          "names": [
+            "led-01"
+          ],
+          "area": "thermal-bench"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "brightness_permille",
+          "observes": "brightness_permille_value",
+          "unit": "permille",
+          "value_type": "counter",
+          "range": {
+            "min": 0,
+            "max": 1000
+          },
+          "resolution": 1,
+          "initial": 0,
+          "noise": {
+            "model": "none",
+            "sigma": 0
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 5
+          },
+          "absence": "signal",
+          "basis": "plain_channel",
+          "recorded_in": "twin_choices",
+          "equals_binary_suggestion": true
+        },
+        {
+          "channel": "pattern",
+          "observes": "pattern_value",
+          "unit": "code",
+          "value_type": "counter",
+          "range": {
+            "min": 0,
+            "max": 2
+          },
+          "resolution": 1,
+          "initial": 0,
+          "noise": {
+            "model": "none",
+            "sigma": 0
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 5
+          },
+          "absence": "signal",
+          "basis": "plain_channel",
+          "recorded_in": "twin_choices",
+          "equals_binary_suggestion": true
+        }
+      ],
+      "dynamics": [],
+      "commands": [
+        {
+          "name": "set_led",
+          "risk_class": "low",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "brightness_permille",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            {
+              "name": "pattern",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            }
+          ],
+          "response": "direct",
+          "recorded_in": "twin_choices",
+          "sets": [
+            {
+              "argument": "brightness_permille",
+              "state": "brightness_permille_value"
+            },
+            {
+              "argument": "pattern",
+              "state": "pattern_value"
+            }
+          ],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 2
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 40,
+            "latency_ms_sigma": 10,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 1
+              }
+            ]
+          },
+          "equals_binary_suggestion": true,
+          "statement": "Sets brightness_permille, pattern to the commanded value at once."
+        },
+        {
+          "name": "stop_led",
+          "risk_class": "low",
+          "safe_stop": true,
+          "arguments": [],
+          "response": "fixed_safe_stop",
+          "recorded_in": "twin_choices",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 2
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 40,
+            "latency_ms_sigma": 10,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 1
+              }
+            ]
+          },
+          "statement": "Returns every commanded reading to its minimum at once; the acknowledgement does not wait for a device."
+        }
+      ],
+      "faults": [
+        {
+          "id": "indicator__brightness_permille__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "brightness_permille"
+        },
+        {
+          "id": "indicator__pattern__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "pattern"
+        }
+      ]
+    },
+    {
+      "kind": "fan",
+      "implements": "fan",
+      "instances": [
+        {
+          "names": [
+            "fan-01"
+          ],
+          "area": "thermal-bench"
+        }
+      ],
+      "readings": [
+        {
+          "channel": "duty_permille",
+          "observes": "duty_permille_value",
+          "unit": "permille",
+          "value_type": "counter",
+          "range": {
+            "min": 0,
+            "max": 600
+          },
+          "resolution": 1,
+          "initial": 0,
+          "noise": {
+            "model": "none",
+            "sigma": 0
+          },
+          "cadence": {
+            "mode": "periodic",
+            "period_s": 5
+          },
+          "absence": "signal",
+          "basis": "plain_channel",
+          "recorded_in": "twin_choices",
+          "equals_binary_suggestion": true
+        }
+      ],
+      "dynamics": [],
+      "commands": [
+        {
+          "name": "set_pwm_lease",
+          "risk_class": "medium",
+          "safe_stop": false,
+          "arguments": [
+            {
+              "name": "duty_permille",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 600
+            },
+            {
+              "name": "lease_ms",
+              "type": "integer",
+              "minimum": 5000,
+              "maximum": 10000
+            }
+          ],
+          "response": "first_order",
+          "recorded_in": "twin_choices",
+          "sets": [
+            {
+              "argument": "duty_permille",
+              "state": "duty_permille_value"
+            }
+          ],
+          "drives": [
+            {
+              "from": "duty_permille",
+              "kind": "thermal_sensor",
+              "metric": "temperature",
+              "gain": -0.02,
+              "time_constant_s": 180
+            }
+          ],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 40,
+            "latency_ms_sigma": 10,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 1
+              }
+            ]
+          },
+          "lease": {
+            "argument": "lease_ms",
+            "unit": "ms",
+            "fallback": "safe_off"
+          },
+          "equals_binary_suggestion": false,
+          "statement": "Sets duty_permille, then thermal_sensor.temperature follows with gain -0.02 and a time constant of 180 s (first-order lag)."
+        },
+        {
+          "name": "stop_fan",
+          "risk_class": "low",
+          "safe_stop": true,
+          "arguments": [],
+          "response": "fixed_safe_stop",
+          "recorded_in": "twin_choices",
+          "sets": [],
+          "drives": [],
+          "effect": {
+            "dead_time_s": 0,
+            "time_constant_s": 0,
+            "state_changes": 1
+          },
+          "acknowledgement": {
+            "latency_ms_mean": 40,
+            "latency_ms_sigma": 10,
+            "failure_modes": [
+              {
+                "mode": "ok",
+                "probability": 1
+              }
+            ]
+          },
+          "statement": "Returns every commanded reading to its minimum at once; the acknowledgement does not wait for a device."
+        }
+      ],
+      "faults": [
+        {
+          "id": "fan__duty_permille__dropout",
+          "negative_class": false,
+          "onset_shape": "step",
+          "affects": [],
+          "on_reading": "duty_permille"
+        }
+      ]
+    }
+  ],
+  "not_modeled": [
+    {
+      "code": "kind_file_members_not_reproduced",
+      "scope": "domain",
+      "sentence": "A twin reproduces only the kind, its metrics (name, data_type, unit, eu_range, resolution, writable) and its commands (name, args_schema, risk_class, safe_stop); any other member of a device kind file is not reproduced."
+    },
+    {
+      "code": "first_order_response_only",
+      "scope": "domain",
+      "sentence": "A command moves a reading directly or through a first-order lag; there is no dead time, second-order response, hysteresis or non-linearity, and a reading saturates only at its eu_range."
+    },
+    {
+      "code": "device_behavior_not_modeled",
+      "scope": "domain",
+      "sentence": "Device firmware, scheduling and wire timing are not modeled; the twin answers at its own acknowledgement latency, not the device's."
+    },
+    {
+      "code": "instrument_semantics_unchecked",
+      "scope": "domain",
+      "sentence": "A library instrument was checked for unit and range only; that it measures what the reading means is not checked."
+    },
+    {
+      "code": "no_calibration_evidence",
+      "scope": "domain",
+      "sentence": "No calibration or hardware validation is attached; a passing check shows a valid interface and plausible output, not that the physics match."
+    },
+    {
+      "code": "no_measurement_noise",
+      "scope": "indicator.brightness_permille",
+      "sentence": "indicator.brightness_permille reaches the consumer exactly as the true value: its noise sigma is 0."
+    },
+    {
+      "code": "no_measurement_noise",
+      "scope": "indicator.pattern",
+      "sentence": "indicator.pattern reaches the consumer exactly as the true value: its noise sigma is 0."
+    },
+    {
+      "code": "acknowledgement_never_fails",
+      "scope": "indicator.set_led",
+      "sentence": "indicator.set_led is always acknowledged ok; no refusal or timeout is modeled."
+    },
+    {
+      "code": "safe_stop_is_a_step",
+      "scope": "indicator.stop_led",
+      "sentence": "indicator.stop_led takes effect as a step, with no run-down time."
+    },
+    {
+      "code": "acknowledgement_never_fails",
+      "scope": "indicator.stop_led",
+      "sentence": "indicator.stop_led is always acknowledged ok; no refusal or timeout is modeled."
+    },
+    {
+      "code": "no_measurement_noise",
+      "scope": "fan.duty_permille",
+      "sentence": "fan.duty_permille reaches the consumer exactly as the true value: its noise sigma is 0."
+    },
+    {
+      "code": "acknowledgement_never_fails",
+      "scope": "fan.set_pwm_lease",
+      "sentence": "fan.set_pwm_lease is always acknowledged ok; no refusal or timeout is modeled."
+    },
+    {
+      "code": "safe_stop_is_a_step",
+      "scope": "fan.stop_fan",
+      "sentence": "fan.stop_fan takes effect as a step, with no run-down time."
+    },
+    {
+      "code": "acknowledgement_never_fails",
+      "scope": "fan.stop_fan",
+      "sentence": "fan.stop_fan is always acknowledged ok; no refusal or timeout is modeled."
+    }
+  ]
+}

@@ -33,7 +33,7 @@ describe("when the twin comparison is offered", () => {
 
 describe("how tolerances and the rule are worded", () => {
   it("says the value, the unit and where the tolerance came from", () => {
-    expect(toleranceWords({ value: 2.5, source: "default_span" }, "Cel")).toBe("±2.5 Cel (default share of the range)");
+    expect(toleranceWords({ value: 2.5, source: "default_span" }, "Cel")).toBe("±2.5 °C (default share of the range)");
     expect(toleranceWords({ value: 3, source: "declared" }, "")).toBe("±3 (declared)");
     expect(toleranceWords({ value: null, source: "none" }, "Cel")).toBe("No tolerance (none)");
   });
@@ -113,7 +113,7 @@ describe("what covers a device in the report", () => {
 describe("lines about a metric and a divergence", () => {
   it("counts the readings and names the tolerance", () => {
     const metric = firstOf(twinModel().metrics);
-    expect(metricLine(metric)).toBe("5 readings compared · 2 beyond tolerance · ±2.5 Cel (default share of the range)");
+    expect(metricLine(metric)).toBe("5 readings compared · 2 beyond tolerance · ±2.5 °C (default share of the range)");
     expect(metricLine({ ...metric, counts: { ...metric.counts, compared: 1, diverged: 0 } })).toContain(
       "1 reading compared · 0 beyond",
     );
@@ -122,7 +122,7 @@ describe("lines about a metric and a divergence", () => {
   it("gives the interval, the worst error and both values on the run clock", () => {
     const divergence = firstOf(twinModel().divergences);
     expect(divergenceLine(divergence, "Cel", 0)).toBe(
-      "00:06:40 to 00:08:20 · 2 readings · worst error 8 Cel at 00:08:20 (board 30 Cel, twin 22 Cel)",
+      "00:06:40 to 00:08:20 · 2 readings · worst error 8 °C at 00:08:20 (board 30 °C, twin 22 °C)",
     );
   });
 

@@ -57,7 +57,7 @@ test("an unfinished device does not block another one, is named when it is added
 
   await page.getByRole("button", { name: "Add e2e_unfinished to the twin" }).click();
   const notice = page.getByRole("region", { name: "Devices that are not ready for a twin" });
-  await expect(notice).toContainText("e2e_unfinished still needs");
+  await expect(notice).toContainText("Reading 'flow' needs a unit");
   await expect(notice.getByRole("button", { name: "Open e2e_unfinished" })).toBeVisible();
   await expect(notice.getByRole("button", { name: "Retry" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Reading flow" })).toHaveCount(0);

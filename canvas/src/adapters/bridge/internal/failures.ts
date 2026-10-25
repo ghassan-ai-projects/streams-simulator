@@ -3,8 +3,10 @@ import type {
   ControlFailure,
   DeviceFailure,
   Diagnostic,
+  DocumentFailure,
   EditorFailure,
   LaunchFailure,
+  LaunchStep,
   PlantFailure,
   PolicyDefaultFailure,
   ReviewFailure,
@@ -78,9 +80,15 @@ function deviceProblem(problem: WireProblem, step: DeviceStep): DeviceFailure {
   return serverFault(problem, display);
 }
 
-export function launchFailure(step: "create" | "advance" | "inject" | "invoke" | "end"): FailureMapper<LaunchFailure> {
-  return (error) =>
-    error.kind === "http" ? { kind: "rejected", step, diagnostic: diagnostic(error.problem) } : unreached(error);
+export function launchFailure(step: LaunchStep): FailureMapper<LaunchFailure> {
+  return (error) => (error.kind === "http" ? launchProblem(error.problem, step) : unreached(error));
+}
+
+function launchProblem(problem: WireProblem, step: LaunchStep): LaunchFailure {
+  const display = diagnostic(problem);
+  return problem.status >= 500
+    ? { kind: "unavailable", diagnostic: display }
+    : { kind: "rejected", step, diagnostic: display };
 }
 
 export function connectFailure(error: RequestFailure): ConnectFailure {
@@ -114,6 +122,12 @@ export function controlFailure(error: RequestFailure): ControlFailure {
 }
 
 export function twinFailure(error: RequestFailure): TwinFailure {
+  if (error.kind !== "http") return unreached(error);
+  const kind = error.problem.status >= 500 ? "unavailable" : "refused";
+  return { kind, diagnostic: diagnostic(error.problem) };
+}
+
+export function documentFailure(error: RequestFailure): DocumentFailure {
   if (error.kind !== "http") return unreached(error);
   const kind = error.problem.status >= 500 ? "unavailable" : "refused";
   return { kind, diagnostic: diagnostic(error.problem) };

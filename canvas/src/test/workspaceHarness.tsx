@@ -2,7 +2,7 @@ import { render } from "@testing-library/react";
 import { createDeviceDesk } from "../app/devices";
 import { createNavigationStore } from "../app/shell";
 import { createPlantMaker } from "../app/plant";
-import { createWorkspaceStore } from "../app/workspace";
+import { createProvenanceSession, createWorkspaceStore } from "../app/workspace";
 import type { Badge } from "../model/review";
 import { WorkspaceScreen } from "../ui/workspace";
 import type { FakeBridge } from "./fakeBridge";
@@ -20,6 +20,7 @@ export async function show(
   desk = createDeviceDesk(bridge.devices),
 ) {
   const store = createWorkspaceStore(bridge.workspace);
+  const provenance = createProvenanceSession(bridge.provenance, store);
   await store.open();
   return render(
     <WorkspaceScreen
@@ -27,6 +28,7 @@ export async function show(
       navigation={nav.store}
       maker={createPlantMaker(bridge.plant)}
       desk={desk}
+      provenance={provenance}
       badgeFor={badgeFor}
     />,
   );

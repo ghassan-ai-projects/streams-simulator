@@ -37,3 +37,21 @@
   letter-spacing: 0;
   text-transform: none;
 }
+
+.pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pickable {
+  cursor: pointer;
+}
+
+.pickable:hover {
+  background: var(--surface-hover);
+}

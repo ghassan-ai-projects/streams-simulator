@@ -139,3 +139,35 @@ func Absolute(dir string) (string, error) {
 	}
 	return absolute, nil
 }
+
+const maxLinkDepth = 32
+
+func Aliases(dir string) []string {
+	resolved := resolveLinks(filepath.Clean(dir), 0)
+	if resolved == dir {
+		return nil
+	}
+	return []string{resolved}
+}
+
+func resolveLinks(path string, depth int) string {
+	resolved := string(filepath.Separator)
+	for _, name := range strings.Split(path, string(filepath.Separator)) {
+		if name != "" {
+			resolved = followLink(resolved, name, depth)
+		}
+	}
+	return resolved
+}
+
+func followLink(parent, name string, depth int) string {
+	next := filepath.Join(parent, name)
+	target, err := os.Readlink(next)
+	if err != nil || depth >= maxLinkDepth {
+		return next
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(parent, target)
+	}
+	return resolveLinks(target, depth+1)
+}

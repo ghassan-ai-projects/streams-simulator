@@ -11,6 +11,7 @@ const pending = {
   worldId: "w-1",
   ended: false,
   complete: false,
+  running: false,
   incompleteReason: "",
   explore: false,
   seed: 7,
@@ -55,6 +56,18 @@ describe("reviewing a run listed before completion", () => {
       report: { phase: "ready", value: { ended: true } },
       verified: { phase: "ready", value: { matches: true } },
     });
+    store.close();
+  });
+
+  it("follows the listed running state of a run opened while it runs, until the listing says it ended", () => {
+    const { bridge, store } = setup();
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
+    store.open("w-1", { ...pending, running: true });
+    expect(store.snapshot()).toMatchObject({ running: true, connection: "none" });
+    store.refreshCompleted("w-1", { ...pending, running: true });
+    expect(store.snapshot().running).toBe(true);
+    store.refreshCompleted("w-1", { ...pending, running: false });
+    expect(store.snapshot().running).toBe(false);
     store.close();
   });
 

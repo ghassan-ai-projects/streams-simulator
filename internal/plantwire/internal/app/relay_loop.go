@@ -74,11 +74,18 @@ func (l *relayLoop) finish(cause error) error {
 	l.closeGateway()
 	stopped := l.sim.stop()
 	closed := l.rec.close()
-	ended := l.sim.end(l.options.Out, l.rec.digest(), l.rec.interruptDigest())
+	ended := l.sim.end(l.options.Out, l.rec.digest(), l.rec.interruptDigest(), l.unreached(errors.Join(cause, shutdown, closed, stopped)))
 	if err := errors.Join(cause, shutdown, l.gateways.Close(), closed, stopped, ended); err != nil {
 		return fmt.Errorf("plantwire relay: %w", err)
 	}
 	return nil
+}
+
+func (l *relayLoop) unreached(failure error) error {
+	if failure == nil && l.relay.Stats().HostSessions == 0 {
+		return errors.New("no host session was opened: the gateway or the host was never reached")
+	}
+	return failure
 }
 
 func (l *relayLoop) hostIn() <-chan domain.Inbound {

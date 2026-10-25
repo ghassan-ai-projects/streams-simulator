@@ -1,0 +1,155 @@
+{
+  "schema_version": "0.1",
+  "plants": [
+    {
+      "domain": {
+        "id": "aquaculture-pond",
+        "version": "0.1.0",
+        "title": "Aquaculture pond water quality",
+        "digest": "sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1",
+        "file": "domains/aquaculture-pond.domain.json"
+      },
+      "device_kinds": [],
+      "runs": [],
+      "editable": {
+        "verdict": "read_only",
+        "reason": "hand_authored",
+        "route": {
+          "code": "copy_domain_file",
+          "sentence": "Authored as a domain file: copy the file as a new domain id and edit the copy."
+        }
+      }
+    },
+    {
+      "domain": {
+        "id": "arduino-thermal-twin",
+        "version": "0.1.0",
+        "title": "Arduino thermal bench twin, scaffolded",
+        "digest": "sha256:5435a778e54391caddf1454bf4df24f68e3f97900b0ac5af22b92369e40e043c",
+        "file": "domains/arduino-thermal-twin.domain.json"
+      },
+      "twin": {
+        "file": "twins/thermal-board.twin.json",
+        "id": "arduino-thermal-twin",
+        "version": "0.1.0",
+        "status": "in_sync",
+        "produces_digest": "sha256:5435a778e54391caddf1454bf4df24f68e3f97900b0ac5af22b92369e40e043c"
+      },
+      "device_kinds": [
+        {
+          "kind": "fan",
+          "status": "found",
+          "file": "kinds/fan.kind.json",
+          "digest": "sha256:fe29bb90a5abc8180f1287608211e678814fb51b86ffeffd4a89f605e2fa379f"
+        },
+        {
+          "kind": "indicator",
+          "status": "found",
+          "file": "kinds/indicator.kind.json",
+          "digest": "sha256:1c44d298974f5121a23acc3a9cb2befa3e5f51cb2fcacb3ff111407f1116eb67"
+        },
+        {
+          "kind": "thermal_sensor",
+          "status": "found",
+          "file": "kinds/thermal_sensor.kind.json",
+          "digest": "sha256:7d0921b1526ddbb40760f3244b7b5f0a6443a125da593a9f0fa2878a871d9d48"
+        }
+      ],
+      "runs": [],
+      "editable": {
+        "verdict": "read_only",
+        "reason": "twin",
+        "route": {
+          "code": "open_device_behavior",
+          "sentence": "Generated from the twin choices twins/thermal-board.twin.json: change its readings and responses in the device editor, then create the twin again."
+        }
+      }
+    },
+    {
+      "domain": {
+        "id": "factory-utilities",
+        "version": "0.1.0",
+        "title": "Factory utilities",
+        "digest": "sha256:a3b19bd9a47e62d770d12a320ada6bf5acbe2df613a7150aa063028af4f9eb30",
+        "file": "domains/factory-utilities.domain.json"
+      },
+      "composition": {
+        "file": "compositions/factory-utilities.composition.json",
+        "id": "factory-utilities",
+        "version": "0.1.0",
+        "status": "in_sync",
+        "produces_digest": "sha256:a3b19bd9a47e62d770d12a320ada6bf5acbe2df613a7150aa063028af4f9eb30"
+      },
+      "device_kinds": [],
+      "runs": [
+        {
+          "id": "r-old",
+          "mode": "explore",
+          "recorded": true,
+          "domain_version": "0.1.0",
+          "domain_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "same_as_current": false
+        }
+      ],
+      "editable": {
+        "verdict": "editable",
+        "reason": "composition",
+        "route": {
+          "code": "edit_composition",
+          "sentence": "Edit the composition compositions/factory-utilities.composition.json, then compose it again."
+        }
+      }
+    }
+  ],
+  "device_kinds": [
+    {
+      "kind": "fan",
+      "file": "kinds/fan.kind.json",
+      "digest": "sha256:fe29bb90a5abc8180f1287608211e678814fb51b86ffeffd4a89f605e2fa379f",
+      "twins_including": [
+        {
+          "twin": "arduino-thermal-twin",
+          "file": "twins/thermal-board.twin.json",
+          "kinds": 3
+        }
+      ],
+      "has_own_twin": false,
+      "implemented_by": [
+        "arduino-thermal-twin"
+      ]
+    },
+    {
+      "kind": "indicator",
+      "file": "kinds/indicator.kind.json",
+      "digest": "sha256:1c44d298974f5121a23acc3a9cb2befa3e5f51cb2fcacb3ff111407f1116eb67",
+      "twins_including": [
+        {
+          "twin": "arduino-thermal-twin",
+          "file": "twins/thermal-board.twin.json",
+          "kinds": 3
+        }
+      ],
+      "has_own_twin": false,
+      "implemented_by": [
+        "arduino-thermal-twin"
+      ]
+    },
+    {
+      "kind": "thermal_sensor",
+      "file": "kinds/thermal_sensor.kind.json",
+      "digest": "sha256:7d0921b1526ddbb40760f3244b7b5f0a6443a125da593a9f0fa2878a871d9d48",
+      "twins_including": [
+        {
+          "twin": "arduino-thermal-twin",
+          "file": "twins/thermal-board.twin.json",
+          "kinds": 3
+        }
+      ],
+      "has_own_twin": false,
+      "implemented_by": [
+        "arduino-thermal-twin"
+      ]
+    }
+  ],
+  "unreadable": []
+}

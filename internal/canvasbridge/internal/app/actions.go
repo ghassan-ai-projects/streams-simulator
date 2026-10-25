@@ -12,9 +12,9 @@ import (
 func (b *Bridge) RunAction(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
 	result, err := b.dispatch(ctx, name, args)
 	if err != nil {
-		return nil, redact(err, b.settings.WorkspaceDir)
+		return nil, redact(err, b.workspaceRoots())
 	}
-	return json.RawMessage(domain.Scrub(string(result), b.settings.WorkspaceDir)), nil
+	return json.RawMessage(domain.Scrub(string(result), b.workspaceRoots())), nil
 }
 
 func (b *Bridge) dispatch(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
@@ -130,8 +130,18 @@ func (b *Bridge) domainFlags(action domain.Action) []string {
 		return []string{"--domains-dir", dir, "--adapters-dir", b.settings.AdaptersDir}
 	case action.Domains:
 		return []string{"--domains-dir", dir}
+	case action.Folders:
+		return b.folderFlags(dir)
 	}
 	return nil
+}
+
+func (b *Bridge) folderFlags(domainsDir string) []string {
+	flags := []string{"--domains-dir", domainsDir}
+	for _, folder := range [][2]string{{"--kinds-dir", "kinds"}, {"--twins-dir", "twins"}, {"--compositions-dir", "compositions"}, {"--runs-dir", "runs"}} {
+		flags = append(flags, b.workspaceDirFlag(folder[0], folder[1])...)
+	}
+	return flags
 }
 
 func (b *Bridge) libraryFlags() []string {

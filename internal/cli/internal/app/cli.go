@@ -138,6 +138,15 @@ Commands:
                                         kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
+  domain assumptions <domain> [--twin <choices> --kinds-dir]
+                                        What a domain or twin assumes (instruments, ranges, noise, responses)
+                                        and what it does not model; reads files only
+  domain lineage --domains-dir <dir>    How each plant is produced (composition or twin), its kind files,
+                                        runs and edit route (--kinds-dir --twins-dir --compositions-dir --runs-dir)
+  domain diff <a> <b> [--format]        What differs between two domains, each a domain file or a run folder
+                                        (read from run.json only): per kind readings, dynamics, commands,
+                                        faults, states, affected instances and relations; flags a changed
+                                        model under an unchanged version (--format json|markdown)
   kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
                                         against the plant wire kind schema (--twin: also what a twin needs)
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
@@ -169,7 +178,8 @@ Commands:
   suite --domain --profile              Generate an audited graded suite
   score --run --label                   Offline scorecard from artifacts
   report <run-dir>                      Summarize a run folder (--format json|markdown,
-                                        --out <file>; markdown requires --out)
+                                        --out <file>, --replay)
+  report compare --a --b                Compare two ended runs (reference a)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   device serve --socket <path>          Serve the device emulator over a UDS

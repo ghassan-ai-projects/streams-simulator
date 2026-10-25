@@ -164,3 +164,8 @@
   width: min(calc(11px / var(--zoom)), 20px);
   height: min(calc(11px / var(--zoom)), 20px);
 }
+
+.readout dd.flagged {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}

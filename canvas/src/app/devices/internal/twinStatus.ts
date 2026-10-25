@@ -1,8 +1,11 @@
+import { claimSummary } from "../../../model/devices";
 import { counted } from "../../../model/workspace";
 import type { DeviceFailure } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
+import { claimsOf } from "./claimRows";
 import type { SaveStatus } from "./saveStatus";
 import type { Built, TwinDraft } from "./twinDraft";
+import { partialOf } from "./twinScope";
 import { createBlock, isBuilding, isStale, verdictOf } from "./twinSelectors";
 
 function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
@@ -26,13 +29,19 @@ function refused(draft: TwinDraft, failure: DeviceFailure): SaveStatus {
   return status(`The binary refuses the choices: ${words}.`, "warn");
 }
 
+function ready(built: Built, draft: TwinDraft): SaveStatus {
+  const partial = partialOf(draft);
+  const text = partial === "" ? `Twin created. ${claimSummary(claimsOf(built))}` : `Partial twin created. ${partial}`;
+  return status(text, "ok", `${text} (${built.path})`);
+}
+
 function created(draft: TwinDraft, built: Built): SaveStatus {
   if (isStale(draft))
     return status("Choices changed since the twin was created. Create it again to update it.", "warn");
   const { implemented, lint } = built;
   const verdict = verdictOf(built);
   if (verdict === "pending") return status("Checking the twin…", "busy");
-  if (verdict === "ready") return status("Twin ready.", "ok", built.path);
+  if (verdict === "ready") return ready(built, draft);
   if (implemented.kind === "failed") {
     return status("Twin created, but it does not match its device.", "warn", implemented.failure.diagnostic.message);
   }

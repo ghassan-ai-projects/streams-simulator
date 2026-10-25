@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -187,5 +188,14 @@ func TestFacadeConstructorsAndRefusals(t *testing.T) {
 	refusal := director.ToolErrorf(director.CodeNotImplemented, "no %s", "x")
 	if refusal.Error() != "not_implemented: no x" || errors.Unwrap(refusal) != nil {
 		t.Fatalf("refusal = %v", refusal)
+	}
+}
+
+func TestFacadeListsTheDeliveryPerturbationsAJobMayPlan(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	kinds, ok := d.PerturbationCatalog()["perturbations"].([]run.PerturbationKind)
+	if !ok || len(kinds) == 0 || kinds[0].Kind == "" {
+		t.Fatalf("catalog = %v, want the delivery perturbation kinds", d.PerturbationCatalog())
 	}
 }

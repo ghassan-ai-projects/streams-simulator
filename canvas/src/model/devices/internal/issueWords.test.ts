@@ -49,6 +49,7 @@ describe("the plain words for the binary's issues", () => {
     ["twin_member_required", { member: "colour" }, "Needs the colour setting"],
     ["twin_member_required", { member: "" }, "Needs more detail"],
     ["twin_member_unsupported", {}, "A twin does not reproduce this setting"],
+    ["twin_member_unsupported", { member: "scan_class" }, "A twin does not reproduce the setting scan_class"],
     ["twin_name_pattern", {}, "A twin needs a simpler name: lower-case letters, digits and _"],
     ["twin_type_unsupported", {}, "A twin reproduces number and on/off readings only"],
     ["twin_unit_required", {}, "temperature needs a unit"],

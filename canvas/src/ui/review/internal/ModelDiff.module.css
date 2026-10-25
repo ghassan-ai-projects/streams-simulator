@@ -1,0 +1,60 @@
+.warning {
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--status-warn);
+  border-radius: var(--radius-md);
+  background: var(--status-warn-bg);
+  font-weight: 600;
+}
+
+.sides {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px var(--space-3);
+  margin: 0 0 var(--space-2);
+}
+
+.sides dt {
+  font-weight: 600;
+}
+
+.sides dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+}
+
+.before {
+  color: var(--text-secondary);
+}
+
+.status[data-status="added"] {
+  color: var(--status-ok);
+}
+
+.status[data-status="removed"] {
+  color: var(--status-alarm);
+}
+
+.failure {
+  color: var(--status-alarm);
+  overflow-wrap: anywhere;
+}
+
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.link {
+  margin: 0;
+}

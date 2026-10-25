@@ -5,6 +5,7 @@ import { interfaceNeedsOf, problemsOf, twinNeedsOf } from "../../../app/devices"
 import type { NavigationStore } from "../../../app/shell";
 import { stemOf } from "../../../model/devices";
 import { cx, failureLine, panel, screen, useStore } from "../../primitives";
+import type { AssumptionsSlot } from "./CheckPanel";
 import { CheckPanel } from "./CheckPanel";
 import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
@@ -25,11 +26,12 @@ interface StepProps {
   readonly tabs: ReactNode;
   readonly step: Exclude<Step, "interface">;
   readonly reveal: Reveal;
+  readonly assumptions: AssumptionsSlot;
 }
 
 type ReadyProps = Omit<StepProps, "draft"> & { readonly device: Draft; readonly twin: TwinDraft };
 
-function Ready({ device, devices, navigation, tabs, step, twin, reveal }: ReadyProps) {
+function Ready({ device, devices, navigation, tabs, step, twin, reveal, assumptions }: ReadyProps) {
   const session = devices.twin;
   const issues = useMemo(() => [...problemsOf(twin), ...twin.issues], [twin]);
   const needs = interfaceNeedsOf(device, twin);
@@ -44,7 +46,7 @@ function Ready({ device, devices, navigation, tabs, step, twin, reveal }: ReadyP
         <TwinBar draft={twin} device={device} twin={session} navigation={navigation} step={step} />
         <div className={styles.formHost}>
           {step === "check" ? (
-            <CheckPanel draft={twin} device={device} />
+            <CheckPanel draft={twin} device={device} assumptions={assumptions} />
           ) : (
             <TwinForm
               twin={session}
@@ -97,15 +99,17 @@ interface UnavailableProps extends Omit<FrameProps, "children"> {
   readonly navigation: NavigationStore;
   readonly failure: string;
   readonly held: readonly Held[];
+  readonly lead: string;
+  readonly reveal: Reveal;
 }
 
-function Unavailable({ twin, navigation, failure, held, ...frame }: UnavailableProps) {
+function Unavailable({ twin, navigation, failure, held, lead, reveal, ...frame }: UnavailableProps) {
   return (
     <Frame {...frame}>
       <div className={cx(panel.body, styles.form)}>
         <FormTitle id="unavailable-title" words="The behaviour cannot be opened yet" interim />
         {held.length > 0 ? (
-          <HeldNotice held={held} twin={twin} navigation={navigation} />
+          <HeldNotice held={held} twin={twin} navigation={navigation} lead={lead} reveal={reveal} />
         ) : (
           <>
             <p className={notes.unavailable} role="alert">
@@ -132,7 +136,7 @@ function Lacking({ device, tabs, bar, reveal }: LackingProps) {
   );
 }
 
-export function TwinStep({ draft, devices, navigation, tabs, step, reveal }: StepProps) {
+export function TwinStep({ draft, devices, navigation, tabs, step, reveal, assumptions }: StepProps) {
   const session = devices.twin;
   const state = useStore(session);
   useEffect(() => {
@@ -142,7 +146,7 @@ export function TwinStep({ draft, devices, navigation, tabs, step, reveal }: Ste
     };
   }, [session, draft.path]);
   if (state.phase === "ready" && state.path === draft.path) {
-    const props = { device: draft, devices, navigation, tabs, step, twin: state, reveal };
+    const props = { device: draft, devices, navigation, tabs, step, twin: state, reveal, assumptions };
     return <Ready {...props} />;
   }
   if (state.phase === "failed") {
@@ -154,7 +158,18 @@ export function TwinStep({ draft, devices, navigation, tabs, step, reveal }: Ste
     );
     if (twinNeedsOf(draft).length > 0) return <Lacking device={draft} tabs={tabs} bar={bar} reveal={reveal} />;
     const failure = `The behaviour could not be opened: ${failureLine(state.failure.diagnostic)}`;
-    const props = { name: stemOf(draft.path), tabs, bar, twin: session, navigation, failure, held: state.held };
+    const held = state.held;
+    const props = {
+      name: stemOf(draft.path),
+      tabs,
+      bar,
+      twin: session,
+      navigation,
+      failure,
+      held,
+      lead: draft.path,
+      reveal,
+    };
     return <Unavailable {...props} />;
   }
   return <Waiting tabs={tabs} words="Opening the behaviour…" />;

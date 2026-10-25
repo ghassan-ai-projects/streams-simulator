@@ -57,7 +57,7 @@ func TestASimNodeStopReportsTheFailureOfAnEndedSession(t *testing.T) {
 		t.Fatalf("stop = %v, want %v", err, failure)
 	}
 	var none *simNode
-	if none.stop() != nil || none.end("", "", "") != nil || none.signal() != nil {
+	if none.stop() != nil || none.end("", "", "", nil) != nil || none.signal() != nil {
 		t.Fatal("a relay without a simulated node must stop, end and signal as nothing")
 	}
 }

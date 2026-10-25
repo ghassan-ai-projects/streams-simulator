@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
-import { keepKnownFaults, launchSteps, outcomeOf, paceOf, rateWords, stepsFor, watchWords } from "./launch";
+import { keepKnownFaults, paceOf, rateWords, watchWords } from "./launch";
 import { planProblems } from "./planProblems";
 
 type PlannedCall = LaunchPlan["calls"][number];
@@ -12,40 +12,12 @@ const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   durationS: 100,
   explore: true,
   faults: [],
+  perturbations: [],
   calls: [],
   ...overrides,
 });
 
 describe("launch plan", () => {
-  it("advances in chunks to the end so progress can be shown", () => {
-    const steps = launchSteps(plan({}), 4);
-    expect(steps).toEqual([
-      { kind: "advance", byNs: 25e9, toS: 25 },
-      { kind: "advance", byNs: 25e9, toS: 50 },
-      { kind: "advance", byNs: 25e9, toS: 75 },
-      { kind: "advance", byNs: 25e9, toS: 100 },
-    ]);
-  });
-
-  it("stops at each fault's time, injects it there, and injects time-zero faults first", () => {
-    const steps = launchSteps(
-      plan({
-        faults: [
-          { entity: "CT-1", fault: "fan", atS: 30 },
-          { entity: "AC-1", fault: "cooler", atS: 0 },
-        ],
-      }),
-      2,
-    );
-    expect(steps).toEqual([
-      { kind: "inject", entity: "AC-1", fault: "cooler" },
-      { kind: "advance", byNs: 30e9, toS: 30 },
-      { kind: "inject", entity: "CT-1", fault: "fan" },
-      { kind: "advance", byNs: 20e9, toS: 50 },
-      { kind: "advance", byNs: 50e9, toS: 100 },
-    ]);
-  });
-
   it("names every problem of a plan in words", () => {
     expect(planProblems(plan({}), anySpec)).toEqual([]);
     const texts = (p: LaunchPlan) => planProblems(p, anySpec).map((problem) => problem.text);
@@ -75,7 +47,7 @@ describe("launch plan", () => {
 const setpoint = {
   name: "chiller__set_setpoint",
   entityArg: "chiller_id",
-  args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12 }],
+  args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12, unit: "" }],
 } as const;
 
 const call = (overrides: Partial<PlannedCall>): PlannedCall => ({
@@ -87,24 +59,6 @@ const call = (overrides: Partial<PlannedCall>): PlannedCall => ({
 });
 
 describe("effector calls in a plan", () => {
-  it("makes each call at its minute, after the faults of the same minute, at the world's clock", () => {
-    const steps = launchSteps(
-      plan({
-        durationS: 120,
-        faults: [{ entity: "CT-1", fault: "fan", atS: 60 }],
-        calls: [call({ atS: 60 }), call({ atS: 0, args: { chiller_id: "CH-1", setpoint_c: 9 } })],
-      }),
-      1,
-    );
-    expect(steps).toEqual([
-      { kind: "invoke", ...call({ atS: 0, args: { chiller_id: "CH-1", setpoint_c: 9 } }) },
-      { kind: "advance", byNs: 60e9, toS: 60 },
-      { kind: "inject", entity: "CT-1", fault: "fan" },
-      { kind: "invoke", ...call({ atS: 60 }) },
-      { kind: "advance", byNs: 60e9, toS: 120 },
-    ]);
-  });
-
   it("names what is missing from a call and what its arguments get wrong", () => {
     const specOf = (entity: string, effector: string) =>
       entity === "CH-1" && effector === setpoint.name ? setpoint : undefined;
@@ -124,25 +78,6 @@ describe("effector calls in a plan", () => {
       index: 0,
       part: "minute",
     });
-  });
-
-  it("reads the acknowledgement as accepted or refused with the binary's reason", () => {
-    const accepted = outcomeOf(call({}), { accepted: true, reason: "", effectEtaNs: 5e9 }, 1234);
-    expect(accepted).toMatchObject({
-      accepted: true,
-      reason: "",
-      effectEtaNs: 5e9,
-      entity: "CH-1",
-      atS: 60,
-      atMs: 1234,
-    });
-    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused", effectEtaNs: null }, 0)).toMatchObject({
-      accepted: false,
-      reason: "effector_refused",
-      effectEtaNs: null,
-    });
-    const silent = { accepted: false, reason: "", effectEtaNs: null };
-    expect(outcomeOf(call({}), silent, 0)).toMatchObject({ accepted: false, reason: "no reason given" });
   });
 });
 
@@ -187,12 +122,5 @@ describe("run pace", () => {
     expect(watchWords(86_400)).toBe("about 30 s");
     expect(rateWords(59.6)).toBe("60 s per s");
     expect(rateWords(null)).toBe("");
-  });
-
-  it("cuts a watched run into finer steps than a fast one", () => {
-    const advances = (steps: readonly { kind: string }[]) => steps.filter((step) => step.kind === "advance").length;
-    expect(advances(stepsFor(plan({ durationS: 3000, pace: "watch" })))).toBe(30);
-    expect(advances(stepsFor(plan({ durationS: 3000, pace: "fast" })))).toBe(20);
-    expect(advances(stepsFor(plan({ durationS: 3000 })))).toBe(20);
   });
 });

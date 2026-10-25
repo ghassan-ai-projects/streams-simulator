@@ -46,6 +46,116 @@ describe("the run report", () => {
     expect(parsed.scoring).toBeNull();
   });
 
+  it("reads the name and purpose of a run, and an empty one for a run that has none", () => {
+    const named = { ...reportWire, run: { ...reportWire.run, name: "Fan failure", purpose: "Observe recovery" } };
+    expect(parseReportPayload(named)).toMatchObject({ name: "Fan failure", purpose: "Observe recovery" });
+    expect(parseReportPayload(reportWire)).toMatchObject({ name: "", purpose: "" });
+  });
+
+  it("reads when a fault was cleared by its plan and the window and parameters of a delivery condition", () => {
+    const planned = {
+      ...reportWire,
+      truth: {
+        ...reportWire.truth,
+        faults: [
+          { entity_id: "CT-1", fault: "fan", onset_ns: 60e9, cleared_ns: 150e9, cleared_by: "command" },
+          { entity_id: "CT-2", fault: "fan", onset_ns: 70e9, cleared_ns: null, cleared_by: null },
+        ],
+        perturbations: [
+          {
+            action: "apply",
+            perturbation: "drop",
+            params: { rate: 0.5, fields: ["a"], on: true, mixed: [1] },
+            from_ns: 30e9,
+            until_ns: 120e9,
+          },
+          { action: "apply", perturbation: "reorder", from_ns: 40e9, until_ns: 0 },
+          { action: "clear", perturbation: "drop", at_ns: 120e9 },
+        ],
+      },
+    };
+    const parsed = parseReportPayload(planned);
+    const named = (name: string) => parsed?.disturbances.find((d) => d.name === name && d.action !== "clear");
+    expect(named("fan")).toMatchObject({ clearedNs: 150e9, clearedBy: "command" });
+    expect(named("drop")).toMatchObject({ params: { rate: 0.5, fields: ["a"] }, untilNs: 120e9 });
+    expect(named("reorder")).toMatchObject({ params: {} });
+    expect(named("reorder")).not.toHaveProperty("untilNs");
+  });
+
+  it("reads the plan and the ending a job-run recorded, and nothing for a run that recorded none", () => {
+    const stopped = {
+      ...reportWire,
+      run: {
+        ...reportWire.run,
+        requested_end_ns: 7_200e9,
+        termination: { reason: "stopped_by_operator", at_ns: 1_680e9 },
+      },
+    };
+    expect(parseReportPayload(stopped)).toMatchObject({
+      requestedEndNs: 7_200e9,
+      termination: { reason: "stopped_by_operator", atNs: 1_680e9 },
+    });
+    expect(parseReportPayload(reportWire)).toMatchObject({ requestedEndNs: null, termination: null });
+  });
+
+  it("reads the pace a paced run recorded, and none for a run that ran as fast as it could", () => {
+    const paced = { ...reportWire, run: { ...reportWire.run, rate: 60 } };
+    expect(parseReportPayload(paced)).toMatchObject({ rate: 60 });
+    expect(parseReportPayload(reportWire)).toMatchObject({ rate: null });
+    expect(parseReportPayload({ ...reportWire, run: { ...reportWire.run, rate: "fast" } })).toMatchObject({
+      rate: null,
+    });
+  });
+
+  it("marks the calls the operator gave during the run by the id the director recorded them under", () => {
+    const call = (commandId: string) => ({
+      at_ns: 60e9,
+      entity_id: "CT-1",
+      effector: "start",
+      command_id: commandId,
+      outcome: { accepted: true },
+    });
+    const wire = { ...reportWire, truth: { ...reportWire.truth, effector_calls: [call("job-now-1"), call("job-3")] } };
+    expect(parseReportPayload(wire)?.effectorCalls.map((each) => each.immediate)).toEqual([true, false]);
+    expect(parseReportPayload(reportWire)?.effectorCalls.map((each) => each.immediate)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("reads each effector call's arguments, keeping only the numbers, texts and booleans a plan can carry", () => {
+    const call = (args: unknown) => ({
+      at_ns: 60e9,
+      entity_id: "CT-1",
+      effector: "set_setpoint",
+      args,
+      outcome: { accepted: true },
+    });
+    const wire = (args: unknown) => ({ ...reportWire, truth: { ...reportWire.truth, effector_calls: [call(args)] } });
+    const argsOf = (args: unknown) => parseReportPayload(wire(args))?.effectorCalls[0]?.args;
+    expect(argsOf({ tower_id: "CT-1", setpoint: 7, eco: true, mode: "auto" })).toEqual({
+      tower_id: "CT-1",
+      setpoint: 7,
+      eco: true,
+      mode: "auto",
+    });
+    expect(argsOf({ nested: { a: 1 }, list: [1], none: null, kept: 2 })).toEqual({ kept: 2 });
+    expect(argsOf(undefined)).toEqual({});
+    expect(argsOf("7")).toEqual({});
+  });
+
+  it.each([
+    ["an unknown reason", { reason: "abandoned", at_ns: 5 }],
+    ["a text instant", { reason: "completed", at_ns: "5" }],
+    ["no instant", { reason: "completed" }],
+    ["a text object", "completed"],
+  ])("ignores a termination with %s", (_name, termination) => {
+    const wire = { ...reportWire, run: { ...reportWire.run, requested_end_ns: "soon", termination } };
+    expect(parseReportPayload(wire)).toMatchObject({ requestedEndNs: null, termination: null });
+  });
+
   it("refuses a report without the sections a reader needs", () => {
     expect(parseReportPayload(null)).toBeNull();
     expect(parseReportPayload({})).toBeNull();

@@ -57,6 +57,17 @@ describe("run status", () => {
     expect(screen.queryByText("not finished")).toBeNull();
   });
 
+  it("says a run the listing shows as running is Running, never Did not finish, while it runs", () => {
+    const open = { phase: "ready", value: { ...parsed, ended: false, complete: false } } as const;
+    const { unmount } = render(<Status state={state({ report: open, running: true })} now={now} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Running");
+    expect(screen.queryByText(/Did not finish/)).toBeNull();
+    expect(screen.queryByText(/Connected session/)).toBeNull();
+    unmount();
+    render(<Status state={state({ report: open, running: false })} now={now} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
+  });
+
   it("styles Not verified, Did not finish, Verified and Verifying as four different chips", () => {
     const divergent = {
       phase: "ready",
@@ -75,5 +86,20 @@ describe("run status", () => {
       return chip?.className;
     });
     expect(new Set(looks).size).toBe(4);
+  });
+
+  it("says where the operator stopped a run, out of what was requested, and nothing for one that completed", () => {
+    const stopped = {
+      ...parsed,
+      requestedEndNs: 3_600e9,
+      endNs: 1_680e9,
+      termination: { reason: "stopped_by_operator", atNs: 1_680e9 },
+    } as const;
+    const { unmount } = render(<Status state={state({ report: { phase: "ready", value: stopped } })} now={now} />);
+    expect(screen.getByText("Stopped by operator at 00:28:00 of 01:00:00")).toBeInTheDocument();
+    unmount();
+    const completed = { ...parsed, termination: { reason: "completed", atNs: 3_600e9 } } as const;
+    render(<Status state={state({ report: { phase: "ready", value: completed } })} now={now} />);
+    expect(screen.queryByText(/Stopped by operator/)).toBeNull();
   });
 });

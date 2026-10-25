@@ -3,6 +3,7 @@ export type {
   ConnectState,
   LaunchState,
   LaunchStore,
+  Loaded,
   PolicyDefaultState,
   Proposal,
   RunKind,

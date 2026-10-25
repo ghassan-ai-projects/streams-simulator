@@ -29,6 +29,7 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, rules.ToolErrorf(rules.CodeWorldNotFound, "unknown world %q", worldID)
 	}
+	d.stopJobAndWait(worldID)
 	if err := d.finishDestroyedWorld(w, worldID); err != nil {
 		return nil, err
 	}

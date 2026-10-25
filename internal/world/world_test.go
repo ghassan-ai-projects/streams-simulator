@@ -171,3 +171,15 @@ func TestOptionsReachTheWorld(t *testing.T) {
 		t.Fatalf("forced mode: %v, %+v", err, result)
 	}
 }
+
+func TestTheIdOfTheNthInjectedFaultIsFaultIDOfN(t *testing.T) {
+	t.Parallel()
+	w := newPondWorld(t, world.Options{})
+	pond := w.EntityIDs()[0]
+	for ordinal := range 3 {
+		id, err := w.InjectFault(pond, "aerator_failure", model.DefaultStartTimeNS+int64(ordinal)*60e9, nil)
+		if err != nil || id != world.FaultID(ordinal) {
+			t.Fatalf("fault %d = %q, %v, want %q", ordinal, id, err, world.FaultID(ordinal))
+		}
+	}
+}

@@ -33,6 +33,9 @@ type RunArtifact struct {
 
 	Mode string `json:"mode,omitempty"`
 
+	Plan        *RunPlan     `json:"plan,omitempty"`
+	Termination *Termination `json:"termination,omitempty"`
+
 	JournalDigest       string `json:"journal_digest,omitempty"`
 	SealedJournalDigest string `json:"sealed_journal_digest,omitempty"`
 	JournalFileDigest   string `json:"journal_file_digest,omitempty"`

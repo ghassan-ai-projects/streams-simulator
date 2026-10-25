@@ -90,6 +90,7 @@ describe("review lifecycle", () => {
     worldId: "w-1",
     ended: true,
     complete: true,
+    running: false,
     incompleteReason: "",
     explore: false,
     seed: 5,

@@ -125,7 +125,7 @@ describe("what a twin needs, shown in the interface step before the behaviour", 
     await behaviourOf();
     expect(screen.getByRole("button", { name: "Create twin" })).toHaveAttribute("aria-disabled", "false");
     createTwin();
-    expect(await screen.findByText("Twin ready.")).toBeInTheDocument();
+    expect(await screen.findByText(/^Twin created\./)).toBeInTheDocument();
     pickStep(/^Interface/);
     expect(await screen.findByText("Ready for a twin")).toBeInTheDocument();
   });

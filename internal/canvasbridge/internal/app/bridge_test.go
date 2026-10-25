@@ -43,7 +43,7 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 	h.write(t, "runs/w-4/journal.jsonl", `{"type":"run.opened","mode":"evaluate","start_time_ns":100,"domain":{"id":"plant"}}`+"\n"+
 		`{"type":"run.closed","at_ns":1800000000100,"incomplete":true}`+"\n")
 	h.write(t, "runs/w-4/run.json", `{"seed":4,"error":"the world was destroyed before its run ended (run.end was not called)"}`)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

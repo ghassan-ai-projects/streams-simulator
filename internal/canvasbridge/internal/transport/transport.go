@@ -27,7 +27,7 @@ const (
 type Service interface {
 	Pair(code string) (string, error)
 	Admits(session string) bool
-	Workspace() (domain.Listing, error)
+	Workspace(ctx context.Context) (domain.Listing, error)
 	ReadFile(rel string) (domain.FileDocument, error)
 	WriteFile(rel, content, etag string) (domain.FileDocument, error)
 	Actions() []domain.Action

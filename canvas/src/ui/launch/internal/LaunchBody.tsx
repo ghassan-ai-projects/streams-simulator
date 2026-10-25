@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LaunchState, LaunchStore, RunWatch } from "../../../app/launch";
 import type { Draft } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
@@ -18,12 +19,13 @@ interface BodyProps {
   readonly change: (change: Change) => void;
   readonly onFinished: (worldId: string) => void;
   readonly watch: RunWatch;
+  readonly note: ReactNode;
 }
 
-export function Body({ state, launch, plant, path, draft, selected, change, onFinished, watch }: BodyProps) {
+export function Body({ state, launch, plant, path, draft, selected, change, onFinished, watch, note }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
-    return own ? <Progress state={state} launch={launch} title={plantTitle(plant)} /> : <Elsewhere state={state} />;
+    return own ? <Progress state={state} launch={launch} plant={plant} /> : <Elsewhere state={state} />;
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
   if (watch.shows(state))
@@ -38,10 +40,12 @@ export function Body({ state, launch, plant, path, draft, selected, change, onFi
     );
   return (
     <LaunchForm
+      launch={launch}
       plant={plant}
       draft={draft}
       selected={selected}
       change={change}
+      note={note}
       onStart={(plan) => {
         void launch.start({ domain: plant.id, title: plantTitle(plant), path }, plan);
       }}

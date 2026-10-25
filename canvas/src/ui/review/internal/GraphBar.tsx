@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ReviewState } from "../../../app/review";
 import type { Opening } from "../../../model/review";
 import { runClock } from "../../../model/review";
@@ -26,10 +27,12 @@ export function GraphBar({
   state,
   opening,
   startNs,
+  trends,
 }: {
   readonly state: ReviewState;
   readonly opening: Opening | null;
   readonly startNs: number;
+  readonly trends: ReactNode;
 }) {
   const words = graphWords(state, opening, startNs);
   return (
@@ -38,6 +41,7 @@ export function GraphBar({
         {words}
       </span>
       <Notices state={state} />
+      {trends}
       <ZoomBar review />
     </div>
   );

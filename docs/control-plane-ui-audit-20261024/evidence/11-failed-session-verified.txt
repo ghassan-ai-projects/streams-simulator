@@ -1,0 +1,1064 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - button "Factory utilities"
+      - heading "Run c-6dc5acbb" [active] [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Run details panel" [pressed]:
+    - text: Run details
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - 'generic "Connected session: the plant ran linked to a plant wire host, and through a gateway to real boards, until it was stopped."':
+    - text: Connected session
+  - generic: seed 1
+  - button "About this run":
+  - generic "The files match and the replay reproduces.":
+    - text: Verified
+  - status: Verified
+  - button "Open plant"
+  - button "Set up another run":
+    - text: Set up another run
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Site 2":
+      - generic "Site"
+      - generic: "2"
+    - list:
+      - button "WX-1 weather Simulated · by the session plan":
+        - generic: WX-1
+        - generic: weather
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "CAL-1 site calendar Simulated · by the session plan":
+        - generic: CAL-1
+        - generic: site calendar
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+    - generic "Production hall 5":
+      - generic "Production hall"
+      - generic: "5"
+    - list:
+      - button "M-1 molder Simulated · by the session plan":
+        - generic: M-1
+        - generic: molder
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "M-2 molder Simulated · by the session plan":
+        - generic: M-2
+        - generic: molder
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "M-3 cnc Simulated · by the session plan":
+        - generic: M-3
+        - generic: cnc
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "M-4 packaging line Simulated · by the session plan":
+        - generic: M-4
+        - generic: packaging line
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "AHU-1 ahu Simulated · by the session plan":
+        - generic: AHU-1
+        - generic: ahu
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+    - generic "Compressor room 4":
+      - generic "Compressor room"
+      - generic: "4"
+    - list:
+      - button "AC-1 compressor lead Simulated · by the session plan":
+        - generic: AC-1
+        - generic: compressor lead
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "AC-2 compressor lag Simulated · by the session plan":
+        - generic: AC-2
+        - generic: compressor lag
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "R-1 air receiver Simulated · by the session plan":
+        - generic: R-1
+        - generic: air receiver
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "D-1 air dryer Simulated · by the session plan":
+        - generic: D-1
+        - generic: air dryer
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+    - generic "Chiller plant 6":
+      - generic "Chiller plant"
+      - generic: "6"
+    - list:
+      - button "CH-1 chiller Simulated · by the session plan":
+        - generic: CH-1
+        - generic: chiller
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "CT-1 cooling tower Simulated · by the session plan":
+        - generic: CT-1
+        - generic: cooling tower
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "P-1 chw pump Simulated · by the session plan":
+        - generic: P-1
+        - generic: chw pump
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "P-2 chw pump Simulated · by the session plan":
+        - generic: P-2
+        - generic: chw pump
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "P-3 chw pump Simulated · by the session plan":
+        - generic: P-3
+        - generic: chw pump
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "P-4 cw pump Simulated · by the session plan":
+        - generic: P-4
+        - generic: cw pump
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+    - generic "Substation 6":
+      - generic "Substation"
+      - generic: "6"
+    - list:
+      - button "MB-AIR air meter Simulated · by the session plan":
+        - generic: MB-AIR
+        - generic: air meter
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "MB-COOL cooling meter Simulated · by the session plan":
+        - generic: MB-COOL
+        - generic: cooling meter
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "MB-PROC process meter Simulated · by the session plan":
+        - generic: MB-PROC
+        - generic: process meter
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "MM-1 main meter Simulated · by the session plan":
+        - generic: MM-1
+        - generic: main meter
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "TX-1 transformer Simulated · by the session plan":
+        - generic: TX-1
+        - generic: transformer
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+      - button "G-1 generator Simulated · by the session plan":
+        - generic: G-1
+        - generic: generator
+        - generic "Simulated · by the session plan":
+          - generic: Simulated · by the session plan
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Run c-6dc5acbb":
+    - paragraph
+    - status
+    - button "Play":
+      - text: Play
+    - group "Playback speed":
+      - button "1×"
+      - button "10×"
+      - button "60×" [pressed]
+      - button "600×"
+    - generic: 00:00:00
+    - generic: of 00:00:00
+    - group "Playback steps":
+      - 'button "Previous event: none" [disabled]':
+      - button "Back 10 minutes":
+      - button "Forward 10 minutes":
+      - 'button "Next event: none" [disabled]':
+    - 'button "Jump to alarm: none" [disabled]':
+    - slider "Playback time": "0"
+    - paragraph: Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
+    - list "Events"
+    - paragraph
+    - paragraph: No faults or effector calls in this run
+    - generic "0 observations"
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 42 %
+      - generic: Zoom 42 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "WX-1, weather, 0 inputs, 2 outputs, Simulated · by the session plan":
+        - generic "WX-1":
+          - generic: WX-1
+        - generic "Simulated · by the session plan":
+        - generic "weather"
+        - term: dry bulb
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: wet bulb
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "CAL-1, site calendar, 0 inputs, 2 outputs, Simulated · by the session plan":
+        - generic "CAL-1":
+          - generic: CAL-1
+        - generic "Simulated · by the session plan":
+        - generic "site calendar"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: tariff
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "M-1, molder, 4 inputs, 3 outputs, Simulated · by the session plan":
+        - generic "M-1":
+          - generic: M-1
+        - generic "Simulated · by the session plan":
+        - generic "molder"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "M-2, molder, 4 inputs, 3 outputs, Simulated · by the session plan":
+        - generic "M-2":
+          - generic: M-2
+        - generic "Simulated · by the session plan":
+        - generic "molder"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "M-3, cnc, 4 inputs, 3 outputs, Simulated · by the session plan":
+        - generic "M-3":
+          - generic: M-3
+        - generic "Simulated · by the session plan":
+        - generic "cnc"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "M-4, packaging line, 4 inputs, 3 outputs, Simulated · by the session plan":
+        - generic "M-4":
+          - generic: M-4
+        - generic "Simulated · by the session plan":
+        - generic "packaging line"
+        - term: shift
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: coolant temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "AHU-1, ahu, 3 inputs, 1 output, Simulated · by the session plan":
+        - generic "AHU-1":
+          - generic: AHU-1
+        - generic "Simulated · by the session plan":
+        - generic "ahu"
+        - term: chw supply in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outdoor temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: occupancy
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cooling load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "AC-1, compressor lead, 1 input, 2 outputs, Simulated · by the session plan":
+        - generic "AC-1":
+          - generic: AC-1
+        - generic "Simulated · by the session plan":
+        - generic "compressor lead"
+        - term: header pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "AC-2, compressor lag, 1 input, 2 outputs, Simulated · by the session plan":
+        - generic "AC-2":
+          - generic: AC-2
+        - generic "Simulated · by the session plan":
+        - generic "compressor lag"
+        - term: header pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: air flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "R-1, air receiver, 2 inputs, 2 outputs, Simulated · by the session plan":
+        - generic "R-1":
+          - generic: R-1
+        - generic "Simulated · by the session plan":
+        - generic "air receiver"
+        - term: inflow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: demand
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: pressure
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outlet flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "D-1, air dryer, 1 input, 3 outputs, Simulated · by the session plan":
+        - generic "D-1":
+          - generic: D-1
+        - generic "Simulated · by the session plan":
+        - generic "air dryer"
+        - term: inlet flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: outlet flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: dew point
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "CH-1, chiller, 4 inputs, 4 outputs, Simulated · by the session plan":
+        - generic "CH-1":
+          - generic: CH-1
+        - generic "Simulated · by the session plan":
+        - generic "chiller"
+        - term: load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cond water in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: tariff
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: heat rejected
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw supply
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: chw return
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "CT-1, cooling tower, 3 inputs, 2 outputs, Simulated · by the session plan":
+        - generic "CT-1":
+          - generic: CT-1
+        - generic "Simulated · by the session plan":
+        - generic "cooling tower"
+        - term: heat in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: wet bulb in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: water flow
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: basin temp
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: fan power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "P-1, chw pump, 1 input, 4 outputs, Simulated · by the session plan":
+        - generic "P-1":
+          - generic: P-1
+        - generic "Simulated · by the session plan":
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cw flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: liquid out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "P-2, chw pump, 1 input, 4 outputs, Simulated · by the session plan":
+        - generic "P-2":
+          - generic: P-2
+        - generic "Simulated · by the session plan":
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cw flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: liquid out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "P-3, chw pump, 1 input, 4 outputs, Simulated · by the session plan":
+        - generic "P-3":
+          - generic: P-3
+        - generic "Simulated · by the session plan":
+        - generic "chw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cw flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: liquid out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "P-4, cw pump, 1 input, 4 outputs, Simulated · by the session plan":
+        - generic "P-4":
+          - generic: P-4
+        - generic "Simulated · by the session plan":
+        - generic "cw pump"
+        - term: suction level
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: cw flow out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: liquid out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "MB-AIR, air meter, 1 input, 1 output, Simulated · by the session plan":
+        - generic "MB-AIR":
+          - generic: MB-AIR
+        - generic "Simulated · by the session plan":
+        - generic "air meter"
+        - term: loads in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "MB-COOL, cooling meter, 1 input, 1 output, Simulated · by the session plan":
+        - generic "MB-COOL":
+          - generic: MB-COOL
+        - generic "Simulated · by the session plan":
+        - generic "cooling meter"
+        - term: loads in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "MB-PROC, process meter, 1 input, 1 output, Simulated · by the session plan":
+        - generic "MB-PROC":
+          - generic: MB-PROC
+        - generic "Simulated · by the session plan":
+        - generic "process meter"
+        - term: loads in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "MM-1, main meter, 1 input, 1 output, Simulated · by the session plan":
+        - generic "MM-1":
+          - generic: MM-1
+        - generic "Simulated · by the session plan":
+        - generic "main meter"
+        - term: loads in
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: power out
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "TX-1, transformer, 1 input, 0 outputs, Simulated · by the session plan":
+        - generic "TX-1":
+          - generic: TX-1
+        - generic "Simulated · by the session plan":
+        - generic "transformer"
+        - term: load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - group "G-1, generator, 1 input, 1 output, Simulated · by the session plan":
+        - generic "G-1":
+          - generic: G-1
+        - generic "Simulated · by the session plan":
+        - generic "generator"
+        - term: site load
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+        - term: output
+        - definition:
+          - generic "not observed":
+            - text: ·
+            - generic: not observed
+      - generic "Site · 2 nodes":
+        - generic: Site
+        - generic: 2 nodes
+      - generic "Production hall · 5 nodes":
+        - generic: Production
+        - generic: hall
+        - generic: 5 nodes
+      - generic "Compressor room · 4 nodes":
+        - generic: Compressor
+        - generic: room
+        - generic: 4 nodes
+      - generic "Chiller plant · 6 nodes":
+        - generic: Chiller
+        - generic: plant
+        - generic: 6 nodes
+      - generic "Substation · 6 nodes":
+        - generic: Substation
+        - generic: 6 nodes
+  - complementary "Run details":
+    - group "Run details view":
+      - button "Report" [pressed]
+      - button "Inspect"
+    - region "Report":
+      - paragraph: No connection health recorded at this time.
+      - region "Commands":
+        - heading "Commands" [level=2]
+        - paragraph: "Allowed policies: none. Commands to simulated devices are refused, except safe stops."
+        - paragraph: Acceptance and the board's report do not prove an effect. Host observations are separate evidence.
+        - paragraph: No commands recorded at this time.
+      - region "Twin vs board":
+        - heading "Twin vs board" [level=2]
+        - paragraph: Runs this plant's domain as the twin, with the commands the board accepted, and compares it with what the board reported. It measures the twin; the board's readings are evidence, not truth.
+        - text: Tolerances (optional)
+        - textbox "Tolerances (optional)"
+        - paragraph: Optional. Absolute per metric, written device.metric=value or kind.metric=value, separated by commas. A metric without one uses a share of its declared range. The binary checks what you type.
+        - button "Compare with twin"
+        - status
+      - generic "The files match and the replay reproduces."
+      - paragraph: "Connected session: the true results below are the simulator's own record of the plant while it was linked to the plant wire host."
+      - region "Disturbances and effector calls":
+        - heading "Disturbances and effector calls" [level=2]
+        - paragraph: None in this run.
+      - region "True results":
+        - heading "True results" [level=2]
+        - paragraph: What really happened in the plant. An outside system could not see it while the run was live; it is shown here once the run has ended.
+        - table:
+          - rowgroup:
+            - row "KPI Mean Unit Range":
+              - columnheader "KPI"
+              - columnheader "Mean"
+              - columnheader "Unit":
+                - generic: Unit
+              - columnheader "Range"
+          - rowgroup:
+            - row "M-1":
+              - rowheader "M-1"
+            - row "Specific power 2.50 kW/% steady":
+              - rowheader "Specific power"
+              - cell "2.50"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 6.00 s steady":
+              - rowheader "Cycle time"
+              - cell "6.00"
+              - cell "s"
+              - cell "steady"
+            - row "Scrap 1.20 % steady":
+              - rowheader "Scrap"
+              - cell "1.20"
+              - cell "%"
+              - cell "steady"
+            - row "M-2":
+              - rowheader "M-2"
+            - row "Specific power 2.50 kW/% steady":
+              - rowheader "Specific power"
+              - cell "2.50"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 6.00 s steady":
+              - rowheader "Cycle time"
+              - cell "6.00"
+              - cell "s"
+              - cell "steady"
+            - row "Scrap 1.20 % steady":
+              - rowheader "Scrap"
+              - cell "1.20"
+              - cell "%"
+              - cell "steady"
+            - row "M-3":
+              - rowheader "M-3"
+            - row "Specific power 0.80 kW/% steady":
+              - rowheader "Specific power"
+              - cell "0.80"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 12.0 s steady":
+              - rowheader "Cycle time"
+              - cell "12.0"
+              - cell "s"
+              - cell "steady"
+            - row "Scrap 1.20 % steady":
+              - rowheader "Scrap"
+              - cell "1.20"
+              - cell "%"
+              - cell "steady"
+            - row "M-4":
+              - rowheader "M-4"
+            - row "Specific power 0.90 kW/% steady":
+              - rowheader "Specific power"
+              - cell "0.90"
+              - cell "kW/%"
+              - cell "steady"
+            - row "Cycle time 1.00 s steady":
+              - rowheader "Cycle time"
+              - cell "1.00"
+              - cell "s"
+              - cell "steady"
+            - row "Scrap 0.80 % steady":
+              - rowheader "Scrap"
+              - cell "0.80"
+              - cell "%"
+              - cell "steady"
+            - row "AC-1":
+              - rowheader "AC-1"
+            - row "Specific power 0.11 kWh/m³ steady":
+              - rowheader "Specific power"
+              - cell "0.11"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "Load fraction 1.00 steady":
+              - rowheader "Load fraction"
+              - cell "1.00"
+              - cell
+              - cell "steady"
+            - row "AC-2":
+              - rowheader "AC-2"
+            - row "Specific power 0.11 kWh/m³ steady":
+              - rowheader "Specific power"
+              - cell "0.11"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "Load fraction 1.00 steady":
+              - rowheader "Load fraction"
+              - cell "1.00"
+              - cell
+              - cell "steady"
+            - row "D-1":
+              - rowheader "D-1"
+            - row "Regen duty 0.98 steady":
+              - rowheader "Regen duty"
+              - cell "0.98"
+              - cell
+              - cell "steady"
+            - row "CH-1":
+              - rowheader "CH-1"
+            - row "COP 8.85 steady":
+              - rowheader "COP"
+              - cell "8.85"
+              - cell
+              - cell "steady"
+            - row "Specific power 0.12 steady":
+              - rowheader "Specific power"
+              - cell "0.12"
+              - cell
+              - cell "steady"
+            - row "CT-1":
+              - rowheader "CT-1"
+            - row "Approach 4.20 °C steady":
+              - rowheader "Approach"
+              - cell "4.20"
+              - cell "°C"
+              - cell "steady"
+            - row "P-1":
+              - rowheader "P-1"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-2":
+              - rowheader "P-2"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-3":
+              - rowheader "P-3"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "P-4":
+              - rowheader "P-4"
+            - row "Specific energy 0.10 kWh/m³ steady":
+              - rowheader "Specific energy"
+              - cell "0.10"
+              - cell "kWh/m³"
+              - cell "steady"
+            - row "MB-AIR":
+              - rowheader "MB-AIR"
+            - row "Loading 63.0 % steady":
+              - rowheader "Loading"
+              - cell "63.0"
+              - cell "%"
+              - cell "steady"
+            - row "MB-COOL":
+              - rowheader "MB-COOL"
+            - row "Loading 49.5 % steady":
+              - rowheader "Loading"
+              - cell "49.5"
+              - cell "%"
+              - cell "steady"
+            - row "MB-PROC":
+              - rowheader "MB-PROC"
+            - row "Loading 75.7 % steady":
+              - rowheader "Loading"
+              - cell "75.7"
+              - cell "%"
+              - cell "steady"
+            - row "MM-1":
+              - rowheader "MM-1"
+            - row "Loading 35.5 % steady":
+              - rowheader "Loading"
+              - cell "35.5"
+              - cell "%"
+              - cell "steady"
+            - row "TX-1":
+              - rowheader "TX-1"
+            - row "Loading 0.28 steady":
+              - rowheader "Loading"
+              - cell "0.28"
+              - cell
+              - cell "steady"
+      - region "Alarms":
+        - heading "Alarms" [level=2]
+        - paragraph: How the alarm system behaved during the run.
+        - table:
+          - rowgroup:
+            - row "Measure Count What it means":
+              - columnheader "Measure"
+              - columnheader "Count"
+              - columnheader "What it means"
+          - rowgroup:
+            - row "Alarms raised 0 Alarms that came on during the run.":
+              - rowheader "Alarms raised"
+              - cell "0"
+              - cell "Alarms that came on during the run."
+            - 'row "Most alarms in 10 minutes 0 The busiest 10-minute spell: how many alarms came on in it."':
+              - rowheader "Most alarms in 10 minutes"
+              - cell "0"
+              - 'cell "The busiest 10-minute spell: how many alarms came on in it."'
+            - row "Overload spells 0 10-minute spells where alarms came too fast for an operator to follow.":
+              - rowheader "Overload spells"
+              - cell "0"
+              - cell "10-minute spells where alarms came too fast for an operator to follow."
+            - row "Repeating alarms 0 Alarms that kept switching on and off in a short time.":
+              - rowheader "Repeating alarms"
+              - cell "0"
+              - cell "Alarms that kept switching on and off in a short time."
+            - row "Stale alarms 0 Alarms still active long after they came on, with no operator action.":
+              - rowheader "Stale alarms"
+              - cell "0"
+              - cell "Alarms still active long after they came on, with no operator action."
+            - row "Still active at the end 0 Alarms still on when the run ended.":
+              - rowheader "Still active at the end"
+              - cell "0"
+              - cell "Alarms still on when the run ended."
+        - generic "For developers"
+      - region "Scoring":
+        - heading "Scoring" [level=2]
+        - paragraph: "Not scored: no outside system is connected to this run."
+        - generic "For developers"

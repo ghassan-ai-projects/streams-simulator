@@ -1,0 +1,88 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "Audit fan thermal response" [level=1]
+  - status: Run of Audit fan thermal response started
+  - button "Running Audit fan thermal response · 00:04:00 of 00:30:00 · 80 s per s":
+    - text: Running Audit fan thermal response · 00:04:00 of 00:30:00 · 80 s per s
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Inspector panel" [pressed]:
+    - text: Inspector
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Plant 3":
+      - generic "Plant"
+      - generic: "3"
+    - list:
+      - button "fan-01 fan":
+        - generic: fan-01
+        - generic: fan
+      - button "thermal-sensor-01 thermal sensor":
+        - generic: thermal-sensor-01
+        - generic: thermal sensor
+      - button "ble-sensor-node-01 ble sensor node":
+        - generic: ble-sensor-node-01
+        - generic: ble sensor node
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Plant audit-fan-thermal":
+    - generic: 3 instances · 1 link · some links record no ports
+    - button "Running · 00:04:00" [pressed]:
+      - text: Running · 00:04:00
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 100 %
+      - generic: Zoom 100 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "fan-01, fan, 0 inputs, 0 outputs":
+        - generic "fan-01"
+        - generic "fan"
+        - generic: no port data
+      - 'group "thermal-sensor-01, Fault: temperature · drift, thermal sensor, 0 inputs, 0 outputs"':
+        - generic "thermal-sensor-01"
+        - generic: Fault · temperature · drift
+        - generic "thermal sensor"
+        - generic: no port data
+      - group "ble-sensor-node-01, ble sensor node, 0 inputs, 0 outputs":
+        - generic "ble-sensor-node-01"
+        - generic "ble sensor node"
+        - generic: no port data
+      - generic "Plant · 3 nodes":
+        - generic: Plant
+        - generic: 3 nodes
+  - complementary "Run Audit fan thermal response":
+    - heading "Run Audit fan thermal response" [level=2]
+    - generic: 00:00:03 elapsed
+    - button "Close the run panel":
+    - group "How this run goes":
+      - generic: How this run goes
+      - radio "To completion Simulate the plant for a set duration, then save the run for review." [checked] [disabled]
+      - strong: To completion
+      - generic: Simulate the plant for a set duration, then save the run for review.
+      - radio "Connected session Link the plant to a plant wire host, and through a gateway to real boards, until you stop it." [disabled]
+      - strong: Connected session
+      - generic: Link the plant to a plant wire host, and through a gateway to real boards, until you stop it.
+    - status [active]: Running Audit fan thermal response as run w-5
+    - paragraph: 30 min of simulated time · Evaluate · 1 fault
+    - progressbar "Simulated time"
+    - paragraph: Running · 00:04:00 of 00:30:00 simulated · 80 s per s
+    - button "Stop now"
+    - paragraph: "Stop now ends the run at the next step and keeps what ran as a shorter run you can review. You can close this panel or leave the plant: the run goes on and its progress shows in the top bar."

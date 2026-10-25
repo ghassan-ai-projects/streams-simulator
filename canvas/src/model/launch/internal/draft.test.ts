@@ -33,7 +33,11 @@ describe("launch draft", () => {
 
   it("keeps an empty or unreadable number as NaN so the plan check can refuse it", () => {
     const plan = planOf(
-      draft({ seed: " ", duration: "", faults: [{ key: 1, entity: "CH-1", fault: "f", atMinutes: "x" }] }),
+      draft({
+        seed: " ",
+        duration: "",
+        faults: [{ key: 1, entity: "CH-1", fault: "f", atMinutes: "x", untilMinutes: "" }],
+      }),
       plant,
     );
     expect(plan.seed).toBeNaN();
@@ -54,7 +58,7 @@ describe("launch draft", () => {
   });
 
   it("fills a draft back from a plan in the unit that reads best", () => {
-    const hours = draftOf({ seed: 4, durationS: 7200, explore: false, faults: [], calls: [] });
+    const hours = draftOf({ seed: 4, durationS: 7200, explore: false, faults: [], perturbations: [], calls: [] });
     expect(hours).toMatchObject({ seed: "4", duration: "2", unit: "hours", explore: false, pace: "watch", nextKey: 1 });
     const minutes = draftOf({
       seed: 4,
@@ -62,10 +66,11 @@ describe("launch draft", () => {
       explore: true,
       pace: "fast",
       faults: [{ entity: "CH-1", fault: "fouling", atS: 90 }],
+      perturbations: [],
       calls: [{ entity: "CH-1", effector: "chiller__set_setpoint", atS: 600, args: { setpoint_c: 7.5 } }],
     });
     expect(minutes).toMatchObject({ duration: "90", unit: "minutes", pace: "fast", nextKey: 3 });
-    expect(minutes.faults).toEqual([{ key: 1, entity: "CH-1", fault: "fouling", atMinutes: "1.5" }]);
+    expect(minutes.faults).toEqual([{ key: 1, entity: "CH-1", fault: "fouling", atMinutes: "1.5", untilMinutes: "" }]);
     expect(minutes.calls).toEqual([
       { key: 2, entity: "CH-1", effector: "chiller__set_setpoint", atMinutes: "10", values: { setpoint_c: "7.5" } },
     ]);
@@ -73,8 +78,8 @@ describe("launch draft", () => {
 
   it("gives an instance picked on the graph to the last row still waiting for one", () => {
     const faults = [
-      { key: 1, entity: "CH-1", fault: "fouling", atMinutes: "0" },
-      { key: 2, entity: "", fault: "", atMinutes: "0" },
+      { key: 1, entity: "CH-1", fault: "fouling", atMinutes: "0", untilMinutes: "" },
+      { key: 2, entity: "", fault: "", atMinutes: "0", untilMinutes: "" },
     ];
     const calls = [{ key: 3, entity: "", effector: "", atMinutes: "0", values: {} }];
     expect(pickedOnGraph(draft({ faults, calls }), "CT-1").faults[1]).toMatchObject({ entity: "CT-1", fault: "" });

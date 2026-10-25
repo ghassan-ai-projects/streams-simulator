@@ -4,11 +4,11 @@ import type { ReactNode, RefObject } from "react";
 import { useRef, useState } from "react";
 import type { PlantMaker } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
-import type { Workspace } from "../../../model/workspace";
+import type { Lineage, PlantRoute, Workspace } from "../../../model/workspace";
 import type { ExamplePlant } from "../../../model/plant";
 import type { Route } from "../../../model/shell";
 import type { PlantEntry } from "../../../model/workspace";
-import { plantFacts, plantsOf } from "../../../model/workspace";
+import { plantFacts, plantOf, plantRoute, plantsOf } from "../../../model/workspace";
 import { NewPlantForm } from "./NewPlant";
 import { SectionHeading } from "./SectionHeading";
 import workspaceStyles from "./WorkspaceScreen.module.css";
@@ -20,6 +20,7 @@ interface ListProps {
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly examples: readonly ExamplePlant[];
+  readonly lineage: Lineage | null;
 }
 
 function files(plant: PlantEntry): string {
@@ -51,8 +52,15 @@ function Action({
   );
 }
 
-function Actions({ plant, navigation }: { readonly plant: PlantEntry; readonly navigation: NavigationStore }) {
+interface RowProps {
+  readonly plant: PlantEntry;
+  readonly navigation: NavigationStore;
+  readonly route: PlantRoute | null;
+}
+
+function Actions({ plant, navigation, route }: RowProps) {
   const { domain, composition } = plant;
+  const action = route?.action.kind === "behaviour" ? route.action : null;
   const go = (route: Route) => () => {
     navigation.go(route);
   };
@@ -69,6 +77,15 @@ function Actions({ plant, navigation }: { readonly plant: PlantEntry; readonly n
           Edit
         </Action>
       )}
+      {action !== null && (
+        <Action
+          label="Open the Behaviour step of"
+          plant={plant}
+          onClick={go({ screen: "device", path: action.device, step: "behaviour" })}
+        >
+          Behaviour
+        </Action>
+      )}
       {domain !== null && (
         <Action label="Run" plant={plant} run onClick={go({ screen: "plant", domain, hall: null, launch: true })}>
           <Play size={13} aria-hidden="true" />
@@ -79,7 +96,7 @@ function Actions({ plant, navigation }: { readonly plant: PlantEntry; readonly n
   );
 }
 
-function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly navigation: NavigationStore }) {
+function PlantRow({ plant, navigation, route }: RowProps) {
   return (
     <li className={rowStyles.item} title={files(plant)}>
       <Factory size={16} aria-hidden="true" className={rowStyles.icon} />
@@ -92,8 +109,13 @@ function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly 
           {plant.composition === null && <span className={badgeStyles.badge}>read-only</span>}
         </span>
         <span className={workspaceStyles.meta}>{plantFacts(plant)}</span>
+        {route !== null && (
+          <span className={workspaceStyles.meta} title={route.sentence}>
+            {route.headline}
+          </span>
+        )}
       </span>
-      <Actions plant={plant} navigation={navigation} />
+      <Actions plant={plant} navigation={navigation} route={route} />
     </li>
   );
 }
@@ -129,7 +151,12 @@ function Heading({
   );
 }
 
-export function PlantList({ workspace, navigation, maker, examples }: ListProps) {
+function routeOf(plant: PlantEntry, workspace: Workspace, lineage: Lineage | null): PlantRoute | null {
+  const devices = workspace.kinds.map((kind) => kind.path);
+  return plantRoute(plantOf(lineage, plant.domain ?? ""), devices);
+}
+
+export function PlantList({ workspace, navigation, maker, examples, lineage }: ListProps) {
   const plants = plantsOf(workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -161,7 +188,7 @@ export function PlantList({ workspace, navigation, maker, examples }: ListProps)
       )}
       <ul className={rowStyles.rows}>
         {plants.map((plant) => (
-          <PlantRow key={plant.id} plant={plant} navigation={navigation} />
+          <PlantRow key={plant.id} plant={plant} navigation={navigation} route={routeOf(plant, workspace, lineage)} />
         ))}
       </ul>
     </section>

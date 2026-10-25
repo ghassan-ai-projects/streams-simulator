@@ -1,36 +1,36 @@
 import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure } from "../../../app/ports";
-import { isRecord, text } from "../../../model/shared/json";
 import type { Replay } from "../../../model/review";
 import { connectGateway } from "./connect";
+import { catalogGateway } from "./planCatalog";
+import { jobGateway } from "./jobs";
 import { controlSession } from "./control";
 import { devicesGateway } from "./devices";
 import { followRun } from "./follow";
+import { lintAction } from "./lintAction";
+import { provenanceGateway } from "./provenanceGateway";
 import { requestTwinReport } from "./twinReportGateway";
 import type { FailureMapper, Transport, WireProblem } from "./http";
 import { action, getFile, post, putFile, request } from "./http";
 import {
-  acknowledgement,
-  advanceResult,
   composeSummary,
   component,
+  comparison,
   composition,
-  destroyed,
   examples,
-  faultInjected,
   fileContent,
   library,
+  markdown,
   paired,
   presets,
   replay,
   report,
-  runEnded,
   runDomain,
   written,
   workspace,
 } from "./decoders";
 import {
+  documentFailure,
   editorFailure,
-  launchFailure,
   plantFailure,
   reviewFailure,
   sessionFailure,
@@ -52,6 +52,7 @@ export function bridgeAdapter(transport: Transport): BridgeAdapters {
     devices: devicesGateway(transport),
     launch: launchGateway(transport),
     review: reviewGateway(transport),
+    provenance: provenanceGateway(transport),
   };
 }
 
@@ -88,53 +89,34 @@ function editorGateway(transport: Transport): BridgeAdapters["editor"] {
     ...fileActions(transport, editorFailure),
     library: () => action(transport, "component.list", {}, library, editorFailure("read")),
     presets: (ref) => action(transport, "component.show", { ref }, presets, editorFailure("read")),
+    lint: lintAction(transport, editorFailure("read")),
   };
 }
 
 function launchGateway(transport: Transport): BridgeAdapters["launch"] {
-  return {
-    createWorld: ({ domain, seed, explore }) =>
-      action(transport, "world.create", { domain, seed, explore }, worldCreated, launchFailure("create")),
-    advance: (worldId, byNs) =>
-      action(
-        transport,
-        "clock.advance",
-        { world_id: worldId, by_ns: byNs },
-        advanceResult,
-        launchFailure("advance"),
-      ).then(toVoid),
-    inject: (worldId, entity, fault) =>
-      action(
-        transport,
-        "fault.inject",
-        { world_id: worldId, entity_id: entity, fault },
-        faultInjected,
-        launchFailure("inject"),
-      ).then(toVoid),
-    invoke: (worldId, entity, effector, args) =>
-      action(
-        transport,
-        "effector.invoke",
-        { world_id: worldId, entity_id: entity, effector, args },
-        acknowledgement,
-        launchFailure("invoke"),
-      ),
-    endRun: (worldId) =>
-      action(transport, "run.end", { world_id: worldId }, runEnded, launchFailure("end")).then(toVoid),
-    destroyWorld: (worldId) => destroy(transport, worldId),
-    ...connectGateway(transport),
-  };
+  return { ...jobGateway(transport), ...catalogGateway(transport), ...connectGateway(transport) };
 }
 
 function reviewGateway(transport: Transport): BridgeAdapters["review"] {
   return {
-    report: (runId) => action(transport, "run.report", { run: runId }, report, reviewFailure),
+    report: (runId, options) => action(transport, "run.report", replayArgs(runId, options), report, reviewFailure),
+    handover: (runId, options) =>
+      action(transport, "run.report", { ...replayArgs(runId, options), format: "markdown" }, markdown, documentFailure),
+    compare: (reference, run) =>
+      action(transport, "run.compare", { a: reference, b: run }, comparison, documentFailure),
     verify: (runId) => verify(transport, runId),
     runDomain: (runId) => getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure),
     follow: (runId, follower) => followRun(transport, runId, follower),
     control: (request) => controlSession(transport, request),
     twinReport: (request) => requestTwinReport(transport, request),
   };
+}
+
+function replayArgs(
+  runId: string,
+  options: { readonly replay: boolean } | undefined,
+): Readonly<Record<string, unknown>> {
+  return { run: runId, ...(options?.replay === true ? { replay: true } : {}) };
 }
 
 function generationArgs(
@@ -145,15 +127,6 @@ function generationArgs(
 ): Readonly<Record<string, unknown>> {
   const sourceArgs = source.kind === "example" ? { example: source.id } : { from: source.path };
   return { id, title, ...sourceArgs, ...(mode === "empty" ? { empty: true } : {}) };
-}
-
-function worldCreated(value: unknown): { readonly worldId: string } | null {
-  const worldId = isRecord(value) ? text(value.world_id) : "";
-  return worldId === "" ? null : { worldId };
-}
-
-function toVoid<F>(outcome: Outcome<true, F>): Outcome<void, F> {
-  return outcome.ok ? { ok: true, value: undefined } : outcome;
 }
 
 function verify(transport: Transport, runId: string): Promise<Outcome<Replay, ReviewFailure>> {
@@ -168,8 +141,4 @@ function watchWorkspace(transport: Transport, onChange: () => void): () => void 
   return () => {
     source.close();
   };
-}
-
-async function destroy(transport: Transport, worldId: string): Promise<void> {
-  await action(transport, "world.destroy", { world_id: worldId }, destroyed, launchFailure("end"));
 }

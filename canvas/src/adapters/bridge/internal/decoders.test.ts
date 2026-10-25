@@ -1,18 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  acknowledgement,
-  advanceResult,
-  composeSummary,
-  composition,
-  destroyed,
-  faultInjected,
-  fileContent,
-  paired,
-  runDomain,
-  runEnded,
-  workspace,
-  written,
-} from "./decoders";
+import { composeSummary, composition, fileContent, paired, runDomain, workspace, written } from "./decoders";
 
 const notRecords: readonly unknown[] = [null, undefined, "text", 7, ["a"]];
 
@@ -22,7 +9,18 @@ describe("simple payloads", () => {
     ["paired false", paired, { paired: false }, false],
     ["file", fileContent, { path: "a", content: "c", etag: "e", extra: 1 }, { path: "a", content: "c", etag: "e" }],
     ["written", written, { path: "a", etag: "e", size: 3 }, { path: "a", etag: "e" }],
-    ["summary", composeSummary, { channels: 3, faults: 2, effectors: 1 }, { channels: 3, faults: 2, effectors: 1 }],
+    [
+      "summary",
+      composeSummary,
+      { channels: 3, faults: 2, effectors: 1, digest: "sha256:ab" },
+      { channels: 3, faults: 2, effectors: 1, digest: "sha256:ab" },
+    ],
+    [
+      "summary without a digest",
+      composeSummary,
+      { channels: 3, faults: 2, effectors: 1 },
+      { channels: 3, faults: 2, effectors: 1, digest: "" },
+    ],
   ])("decodes %s", (_name, decode, wire, expected) => {
     expect(decode(wire)).toEqual(expected);
   });
@@ -40,41 +38,12 @@ describe("simple payloads", () => {
     expect(decode(wire)).toBeNull();
   });
 
-  it.each([paired, fileContent, written, composeSummary, acknowledgement, workspace, composition, runDomain])(
+  it.each([paired, fileContent, written, composeSummary, workspace, composition, runDomain])(
     "refuses a payload that is not an object",
     (decode) => {
       for (const value of notRecords) expect(decode(value)).toBeNull();
     },
   );
-});
-
-describe("acknowledgement", () => {
-  it.each([
-    [
-      { accepted: true, reason: "ok", effect_eta_ns: 5e9 },
-      { accepted: true, reason: "ok", effectEtaNs: 5e9 },
-    ],
-    [
-      { accepted: false, reason: "busy" },
-      { accepted: false, reason: "busy", effectEtaNs: null },
-    ],
-    [{ accepted: true }, { accepted: true, reason: "", effectEtaNs: null }],
-    [
-      { accepted: true, effect_eta_ns: 0 },
-      { accepted: true, reason: "", effectEtaNs: 0 },
-    ],
-  ])("reads %j", (wire, expected) => {
-    expect(acknowledgement(wire)).toEqual(expected);
-  });
-
-  it.each([
-    [{ reason: "no flag" }],
-    [{ accepted: "true" }],
-    [{ accepted: true, reason: 3 }],
-    [{ accepted: true, effect_eta_ns: "soon" }],
-  ])("refuses %j", (wire) => {
-    expect(acknowledgement(wire)).toBeNull();
-  });
 });
 
 describe("workspace payload", () => {
@@ -112,6 +81,7 @@ describe("workspace payload", () => {
           worldId: "w-1",
           ended: true,
           complete: true,
+          running: false,
           incompleteReason: "",
           explore: false,
           seed: 42,
@@ -122,6 +92,30 @@ describe("workspace payload", () => {
         },
       ],
     });
+  });
+
+  it("reads the length a run was asked for and how it ended, and leaves them out when absent or not numbers and text", () => {
+    const stopped = { ...wire.runs[0], requested_duration_ns: 1800e9, termination_reason: "stopped_by_operator" };
+    const decoded = workspace({
+      ...wire,
+      runs: [stopped, { ...stopped, world_id: "w-2", requested_duration_ns: "x", termination_reason: 3 }],
+    });
+    expect(decoded?.runs[0]).toMatchObject({ requestedS: 1800, terminationReason: "stopped_by_operator" });
+    expect(decoded?.runs[1]).not.toHaveProperty("requestedS");
+    expect(decoded?.runs[1]).not.toHaveProperty("terminationReason");
+    expect(workspace(wire)?.runs[0]).not.toHaveProperty("requestedS");
+  });
+
+  it("reads the name of a run, and leaves it out when the run has none or the name is not text", () => {
+    const named = { ...wire.runs[0], name: "Fan failure" };
+    const decoded = workspace({
+      ...wire,
+      runs: [named, { ...named, world_id: "w-2", name: "" }, { ...named, world_id: "w-3", name: 4 }],
+    });
+    expect(decoded?.runs[0]).toMatchObject({ name: "Fan failure" });
+    expect(decoded?.runs[1]).not.toHaveProperty("name");
+    expect(decoded?.runs[2]).not.toHaveProperty("name");
+    expect(workspace(wire)?.runs[0]).not.toHaveProperty("name");
   });
 
   it("reads the kind files and components the workspace lists", () => {
@@ -163,6 +157,20 @@ describe("workspace payload", () => {
     expect(decoded?.runs.map((run) => run.simulated)).toEqual([["fan-01"], [], undefined]);
   });
 
+  it("reads whether a run is running for every run, not only for connected sessions", () => {
+    const decoded = workspace({
+      ...wire,
+      runs: [
+        { world_id: "w-1", running: true },
+        { world_id: "w-2", running: false },
+        { world_id: "w-3" },
+        { world_id: "w-4", running: "yes" },
+      ],
+    });
+    expect(decoded?.runs.map((run) => run.running)).toEqual([true, false, false, false]);
+    expect(decoded?.runs.map((run) => run.connected)).toEqual([undefined, undefined, undefined, undefined]);
+  });
+
   it("defaults a run's missing or mistyped fields", () => {
     const decoded = workspace({
       ...wire,
@@ -173,6 +181,7 @@ describe("workspace payload", () => {
         worldId: "w-2",
         ended: false,
         complete: false,
+        running: false,
         incompleteReason: "",
         explore: false,
         seed: null,
@@ -221,21 +230,6 @@ describe("run domain", () => {
     ["domain_spec a list", { content: JSON.stringify({ domain_spec: [] }) }],
   ])("refuses a run whose %s", (_name, wire) => {
     expect(runDomain(wire)).toBeNull();
-  });
-});
-
-describe("confirmations", () => {
-  it.each([
-    [advanceResult, { clock: "c", emitted: 3 }, { clock: "c" }],
-    [advanceResult, { clock: "c", emitted: 0 }, { clock: "c", emitted: Infinity }],
-    [faultInjected, { fault_id: "f1", simulated: true }, { fault_id: "f1", simulated: false }],
-    [faultInjected, { fault_id: "f1", simulated: true }, { simulated: true }],
-    [runEnded, { run_artifact_path: "runs/w/run.json" }, { run_artifact_path: "" }],
-    [destroyed, { destroyed: true }, { destroyed: "true" }],
-  ])("accepts the confirmation and refuses its malformed twin", (decode, good, bad) => {
-    expect(decode(good)).toBe(true);
-    expect(decode(bad)).toBeNull();
-    expect(decode(null)).toBeNull();
   });
 });
 

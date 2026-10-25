@@ -5,7 +5,7 @@
   "description": "The report `streamsim report <run-dir>` prints: one document summarising a run folder, a pure function of its files. It carries truth (seed, faults, perturbations, drop reasons, real effector outcomes), so the truth object is present only for a sealed run or an Explore run.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "run", "verification", "counts"],
+  "required": ["schema_version", "run", "verification", "replay", "counts", "open_questions"],
   "properties": {
     "schema_version": {"const": "0.1"},
     "run": {
@@ -27,6 +27,20 @@
         "time_mode": {"type": "string"},
         "start_time_ns": {"type": "integer"},
         "end_time_ns": {"type": "integer"},
+        "requested_end_ns": {"type": "integer", "exclusiveMinimum": 0, "description": "Present when run.json recorded a plan: the simulated instant the run was asked to reach. Compare with end_time_ns to see how far it got."},
+        "rate": {"type": "number", "exclusiveMinimum": 0, "description": "Present when run.json recorded a paced plan: simulated seconds per wall second. Absent when the plan ran as fast as possible or no plan was recorded."},
+        "name": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f]*$", "description": "Present when run.json recorded a plan with a name: the operator's name for the run. Authored text, not evidence."},
+        "purpose": {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\x00-\\x1f\\x7f-\\x9f]*$", "description": "Present when run.json recorded a plan with a purpose: the question the run is meant to answer. Authored text, not evidence."},
+        "termination": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reason", "at_ns"],
+          "description": "Present when run.json recorded why the run stopped.",
+          "properties": {
+            "reason": {"enum": ["completed", "stopped_by_operator"]},
+            "at_ns": {"type": "integer"}
+          }
+        },
         "entity_count": {"type": "integer", "minimum": 0}
       }
     },
@@ -64,6 +78,16 @@
             }
           }
         }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Whether the recording was replayed (`streamsim report --replay`) and what the replay found. `not_checked` is the default: the report reads files and does not replay.",
+      "properties": {
+        "status": {"enum": ["not_checked", "reproduces", "does_not_reproduce", "incomplete"]},
+        "detail": {"type": "string", "minLength": 1, "description": "Why a replay did not reproduce, or why none could run."}
       }
     },
     "counts": {
@@ -196,6 +220,19 @@
         "status": {"enum": ["scored", "not_scored", "failed"]},
         "reason": {"type": "string", "minLength": 1},
         "scorecard": {"type": "object"}
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "What a reader cannot conclude from this run, asked by rules of the binary in a fixed order. Every entry is a stable code and a sentence.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {"enum": ["evidence_foreign", "evaluate_unsealed", "run_not_ended", "run_incomplete", "stopped_early", "files_differ", "replay_not_checked", "replay_does_not_reproduce", "no_observations", "torn_tail", "no_kpi_results", "no_outside_scoring"]},
+          "message": {"type": "string", "minLength": 1}
+        }
       }
     }
   },

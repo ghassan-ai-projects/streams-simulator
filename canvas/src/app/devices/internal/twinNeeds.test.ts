@@ -95,7 +95,7 @@ describe("the badge of the behaviour step agrees with its banner", () => {
     const touched = { ...twin, touched: true };
     const unfinished = { ...touched, doc: { ...touched.doc, title: "" } };
     expect(stepStatuses(device, unfinished).behaviour).toEqual({ text: "Needs choices", tone: "warn" });
-    const held = { path: coolerPath, name: "pump", words: "pump still needs a unit", adding: false };
+    const held = { path: coolerPath, name: "pump", words: "pump still needs a unit", issues: [], adding: false };
     const blocked = { ...touched, held: [held] };
     expect(stepStatuses(device, blocked).behaviour).toEqual({ text: "Needs attention", tone: "warn" });
     expect(twinStatusOf(blocked, device).text).toBe("pump still needs a unit.");
@@ -113,8 +113,8 @@ describe("the facts of the check", () => {
       {
         label: "Instruments",
         values: [
-          "temperature: Thermistor · -40 to 125 · measured in degC, converted",
-          "duty: No instrument: a plain reading",
+          "temperature: Thermistor · -40 to 125 · measured in degC, converted (your choice)",
+          "duty: No instrument: a plain reading (suggested)",
         ],
       },
     ]);

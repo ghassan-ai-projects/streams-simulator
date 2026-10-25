@@ -1,0 +1,616 @@
+- banner:
+  - button "Skip to the screen"
+  - button "Streams Simulator, workspace home":
+    - text: Streams Simulator
+  - navigation "Breadcrumb":
+    - list:
+      - button "Workspace"
+      - heading "Factory utilities" [level=1]
+  - status
+  - button "Outline panel" [pressed]:
+    - text: Outline
+  - button "Inspector panel" [pressed]:
+    - text: Inspector
+  - button "Keyboard":
+    - text: Keyboard
+  - 'button "Theme: system"':
+    - text: "Theme: System"
+- main "Workspace":
+  - navigation "Outline":
+    - searchbox "Filter instances"
+    - generic "Site 2":
+      - generic "Site"
+      - generic: "2"
+    - list:
+      - button "WX-1 weather":
+        - generic: WX-1
+        - generic: weather
+      - button "CAL-1 site calendar":
+        - generic: CAL-1
+        - generic: site calendar
+    - generic "Production hall 5":
+      - generic "Production hall"
+      - generic: "5"
+    - list:
+      - button "M-1 molder":
+        - generic: M-1
+        - generic: molder
+      - button "M-2 molder":
+        - generic: M-2
+        - generic: molder
+      - button "M-3 cnc":
+        - generic: M-3
+        - generic: cnc
+      - button "M-4 packaging line":
+        - generic: M-4
+        - generic: packaging line
+      - button "AHU-1 ahu":
+        - generic: AHU-1
+        - generic: ahu
+    - generic "Compressor room 4":
+      - generic "Compressor room"
+      - generic: "4"
+    - list:
+      - button "AC-1 compressor lead":
+        - generic: AC-1
+        - generic: compressor lead
+      - button "AC-2 compressor lag":
+        - generic: AC-2
+        - generic: compressor lag
+      - button "R-1 air receiver":
+        - generic: R-1
+        - generic: air receiver
+      - button "D-1 air dryer":
+        - generic: D-1
+        - generic: air dryer
+    - generic "Chiller plant 6":
+      - generic "Chiller plant"
+      - generic: "6"
+    - list:
+      - button "CH-1 chiller":
+        - generic: CH-1
+        - generic: chiller
+      - button "CT-1 cooling tower":
+        - generic: CT-1
+        - generic: cooling tower
+      - button "P-1 chw pump":
+        - generic: P-1
+        - generic: chw pump
+      - button "P-2 chw pump":
+        - generic: P-2
+        - generic: chw pump
+      - button "P-3 chw pump":
+        - generic: P-3
+        - generic: chw pump
+      - button "P-4 cw pump":
+        - generic: P-4
+        - generic: cw pump
+    - generic "Substation 6":
+      - generic "Substation"
+      - generic: "6"
+    - list:
+      - button "MB-AIR air meter":
+        - generic: MB-AIR
+        - generic: air meter
+      - button "MB-COOL cooling meter":
+        - generic: MB-COOL
+        - generic: cooling meter
+      - button "MB-PROC process meter":
+        - generic: MB-PROC
+        - generic: process meter
+      - button "MM-1 main meter":
+        - generic: MM-1
+        - generic: main meter
+      - button "TX-1 transformer":
+        - generic: TX-1
+        - generic: transformer
+      - button "G-1 generator":
+        - generic: G-1
+        - generic: generator
+    - status
+  - region "Navigator":
+    - heading "Navigator" [level=2]
+    - img "Navigator map"
+  - region "Plant factory-utilities":
+    - generic: 23 instances · 59 links
+    - button "Edit plant":
+      - text: Edit plant
+    - button "Run plant" [pressed]:
+      - text: Run plant
+    - group "Zoom":
+      - button "Zoom out":
+      - generic: 49 %
+      - generic: Zoom 49 %
+      - button "Zoom in":
+      - button "Fit the plant in view":
+      - button "Legend":
+        - text: Legend
+    - paragraph: Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the selection, question mark lists every key. The outline lists every instance.
+    - paragraph
+    - application "Plant graph":
+      - group "WX-1, weather, 0 inputs, 2 outputs":
+        - generic "WX-1":
+          - generic: WX-1
+        - generic "weather"
+        - generic "dry_bulb_out · dry_bulb_temp · Weather":
+          - generic: dry bulb out
+          - generic: ", output, Weather, connected"
+        - generic "wet_bulb_out · wet_bulb_temp · Weather":
+          - generic: wet bulb out
+          - generic: ", output, Weather, connected"
+      - group "CAL-1, site calendar, 0 inputs, 2 outputs":
+        - generic "CAL-1":
+          - generic: CAL-1
+        - generic "site calendar"
+        - generic "shift_out · shift · Signal":
+          - generic: shift out
+          - generic: ", output, Signal, connected"
+        - generic "tariff_out · tariff · Signal":
+          - generic: tariff out
+          - generic: ", output, Signal, connected"
+      - group "M-1, molder, 4 inputs, 3 outputs":
+        - generic "M-1":
+          - generic: M-1
+        - generic "molder"
+        - generic "shift_in · shift · Signal":
+          - generic: shift in
+          - generic: ", input, Signal, connected"
+        - generic "air_in · pressure · Pressure":
+          - generic: air in
+          - generic: ", input, Pressure, connected"
+        - generic "coolant_in · temperature · Temperature":
+          - generic: coolant in
+          - generic: ", input, Temperature, connected"
+        - generic "dew_point_in · dew_point · Temperature":
+          - generic: dew point in
+          - generic: ", input, Temperature, connected"
+        - generic "heat_out · thermal_load · Heat":
+          - generic: heat out
+          - generic: ", output, Heat, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "M-2, molder, 4 inputs, 3 outputs":
+        - generic "M-2":
+          - generic: M-2
+        - generic "molder"
+        - generic "shift_in · shift · Signal":
+          - generic: shift in
+          - generic: ", input, Signal, connected"
+        - generic "air_in · pressure · Pressure":
+          - generic: air in
+          - generic: ", input, Pressure, connected"
+        - generic "coolant_in · temperature · Temperature":
+          - generic: coolant in
+          - generic: ", input, Temperature, connected"
+        - generic "dew_point_in · dew_point · Temperature":
+          - generic: dew point in
+          - generic: ", input, Temperature, connected"
+        - generic "heat_out · thermal_load · Heat":
+          - generic: heat out
+          - generic: ", output, Heat, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "M-3, cnc, 4 inputs, 3 outputs":
+        - generic "M-3":
+          - generic: M-3
+        - generic "cnc"
+        - generic "shift_in · shift · Signal":
+          - generic: shift in
+          - generic: ", input, Signal, connected"
+        - generic "air_in · pressure · Pressure":
+          - generic: air in
+          - generic: ", input, Pressure, connected"
+        - generic "coolant_in · temperature · Temperature":
+          - generic: coolant in
+          - generic: ", input, Temperature, connected"
+        - generic "dew_point_in · dew_point · Temperature":
+          - generic: dew point in
+          - generic: ", input, Temperature, connected"
+        - generic "heat_out · thermal_load · Heat":
+          - generic: heat out
+          - generic: ", output, Heat, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "M-4, packaging line, 4 inputs, 3 outputs":
+        - generic "M-4":
+          - generic: M-4
+        - generic "packaging line"
+        - generic "shift_in · shift · Signal":
+          - generic: shift in
+          - generic: ", input, Signal, connected"
+        - generic "air_in · pressure · Pressure":
+          - generic: air in
+          - generic: ", input, Pressure, connected"
+        - generic "coolant_in · temperature · Temperature":
+          - generic: coolant in
+          - generic: ", input, Temperature, connected"
+        - generic "dew_point_in · dew_point · Temperature":
+          - generic: dew point in
+          - generic: ", input, Temperature, connected"
+        - generic "heat_out · thermal_load · Heat":
+          - generic: heat out
+          - generic: ", output, Heat, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "AHU-1, ahu, 3 inputs, 1 output":
+        - generic "AHU-1":
+          - generic: AHU-1
+        - generic "ahu"
+        - generic "chw_in · temperature · Temperature":
+          - generic: chw in
+          - generic: ", input, Temperature, connected"
+        - generic "outdoor_in · dry_bulb_temp · Weather":
+          - generic: outdoor in
+          - generic: ", input, Weather, connected"
+        - generic "shift_in · shift · Signal":
+          - generic: shift in
+          - generic: ", input, Signal, connected"
+        - generic "load_out · thermal_load · Heat":
+          - generic: load out
+          - generic: ", output, Heat, connected"
+      - group "AC-1, compressor lead, 1 input, 2 outputs":
+        - generic "AC-1":
+          - generic: AC-1
+        - generic "compressor lead"
+        - generic "pressure_in · pressure · Pressure":
+          - generic: pressure in
+          - generic: ", input, Pressure, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "AC-2, compressor lag, 1 input, 2 outputs":
+        - generic "AC-2":
+          - generic: AC-2
+        - generic "compressor lag"
+        - generic "pressure_in · pressure · Pressure":
+          - generic: pressure in
+          - generic: ", input, Pressure, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "R-1, air receiver, 2 inputs, 2 outputs":
+        - generic "R-1":
+          - generic: R-1
+        - generic "air receiver"
+        - generic "air_in · compressed_air · Compressed air":
+          - generic: air in
+          - generic: ", input, Compressed air, connected"
+        - generic "demand_in · compressed_air · Compressed air":
+          - generic: demand in
+          - generic: ", input, Compressed air, connected"
+        - generic "pressure_out · pressure · Pressure":
+          - generic: pressure out
+          - generic: ", output, Pressure, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, connected"
+      - group "D-1, air dryer, 1 input, 3 outputs":
+        - generic "D-1":
+          - generic: D-1
+        - generic "air dryer"
+        - generic "air_in · compressed_air · Compressed air":
+          - generic: air in
+          - generic: ", input, Compressed air, connected"
+        - generic "air_out · compressed_air · Compressed air":
+          - generic: air out
+          - generic: ", output, Compressed air, not connected"
+        - generic "dew_point_out · dew_point · Temperature":
+          - generic: dew point out
+          - generic: ", output, Temperature, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "CH-1, chiller, 4 inputs, 4 outputs":
+        - generic "CH-1":
+          - generic: CH-1
+        - generic "chiller"
+        - generic "load_in · thermal_load · Heat":
+          - generic: load in
+          - generic: ", input, Heat, connected"
+        - generic "flow_in · chilled_water · Water":
+          - generic: flow in
+          - generic: ", input, Water, connected"
+        - generic "cond_water_in · cooling_water_temp · Temperature":
+          - generic: cond water
+          - generic: ", input, Temperature, connected"
+        - generic "tariff_in · tariff · Signal":
+          - generic: tariff in
+          - generic: ", input, Signal, connected"
+        - generic "heat_out · heat_rejection · Heat":
+          - generic: heat out
+          - generic: ", output, Heat, connected"
+        - generic "supply_out · temperature · Temperature":
+          - generic: supply out
+          - generic: ", output, Temperature, connected"
+        - generic "return_out · temperature · Temperature":
+          - generic: return out
+          - generic: ", output, Temperature, not connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "CT-1, cooling tower, 3 inputs, 2 outputs":
+        - generic "CT-1":
+          - generic: CT-1
+        - generic "cooling tower"
+        - generic "heat_in · heat_rejection · Heat":
+          - generic: heat in
+          - generic: ", input, Heat, connected"
+        - generic "wet_bulb_in · wet_bulb_temp · Weather":
+          - generic: wet bulb in
+          - generic: ", input, Weather, connected"
+        - generic "cw_flow_in · condenser_water · Condenser water":
+          - generic: cw flow in
+          - generic: ", input, Condenser water, connected"
+        - generic "basin_out · cooling_water_temp · Temperature":
+          - generic: basin out
+          - generic: ", output, Temperature, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "P-1, chw pump, 1 input, 4 outputs":
+        - generic "P-1":
+          - generic: P-1
+        - generic "chw pump"
+        - generic "level_in · level · Water":
+          - generic: level in
+          - generic: ", input, Water, not connected"
+        - generic "flow_out · chilled_water · Water":
+          - generic: flow out
+          - generic: ", output, Water, connected"
+        - generic "cw_flow_out · condenser_water · Condenser water":
+          - generic: cw flow out
+          - generic: ", output, Condenser water, not connected"
+        - generic "liquid_out · liquid_flow · Water":
+          - generic: liquid out
+          - generic: ", output, Water, not connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "P-2, chw pump, 1 input, 4 outputs":
+        - generic "P-2":
+          - generic: P-2
+        - generic "chw pump"
+        - generic "level_in · level · Water":
+          - generic: level in
+          - generic: ", input, Water, not connected"
+        - generic "flow_out · chilled_water · Water":
+          - generic: flow out
+          - generic: ", output, Water, connected"
+        - generic "cw_flow_out · condenser_water · Condenser water":
+          - generic: cw flow out
+          - generic: ", output, Condenser water, not connected"
+        - generic "liquid_out · liquid_flow · Water":
+          - generic: liquid out
+          - generic: ", output, Water, not connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "P-3, chw pump, 1 input, 4 outputs":
+        - generic "P-3":
+          - generic: P-3
+        - generic "chw pump"
+        - generic "level_in · level · Water":
+          - generic: level in
+          - generic: ", input, Water, not connected"
+        - generic "flow_out · chilled_water · Water":
+          - generic: flow out
+          - generic: ", output, Water, connected"
+        - generic "cw_flow_out · condenser_water · Condenser water":
+          - generic: cw flow out
+          - generic: ", output, Condenser water, not connected"
+        - generic "liquid_out · liquid_flow · Water":
+          - generic: liquid out
+          - generic: ", output, Water, not connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "P-4, cw pump, 1 input, 4 outputs":
+        - generic "P-4":
+          - generic: P-4
+        - generic "cw pump"
+        - generic "level_in · level · Water":
+          - generic: level in
+          - generic: ", input, Water, not connected"
+        - generic "flow_out · chilled_water · Water":
+          - generic: flow out
+          - generic: ", output, Water, not connected"
+        - generic "cw_flow_out · condenser_water · Condenser water":
+          - generic: cw flow out
+          - generic: ", output, Condenser water, connected"
+        - generic "liquid_out · liquid_flow · Water":
+          - generic: liquid out
+          - generic: ", output, Water, not connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "MB-AIR, air meter, 1 input, 1 output":
+        - generic "MB-AIR":
+          - generic: MB-AIR
+        - generic "air meter"
+        - generic "loads_in · electrical · Power":
+          - generic: loads in
+          - generic: ", input, Power, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "MB-COOL, cooling meter, 1 input, 1 output":
+        - generic "MB-COOL":
+          - generic: MB-COOL
+        - generic "cooling meter"
+        - generic "loads_in · electrical · Power":
+          - generic: loads in
+          - generic: ", input, Power, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "MB-PROC, process meter, 1 input, 1 output":
+        - generic "MB-PROC":
+          - generic: MB-PROC
+        - generic "process meter"
+        - generic "loads_in · electrical · Power":
+          - generic: loads in
+          - generic: ", input, Power, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "MM-1, main meter, 1 input, 1 output":
+        - generic "MM-1":
+          - generic: MM-1
+        - generic "main meter"
+        - generic "loads_in · electrical · Power":
+          - generic: loads in
+          - generic: ", input, Power, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, connected"
+      - group "TX-1, transformer, 1 input, 0 outputs":
+        - generic "TX-1":
+          - generic: TX-1
+        - generic "transformer"
+        - generic "load_in · electrical · Power":
+          - generic: load in
+          - generic: ", input, Power, connected"
+      - group "G-1, generator, 1 input, 1 output":
+        - generic "G-1":
+          - generic: G-1
+        - generic "generator"
+        - generic "load_in · electrical · Power":
+          - generic: load in
+          - generic: ", input, Power, connected"
+        - generic "power_out · electrical · Power":
+          - generic: power out
+          - generic: ", output, Power, not connected"
+      - generic "Site · 2 nodes":
+        - generic: Site
+        - generic: 2 nodes
+      - generic "Production hall · 5 nodes":
+        - generic: Production
+        - generic: hall
+        - generic: 5 nodes
+      - generic "Compressor room · 4 nodes":
+        - generic: Compressor
+        - generic: room
+        - generic: 4 nodes
+      - generic "Chiller plant · 6 nodes":
+        - generic: Chiller
+        - generic: plant
+        - generic: 6 nodes
+      - generic "Substation · 6 nodes":
+        - generic: Substation
+        - generic: 6 nodes
+  - complementary "Run Factory utilities":
+    - heading "Run Factory utilities" [level=2]
+    - button "Close the run panel":
+    - group "How this run goes":
+      - generic: How this run goes
+      - radio "To completion Simulate the plant for a set duration, then save the run for review."
+      - strong: To completion
+      - generic: Simulate the plant for a set duration, then save the run for review.
+      - radio "Connected session Link the plant to a plant wire host, and through a gateway to real boards, until you stop it." [checked]
+      - strong: Connected session
+      - generic: Link the plant to a plant wire host, and through a gateway to real boards, until you stop it.
+    - form "Session plan":
+      - group "Session":
+        - generic: Session
+        - generic: Seed
+        - textbox "Seed":
+          - /placeholder: a whole number, such as 1
+          - text: "1"
+        - generic: Host socket
+        - textbox "Host socket":
+          - /placeholder: /full/path/to/host.sock
+          - text: /tmp/ui-audit-absent-host.sock
+        - generic: Gateway socket
+        - textbox "Gateway socket":
+          - /placeholder: "empty: every instance simulated"
+        - paragraph: The host socket is the one the plant wire host listens on. The gateway socket is the one this session opens for a gateway with real boards; leave it empty to run every instance simulated.
+        - generic: Allowed policy digests
+        - textbox "Allowed policy digests":
+          - /placeholder: sha256:… (one per line)
+        - generic: One per line, at most 8. A command to a simulated device runs only when the host's policy digest is listed; safe stops always run. Real boards are checked by the gateway's own list.
+      - group "Real boards":
+        - generic: Real boards
+        - paragraph: Every instance is simulated. Add a real board to make an instance the board a gateway announces.
+        - list "Real boards"
+        - button "Add a real board":
+          - text: Add a real board
+      - region "Plan check result" [active]:
+        - region "Instances in this session":
+          - status: "The plan holds: 23 simulated instances."
+          - list:
+            - generic "Simulated":
+            - text: WX-1 · Simulated
+            - generic "Simulated":
+            - text: CAL-1 · Simulated
+            - generic "Simulated":
+            - text: M-1 · Simulated
+            - generic "Simulated":
+            - text: M-2 · Simulated
+            - generic "Simulated":
+            - text: M-3 · Simulated
+            - generic "Simulated":
+            - text: M-4 · Simulated
+            - generic "Simulated":
+            - text: AHU-1 · Simulated
+            - generic "Simulated":
+            - text: AC-1 · Simulated
+            - generic "Simulated":
+            - text: AC-2 · Simulated
+            - generic "Simulated":
+            - text: R-1 · Simulated
+            - generic "Simulated":
+            - text: D-1 · Simulated
+            - generic "Simulated":
+            - text: CH-1 · Simulated
+            - generic "Simulated":
+            - text: CT-1 · Simulated
+            - generic "Simulated":
+            - text: P-1 · Simulated
+            - generic "Simulated":
+            - text: P-2 · Simulated
+            - generic "Simulated":
+            - text: P-3 · Simulated
+            - generic "Simulated":
+            - text: P-4 · Simulated
+            - generic "Simulated":
+            - text: MB-AIR · Simulated
+            - generic "Simulated":
+            - text: MB-COOL · Simulated
+            - generic "Simulated":
+            - text: MB-PROC · Simulated
+            - generic "Simulated":
+            - text: MM-1 · Simulated
+            - generic "Simulated":
+            - text: TX-1 · Simulated
+            - generic "Simulated":
+            - text: G-1 · Simulated
+        - region "Allowed policies in effect":
+          - paragraph: "Allowed policies: none. Commands to simulated devices are refused, except safe stops."
+        - button "Save as default"
+        - status
+        - generic: Saves the list streamsim accepted, sorted, as the default for new session forms. An empty list clears it. A running session never changes.
+      - paragraph: Start links the plant to the plant wire host, and through the gateway to its real boards, and runs until you stop it. Stop ends the session and saves it as a run you can review.
+      - button "Check the plan"
+      - button "Start the session"

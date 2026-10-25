@@ -6,9 +6,10 @@ import { componentSpecs } from "../../plant";
 import { DraftStore, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
-import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured } from "./editorSave";
+import { failureWords } from "./saveReport";
+import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured, withPlausibility } from "./editorSave";
 import type { SaveAttempt, SaveResult } from "./editorSave";
-import type { Draft, EditorState } from "./editorDraft";
+import type { Draft, EditorState, Plausibility } from "./editorDraft";
 import { isSaving } from "./editorSelectors";
 import { emptyMemo } from "./editorMemo";
 import type { StoreMemo } from "./editorMemo";
@@ -194,5 +195,14 @@ export class EditorStore extends DraftStore<EditorState, Draft> {
     if (result.kind === "composed")
       this.memo = { ...this.memo, domainPath: attempt.output, domainEtag: result.outputEtag };
     this.update((current) => applySaveResult(current, attempt, result));
+    if (result.kind === "composed") void this.checkPlausibility(attempt);
+  }
+
+  private async checkPlausibility(attempt: SaveAttempt): Promise<void> {
+    const outcome = await this.gateway.lint(attempt.output);
+    const plausibility: Plausibility = outcome.ok
+      ? { kind: "done", report: outcome.value }
+      : { kind: "failed", message: failureWords(outcome.failure) };
+    this.update((current) => withPlausibility(current, attempt, plausibility));
   }
 }

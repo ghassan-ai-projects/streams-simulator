@@ -18,6 +18,7 @@ describe("runs in the workspace", () => {
       worldId: "c-1",
       ended: false,
       complete: false,
+      running: true,
       incompleteReason: "",
       explore: false,
       seed: 1,
@@ -30,7 +31,7 @@ describe("runs in the workspace", () => {
       ...sampleWorkspace,
       runs: [
         { ...session, connected: "running" as const },
-        { ...session, worldId: "c-2", ended: true, complete: true, connected: "saved" as const },
+        { ...session, worldId: "c-2", ended: true, complete: true, running: false, connected: "saved" as const },
       ],
     });
     await show(bridge);
@@ -49,6 +50,7 @@ describe("runs in the workspace", () => {
           worldId: "w-6",
           ended: true,
           complete: false,
+          running: false,
           incompleteReason: "the world was destroyed before its run ended",
           explore: false,
           seed: 3,
@@ -80,6 +82,7 @@ describe("runs in the workspace", () => {
           worldId: "w-open",
           ended: false,
           complete: false,
+          running: false,
           incompleteReason: "",
           explore: false,
           seed: 7,
@@ -92,6 +95,7 @@ describe("runs in the workspace", () => {
           worldId: "w-good",
           ended: true,
           complete: true,
+          running: false,
           incompleteReason: "",
           explore: false,
           seed: 7,
@@ -111,12 +115,83 @@ describe("runs in the workspace", () => {
     expect(within(good).queryByText("Did not finish")).not.toBeInTheDocument();
   });
 
+  it("reads an unfinished run that is running as Running and never as Did not finish", async () => {
+    const bridge = new FakeBridge();
+    const open = {
+      worldId: "w-live",
+      ended: false,
+      complete: false,
+      running: true,
+      incompleteReason: "",
+      explore: false,
+      seed: 7,
+      plant: "factory-utilities",
+      durationS: 1800,
+      recordedAt: "2026-10-15T10:00:00Z",
+      faults: 0,
+    };
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [open] });
+    await show(bridge);
+    const live = rowOf("w-live");
+    expect(within(live).getByText("Running")).toBeInTheDocument();
+    expect(live).not.toHaveTextContent(/Did not finish/);
+    expect(live).not.toHaveTextContent(/Connected session/);
+  });
+
+  it("says a stopped run was stopped, with the length it reached out of the length it was asked for", async () => {
+    const bridge = new FakeBridge();
+    const stopped = {
+      worldId: "w-cut",
+      ended: true,
+      complete: true,
+      running: false,
+      incompleteReason: "",
+      explore: false,
+      seed: 7,
+      plant: "factory-utilities",
+      durationS: 540,
+      requestedS: 1800,
+      terminationReason: "stopped_by_operator",
+      recordedAt: "2026-10-15T10:00:00Z",
+      faults: 1,
+    };
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [stopped] });
+    await show(bridge);
+    expect(rowOf("w-cut")).toHaveTextContent("9 of 30 min · stopped · seed 7 · 1 fault");
+    expect(rowOf("w-cut")).not.toHaveTextContent(/9 min/);
+  });
+
+  it("titles a named run by its name, with the plant and the run id in the details", async () => {
+    const bridge = new FakeBridge();
+    const unnamed = {
+      worldId: "w-8",
+      ended: true,
+      complete: true,
+      running: false,
+      incompleteReason: "",
+      explore: true,
+      seed: 7,
+      plant: "factory-utilities",
+      durationS: 1800,
+      recordedAt: "2026-10-15T10:00:00Z",
+      faults: 1,
+    };
+    const named = { ...unnamed, worldId: "w-9", name: "Cooling loss" };
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [named, unnamed] });
+    await show(bridge);
+    expect(within(rowOf("w-9")).getByText("Cooling loss")).toBeInTheDocument();
+    expect(rowOf("w-9")).toHaveTextContent(/Factory utilities · w-9/);
+    expect(rowOf("w-8")).not.toHaveTextContent("Cooling loss");
+    expect(within(rowOf("w-8")).getByText("Factory utilities")).toBeInTheDocument();
+  });
+
   it("names the one run left to show in the singular", async () => {
     const bridge = new FakeBridge();
     const runs = Array.from({ length: 21 }, (_, i) => ({
       worldId: `w-${String(i)}`,
       ended: true,
       complete: true,
+      running: false,
       incompleteReason: "",
       explore: false,
       seed: null,

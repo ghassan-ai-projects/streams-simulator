@@ -61,7 +61,7 @@ func TestPairingFilesAndAdmissionAreNotBlockedByALongDirectorCall(t *testing.T) 
 		_ = h.bridge.Admits("any")
 		_, _ = h.bridge.Pair("WRONG")
 		_, _ = h.bridge.WriteFile(plant, "{}", "")
-		_, _ = h.bridge.Workspace()
+		_, _ = h.bridge.Workspace(context.Background())
 		close(served)
 	}()
 	select {

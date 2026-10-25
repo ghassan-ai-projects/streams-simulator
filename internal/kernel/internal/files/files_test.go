@@ -145,3 +145,22 @@ func TestOpenIfPresentOpensAFileAndReportsAnAbsentOneWithoutError(t *testing.T) 
 		t.Fatalf("absent = %v (%v), want not present and no error", present, err)
 	}
 }
+
+func TestDirectoryNamesListsOnlySubdirectoriesAndRefusesAMissingOne(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	for _, name := range []string{"b", "a"} {
+		if err := os.Mkdir(filepath.Join(dir, name), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := WriteAtomic(filepath.Join(dir, "file.json"), []byte("1")); err != nil {
+		t.Fatal(err)
+	}
+	if names, err := DirectoryNames(dir); err != nil || !slices.Equal(names, []string{"a", "b"}) {
+		t.Fatalf("DirectoryNames = %v, %v, want the two subdirectories and no file", names, err)
+	}
+	if _, err := DirectoryNames(filepath.Join(dir, "none")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("DirectoryNames of a missing directory = %v, want fs.ErrNotExist", err)
+	}
+}

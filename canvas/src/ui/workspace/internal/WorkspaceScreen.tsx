@@ -2,8 +2,8 @@ import { Boxes, FileJson } from "lucide-react";
 import type { DeviceDesk } from "../../../app/devices";
 import type { PlantMaker } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
-import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
-import type { Workspace } from "../../../model/workspace";
+import type { ProvenanceSession, WorkspaceState, WorkspaceStore } from "../../../app/workspace";
+import type { Lineage, Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { workspaceEmpty, workspaceSummary } from "../../../model/workspace";
 import { Breadcrumb, failureLine, screen } from "../../primitives";
@@ -23,10 +23,11 @@ interface ContentsProps {
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly desk: DeviceDesk;
+  readonly lineage: Lineage | null;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsProps, "badgeFor">) {
+function EmptyWorkspace({ workspace, maker, desk, navigation, lineage }: Omit<ContentsProps, "badgeFor">) {
   const examples = useExamples(maker);
   const { name } = workspace;
   return (
@@ -47,7 +48,7 @@ function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsPro
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>
       <div className={styles.deviceStrip}>
-        <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+        <DeviceList workspace={workspace} navigation={navigation} desk={desk} lineage={lineage} />
       </div>
     </div>
   );
@@ -70,7 +71,7 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProps) {
+function Contents({ workspace, navigation, maker, desk, badgeFor, lineage }: ContentsProps) {
   const examples = useExamples(maker);
   return (
     <div className={styles.page}>
@@ -81,8 +82,14 @@ function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProp
       </header>
       <div className={styles.grid}>
         <div className={styles.column}>
-          <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
-          <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+          <PlantList
+            workspace={workspace}
+            navigation={navigation}
+            maker={maker}
+            examples={examples}
+            lineage={lineage}
+          />
+          <DeviceList workspace={workspace} navigation={navigation} desk={desk} lineage={lineage} />
         </div>
         <div className={styles.column}>
           <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
@@ -125,19 +132,29 @@ export function WorkspaceScreen({
   navigation,
   maker,
   desk,
+  provenance,
   badgeFor,
 }: {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly desk: DeviceDesk;
+  readonly provenance: ProvenanceSession;
   readonly badgeFor: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
+  const lineage = useStore(provenance.lineage);
   return (
     <>
       <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
-      <WorkspaceBody state={state} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />
+      <WorkspaceBody
+        state={state}
+        navigation={navigation}
+        maker={maker}
+        desk={desk}
+        lineage={lineage}
+        badgeFor={badgeFor}
+      />
     </>
   );
 }

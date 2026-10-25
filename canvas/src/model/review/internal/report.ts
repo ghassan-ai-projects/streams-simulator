@@ -1,3 +1,5 @@
+import type { PerturbParams } from "../../launch";
+import type { ArgValue } from "../../plant";
 import { groupBy } from "../../shared/collect";
 import { humanise } from "../../shared/words";
 
@@ -17,14 +19,21 @@ interface Disturbance {
   readonly name: string;
   readonly clearedNs: number | null;
   readonly clearedBy: string;
+  readonly params?: PerturbParams;
+  readonly untilNs?: number;
 }
 
 interface EffectorCall {
   readonly atNs: number;
   readonly entity: string;
   readonly effector: string;
+  readonly args: Readonly<Record<string, ArgValue>>;
   readonly outcome: string;
+  readonly applied: boolean;
+  readonly immediate: boolean;
 }
+
+export const immediateWords = "by the operator during the run";
 
 export function callWords(call: Pick<EffectorCall, "effector" | "outcome">): string {
   return `${humanise(call.effector)} · ${call.outcome}`;
@@ -54,8 +63,27 @@ export interface KpiRow {
   readonly max: number;
 }
 
+export type ReplayStatus = "not_checked" | "reproduces" | "does_not_reproduce" | "incomplete";
+
+export interface ReportReplay {
+  readonly status: ReplayStatus;
+  readonly detail: string;
+}
+
+export interface OpenQuestion {
+  readonly code: string;
+  readonly message: string;
+}
+
+interface Termination {
+  readonly reason: "completed" | "stopped_by_operator";
+  readonly atNs: number;
+}
+
 export interface Report {
   readonly runId: string;
+  readonly name: string;
+  readonly purpose: string;
   readonly mode: string;
   readonly ended: boolean;
   readonly complete: boolean;
@@ -68,6 +96,9 @@ export interface Report {
   readonly simVersion: string;
   readonly startNs: number;
   readonly endNs: number;
+  readonly requestedEndNs: number | null;
+  readonly rate: number | null;
+  readonly termination: Termination | null;
   readonly verification: string;
   readonly checks: readonly Check[];
   readonly counts: Readonly<Record<string, number>>;
@@ -79,6 +110,8 @@ export interface Report {
   readonly alarmActivations: readonly AlarmActivation[];
   readonly scoring: { readonly status: string; readonly reason: string } | null;
   readonly truthUnavailable: string;
+  readonly replay: ReportReplay;
+  readonly openQuestions: readonly OpenQuestion[];
 }
 
 export interface Replay {

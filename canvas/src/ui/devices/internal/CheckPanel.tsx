@@ -1,14 +1,19 @@
-import { CircleCheck, CircleHelp, Loader, TriangleAlert } from "lucide-react";
+import type { ReactNode } from "react";
+import { CircleCheck, CircleHelp, Loader, Minus, TriangleAlert } from "lucide-react";
 import type { CheckFact, CheckRow, Draft, TwinDraft } from "../../../app/devices";
-import { checkFacts, checkRows } from "../../../app/devices";
+import { builtOf, checkFacts, checkRows, checkSummary } from "../../../app/devices";
+import { stemOf, twinPath } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import tw from "./Behaviour.module.css";
 import styles from "./Devices.module.css";
 import { FormTitle } from "./FormTitle";
+import prov from "./Provenance.module.css";
 
 const icons = {
   ok: <CircleCheck size={16} className={tw.checkOk} aria-hidden="true" />,
   bad: <TriangleAlert size={16} className={tw.checkBad} aria-hidden="true" />,
+  warn: <TriangleAlert size={16} className={tw.checkWarn} aria-hidden="true" />,
+  neutral: <Minus size={16} className={tw.checkIdle} aria-hidden="true" />,
   pending: <Loader size={16} className={cx(tw.checkIdle, shared.spin)} aria-hidden="true" />,
   idle: <CircleHelp size={16} className={tw.checkIdle} aria-hidden="true" />,
 } as const;
@@ -18,7 +23,10 @@ function Item({ row }: { readonly row: CheckRow }) {
     <li className={tw.check}>
       {icons[row.state]}
       <div>
-        <span>{row.text}</span>
+        <span>
+          {row.status !== "" && <strong className={prov.status}>{row.status}</strong>}
+          <span>{row.text}</span>
+        </span>
         {row.notes.length > 0 && (
           <ul className={tw.checkNotes}>
             {row.notes.map((note, index) => (
@@ -65,7 +73,35 @@ function Fact({ entry }: { readonly entry: CheckFact }) {
   );
 }
 
-export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; readonly device: Draft }) {
+function Summary({ draft }: { readonly draft: TwinDraft }) {
+  const summary = checkSummary(draft);
+  return summary === null ? null : <p className={panel.hint}>{summary}</p>;
+}
+
+export type AssumptionsSlot = (domain: string, twin: string) => ReactNode;
+
+function Assumed({
+  draft,
+  device,
+  slot,
+}: {
+  readonly draft: TwinDraft;
+  readonly device: Draft;
+  readonly slot: AssumptionsSlot;
+}) {
+  const built = builtOf(draft);
+  return built === null ? null : slot(built.path, twinPath(stemOf(device.path)));
+}
+
+export function CheckPanel({
+  draft,
+  device,
+  assumptions,
+}: {
+  readonly draft: TwinDraft;
+  readonly device: Draft;
+  readonly assumptions: AssumptionsSlot;
+}) {
   return (
     <section className={cx(panel.body, styles.form)} aria-labelledby="check-title">
       <FormTitle id="check-title" words="Check" />
@@ -74,11 +110,13 @@ export function CheckPanel({ draft, device }: { readonly draft: TwinDraft; reado
           Nothing to check yet. Choose how the twin behaves in the Behaviour step, then create it.
         </p>
       )}
+      <Summary draft={draft} />
       <ul className={tw.checks}>
         {checkRows(device, draft).map((row) => (
           <Item key={row.id} row={row} />
         ))}
       </ul>
+      <Assumed draft={draft} device={device} slot={assumptions} />
       <Details facts={checkFacts(draft)} />
     </section>
   );

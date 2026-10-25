@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -82,7 +83,7 @@ func TestThePolicyDefaultIsNotListedInTheWorkspace(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
 	h.write(t, policyDefault, policyBody)
-	listing, err := h.bridge.Workspace()
+	listing, err := h.bridge.Workspace(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
