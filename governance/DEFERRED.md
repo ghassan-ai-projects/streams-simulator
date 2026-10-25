@@ -532,3 +532,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > only. The digest and `section_changed` still differ, and no item is ever reported unchanged when it differs. Trigger to fix: the
 > canvas relies on the list being complete for an item; then the view gains the member or the declaration is compared after the
 > view's members are removed.
+>
+> D-120 (**Medium**; the canvas shows the twin's channels on a real device): a connected session whose instances are real shows
+> the domain's channels (`duty permille` on the fan, `brightness permille` and `pattern` on the LED), which the real kinds do not
+> report (`level_percent`, `state`), so the fan and LED boxes stay blank while the run journal holds the readings (found in the
+> 2026-10-25 real run). Trigger to fix: the next canvas round on connected sessions; the box then shows the kind's readings.
+> D-121 (**Low**; board names disagree): `examples/devices/thermal-board/fan-experiment/real.plan.json` and the docs name the board
+> `mega-01`, the gateway announces `board-01` (its firmware profile), and the host's consent flag must name the announced board.
+> Trigger to fix: the next edit of the fan-experiment plans or README.
