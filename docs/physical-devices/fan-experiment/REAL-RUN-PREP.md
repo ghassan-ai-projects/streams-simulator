@@ -46,3 +46,21 @@ Findings:
    commands carried match the real plan and the gateway's list.
 7. The Mega resets when the port opens (new `boot_id` each gateway start: boot-69, 70, 71): confirmed.
 8. A fan command is a 5 s burst by design (firmware lease) and at most 6 per hour: the run proves the loop, not sustained cooling.
+
+## Real rung with the fan unplugged (2026-10-25, second session)
+
+Run folder `~/my-projects/.e2e-run/fan-p4-20261025T152716` (canvas run `c-34ea80d9`), same bench-scale spec and policy digest, owner
+approving each command, motor supply disconnected with power off, LED and sensor attached. Archived outside git:
+`~/my-projects/.e2e-run/archive/fan-real-run-unplugged-20261025.tar.gz` (checksum beside it); the first session is
+`fan-real-run-20261025.tar.gz`.
+
+- **Silent fan not detected:** `set_cooling 45` was queued, approved, accepted, `DRESULT succeeded`, the board read back `level_percent`
+  45 then 0 (about 5.5 s), and Agentic Stream verified it `succeeded`. The board reports the commanded duty, so a disconnected fan is
+  invisible to the chain; only the zone temperature failing to fall could show it.
+- **Silent board:** the first `show_state alert` was forwarded at 15:31:12 and the board gave no answer in 2 s (`firmware_silent`); the
+  gateway sent the LED its safe stop and answered `not_ready`; the LED never changed; Agentic Stream marked it `failed`. Cause unknown
+  (it did not happen in the first session).
+- **Deny:** the second `show_state alert` was refused at the node as `local_control`; Agentic Stream marked it `failed` and did not retry.
+- **`verify-run` says `fail`** (`unresolved_action_outcomes=2`): the two failed LED commands leave their verifications unresolved, so a
+  run with any refused or failed command fails verification (W15). The simulator's `verify` matches. Zero quarantines, readings 2.01 s mean.
+- Correction to an earlier remark in the session: the first LED command was not an approval-window expiry; it was approved and reached the board.
