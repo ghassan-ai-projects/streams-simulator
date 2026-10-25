@@ -121,6 +121,30 @@ Ranked by how much each could undermine the result.
     drafting episode and its evals. The hedge is a first slice, S1, S2 and S7, which needs far less simulator work
     and shows early whether the value is there.
 
+### From the onsite review (2026-10-26), known limits
+
+A review by a senior onsite IoT engineer rated the plan 5.5/10 (simulation realism 5, value to a real site 4,
+safety and operability 6, approval workflow 5, test plan 6, readiness 3). Five of its changes were adopted (§1,
+decisions 5, 17 and 18, S6, S10, S11). The rest are stated here:
+
+11. **Maintenance is instant in the world.** Real work orders go through a planner, permits, lockout, spares and a
+    standby pump, and take days; deadlines of 6 to 12 h cannot be met that way at most sites, so damage events
+    measure the simulator's physics rather than a real planner. A sensor fault is a different craft's job from a
+    bearing job, with its own lead time. `overload` is a downstream blockage, which throttling does not clear.
+12. **The approver has no role.** The plan does not name who approves a rule or what happens out of hours, and a
+    real approver will not read CEL. Wanted: a named role, an out-of-hours path, approver latency as a
+    distribution, and the proposal as a one-page plain-language card with an example and a counter-example.
+13. **Duty, standby and operator intent are not modelled.** Duty rotation, an idle standby pump, a pump isolated
+    for work, and an operator running a pump differently on purpose. Rules must not fire on an idle or isolated
+    pump, and must not repeat against a deliberate human decision.
+14. **Arm 0 is too weak.** A fair static arm is what a competent condition-monitoring engineer writes: each pump's
+    own baseline, a peer residual and ISO-style vibration limits. Without it, "learning beats thresholds" is a
+    straw man.
+15. **The spec does not match the plan yet.** Agentic Stream's rotating-machinery spec uses absolute thresholds,
+    one situation type for every fault, and only ticket intents, with `create_maintenance_ticket` automatic.
+16. **Security.** Plant wire v1 has no authentication (an owner-only Unix socket only), and the LLM path sends
+    plant data out of the plant network; both need an answer before a real site.
+
 ## 5. Simulator work this needs
 
 | Gap | Note |
