@@ -58,17 +58,52 @@ Customer data is never in a repository and customers never share anything
 The simulator and Agentic Stream share only the plant wire contract and the device kinds it carries (vendored
 byte-identically and pinned by digest). The rules never enter that contract.
 
-## 4. Still to settle in the solution design
+## 4. Weaknesses and what is still to settle (review of 2026-10-26)
 
-1. **Switch-off limits.** The limits in [SCENARIOS.md](SCENARIOS.md) §3 come from an earlier draft and need the
+Ranked by how much each could undermine the result.
+
+### Design gaps (settle next)
+
+1. **Narrow envelopes against coverage.** An envelope built from 3 cases is tight, so many holdout cases fall just
+   outside it and go to the LLM anyway: safety and value pull apart, and P1 (B at most 50% of A's LLM calls) can
+   fail with everything working as designed. Widening needs another approval, which adds approver load.
+   Candidate: an envelope grows from new verified cases that agree with the rule, up to a cap set at approval, and
+   its coverage is reported week by week.
+2. **Every internal check compares the rule with the LLM, not with the world.** The shadow exit means "agrees with
+   the LLM", the audit signal means "disagrees with the LLM"; only the settle window is grounded in the world. A
+   fault the LLM gets consistently wrong is copied into a rule that passes every check. The truth catches it in
+   scoring, the system has no defence. The honest claim is "as good as the LLM and cheaper", never "better".
+
+### Honest evaluation (settle before any run)
+
+3. **The careful approver is partly circular.** We write both the replay report and the approver's criteria, so
+   arm B partly measures our own policy; real fatigue and rubber-stamping are not modelled. Arm C bounds the worst
+   case, but B flatters what a real human would do.
+4. **Small numbers.** About 10 cases per label in holdout, 3 repeats and a non-deterministic LLM: "B no worse than
+   A" can pass or fail by luck. Write down, before any run, the effect each value measure is expected to show and
+   the spread across repeats that still counts as a pass.
+5. **The world may be too easy, or the test may measure the spec.** Five of the seven faults share
+   `schedule_maintenance`, so learned rules may be ones an engineer writes in minutes and arm 0 may beat the 80%
+   audit. Scenario S4 holds only if the SituationSpec computes features relative to each pump (CEL over absolute
+   values cannot say "warm for this pump"); weak features fail everything and say nothing about learning.
+6. **Switch-off limits.** The limits in [SCENARIOS.md](SCENARIOS.md) §3 come from an earlier draft and need the
    owner's confirmation.
-2. **Expected effect sizes.** Write down, before any run, the effect each value measure is expected to show and
-   the spread across the 3 repeats that still counts as a pass.
-3. **Per-pump features.** Scenario S4 holds only if the SituationSpec computes features relative to each pump;
-   CEL over absolute values cannot express "warm for this pump".
-4. **Prerequisite I-13.** Rule promotion assumes Agentic Stream's lint, test, diff and shadow path (I-13).
-5. **A first slice.** S1, S2 and S7 need far less simulator work than the full campaign and show early whether the
-   value is there.
+
+### Known limits (state, do not fix now)
+
+7. **Thin value in calm weeks.** Deadlines are hours and the LLM takes seconds, so outside the outage scenario
+   (S5) learning saves cost, not damage. With the 24 h settle window and 10 shadow matches, maintenance rules become
+   active only in week 3 or 4, so holdout may show modest savings; if so, raise the case volume or shorten the
+   shadow exit, never drop the settle window.
+8. **Masking slower than the settle window.** The 24 h window works because bearing wear returns quickly in this
+   domain; a fault masked for longer than the window is still learned, and P7 catches it in scoring only.
+9. **One world.** Every claim rests on one synthetic domain; with the fan twin dropped, nothing shows the result
+   generalises.
+10. **Much is unbuilt before the first evidence.** Simulator: campaign, recurrence, domain variants, D-121,
+    rotating machinery over plant wire. Agentic Stream: a rotating-machinery spec with the three effectors, the
+    playbook compiler, circuits, the proposal flow and its prerequisite I-13 (lint, test, diff, shadow). Tamoz: the
+    drafting episode and its evals. The hedge is a first slice, S1, S2 and S7, which needs far less simulator work
+    and shows early whether the value is there.
 
 ## 5. Simulator work this needs
 
