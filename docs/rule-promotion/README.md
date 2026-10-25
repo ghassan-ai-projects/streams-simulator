@@ -21,6 +21,14 @@ decision falls.
 The simulator proves that this is worth it and safe: the same world is run with and without learning, and the
 sealed ground truth judges both.
 
+**The value claim, stated honestly** (onsite review, 2026-10-26). A real station sees a handful of bearing or
+lubrication events a year, not several a week, and nothing learned at one customer may reach another. At real
+volumes a rule can take months or years to earn its 3 verified cases, and the LLM cost per decision is small next
+to one failed pump. So the claim is not mainly saved tokens: it is decisions that are deterministic, replayable
+and auditable, that keep working when the model is unreachable, and that cost less once a rule exists. The
+campaign measures all of these, and a separate run at realistic volumes reports when rules actually become active
+([SCENARIOS.md](SCENARIOS.md) §2), or that they do not.
+
 ## 2. Decisions (owner, 2026-10-25 and 2026-10-26)
 
 | # | Decision |
@@ -95,10 +103,12 @@ Ranked by how much each could undermine the result.
 
 ### Known limits (state, do not fix now)
 
-7. **Thin value in calm weeks.** Deadlines are hours and the LLM takes seconds, so outside the outage scenario
-   (S5) learning saves cost, not damage. With the 24 h settle window and 10 shadow matches, maintenance rules become
-   active only in week 3 or 4, so holdout may show modest savings; if so, raise the case volume or shorten the
-   shadow exit, never drop the settle window.
+7. **Thin value, and slow learning at real volumes.** Deadlines are hours and the LLM takes seconds, so outside the
+   outage scenario (S5) learning saves cost, not damage. The campaign's volume is about 40 times a real station's;
+   at real volumes rules may take months or years to become active (the realistic-volume run measures it), which is
+   why the value claim in §1 leads with determinism, audit and working without the model. With the 24 h settle
+   window and 10 shadow matches, maintenance rules become active only in week 3 or 4 of the campaign; if holdout
+   shows few rule-handled cases, raise the case volume or shorten the shadow exit, never drop the settle window.
 8. **Masking slower than the settle window.** The 24 h window works because bearing wear returns quickly in this
    domain; a fault masked for longer than the window is still learned, and P7 catches it in scoring only.
 9. **One world.** Every claim rests on one synthetic domain; with the fan twin dropped, nothing shows the result

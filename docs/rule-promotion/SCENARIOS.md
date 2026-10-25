@@ -40,6 +40,11 @@ weeks 7-10  DISTURB   outage, cascade, new probes, site change, injection
 The simulator supplies the world and the truth for each run. Agentic Stream and Tamoz keep their ledgers, memory
 and playbook across runs, as a deployment would.
 
+The campaign's volume (about 5 cases per fault family per week) is compressed so learning can be observed in ten
+weeks; a real station sees about 40 times fewer. A second, **realistic-volume run** uses 1 to 2 events per family
+per month over 52 simulated weeks, arm B only, and reports for each fault family the week its rule became active,
+or that none did. It has no pass condition: it states how long learning takes at a real site.
+
 ## 3. The arms
 
 The world, seeds, fault schedule and delivery faults are identical in every arm; only the consumer differs.
@@ -55,7 +60,8 @@ Arms A to C run 3 times each and the spread is reported. The scripted approvers 
 
 **Value measures** (A against B), from the sealed truth and Agentic Stream's ledgers: LLM calls, tokens and cost
 per handled fault; damage events (a deadline missed); false actions on healthy pumps; time to a recommendation;
-approval requests; the share of cases handled by rules, week by week.
+approval requests; the share of cases handled by rules, week by week; the share of decisions that replay
+deterministically from their rule; and the decisions still made while the model is unreachable (S5).
 
 **Suite requirement**: arm 0 scores at most 80% correct over the whole campaign. If a fixed threshold already gets
 nearly everything right, learning proves nothing.
