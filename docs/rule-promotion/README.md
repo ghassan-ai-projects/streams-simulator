@@ -21,7 +21,7 @@ decision falls.
 The simulator proves that this is worth it and safe: the same world is run with and without learning, and the
 sealed ground truth judges both.
 
-## 2. Decisions (owner, 2026-10-25)
+## 2. Decisions (owner, 2026-10-25 and 2026-10-26)
 
 | # | Decision |
 |---|---|
@@ -30,9 +30,16 @@ sealed ground truth judges both.
 | 3 | **Kind pinning**: each rule is pinned to the device `kind_digest` it was learned on. A device that is born again with another kind digest puts every rule pinned to the old digest back to shadow until a human approves it again. |
 | 4 | **The playbook is its own file**, `<site>.playbook.yaml`, next to the site's SituationSpec in the customer workspace, compiled with it into one spec digest. Engineers author the spec; Tamoz proposes changes to the playbook only. |
 | 5 | **Per-rule circuit** in Agentic Stream: a rule is switched off automatically when its kind digest changes, when a sampled audit episode disagrees, when its recommended action had no effect on the device's own readings, or when most cases matching its condition fall outside its envelope. Switching it back on needs a human. The circuit state lives in the deployment's database, never in the playbook file. The audit rate is set per rule at approval; the default is 1 in 10. |
-| 6 | **When Tamoz may propose**: 3 verified cases by default (a per-site setting) with the same situation type, kind digest, intent and preset, each outcome verified by the device's readings; no contradicting case inside the proposed envelope; a replay report over the site's history attached; one pending proposal per situation type; no new proposal after a rejection without new evidence. |
+| 6 | **When Tamoz may propose**: 3 verified cases by default (a per-site setting) with the same situation type, kind digest, intent and preset, each outcome verified by the device's readings; no contradicting case inside the proposed envelope; a replay report over the site's history attached; one pending proposal per situation type; no new proposal after a rejection without new evidence. How a proposal is made is decision 14; what verified means is decision 15. |
 | 7 | **The success bar is a complex simulation**, not the real board: the rotating-machinery world as a 10-week campaign, with four arms (see [SCENARIOS.md](SCENARIOS.md)). The nine scenarios there were agreed before any solution design. |
 | 8 | **Harness split**: the simulator owns a generic phased scenario suite and its grading; Agentic Stream owns the campaign driver, the scripted approvers and the campaign score; Tamoz tests its proposal step on its own in `tamoz-evals`; a real-board run, if any, stays a runbook. Model responses are recorded so a campaign replays exactly. |
+| 9 | **Both may nominate a pattern.** Agentic Stream nominates when its ledgers show 3 matching verified cases; Tamoz nominates a pattern found in its memory by citing episode ids. Either way Agentic Stream checks the cited cases against its own ledgers and computes the envelope itself. |
+| 10 | **The key of "the same case"** is situation type, kind digest, Tamoz's diagnosis code (from the spec's `diagnosisCatalog`), intent and preset. |
+| 11 | **One approval** covers the rule and its exit from shadow, for example "active after 10 shadow matches that agree with the LLM and none that disagree". The move to active is a deterministic check against evidence the human already approved, not a decision by Tamoz or the rule. Any disagreement in shadow keeps the rule in shadow and asks the human again. |
+| 12 | **The human may edit a rule before approving it.** The edited rule is compiled and replayed again, the approval binds the edited digest, the provenance records it as human-edited, and the edit goes back to Tamoz's memory as feedback. |
+| 13 | **Hand edits to the playbook file are allowed and recorded.** On load a hand change is compiled and linted like a spec change and recorded in the approval ledger as changed outside the flow, with its diff and author; rules keep their state. Agentic Stream writes the file only if its digest is still the one it last loaded; otherwise it refuses and checks any pending proposal again against the new file. |
+| 14 | **Proposal flow.** Tamoz has no access to the workspace. Agentic Stream sends a bounded "draft a rule" episode with the cases and the current playbook (read only) and receives a typed rule proposal; it compiles it, computes the envelope from the recorded features, replays it over the site's history, stores it as pending and notifies the approvers. |
+| 15 | **Verified is not correct.** Each situation type declares a settle window in the spec (for example 24 h for bearing faults, 2 h for overload). A case is verified only when its action took effect and no situation of the same type reopens on that entity within the window; the replay report shows the reopen rate of every source case. Optionally, a site declares a remedy map (which intents are valid remedies for which diagnosis), and Tamoz cannot propose a rule that pairs a diagnosis with an undeclared remedy. |
 
 ## 3. Where things live
 
@@ -51,30 +58,17 @@ Customer data is never in a repository and customers never share anything
 The simulator and Agentic Stream share only the plant wire contract and the device kinds it carries (vendored
 byte-identically and pinned by digest). The rules never enter that contract.
 
-## 4. Open points (solution design, after the scenarios)
+## 4. Still to settle in the solution design
 
-Proposed during the discussion, not yet decided:
-
-1. **Who nominates a pattern.** Recommendation: both. Agentic Stream nominates when its ledgers show 3 identical
-   verified cases; Tamoz may nominate a pattern it found in its memory by citing episode ids. Either way Agentic
-   Stream checks the cited cases against its own ledgers and computes the envelope itself.
-2. **The key of "the same case".** Recommendation: add Tamoz's diagnosis code (from the spec's
-   `diagnosisCatalog`) to situation type, kind digest, intent and preset.
-3. **One approval or two.** Recommendation: approval 1 puts the rule in shadow; after enough agreeing shadow
-   matches, a one-click approval 2 with the shadow report makes it active. Alternative: one approval with a
-   shadow period set at approval, after which the rule goes active on its own.
-4. **Human edits before approval.** Recommendation: allowed; the edited rule is compiled and replayed again and
-   the approval binds the edited digest; the playbook records the rule as human-edited.
-5. **Hand edits to the playbook file.** Recommendation: Agentic Stream writes the file only if its digest is
-   still the one it last loaded; otherwise it refuses and checks the proposal again against the new file.
-6. **Proposal flow.** Proposed: Tamoz has no access to the workspace. Agentic Stream detects eligibility, sends a
-   bounded "draft a rule" episode with the cases and the current playbook (read only), and receives a typed
-   rule proposal; it then compiles it, computes the envelope from the recorded features, replays it, stores it as
-   pending and notifies the approvers. This amends decision 6, which placed the trigger in Tamoz's offline
-   improvement pipeline.
-7. **Verified is not correct.** A rule can be learned from cases whose readings improved while the fault went on
-   (scenario 1, the masking trap). Should a case count as verified only when the fault does not return before its
-   deadline?
+1. **Switch-off limits.** The limits in [SCENARIOS.md](SCENARIOS.md) §3 come from an earlier draft and need the
+   owner's confirmation.
+2. **Expected effect sizes.** Write down, before any run, the effect each value measure is expected to show and
+   the spread across the 3 repeats that still counts as a pass.
+3. **Per-pump features.** Scenario S4 holds only if the SituationSpec computes features relative to each pump;
+   CEL over absolute values cannot express "warm for this pump".
+4. **Prerequisite I-13.** Rule promotion assumes Agentic Stream's lint, test, diff and shadow path (I-13).
+5. **A first slice.** S1, S2 and S7 need far less simulator work than the full campaign and show early whether the
+   value is there.
 
 ## 5. Simulator work this needs
 

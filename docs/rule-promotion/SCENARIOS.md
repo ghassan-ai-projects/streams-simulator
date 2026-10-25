@@ -75,7 +75,8 @@ Purpose: recurring faults are learned and then handled without the LLM, and outc
 Story: over weeks 1 to 6, `lubrication_due`, `bearing_wear` and `overload` recur on different pumps, with
 cavitation as 40% background (the domain's own negative-class share).
 
-Expected with learning: the LLM decides the first cases; a case is verified when the readings confirm it; after 3
+Expected with learning: the LLM decides the first cases; a case is verified when the readings confirm the action
+took effect and no situation of the same type reopens on that pump within the settle window; after 3
 verified, uncontradicted cases a rule is proposed and the careful approver signs it; in holdout the rules handle the
 matching cases (a rule still pending or in shadow counts as an LLM case).
 
@@ -87,13 +88,14 @@ matching cases (a rule still pending or in shadow counts as an LLM case).
 | P4 | Every rule-handled case matches the truth (action and deadline): 100% |
 | P5 | Situation to recommendation for rule cases: at most 1 s p95, in wall time |
 | P6 | Every fault and action pair with at least 3 verified, uncontradicted cases got a proposal (checked on the ledgers) |
-| P7 | Masking trap: a rule such as "wear → `reduce_load`" (vibration falls with load, the bearing still fails) shows as damage in P2 and wrong decisions in P4 if it is ever activated; it never passes silently |
+| P7 | Masking trap: a rule such as "wear → `reduce_load`" (vibration falls with load, the bearing still fails) shows as damage in P2 and wrong decisions in P4 if it is ever activated; it never passes silently. The defence under test is the settle window and, where declared, the remedy map ([README.md](README.md) decision 15) |
 
 Reported without a target: approval requests, the learning curve, C against B, arm 0.
 
-Parameters: about 5 cases per family per week, at least 10 per family in holdout; verification window 15 min for
-overload and 4 h for the maintenance faults; the careful approver answers after 4 simulated hours, and rules
-approved during the learning weeks are active in holdout.
+Parameters: about 5 cases per family per week, at least 10 per family in holdout; settle window 2 h for overload
+and 24 h for the maintenance faults; the careful approver answers after 4 simulated hours and approves the rule
+with its shadow exit (10 agreeing shadow matches, none disagreeing), and rules that reach active during the
+learning weeks are active in holdout.
 
 ### S2 Cavitation look-alike
 
