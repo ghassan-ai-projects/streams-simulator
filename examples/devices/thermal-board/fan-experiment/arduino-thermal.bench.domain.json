@@ -1,0 +1,413 @@
+{
+  "id": "arduino-thermal",
+  "version": "0.1.0",
+  "title": "Arduino thermal bench twin",
+  "description": "The twin of the Arduino thermal bench: a DHT11 reads the zone, an LED indicates, and a PWM fan cools the zone under a 5 to 10 second lease. The three kinds implement the kind files beside this domain, so the simulated board and the physical board present one model. Calibrated to the bench from three real runs: the zone rests at ambient (about 22 degrees, 53 percent humidity) because the DHT11 sits clear of the board heat, and the fan pulls a warmed zone back toward ambient with a first-order lag.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "fast_physical",
+    "cadence": ["periodic"],
+    "cardinality": "small",
+    "consequence": ["cost"],
+    "correlation": ["coupled"],
+    "fidelity": ["F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar", "counter"]
+  },
+  "stresses": "A leased actuator in a closed thermal loop: the fan's effect decays with its lease, so a consumer that stops renewing it watches the zone warm back up, and a DHT11 that sticks reads plausibly while the zone drifts.",
+  "kinds": [
+    {
+      "name": "thermal_sensor",
+      "implements": "thermal_sensor",
+      "state": [
+        {
+          "name": "ambient_temp",
+          "unit": "degC",
+          "initial": 22.0,
+          "min": -20.0,
+          "max": 60.0,
+          "description": "Room air temperature outside the bench. No dynamics: moved by faults only."
+        },
+        {
+          "name": "heat_load",
+          "unit": "degC",
+          "initial": 0.0,
+          "min": 0.0,
+          "max": 30.0,
+          "description": "How far the board and the L293D heat the zone above ambient with the fan off; measured as none at the DHT11 position on the bench."
+        },
+        {
+          "name": "humidity_bias",
+          "unit": "%",
+          "initial": 97.0,
+          "min": 0.0,
+          "max": 200.0,
+          "description": "Intercept of the line RH = bias - 2 T: constant absolute moisture while the air warms or cools."
+        },
+        {
+          "name": "zone_temperature",
+          "unit": "degC",
+          "initial": 22.0,
+          "min": 0.0,
+          "max": 60.0,
+          "description": "The true zone temperature. It starts at its rest value, ambient plus heat load."
+        },
+        {
+          "name": "zone_humidity",
+          "unit": "%",
+          "initial": 53.0,
+          "min": 0.0,
+          "max": 100.0,
+          "description": "The true relative humidity of the zone, which falls as the air warms."
+        }
+      ],
+      "dynamics": [
+        {
+          "target": "zone_temperature",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "first_order_lag",
+            "clamp": {"min": 0.0, "max": 60.0},
+            "gain": 1.0,
+            "inputs": [
+              {"state": "ambient_temp", "coef": 1.0},
+              {"state": "heat_load", "coef": 1.0},
+              {"state": "fan_duty", "coef": -0.02, "link": {"aggregate": "sum", "type": "cools"}}
+            ],
+            "time_constant_s": 180
+          }
+        },
+        {
+          "target": "zone_humidity",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "first_order_lag",
+            "clamp": {"min": 0.0, "max": 100.0},
+            "gain": 1.0,
+            "inputs": [{"state": "humidity_bias", "coef": 1.0}, {"state": "zone_temperature", "coef": -2.0}],
+            "time_constant_s": 60
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "temperature",
+          "unit": "Cel",
+          "absence": "signal",
+          "availability": {"mttr_s": 6, "uptime": 0.995},
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.4},
+          "observes": "zone_temperature",
+          "range": {"min": 0.0, "max": 50.0},
+          "resolution": 1.0,
+          "tag": "TT",
+          "value_type": "number",
+          "description": "DHT11 temperature: whole degrees, plus or minus 2 degC, read every 2 s. It drops out when a checksum fails."
+        },
+        {
+          "name": "humidity",
+          "unit": "%",
+          "absence": "signal",
+          "availability": {"mttr_s": 6, "uptime": 0.995},
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "iso13374_role": "data_acquisition",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 1.0},
+          "observes": "zone_humidity",
+          "range": {"min": 20.0, "max": 90.0},
+          "resolution": 1.0,
+          "tag": "MT",
+          "value_type": "number",
+          "description": "DHT11 relative humidity: whole percent, plus or minus 5 %RH, 20 to 90 %RH."
+        }
+      ],
+      "faults": [
+        {
+          "id": "dht11_stuck",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "temperature"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "observation": {"form": "stuck", "channel": "temperature", "quality": "suspect", "value": 20.0},
+          "onset": {"magnitude": 1.0, "shape": "step"},
+          "description": "The DHT11 sticks at 20 degC while the zone keeps its real temperature. The reading is plausible and flagged suspect."
+        },
+        {
+          "id": "ambient_warm_spell",
+          "affects": [{"state": "ambient_temp", "delta": 4.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "temperature"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"},
+          "description": "The room warms by 4 degC. The zone follows it, and nothing on the board is wrong."
+        },
+        {
+          "id": "zone_heat_load",
+          "affects": [{"state": "heat_load", "delta": 8.0}],
+          "is_negative_class": false,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "temperature"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"},
+          "description": "A heat source inside the zone adds 8 degC of heat load. The zone settles 8 degC warmer while the room stays as it was, so cooling the zone is the right answer."
+        }
+      ]
+    },
+    {
+      "name": "indicator",
+      "implements": "indicator", "board_type": "arduino-thermal",
+      "state": [
+        {
+          "name": "led_brightness",
+          "unit": "permille",
+          "initial": 0.0,
+          "min": 0.0,
+          "max": 1000.0,
+          "description": "LED brightness, 0 off to 1000 full."
+        },
+        {
+          "name": "led_pattern",
+          "unit": "code",
+          "initial": 0.0,
+          "min": 0.0,
+          "max": 2.0,
+          "description": "LED pattern: 0 off, 1 slow blink, 2 solid."
+        }
+      ],
+      "channels": [
+        {
+          "name": "brightness_permille",
+          "unit": "permille",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 5},
+          "fidelity": "F1",
+          "iso13374_role": "state_detection",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "led_brightness",
+          "range": {"min": 0.0, "max": 1000.0},
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "The brightness the board reports for the LED."
+        },
+        {
+          "name": "pattern",
+          "unit": "code",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 5},
+          "fidelity": "F1",
+          "iso13374_role": "state_detection",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "led_pattern",
+          "range": {"min": 0.0, "max": 2.0},
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "The pattern code the board reports: 0 off, 1 slow blink, 2 solid. The gateway maps the code to the firmware's pattern names."
+        }
+      ],
+      "faults": [
+        {
+          "id": "led_stuck_off",
+          "affects": [{"state": "led_brightness", "delta": -1000.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "brightness_permille"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": -1000.0, "shape": "step"},
+          "description": "The LED driver fails open: the LED is dark whatever the board reports commanding."
+        }
+      ],
+      "effectors": [
+        {
+          "name": "set_led",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 40, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "brightness_permille": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer",
+                "description": "LED brightness, 0 off to 1000 full"
+              },
+              "pattern": {"maximum": 2, "minimum": 0, "type": "integer", "description": "0 off, 1 slow blink, 2 solid"}
+            },
+            "required": ["brightness_permille", "pattern"],
+            "type": "object"
+          },
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [
+              {"state": "led_brightness", "assign_from_arg": "brightness_permille"},
+              {"state": "led_pattern", "assign_from_arg": "pattern"}
+            ],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 60,
+          "risk_class": "low",
+          "description": "Set the LED brightness and pattern. It holds until the next set_led or stop_led."
+        },
+        {
+          "name": "stop_led",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 40, "sigma": 10}},
+          "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "led_brightness", "delta": -1000.0}, {"state": "led_pattern", "delta": -2.0}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 60,
+          "risk_class": "low",
+          "safe_stop": true,
+          "description": "Safe stop: the LED goes dark."
+        }
+      ]
+    },
+    {
+      "name": "fan",
+      "implements": "fan", "board_type": "arduino-thermal",
+      "state": [
+        {
+          "name": "fan_duty",
+          "unit": "permille",
+          "initial": 0.0,
+          "min": 0.0,
+          "max": 600.0,
+          "description": "PWM duty of the fan through the L293D, 0 to the firmware's cap of 600."
+        }
+      ],
+      "channels": [
+        {
+          "name": "duty_permille",
+          "unit": "permille",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "iso13374_role": "state_detection",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "fan_duty",
+          "range": {"min": 0.0, "max": 600.0},
+          "resolution": 1.0,
+          "value_type": "counter",
+          "description": "The duty the board reports for the fan. It falls to 0 when the lease lapses."
+        }
+      ],
+      "faults": [
+        {
+          "id": "fan_stall",
+          "affects": [{"state": "fan_duty", "delta": -600.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "duty_permille"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": -600.0, "shape": "step"},
+          "description": "The rotor stalls: the fan delivers no cooling whatever duty was commanded."
+        }
+      ],
+      "effectors": [
+        {
+          "name": "set_pwm_lease",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 40, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "duty_permille": {"maximum": 600, "minimum": 0, "type": "integer", "description": "PWM duty, 0 off to 600"},
+              "lease_ms": {
+                "maximum": 10000,
+                "minimum": 5000,
+                "type": "integer",
+                "description": "How long the duty holds before the board turns the fan off"
+              }
+            },
+            "required": ["duty_permille", "lease_ms"],
+            "type": "object"
+          },
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "fan_duty", "assign_from_arg": "duty_permille"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 60,
+          "lease": {
+            "unit": "ms",
+            "arg": "lease_ms",
+            "fallback": "safe_off",
+            "safe_deltas": [{"state": "fan_duty", "delta": 0.0}]
+          },
+          "risk_class": "medium",
+          "description": "Run the fan at a duty for a lease of 5 to 10 s. Renew it before it lapses, or the board turns the fan off."
+        },
+        {
+          "name": "stop_fan",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 40, "sigma": 10}},
+          "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "fan_duty", "delta": -600.0}], "time_constant_s": 0},
+          "idempotency_window_s": 60,
+          "risk_class": "low",
+          "safe_stop": true,
+          "description": "Safe stop: the fan turns off."
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "thermal_sensor", "names": ["zone-01"], "area": "thermal-bench"},
+    {"kind": "indicator", "names": ["led-01"], "area": "thermal-bench"},
+    {"kind": "fan", "names": ["fan-01"], "area": "thermal-bench"}
+  ],
+  "link_types": [
+    {
+      "name": "cools",
+      "from": "fan",
+      "to": "thermal_sensor",
+      "description": "The fan blows on the zone the sensor reads."
+    }
+  ],
+  "links": [{"from": "fan-01", "to": "zone-01", "type": "cools"}],
+  "boards": [
+    {
+      "name": "mega-01",
+      "members": ["zone-01", "led-01", "fan-01"],
+      "description": "The ELEGOO Mega 2560: DHT11 on D2, the LED, and the fan through an L293D."
+    }
+  ],
+  "profiles": [
+    {
+      "name": "nominal",
+      "duration_s": 3600,
+      "description": "One board at rest: the fan off, the zone at its rest temperature."
+    },
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "One board has no peers to trip together, so there is no alarm flood to reproduce.",
+      "description": "Not applicable."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 3600,
+      "fault_weights": {"dht11_stuck": 1.0},
+      "description": "The DHT11 sticks while the zone keeps its real temperature."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1},
+  "site": {"name": "bench", "areas": [{"name": "thermal-bench"}]}
+}

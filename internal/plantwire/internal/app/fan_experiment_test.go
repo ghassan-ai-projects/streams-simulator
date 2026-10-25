@@ -54,8 +54,8 @@ func TestTheFanExperimentPlansPassTheirCheckAndDifferOnlyInTheGatewayTheBindings
 	}
 	hardware, err := CheckConnect(planOptions(t, real, ""))
 	if err != nil || hardware.Environment != domain.EnvironmentHardware || !hardware.Gateway || len(hardware.Policies) != 1 ||
-		!reflect.DeepEqual(originsOf(hardware), map[string]string{"zone-01": "real@mega-01", "led-01": "real@mega-01", "fan-01": "real@mega-01"}) {
-		t.Fatalf("real.plan.json check = %+v, %v, want every instance real on mega-01 and one policy", hardware, err)
+		!reflect.DeepEqual(originsOf(hardware), map[string]string{"zone-01": "real@board-01", "led-01": "real@board-01", "fan-01": "real@board-01"}) {
+		t.Fatalf("real.plan.json check = %+v, %v, want every instance real on board-01 and one policy", hardware, err)
 	}
 	common := func(plan map[string]any) map[string]any {
 		kept := maps.Clone(plan)

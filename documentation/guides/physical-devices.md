@@ -144,6 +144,7 @@ Without `gateway_socket` the session is a simulated node only; with it, a mixed 
 In the canvas, **Open live view** shows the session as it runs.
 
 - Each device carries its origin. A real device shows board and boot id; a simulated one shows "Simulated · no link".
+- A real device's node box lists the metrics of its kind as the board reports them (a fan's `level_percent` in %, an indicator's `state`), not the channels the twin declares in the plant. The box keeps the rows the layout reserved for the twin's channels and counts the rest as "more" in Inspect. Until the board announces the device the box shows the twin's channels as awaiting a reading. The saved run's review shows the same boxes.
 - Connection health shows the host link and the gateway link, a board going offline and coming back, and reboots.
 - A reading that is stale, disconnected, invalid or untrusted shows that state, not a value. A reading of a real device turns `stale` after three of its declared scan intervals without a sample, or after 30 seconds when the kind declares no scan interval.
 - The commands table shows each command with its stages. A command the node refused locally reads "Refused at the node: local control", distinct from a refusal of the board or the host.
