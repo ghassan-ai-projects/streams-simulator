@@ -66,10 +66,10 @@ deterministically from their rule; and the decisions still made while the model 
 **Suite requirement**: arm 0 scores at most 80% correct over the whole campaign. If a fixed threshold already gets
 nearly everything right, learning proves nothing.
 
-**Limits the scenarios refer to** (from the first success-bar draft, to confirm in the design): wrong
-recommendations before a rule is switched off are 0 for a kind change, at most 1 for an action with no effect,
-at most 20 for audit disagreement (two audit periods at 1 in 10), and within the configured window when the world
-moves outside the approved cap. No rule is ever active without an approval record (adversarial test). No rule
+**Limits the scenarios refer to** (agreed after the onsite review): wrong recommendations before a rule is
+switched off are 0 for a kind change, at most 1 for an action with no effect, at most 3 for audit disagreement (one
+audit period at the default rate of 1 in 3, with a human alerted on the first disagreement), and within the
+configured window when the world moves outside the approved cap. No rule is ever active without an approval record (adversarial test). No rule
 exceeds its rate cap: reaching it switches the rule off (decision 17). A campaign
 replayed from its recorded model responses gives byte-identical results.
 
