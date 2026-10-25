@@ -41,7 +41,7 @@ Findings:
    2 min), so no wind-down decision was made.
 4. The gateway logged 10 receipt/result pairs as `firmware_answer_unmatched` with `command_id` unknown. They look like answers to the
    gateway's own polls (`plantwire_board.py` polls the board after each command and every interval); UNVERIFIED, no harm seen.
-5. The canvas boxes for the fan and LED stay blank (D-120); the board is named `board-01` by the gateway, not `mega-01` (D-121).
+5. The canvas boxes for the fan and LED stay blank (D-120); the gateway announces the board as `board-01`, so the plan binds `board-01` and `serve` takes `--hardware-boards board-01` (fixed: `real.plan.json` and its README now say `board-01`).
 6. `check-run.sh` C5 reads `session.plan.json`, which was the committed plan with the old digest, not the real plan; the digests the
    commands carried match the real plan and the gateway's list.
 7. The Mega resets when the port opens (new `boot_id` each gateway start: boot-69, 70, 71): confirmed.

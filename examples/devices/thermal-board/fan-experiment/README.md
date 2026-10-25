@@ -7,10 +7,10 @@ paced to the wall clock (`"pace": "wall"`), and both list the same policy digest
 | Plan | Instances | What it is for |
 | --- | --- | --- |
 | `simulate.plan.json` | `zone-01`, `led-01` and `fan-01` all simulated | Rehearsing the host without the board: a heat source is added inside the zone (`zone_heat_load` on `zone-01`) 120 s after the session starts, for 900 s, so the zone settles about 8 degC warmer and cooling it is the right answer |
-| `real.plan.json` | `zone-01`, `led-01` and `fan-01` all real, on the gateway's board `mega-01` | The experiment on the board |
+| `real.plan.json` | `zone-01`, `led-01` and `fan-01` all real, on the gateway's board `board-01` | The experiment on the board |
 
 **What differs, exactly:** `real.plan.json` adds `gateway_socket` (`/tmp/fan-experiment/gateway.sock`) and `real` (the three
-bindings to the devices of `mega-01`), and has no `disturbances` (a fault can strike only a simulated instance). Every other
+bindings to the devices of `board-01`), and has no `disturbances` (a fault can strike only a simulated instance). Every other
 member is the same: `schema_version`, `domain`, `seed`, `host_socket`, `pace` and `policies`.
 
 **Replace the policy digest.** `policies` holds a placeholder, `sha256:` followed by 64 `b`. Before a session with Agentic
@@ -46,7 +46,7 @@ $B plantwire connect --plan "$E/fan-experiment/simulate.plan.json" \
 ```
 
 **Real.** Start the host as above (the reference host with `--environment hardware`), then the node, then the gateway on
-`/tmp/fan-experiment/gateway.sock` with board `mega-01`:
+`/tmp/fan-experiment/gateway.sock` with board `board-01`:
 
 ```bash
 $B plantwire connect --plan "$E/fan-experiment/real.plan.json" \

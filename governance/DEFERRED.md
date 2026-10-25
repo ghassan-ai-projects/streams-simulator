@@ -537,6 +537,3 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > the domain's channels (`duty permille` on the fan, `brightness permille` and `pattern` on the LED), which the real kinds do not
 > report (`level_percent`, `state`), so the fan and LED boxes stay blank while the run journal holds the readings (found in the
 > 2026-10-25 real run). Trigger to fix: the next canvas round on connected sessions; the box then shows the kind's readings.
-> D-121 (**Low**; board names disagree): `examples/devices/thermal-board/fan-experiment/real.plan.json` and the docs name the board
-> `mega-01`, the gateway announces `board-01` (its firmware profile), and the host's consent flag must name the announced board.
-> Trigger to fix: the next edit of the fan-experiment plans or README.

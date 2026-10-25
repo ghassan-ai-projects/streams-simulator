@@ -14,7 +14,7 @@ import (
 
 func rehearsalBoard(t *testing.T) *standin.Node {
 	t.Helper()
-	node, err := standin.New(standin.Config{Session: "bench-1", Board: "mega-01",
+	node, err := standin.New(standin.Config{Session: "bench-1", Board: "board-01",
 		Kinds: []map[string]any{thermalKindFile(t, "thermal_sensor.kind.json"), thermalKindFile(t, "indicator.kind.json"),
 			thermalKindFile(t, "fan.kind.json")},
 		Devices: []standin.Device{{Name: "zone-01", Kind: "thermal_sensor", BootID: "61", Initial: map[string]any{"temperature": 30.0}},
