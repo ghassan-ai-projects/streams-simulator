@@ -58,3 +58,13 @@ the same plan from its Connect panel. The tests in `internal/plantwire/internal/
 rehearse the simulated one against the reference host (the heat load raises the zone; `show_state alert` and
 `set_cooling {level_percent: 45}` are accepted and read back as `state alert` and `level_percent 45`) and drive the real one
 with the stand-in gateway.
+
+## The bench-calibrated twin
+
+`arduino-thermal.bench.domain.json` is `../thermal-board.domain.json` with the zone's rest state fitted to three real runs (2026-10-25):
+the zone rests at ambient (22 degC, no board heat at the DHT11: `heat_load` 0, `zone_temperature` 22) and the humidity intercept is 97
+(53 percent at 22 degC). The cooling time constant stays 180 s: the real decays gave 126 to 354 s depending on how the heat source was
+removed. Copy it as `arduino-thermal.domain.json` into the domains folder to compare a real session with this twin. A person warming the
+sensor by hand is a disturbance the twin does not model, so the comparison still diverges while the sensor is warmed. The shipped
+`../thermal-board.domain.json` is unchanged (tests pin its values).
+

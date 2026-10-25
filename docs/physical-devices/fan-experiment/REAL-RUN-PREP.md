@@ -80,3 +80,20 @@ quiet-window hold, canvas with D-120 fixed, owner approving each command. Archiv
 - **Twin vs board** (the review page): `fan-01.level_percent` agrees (184 readings, 0 beyond ±3 %); `zone-01.temperature` diverges (the twin
   rests at 34 C, the bench at 22 to 29 C: the twin's ambient is not this bench's); `zone-01.humidity` diverges (the twin holds 42 %, the
   board read 47 to 72 % while the sensor was warmed by hand); `led-01.state` cannot be judged (an enum, no numeric tolerance).
+
+## Twin calibrated to the bench (2026-10-25)
+
+`examples/devices/thermal-board/fan-experiment/arduino-thermal.bench.domain.json`: rest 22 degC (was 34: the twin assumed 12 degC of board
+heat the DHT11 does not see), humidity intercept 97 (53 percent at rest, was 42), time constant kept at 180 s (the real decays fitted
+126 to 354 s). `domain lint`: 0 findings. **Compare with twin on the third session's run, before and after:**
+
+| Metric | Before | After |
+|---|---|---|
+| `zone-01.temperature` beyond tolerance | 188 of 188 | 115 of 188 (all while the sensor was warmed by hand, 00:02:51 to 00:06:39; the rest and the cool-down are within +-2.5 degC) |
+| `zone-01.humidity` beyond tolerance | 136 of 189 | 108 of 189 (the board read 39 to 72 percent while warmed and breathed on; the twin holds 53) |
+| `fan-01.level_percent` | agrees | agrees |
+| all readings beyond tolerance | 324 of 561 | 223 of 561 |
+
+What remains is the hand: a heat and moisture source the twin has no input for. The comparison cannot inject a disturbance; a stated
+`zone_heat_load` disturbance in the twin would be the next step.
+
