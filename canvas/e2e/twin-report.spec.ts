@@ -24,8 +24,8 @@ const cooling = { level_percent: 30 };
 
 async function recordSessionWithCommands(page: Page, lab: { readonly binary: string }): Promise<string> {
   const open = openScriptedBench(lab.binary, [
-    { id: "twin-a", afterS: 10, device: "fan-01", command: "set_cooling", args: cooling },
-    { id: "twin-b", afterS: 14, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "twin-a", afterS: 0, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "twin-b", afterS: 0, device: "fan-01", command: "set_cooling", args: cooling },
   ]);
   bench = open;
   const panel = await openSessionPanel(page);

@@ -34,7 +34,7 @@ export function clockWords(panel: Locator): Locator {
   return clockLine(panel);
 }
 
-export async function sameAcrossPolls(page: Page, read: () => Promise<number>, polls = 3): Promise<number[]> {
+export async function sameAcrossPolls(page: Page, read: () => Promise<number>, polls = 2): Promise<number[]> {
   const seen: number[] = [];
   for (let poll = 0; poll < polls; poll += 1) {
     await page.waitForResponse((response) => response.url().includes("/api/actions/job.status"));

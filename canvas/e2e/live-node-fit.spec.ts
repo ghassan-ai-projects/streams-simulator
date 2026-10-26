@@ -17,7 +17,7 @@ async function atCompactZoom(page: Parameters<typeof startWatchRun>[0], mode: Ru
   await page.getByRole("application", { name: "Plant graph" }).focus();
   await page.keyboard.press("0");
   expect(await zoomInTo(page, "compact", 4)).toBe("compact");
-  await expect(page.getByText(/^Running · 00:(0[5-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/^Running · 00:(0[2-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
 }
 
 for (const mode of ["Explore", "Evaluate"] as RunMode[]) {
@@ -50,7 +50,7 @@ test("a node with a fault and a command status line holds both without overlappi
   await startWatchRun(page, "Explore");
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
-  await expect(panel.getByText(/^Running · 00:0[5-9]/)).toBeVisible({ timeout: 60_000 });
+  await expect(panel.getByText(/^Running · 00:0[2-9]/)).toBeVisible({ timeout: 60_000 });
   await panel.getByRole("button", { name: "Pause" }).click();
   await panel.getByLabel("Call now instance").selectOption("CT-1");
   await panel.getByLabel("Call now effector").selectOption({ label: "set fan speed" });

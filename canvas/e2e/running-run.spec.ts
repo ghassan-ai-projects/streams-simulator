@@ -47,13 +47,10 @@ test("a run still running lists as Running, never Did not finish, and stops read
   await expect(row).not.toContainText("Did not finish");
   await expectLegibleIcon(pill);
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
-  await page
-    .getByRole("complementary", { name: "Run Factory utilities" })
-    .getByRole("button", { name: "Stop now" })
-    .click();
-  await expect(page.getByRole("heading", { level: 1, name: new RegExp(`^Run ${world}`) })).toBeVisible({
-    timeout: 60_000,
-  });
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByRole("button", { name: "Stop now" }).click();
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: new RegExp(`^Run ${world}`) })).toBeVisible();
   await page.getByRole("button", { name: "Streams Simulator, workspace home" }).click();
   await expect(rowOf(page, world)).toBeVisible();
   await expect(rowOf(page, world).getByText("Running", { exact: true })).toHaveCount(0);

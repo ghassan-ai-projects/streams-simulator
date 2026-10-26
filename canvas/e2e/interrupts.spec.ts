@@ -6,7 +6,7 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/test";
 import type { Bench } from "./support/session";
 import { addThermalBench, runIdOf, scriptPolicy, shortScriptPolicy } from "./support/session";
-import { boxOf, controlsOf, startedSession } from "./support/interruptBench";
+import { boxOf, controlsOf, refsAfterApproveMode, startedSession } from "./support/interruptBench";
 import { repository } from "./support/workspace";
 
 test.setTimeout(180_000);
@@ -88,7 +88,7 @@ test("the interrupt controls hold, approve and stop the node of a live session, 
   lab,
 }) => {
   addThermalBench(lab);
-  const started = await startedSession(page, lab, [scriptPolicy]);
+  const started = await startedSession(page, lab, refsAfterApproveMode, [scriptPolicy]);
   bench = started.bench;
   const { panel } = started;
   await expect(panel.getByRole("region", { name: "Allowed policies in effect" })).toContainText(shortScriptPolicy);

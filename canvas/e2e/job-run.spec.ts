@@ -79,7 +79,8 @@ test("a reload in the middle of a run brings back the banner, the progress and S
   await expect(panel.getByText(/^Running · \d\d:\d\d:\d\d of 00:30:00 simulated/)).toBeVisible();
   await expect(panel.getByRole("button", { name: "Stop now" })).toBeVisible();
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
   await expect(page.getByText(/^Stopped by operator at \d\d:\d\d:\d\d of 00:30:00$/).first()).toBeVisible();
 });
 
@@ -113,14 +114,16 @@ test("an Evaluate run found again after a reload names no fault and no plan it c
   ).toHaveCount(0);
   expect(await page.locator("body").innerText()).not.toMatch(fanFailure);
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
 test("Stop now before the end keeps a shorter run that says it was stopped, and where", async ({ page }) => {
   const panel = await startWatched(page);
   await expect(panel.getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
   await expect(page.getByText(/^Stopped by operator at 00:[01]\d:\d\d of 00:30:00$/).first()).toBeVisible();
   await expect(page.locator("[data-part='execution']")).toContainText(
     /Stopped by operator at 00:[01]\d:\d\d of 00:30:00/,
