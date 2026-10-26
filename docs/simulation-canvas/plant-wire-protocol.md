@@ -313,8 +313,8 @@ customer's plant is configuration that belongs to that customer.
 | Contract (`plant-wire`) | Record shapes, rules, fixtures | Nothing |
 | Plant | — | Devices and metrics, announced in births (no configuration) |
 | Edge gateway | Program | Sensor mapping file, allowed policy and capability digests |
-| Agentic Stream | Program | `SituationSpec`, permission policy, expected inventory, approvers |
-| Tamoz | Program | Nothing at rest; catalogs arrive with each episode |
+| Agentic Stream | Program | `SituationSpec`, playbook of approved rules, permission policy, expected inventory, approvers |
+| Tamoz | Program | Memory and rule candidates learned at this customer; catalogs arrive with each episode ([rule promotion](../rule-promotion/README.md), 2026-10-25) |
 | Simulator and canvas | Programs, generic example domains | Optional digital-twin domain, layouts, scenario files, run artifacts |
 
 **Isolation rules**

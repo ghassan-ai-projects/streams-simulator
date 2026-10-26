@@ -532,3 +532,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > only. The digest and `section_changed` still differ, and no item is ever reported unchanged when it differs. Trigger to fix: the
 > canvas relies on the list being complete for an item; then the view gains the member or the declaration is compared after the
 > view's members are removed.
+> D-121 (**Medium**; the correct action for a sensor fault does not repair the sensor): in `domains/rotating-machinery.domain.json`
+> both `sensor_drift` and `sensor_failure` raise `vibration_bias`, expect `schedule_maintenance`, and record `recalibrated` or
+> `repaired` when it is applied by the deadline. The effector's effect changes only `maintenance_due` and `lubrication`, and no
+> declaration lowers `vibration_bias`, so after the correct action the probe keeps reading high: the truth says repaired while the
+> world stays biased. A closed-loop consumer that verifies by readings sees the correct action as having no effect and can never
+> verify a sensor case. Found by reading the domain (rule-promotion scenarios, 2026-10-25), not by running it; other domains not
+> checked. Trigger to fix: before the lying-sensor scenario of `docs/rule-promotion/SCENARIOS.md`; then the domain gains a
+> `recalibrate_probe` effector or maintenance clears the bias, with a failing test first.
