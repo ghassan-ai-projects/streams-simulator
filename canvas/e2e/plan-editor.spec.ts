@@ -87,7 +87,7 @@ test("a named plan with a fault that recovers, a delivery condition and a call r
   );
 });
 
-test("an exploration found again after a reload brings back its name, its fault marks and its plan ticks", async ({
+test("an exploration found again after a reload brings back its name, its fault marks and its plan ticks @slow", async ({
   page,
 }) => {
   const panel = await planned(page);
@@ -112,7 +112,7 @@ test("an exploration found again after a reload brings back its name, its fault 
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
-test("an evaluation found again after a reload keeps its name and purpose and still names no fault or delivery condition", async ({
+test("an evaluation found again after a reload keeps its name and purpose and still names no fault or delivery condition @slow", async ({
   page,
 }) => {
   const panel = await planned(page, { evaluate: true });

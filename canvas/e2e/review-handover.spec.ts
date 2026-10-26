@@ -36,7 +36,7 @@ async function download(page: Page, button: Locator): Promise<{ readonly name: s
   return { name: saved.suggestedFilename(), text: readFileSync(path, "utf8") };
 }
 
-test("a reviewer reads what ran, checks the replay, exports a handover and compares with a baseline", async ({
+test("a reviewer reads what ran, checks the replay, exports a handover and compares with a baseline @slow", async ({
   page,
 }) => {
   const baseline = await runFast(page, { fault: false });

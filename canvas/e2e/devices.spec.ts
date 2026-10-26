@@ -112,7 +112,7 @@ async function chooseGradualResponse(page: Page, timeConstant: string): Promise<
   await effect.getByLabel("Time constant").fill(timeConstant);
 }
 
-test("a device gets a twin: what it still needs is found before the behaviour, the instrument and a gradual response are chosen, the twin is created, and it is found created after a reload", async ({
+test("a device gets a twin: what it still needs is found before the behaviour, the instrument and a gradual response are chosen, the twin is created, and it is found created after a reload @slow", async ({
   page,
   lab,
 }) => {

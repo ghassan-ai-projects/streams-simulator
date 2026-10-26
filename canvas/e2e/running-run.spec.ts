@@ -35,7 +35,7 @@ async function expectLegibleIcon(pill: Locator): Promise<void> {
   expect(inside?.gap).toBeGreaterThanOrEqual(6);
 }
 
-test("a run still running lists as Running, never Did not finish, and stops reading Running once it ends", async ({
+test("a run still running lists as Running, never Did not finish, and stops reading Running once it ends @slow", async ({
   page,
 }) => {
   const world = await startWatchedRun(page);

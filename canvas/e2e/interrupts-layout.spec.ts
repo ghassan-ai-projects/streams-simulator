@@ -39,7 +39,7 @@ async function plantInView(page: Page): Promise<void> {
   expect(plant.y + plant.height).toBeLessThanOrEqual(height);
 }
 
-test("the interrupt bar stays inside a 1280 by 800 window in one row, and the plant's bottom stays in view, while a command waits and a stop latches", async ({
+test("the interrupt bar stays inside a 1280 by 800 window in one row, and the plant's bottom stays in view, while a command waits and a stop latches @slow", async ({
   page,
   lab,
 }) => {

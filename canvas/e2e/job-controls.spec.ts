@@ -22,7 +22,7 @@ async function callSetpointNow(panel: Locator, value: string): Promise<void> {
   await panel.getByRole("button", { name: "Call now" }).click();
 }
 
-test("pause freezes the simulated clock for consecutive polls, step moves it one chunk, resume goes on", async ({
+test("pause freezes the simulated clock for consecutive polls, step moves it one chunk, resume goes on @slow", async ({
   page,
 }) => {
   const panel = await pausedPanel(page, "Explore");
@@ -54,7 +54,7 @@ test("the speed select changes the rate the run goes at, and the words follow it
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
 
-test("an Explore run takes a call and a fault now, shows both, and Review lists them as the operator's", async ({
+test("an Explore run takes a call and a fault now, shows both, and Review lists them as the operator's @slow", async ({
   page,
 }) => {
   const names = recordActions(page);
@@ -85,7 +85,7 @@ test("an Explore run takes a call and a fault now, shows both, and Review lists 
   await expect(details.getByRole("region", { name: "Disturbances" })).toContainText("fan failure");
 });
 
-test("an Evaluate run offers no fault injection, takes a call now, and shows no fault anywhere while running", async ({
+test("an Evaluate run offers no fault injection, takes a call now, and shows no fault anywhere while running @slow", async ({
   page,
 }) => {
   const names = recordActions(page);
@@ -118,7 +118,9 @@ test("an Evaluate run offers no fault injection, takes a call now, and shows no 
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
 
-test("a reload while the run is paused finds it paused, at the same clock, and Resume goes on", async ({ page }) => {
+test("a reload while the run is paused finds it paused, at the same clock, and Resume goes on @slow", async ({
+  page,
+}) => {
   const panel = await pausedPanel(page, "Explore");
   const frozen = await simulatedSeconds(panel);
   await page.reload();

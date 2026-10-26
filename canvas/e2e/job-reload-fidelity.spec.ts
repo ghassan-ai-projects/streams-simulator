@@ -55,7 +55,7 @@ async function expectTheRunAsPlanned(page: Page, panel: Locator): Promise<void> 
   await expect(page.getByRole("group", { name: /^CT-1, Fault/ })).toHaveCount(0);
 }
 
-test("an Explore run found again after a reload shows its plan, its commands given now and what has recovered", async ({
+test("an Explore run found again after a reload shows its plan, its commands given now and what has recovered @slow", async ({
   page,
 }) => {
   const panel = await pausedAfterTheRecovery(page);
