@@ -1,6 +1,6 @@
 import type { BrowserContextOptions } from "@playwright/test";
-import { cpSync, mkdirSync, mkdtempSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { pairedCookie, startBridge } from "./bridge";
 import type { RunningBridge } from "./bridge";
 import { env } from "./env";
@@ -37,8 +37,12 @@ export async function openLab(scratch: string, target: Target): Promise<Lab> {
   return { ...(await startBridge(binary, workspace)), workspace, binary };
 }
 
-export function closeLab(lab: Lab): Promise<void> {
-  const child = lab.process;
+export async function closeLab(lab: Lab): Promise<void> {
+  await stopBridge(lab.process);
+  rmSync(dirname(lab.workspace), { recursive: true, force: true });
+}
+
+function stopBridge(child: Lab["process"]): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
   const exited = new Promise<void>((resolve) =>
     child.once("exit", () => {
