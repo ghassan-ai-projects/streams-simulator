@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------------------
+# Canvas CI: the mandatory canvas gates, two jobs side by side.
+#   static: npm audit, lint, and format, types, layers, architecture register,
+#           duplication, dead code, build and emitted stylesheet (check:static)
+#   unit:   unit and component tests with the coverage floors (npm run test)
+#
+# The end-to-end tests (real binary, real Chrome) are not part of CI. They run
+# on demand with make canvas-e2e, and in make canvas-check / make phase-gate.
+#
+# Runs only when the canvas or the contracts it imports change.
+# ---------------------------------------------------------------------------
+
+name: Canvas
+
+on:
+  push:
+    branches: [main]
+    paths: ["canvas/**", "contracts/**", ".github/workflows/canvas.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["canvas/**", "contracts/**", ".github/workflows/canvas.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  canvas:
+    name: "Canvas (${{ matrix.part }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [static, unit]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The architecture ratchet compares against the branch point from main.
+          fetch-depth: ${{ matrix.part == 'static' && '0' || '1' }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: canvas/package-lock.json
+
+      - name: Install dependencies
+        working-directory: canvas
+        run: npm ci --ignore-scripts --no-fund --no-audit
+
+      # Lint uses every core while the static gates are mostly single-threaded,
+      # so they run side by side.
+      - name: Audit, lint and static gates
+        if: matrix.part == 'static'
+        working-directory: canvas
+        run: |
+          npm audit --audit-level=high
+          npm run lint & lint=$!
+          npm run check:static
+          wait "$lint"
+
+      - name: Unit tests with coverage floors
+        if: matrix.part == 'unit'
+        working-directory: canvas
+        run: npm run test

@@ -21,7 +21,7 @@ async function atCompactZoom(page: Parameters<typeof startWatchRun>[0], mode: Ru
 }
 
 for (const mode of ["Explore", "Evaluate"] as RunMode[]) {
-  test(`${mode}: every readout row of the busiest live nodes lies inside its node box @slow`, async ({ page }) => {
+  test(`${mode}: every readout row of the busiest live nodes lies inside its node box`, async ({ page }) => {
     await atCompactZoom(page, mode);
     for (const [id, minimum] of busiest) {
       await selectInOutline(page, id);
@@ -35,7 +35,7 @@ for (const mode of ["Explore", "Evaluate"] as RunMode[]) {
   });
 }
 
-test("a fault note that appears on a live node grows the node to hold it @slow", async ({ page }) => {
+test("a fault note that appears on a live node grows the node to hold it", async ({ page }) => {
   await atCompactZoom(page, "Explore");
   await selectInOutline(page, "CT-1");
   await expect(page.getByRole("group", { name: /^CT-1, / })).toContainText("Fault · fan failure", {
@@ -44,7 +44,7 @@ test("a fault note that appears on a live node grows the node to hold it @slow",
   await expect.poll(async () => (await page.evaluate(rowsOutsideNode, "CT-1")).outside).toEqual([]);
 });
 
-test("a node with a fault and a command status line holds both without overlapping its id, subtitle or readings @slow", async ({
+test("a node with a fault and a command status line holds both without overlapping its id, subtitle or readings", async ({
   page,
 }) => {
   await startWatchRun(page, "Explore");

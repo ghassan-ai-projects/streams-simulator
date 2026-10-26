@@ -10,7 +10,7 @@ interface Entry {
   readonly parameters?: Record<string, number>;
 }
 
-test("a chiller's setpoint is refused by the binary at its field when out of bounds, then edited and saved with a digest and a separate plausibility @slow", async ({
+test("a chiller's setpoint is refused by the binary at its field when out of bounds, then edited and saved with a digest and a separate plausibility", async ({
   page,
   lab,
 }) => {

@@ -17,15 +17,12 @@
     "dup": "jscpd src",
     "knip": "knip",
     "test": "vitest run --coverage",
-    "e2e": "playwright test --grep-invert @slow",
+    "e2e": "playwright test",
     "check": "npm run format:check && npm run typecheck && npm run lint && npm run deps && npm run architecture && npm run dup && npm run knip && npm run test && npm run build && npm run css:emitted && npm run e2e",
+    "check:static": "npm run format:check && npm run typecheck && npm run deps && npm run architecture && npm run dup && npm run knip && npm run build && npm run css:emitted",
     "preview": "vite preview",
     "architecture": "node scripts/check-architecture.ts && node scripts/check-css-architecture.ts && node scripts/check-ratchet.ts && node scripts/write-architecture-doc.ts --check && node scripts/sync-callers.ts --check",
-    "css:emitted": "node scripts/check-emitted-css.ts",
-    "e2e:slow": "playwright test --grep @slow",
-    "e2e:all": "playwright test",
-    "check:static": "npm run format:check && npm run typecheck && npm run deps && npm run architecture && npm run dup && npm run knip && npm run build && npm run css:emitted",
-    "e2e:smoke": "playwright test --grep @smoke"
+    "css:emitted": "node scripts/check-emitted-css.ts"
   },
   "dependencies": {
     "@xyflow/react": "12.12.0",

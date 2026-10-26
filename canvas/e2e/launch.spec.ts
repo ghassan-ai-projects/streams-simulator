@@ -6,7 +6,7 @@ import { finishNow } from "./support/jobControls";
 
 test.setTimeout(90_000);
 
-test("a plant runs with a planned fault and the finished run opens in the review @slow", async ({ page }) => {
+test("a plant runs with a planned fault and the finished run opens in the review", async ({ page }) => {
   await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
@@ -103,7 +103,7 @@ test("an effector call is made at its minute and its outcome is listed before th
   await expect(page.getByRole("group", { name: /^CH-1, chiller/ })).not.toContainText("effector call");
 });
 
-test("a live run marks an effector call on its node and holds the mark for 3 s of wall-clock time @slow", async ({
+test("a live run marks an effector call on its node and holds the mark for 3 s of wall-clock time", async ({
   page,
 }) => {
   await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
@@ -183,7 +183,7 @@ test("no run plan field paints under the Start footer, at 1440 and at 1280", asy
   await expect(panel.getByRole("button", { name: "Start the run" })).toBeInViewport();
 });
 
-test("a planned fault appears on its node when the run clock reaches its minute and stays to the end @slow", async ({
+test("a planned fault appears on its node when the run clock reaches its minute and stays to the end", async ({
   page,
 }) => {
   await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
@@ -205,7 +205,7 @@ test("a planned fault appears on its node when the run clock reaches its minute 
 
 const fanFailure = /fan[ _]failure|Fault ·/i;
 
-test("an Evaluate run shows no planned fault on the page, in its text, tooltips or accessible names, until it is sealed @slow", async ({
+test("an Evaluate run shows no planned fault on the page, in its text, tooltips or accessible names, until it is sealed", async ({
   page,
 }) => {
   await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");

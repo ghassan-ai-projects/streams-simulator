@@ -24,7 +24,7 @@ async function expectKindMetric(box: Locator): Promise<void> {
   await expect(box.getByText("duty permille", { exact: true })).toBeHidden();
 }
 
-test("a real fan's box shows the kind's metric, live and in the saved review, not the twin's channel @slow", async ({
+test("a real fan's box shows the kind's metric, live and in the saved review, not the twin's channel", async ({
   page,
   lab,
 }) => {

@@ -83,7 +83,7 @@ async function fitsAt1280(page: Page, controls: Locator): Promise<void> {
   }
 }
 
-test("the interrupt controls hold, approve and stop the node of a live session, and the node says so @slow", async ({
+test("the interrupt controls hold, approve and stop the node of a live session, and the node says so", async ({
   page,
   lab,
 }) => {

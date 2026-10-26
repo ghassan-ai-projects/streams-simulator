@@ -20,7 +20,7 @@ async function addReadingAndCommand(page: Page): Promise<void> {
   await page.getByLabel("Risk class").selectOption({ label: "Medium" });
 }
 
-test("a device with one reading and one command is created, saved, listed after a reload, and a bad value shows the binary's issue on its field @smoke", async ({
+test("a device with one reading and one command is created, saved, listed after a reload, and a bad value shows the binary's issue on its field", async ({
   page,
   lab,
 }) => {
@@ -112,7 +112,7 @@ async function chooseGradualResponse(page: Page, timeConstant: string): Promise<
   await effect.getByLabel("Time constant").fill(timeConstant);
 }
 
-test("a device gets a twin: what it still needs is found before the behaviour, the instrument and a gradual response are chosen, the twin is created, and it is found created after a reload @slow", async ({
+test("a device gets a twin: what it still needs is found before the behaviour, the instrument and a gradual response are chosen, the twin is created, and it is found created after a reload", async ({
   page,
   lab,
 }) => {

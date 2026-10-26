@@ -55,26 +55,21 @@ needs at least 1280 px.
 
 ## Commands
 
-| Command                               | Does                                                                                                                                                                                                             |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm ci --ignore-scripts`             | Install the pinned dependencies                                                                                                                                                                                  |
-| `npm run dev`                         | Development server on 127.0.0.1:5173                                                                                                                                                                             |
-| `npm run check`                       | Every gate: lint, then format, types, layers, architecture register, duplication, dead code, build, emitted stylesheet oracle (`check:static`), tests with coverage floors, end-to-end without the `@slow` tests |
-| `npm run architecture`                | The register: module allow-lists and facades, CSS ownership and class keys, the ratchet, `ARCHITECTURE.md` and callers in sync                                                                                   |
-| `npm run css:emitted`                 | The built stylesheet against the register (needs `npm run build` first)                                                                                                                                          |
-| `npm run deps` / `dup` / `knip`       | Layer rules / duplication / dead code, one at a time                                                                                                                                                             |
-| `npm run test`                        | Vitest with coverage; floors per layer in `vitest.config.ts` (`model` 90, `app` 80, `adapters` 99 lines)                                                                                                         |
-| `npm run e2e:smoke`                   | The `@smoke` subset the pull request pipeline runs                                                                                                                                                               |
-| `npm run e2e:slow`                    | The end-to-end tests tagged `@slow` (`npm run e2e:all` runs both sets)                                                                                                                                           |
-| `make canvas-check` (repository root) | The same as `npm run check`, from a clean install, plus `npm audit`                                                                                                                                              |
-| `make canvas-slow` (repository root)  | The `@slow` end-to-end tests from a clean install                                                                                                                                                                |
+| Command                               | Does                                                                                                                                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci --ignore-scripts`             | Install the pinned dependencies                                                                                                                                            |
+| `npm run dev`                         | Development server on 127.0.0.1:5173                                                                                                                                       |
+| `npm run check`                       | Every gate, in order: format, types, lint, layers, architecture register, duplication, dead code, tests with coverage floors, build, emitted stylesheet oracle, end-to-end |
+| `npm run architecture`                | The register: module allow-lists and facades, CSS ownership and class keys, the ratchet, `ARCHITECTURE.md` and callers in sync                                             |
+| `npm run css:emitted`                 | The built stylesheet against the register (needs `npm run build` first)                                                                                                    |
+| `npm run deps` / `dup` / `knip`       | Layer rules / duplication / dead code, one at a time                                                                                                                       |
+| `npm run test`                        | Vitest with coverage; floors per layer in `vitest.config.ts` (`model` 90, `app` 80, `adapters` 99 lines)                                                                   |
+| `npm run check:static`                | The gates that need no test run: format, types, layers, architecture register, duplication, dead code, build, emitted stylesheet                                           |
+| `make canvas-check` (repository root) | The same, from a clean install, plus `npm audit`                                                                                                                           |
+| `make canvas-e2e` (repository root)   | Only the end-to-end tests, from a clean install, against a freshly built binary                                                                                            |
 
-End-to-end tests run against the real `streamsim` binary and real files; locally they use the installed Chrome, in CI the
-pinned Chromium.
+End-to-end tests run against the real `streamsim` binary and real files, in the installed Chrome. They are not part of
+CI: run them with `make canvas-e2e` (repository root), or as the last step of `make canvas-check`.
 
-The pull request pipeline has a two minute budget and few checks: static (audit, lint, layers, register, build), unit
-tests with the coverage floors, and the end-to-end smoke subset (`npm run e2e:smoke`, tests with `@smoke` at the end of
-their title). The whole end-to-end set runs in the `Canvas nightly e2e` workflow (and on demand there), and locally with
-`make canvas-check`, which skips the tests tagged `@slow` (a real run of many seconds); `make canvas-slow` runs those.
-Run it before a change to run, review or live-node behaviour is handed over.
-live-node behaviour is handed over.
+CI (`.github/workflows/canvas.yml`, only when `canvas/` or `contracts/` change) runs the mandatory gates as two jobs side
+by side: static (`npm audit`, `npm run lint` and `npm run check:static`) and unit (`npm run test`, coverage floors).

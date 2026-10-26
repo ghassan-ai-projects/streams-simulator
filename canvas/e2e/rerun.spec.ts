@@ -22,7 +22,7 @@ async function setUpAnother(page: Page) {
   return panelOf(page);
 }
 
-test("another run set up from a finished run repeats its seed, length, pace, fault and effector call @smoke", async ({
+test("another run set up from a finished run repeats its seed, length, pace, fault and effector call", async ({
   page,
 }) => {
   await page.goto(plant);
@@ -64,7 +64,7 @@ test("another run set up from a finished run repeats its seed, length, pace, fau
   await expect(note).not.toContainText("Not copied");
 });
 
-test("another run set up from a stopped run repeats the length it was asked for, not where it stopped @slow", async ({
+test("another run set up from a stopped run repeats the length it was asked for, not where it stopped", async ({
   page,
 }) => {
   await page.goto(plant);

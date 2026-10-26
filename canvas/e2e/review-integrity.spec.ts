@@ -50,7 +50,7 @@ test("a complete run missing a recorded digest fails both file and replay checks
   await expect(details.getByRole("region", { name: "Replay check" })).not.toContainText("Reproduces");
 });
 
-test("the Not verified chip reads as an alarm and Did not finish as a warning, neither as the neutral chip @smoke", async ({
+test("the Not verified chip reads as an alarm and Did not finish as a warning, neither as the neutral chip", async ({
   page,
 }) => {
   await page.goto("/#/review?world=w-tampered");

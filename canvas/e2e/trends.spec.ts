@@ -20,9 +20,7 @@ async function pinTwoLive(page: Page) {
   return page.getByRole("region", { name: "Trends" });
 }
 
-test("a Watch run: two channels from two assets share one time axis, each with its own unit @smoke", async ({
-  page,
-}) => {
+test("a Watch run: two channels from two assets share one time axis, each with its own unit", async ({ page }) => {
   await startWatchRun(page, "Explore");
   await expect(page.getByText(/^Running · 00:(0[3-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
   const panel = await pinTwoLive(page);
@@ -62,7 +60,7 @@ test("an Explore run shows the injected fault and the call marks on the axis; pi
   await expect(page.getByRole("complementary", { name: "Inspector" })).toContainText("CH-1");
 });
 
-test("an Evaluate run: the panel shows no fault anywhere while it runs @slow", async ({ page }) => {
+test("an Evaluate run: the panel shows no fault anywhere while it runs", async ({ page }) => {
   await startWatchRun(page, "Evaluate");
   await expect(page.getByText(/^Running · 00:(0[6-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
   const panel = await pinTwoLive(page);
@@ -110,7 +108,7 @@ test("Review: the plots follow the cursor and a plot moves it", async ({ page })
   expect((await new AxeBuilder({ page }).include("[aria-label='Trends']").analyze()).violations).toEqual([]);
 });
 
-test("a reload keeps the watched channels and the open panel, and the height buttons make the panel taller @slow", async ({
+test("a reload keeps the watched channels and the open panel, and the height buttons make the panel taller", async ({
   page,
 }) => {
   await startWatchRun(page, "Explore");

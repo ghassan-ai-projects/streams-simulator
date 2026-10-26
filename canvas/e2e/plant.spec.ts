@@ -161,9 +161,7 @@ function cutText(): string[] {
     .map((element) => element.textContent);
 }
 
-test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier @smoke", async ({
-  page,
-}) => {
+test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier", async ({ page }) => {
   await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();

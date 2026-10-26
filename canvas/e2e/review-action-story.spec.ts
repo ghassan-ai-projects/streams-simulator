@@ -10,7 +10,7 @@ function playbackAt(page: Page) {
   return page.getByRole("slider", { name: "Playback time" });
 }
 
-test("a click anywhere on an effector call row opens its action story, and Show 1 min before moves the cursor back 60 s @smoke", async ({
+test("a click anywhere on an effector call row opens its action story, and Show 1 min before moves the cursor back 60 s", async ({
   page,
 }) => {
   const details = await reviewOfFastRun(page, run);

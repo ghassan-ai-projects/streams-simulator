@@ -63,7 +63,7 @@ async function nothingClippedAt1280(page: Page): Promise<void> {
   await expect.poll(() => details.evaluate((aside) => aside.scrollWidth <= aside.clientWidth)).toBe(true);
 }
 
-test("the twin versus board report compares a saved session with the twin on user action, and says honestly what it could not judge @slow", async ({
+test("the twin versus board report compares a saved session with the twin on user action, and says honestly what it could not judge", async ({
   page,
   lab,
 }) => {

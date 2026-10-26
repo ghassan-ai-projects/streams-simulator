@@ -23,7 +23,7 @@ test.afterEach(() => {
   bench = null;
 });
 
-test("a connected session links the plant to a host and a real board, and stops into a run that verifies @smoke", async ({
+test("a connected session links the plant to a host and a real board, and stops into a run that verifies", async ({
   page,
   lab,
 }) => {

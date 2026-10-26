@@ -38,7 +38,7 @@ async function planned(page: Page, options: { readonly evaluate?: boolean; reado
   return panel;
 }
 
-test("a named plan with a fault that recovers, a delivery condition and a call reads in time order, runs, and is set up again exactly @smoke", async ({
+test("a named plan with a fault that recovers, a delivery condition and a call reads in time order, runs, and is set up again exactly", async ({
   page,
 }) => {
   const panel = await planned(page, { fast: true });
@@ -87,7 +87,7 @@ test("a named plan with a fault that recovers, a delivery condition and a call r
   );
 });
 
-test("an exploration found again after a reload brings back its name, its fault marks and its plan ticks @slow", async ({
+test("an exploration found again after a reload brings back its name, its fault marks and its plan ticks", async ({
   page,
 }) => {
   const panel = await planned(page);
@@ -112,7 +112,7 @@ test("an exploration found again after a reload brings back its name, its fault 
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
-test("an evaluation found again after a reload keeps its name and purpose and still names no fault or delivery condition @slow", async ({
+test("an evaluation found again after a reload keeps its name and purpose and still names no fault or delivery condition", async ({
   page,
 }) => {
   const panel = await planned(page, { evaluate: true });

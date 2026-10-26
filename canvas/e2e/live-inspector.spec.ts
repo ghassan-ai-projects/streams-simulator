@@ -58,7 +58,7 @@ test("an Explore run shows what an instance reports now: value, unit, when, how 
   await expect(page.getByRole("group", { name: /^CT-1, / })).toContainText("Fault · fan failure", { timeout: 30_000 });
 });
 
-test("an Evaluate run shows the same readings and nothing of the planned fault anywhere @slow", async ({ page }) => {
+test("an Evaluate run shows the same readings and nothing of the planned fault anywhere", async ({ page }) => {
   await startRun(page, "Evaluate");
   const observed = await inspect(page, /CH-1/);
   const row = observed.getByRole("row", { name: /power/ }).first();

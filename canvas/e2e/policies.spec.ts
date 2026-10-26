@@ -40,7 +40,7 @@ async function fitsAt1280(page: Page): Promise<void> {
   }
 }
 
-test("a command refused for its policy shows the host's digest, copies it on request, and adds it to the next plan only when asked @slow", async ({
+test("a command refused for its policy shows the host's digest, copies it on request, and adds it to the next plan only when asked", async ({
   page,
   lab,
 }) => {

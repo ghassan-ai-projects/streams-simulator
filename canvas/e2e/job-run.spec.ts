@@ -31,7 +31,7 @@ async function startWatched(page: Page, evaluate = false) {
   return panel;
 }
 
-test("the browser sends the plan once and then only reads status: no advance, fault or effector call @smoke", async ({
+test("the browser sends the plan once and then only reads status: no advance, fault or effector call", async ({
   page,
 }) => {
   const names = recordActions(page);
@@ -66,7 +66,7 @@ test("the browser sends the plan once and then only reads status: no advance, fa
   }
 });
 
-test("a reload in the middle of a run brings back the banner, the progress and Stop now, and Stop now ends it @slow", async ({
+test("a reload in the middle of a run brings back the banner, the progress and Stop now, and Stop now ends it", async ({
   page,
 }) => {
   await startWatched(page);
@@ -83,7 +83,7 @@ test("a reload in the middle of a run brings back the banner, the progress and S
   await expect(page.getByText(/^Stopped by operator at \d\d:\d\d:\d\d of 00:30:00$/).first()).toBeVisible();
 });
 
-test("a run left running across a reload still ends by itself and opens as a complete run @slow", async ({ page }) => {
+test("a run left running across a reload still ends by itself and opens as a complete run", async ({ page }) => {
   await startWatched(page);
   await expect(panelOf(page).getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await page.reload();
@@ -94,7 +94,7 @@ test("a run left running across a reload still ends by itself and opens as a com
   await expect(page.getByText("Did not finish", { exact: true })).toHaveCount(0);
 });
 
-test("an Evaluate run found again after a reload names no fault and no plan it cannot know @slow", async ({ page }) => {
+test("an Evaluate run found again after a reload names no fault and no plan it cannot know", async ({ page }) => {
   await page.goto(plant);
   const panel = panelOf(page);
   await panel.getByLabel("Duration", { exact: true }).fill("30");
@@ -116,7 +116,7 @@ test("an Evaluate run found again after a reload names no fault and no plan it c
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
 
-test("Stop now before the end keeps a shorter run that says it was stopped, and where @slow", async ({ page }) => {
+test("Stop now before the end keeps a shorter run that says it was stopped, and where", async ({ page }) => {
   const panel = await startWatched(page);
   await expect(panel.getByText(/^Running · 00:0[1-9]/)).toBeVisible({ timeout: 30_000 });
   await panel.getByRole("button", { name: "Stop now" }).click();

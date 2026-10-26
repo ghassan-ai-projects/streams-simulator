@@ -13,7 +13,7 @@ async function openIntegrity(page: Page) {
   await page.getByRole("complementary", { name: "Run details" }).locator("summary").first().click();
 }
 
-test("a recorded run plays back with the binary's report and a Verified badge @slow", async ({ page }) => {
+test("a recorded run plays back with the binary's report and a Verified badge", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Review w-evaluate" }).click();
   const header = page.getByRole("heading", { name: "Run w-evaluate" });
