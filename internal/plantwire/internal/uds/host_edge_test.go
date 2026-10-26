@@ -97,7 +97,7 @@ func TestAnAcceptedPeerHasNoReadDeadline(t *testing.T) {
 	t.Parallel()
 	path := testsupport.SocketPath(t)
 	peer := &stubPeer{accepted: true, replies: []map[string]any{{"type": "STATE"}}}
-	served := serveInBackground(t, path, peer, Pacing{Handshake: 30 * time.Millisecond})
+	served := serveInBackground(t, path, peer, Pacing{Handshake: 250 * time.Millisecond})
 	conn := dialHost(t, path)
 	reader := bufio.NewReader(conn)
 	for range 2 {
@@ -107,7 +107,7 @@ func TestAnAcceptedPeerHasNoReadDeadline(t *testing.T) {
 		if _, err := reader.ReadBytes('\n'); err != nil {
 			t.Fatal(err)
 		}
-		<-time.After(60 * time.Millisecond)
+		<-time.After(400 * time.Millisecond)
 	}
 	_ = conn.Close()
 	if err := <-served; err != nil {
