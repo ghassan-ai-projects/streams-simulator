@@ -2,10 +2,12 @@
 # Canvas CI: the mandatory canvas gates, two jobs side by side.
 #   static: npm audit, lint, and format, types, layers, architecture register,
 #           duplication, dead code, build and emitted stylesheet (check:static)
-#   unit:   unit and component tests with the coverage floors (npm run test)
+#   unit:   unit and component tests without coverage (npm run test:unit)
 #
-# The end-to-end tests (real binary, real Chrome) are not part of CI. They run
-# on demand with make canvas-e2e, and in make canvas-check / make phase-gate.
+# Coverage makes the unit run about 2.6 times slower, so the coverage floors are
+# enforced in make canvas-check / make phase-gate, not here. The end-to-end
+# tests (real binary, real Chrome) are not part of CI either: make canvas-e2e
+# runs them on demand, and make canvas-check runs them too.
 #
 # Runs only when the canvas or the contracts it imports change.
 # ---------------------------------------------------------------------------
@@ -66,7 +68,7 @@ jobs:
           npm run check:static
           wait "$lint"
 
-      - name: Unit tests with coverage floors
+      - name: Unit tests
         if: matrix.part == 'unit'
         working-directory: canvas
-        run: npm run test
+        run: npm run test:unit

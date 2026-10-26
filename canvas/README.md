@@ -64,6 +64,7 @@ needs at least 1280 px.
 | `npm run css:emitted`                 | The built stylesheet against the register (needs `npm run build` first)                                                                                                    |
 | `npm run deps` / `dup` / `knip`       | Layer rules / duplication / dead code, one at a time                                                                                                                       |
 | `npm run test`                        | Vitest with coverage; floors per layer in `vitest.config.ts` (`model` 90, `app` 80, `adapters` 99 lines)                                                                   |
+| `npm run test:unit`                   | Vitest without coverage (what CI runs)                                                                                                                                     |
 | `npm run check:static`                | The gates that need no test run: format, types, layers, architecture register, duplication, dead code, build, emitted stylesheet                                           |
 | `make canvas-check` (repository root) | The same, from a clean install, plus `npm audit`                                                                                                                           |
 | `make canvas-e2e` (repository root)   | Only the end-to-end tests, from a clean install, against a freshly built binary                                                                                            |
@@ -72,4 +73,5 @@ End-to-end tests run against the real `streamsim` binary and real files, in the 
 CI: run them with `make canvas-e2e` (repository root), or as the last step of `make canvas-check`.
 
 CI (`.github/workflows/canvas.yml`, only when `canvas/` or `contracts/` change) runs the mandatory gates as two jobs side
-by side: static (`npm audit`, `npm run lint` and `npm run check:static`) and unit (`npm run test`, coverage floors).
+by side: static (`npm audit`, `npm run lint` and `npm run check:static`) and unit (`npm run test:unit`, no coverage).
+The coverage floors are enforced by `npm run test`, part of `make canvas-check` and `make phase-gate`.
