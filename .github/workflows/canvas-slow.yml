@@ -1,0 +1,60 @@
+# The end-to-end tests tagged @slow (real runs that take many seconds each). They
+# stay out of the pull request pipeline, which has a two minute budget.
+name: Canvas slow e2e
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+env:
+  GO_VERSION: "1.26.10"
+
+permissions:
+  contents: read
+
+jobs:
+  slow:
+    name: "Canvas slow e2e (${{ matrix.shard }}/4)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      CI: "true"
+      STREAMSIM_BIN: ${{ github.workspace }}/bin/streams-simulator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: canvas/package-lock.json
+
+      - name: Install dependencies and browser
+        working-directory: canvas
+        run: |
+          npm ci --ignore-scripts --no-fund --no-audit
+          npx playwright install --with-deps chromium
+
+      - name: Build the binary and the canvas
+        run: |
+          make build
+          cd canvas && npm run build
+
+      - name: Slow end-to-end tests, one shard
+        working-directory: canvas
+        run: npm run e2e:slow -- --shard=${{ matrix.shard }}/4

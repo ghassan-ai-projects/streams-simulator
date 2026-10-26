@@ -55,16 +55,25 @@ needs at least 1280 px.
 
 ## Commands
 
-| Command                               | Does                                                                                                                                                                       |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm ci --ignore-scripts`             | Install the pinned dependencies                                                                                                                                            |
-| `npm run dev`                         | Development server on 127.0.0.1:5173                                                                                                                                       |
-| `npm run check`                       | Every gate, in order: format, types, lint, layers, architecture register, duplication, dead code, tests with coverage floors, build, emitted stylesheet oracle, end-to-end |
-| `npm run architecture`                | The register: module allow-lists and facades, CSS ownership and class keys, the ratchet, `ARCHITECTURE.md` and callers in sync                                             |
-| `npm run css:emitted`                 | The built stylesheet against the register (needs `npm run build` first)                                                                                                    |
-| `npm run deps` / `dup` / `knip`       | Layer rules / duplication / dead code, one at a time                                                                                                                       |
-| `npm run test`                        | Vitest with coverage; floors per layer in `vitest.config.ts` (`model` 90, `app` 80, `adapters` 99 lines)                                                                   |
-| `make canvas-check` (repository root) | The same, from a clean install, plus `npm audit`                                                                                                                           |
+| Command                               | Does                                                                                                                                                                                                             |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci --ignore-scripts`             | Install the pinned dependencies                                                                                                                                                                                  |
+| `npm run dev`                         | Development server on 127.0.0.1:5173                                                                                                                                                                             |
+| `npm run check`                       | Every gate: lint, then format, types, layers, architecture register, duplication, dead code, build, emitted stylesheet oracle (`check:static`), tests with coverage floors, end-to-end without the `@slow` tests |
+| `npm run architecture`                | The register: module allow-lists and facades, CSS ownership and class keys, the ratchet, `ARCHITECTURE.md` and callers in sync                                                                                   |
+| `npm run css:emitted`                 | The built stylesheet against the register (needs `npm run build` first)                                                                                                                                          |
+| `npm run deps` / `dup` / `knip`       | Layer rules / duplication / dead code, one at a time                                                                                                                                                             |
+| `npm run test`                        | Vitest with coverage; floors per layer in `vitest.config.ts` (`model` 90, `app` 80, `adapters` 99 lines)                                                                                                         |
+| `npm run e2e:slow`                    | The end-to-end tests tagged `@slow` (`npm run e2e:all` runs both sets)                                                                                                                                           |
+| `make canvas-check` (repository root) | The same as `npm run check`, from a clean install, plus `npm audit`                                                                                                                                              |
+| `make canvas-slow` (repository root)  | The `@slow` end-to-end tests from a clean install                                                                                                                                                                |
 
 End-to-end tests run against the real `streamsim` binary and real files; locally they use the installed Chrome, in CI the
 pinned Chromium.
+
+The pull request pipeline has a two minute budget, so it runs each gate as its own parallel job: lint, static gates,
+unit tests in 6 shards (coverage floors are checked once on the merged shard reports, `npm run test:shard` and
+`test:merge`) and the end-to-end tests in 8 shards. A test that takes more than about 5 s on a developer machine (a real run of
+many seconds) carries `@slow` at the end of its title; it stays out of the pipeline and runs in the nightly
+`Canvas slow e2e` workflow, on demand there, and with `make canvas-slow`. Run it before a change to run, review or
+live-node behaviour is handed over.
