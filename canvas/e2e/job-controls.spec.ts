@@ -44,7 +44,7 @@ test("pause freezes the simulated clock for consecutive polls, step moves it one
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
 
-test("the speed select changes the rate the run goes at, and the words follow it", async ({ page }) => {
+test("the speed select changes the rate the run goes at, and the words follow it @smoke", async ({ page }) => {
   const panel = await startOpen(page, "Explore");
   await panel.getByRole("combobox", { name: "Speed" }).selectOption({ label: "10 s per s" });
   await expect(clockWords(panel)).toHaveText(/ · 10 s per s$/);

@@ -125,34 +125,9 @@ jobs:
           retention-days: 3
           if-no-files-found: warn
 
-  # The canvas gates run as parallel jobs so the slowest one sets the wall time
-  # (target: two minutes). Tests tagged @slow stay out of this pipeline; they run
-  # in canvas-slow.yml (nightly and on demand) and with make canvas-slow.
-  canvas-lint:
-    name: "Canvas lint"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: canvas/package-lock.json
-
-      - name: Install dependencies
-        working-directory: canvas
-        run: npm ci --ignore-scripts --no-fund --no-audit
-
-      - name: Lint
-        working-directory: canvas
-        run: npm run lint
-
+  # The canvas gates are three side-by-side jobs, each about two minutes. The
+  # full end-to-end set and the @slow tests run in canvas-nightly.yml and
+  # with make canvas-check / make canvas-slow.
   canvas-static:
     name: "Canvas static"
     runs-on: ubuntu-latest
@@ -174,53 +149,16 @@ jobs:
         working-directory: canvas
         run: npm ci --ignore-scripts --no-fund --no-audit
 
-      - name: Audit dependencies
+      - name: Audit, lint and the static gates side by side
         working-directory: canvas
-        run: npm audit --audit-level=high
-
-      - name: Format, types, layers, register, duplication, dead code, build, emitted CSS
-        working-directory: canvas
-        run: npm run check:static
+        run: |
+          npm audit --audit-level=high
+          npm run lint & lint=$!
+          npm run check:static
+          wait "$lint"
 
   canvas-unit:
-    name: "Canvas unit (${{ matrix.shard }}/6)"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: canvas/package-lock.json
-
-      - name: Install dependencies
-        working-directory: canvas
-        run: npm ci --ignore-scripts --no-fund --no-audit
-
-      - name: Unit tests, one shard
-        working-directory: canvas
-        run: npm run test:shard -- --shard=${{ matrix.shard }}/6
-
-      - name: Upload shard report
-        uses: actions/upload-artifact@v7
-        with:
-          name: canvas-blob-${{ matrix.shard }}
-          path: canvas/.vitest/blob
-          retention-days: 1
-
-  canvas-coverage:
-    name: "Canvas coverage floors"
-    needs: canvas-unit
+    name: "Canvas unit"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -240,25 +178,14 @@ jobs:
         working-directory: canvas
         run: npm ci --ignore-scripts --no-fund --no-audit
 
-      - name: Download shard reports
-        uses: actions/download-artifact@v7
-        with:
-          pattern: canvas-blob-*
-          merge-multiple: true
-          path: canvas/.vitest/blob
-
-      - name: Merge shards and enforce the coverage floors
+      - name: Unit tests with the coverage floors
         working-directory: canvas
-        run: npm run test:merge
+        run: npm run test
 
-  canvas-e2e:
-    name: "Canvas e2e (${{ matrix.shard }}/8)"
+  canvas-smoke:
+    name: "Canvas e2e smoke"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     env:
       CI: "true"
       STREAMSIM_BIN: ${{ github.workspace }}/bin/streams-simulator
@@ -292,6 +219,6 @@ jobs:
           make build
           cd canvas && npm run build
 
-      - name: End-to-end tests, one shard
+      - name: Smoke end-to-end tests
         working-directory: canvas
-        run: npm run e2e -- --shard=${{ matrix.shard }}/8
+        run: npm run e2e:smoke

@@ -188,7 +188,7 @@ test("a saved plant that has no domain yet is checked by Save, so its issues sho
   await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
 });
 
-test("a full copy of a plant is runnable as soon as it is created", async ({ page }) => {
+test("a full copy of a plant is runnable as soon as it is created @smoke", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });

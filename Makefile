@@ -153,7 +153,7 @@ canvas-check: build ## Canvas gates: format, types, lint, layers, architecture r
 	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-check (Node 24 or later)"; exit 1; fi
 	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm audit --audit-level=high && STREAMSIM_BIN=$(abspath $(BINARY)) npm run check
 
-canvas-slow: build ## Canvas e2e tests tagged @slow (real runs of many seconds each); on demand and nightly in CI, not in canvas-check
+canvas-slow: build ## Canvas e2e tests tagged @slow (real runs of many seconds each); on demand and in the nightly workflow, not in canvas-check
 	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-slow (Node 24 or later)"; exit 1; fi
 	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm run build && STREAMSIM_BIN=$(abspath $(BINARY)) npm run e2e:slow
 

@@ -20,7 +20,7 @@ async function addReadingAndCommand(page: Page): Promise<void> {
   await page.getByLabel("Risk class").selectOption({ label: "Medium" });
 }
 
-test("a device with one reading and one command is created, saved, listed after a reload, and a bad value shows the binary's issue on its field", async ({
+test("a device with one reading and one command is created, saved, listed after a reload, and a bad value shows the binary's issue on its field @smoke", async ({
   page,
   lab,
 }) => {

@@ -38,7 +38,7 @@ async function planned(page: Page, options: { readonly evaluate?: boolean; reado
   return panel;
 }
 
-test("a named plan with a fault that recovers, a delivery condition and a call reads in time order, runs, and is set up again exactly", async ({
+test("a named plan with a fault that recovers, a delivery condition and a call reads in time order, runs, and is set up again exactly @smoke", async ({
   page,
 }) => {
   const panel = await planned(page, { fast: true });

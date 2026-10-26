@@ -22,7 +22,7 @@ async function setUpAnother(page: Page) {
   return panelOf(page);
 }
 
-test("another run set up from a finished run repeats its seed, length, pace, fault and effector call", async ({
+test("another run set up from a finished run repeats its seed, length, pace, fault and effector call @smoke", async ({
   page,
 }) => {
   await page.goto(plant);

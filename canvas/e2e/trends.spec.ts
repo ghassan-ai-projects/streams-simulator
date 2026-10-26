@@ -20,7 +20,9 @@ async function pinTwoLive(page: Page) {
   return page.getByRole("region", { name: "Trends" });
 }
 
-test("a Watch run: two channels from two assets share one time axis, each with its own unit", async ({ page }) => {
+test("a Watch run: two channels from two assets share one time axis, each with its own unit @smoke", async ({
+  page,
+}) => {
   await startWatchRun(page, "Explore");
   await expect(page.getByText(/^Running · 00:(0[3-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
   const panel = await pinTwoLive(page);

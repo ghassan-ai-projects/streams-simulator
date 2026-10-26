@@ -1,6 +1,6 @@
-# The end-to-end tests tagged @slow (real runs that take many seconds each). They
-# stay out of the pull request pipeline, which has a two minute budget.
-name: Canvas slow e2e
+# The whole canvas end-to-end set (fast and @slow tests) against the real binary.
+# Pull requests run only the smoke subset, which keeps their pipeline short.
+name: Canvas nightly e2e
 
 on:
   schedule:
@@ -14,14 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  slow:
-    name: "Canvas slow e2e (${{ matrix.shard }}/4)"
+  e2e:
+    name: "Canvas e2e (all)"
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
+    timeout-minutes: 40
     env:
       CI: "true"
       STREAMSIM_BIN: ${{ github.workspace }}/bin/streams-simulator
@@ -55,6 +51,6 @@ jobs:
           make build
           cd canvas && npm run build
 
-      - name: Slow end-to-end tests, one shard
+      - name: All end-to-end tests
         working-directory: canvas
-        run: npm run e2e:slow -- --shard=${{ matrix.shard }}/4
+        run: npm run e2e:all

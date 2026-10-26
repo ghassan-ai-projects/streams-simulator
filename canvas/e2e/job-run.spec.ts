@@ -31,7 +31,7 @@ async function startWatched(page: Page, evaluate = false) {
   return panel;
 }
 
-test("the browser sends the plan once and then only reads status: no advance, fault or effector call", async ({
+test("the browser sends the plan once and then only reads status: no advance, fault or effector call @smoke", async ({
   page,
 }) => {
   const names = recordActions(page);
