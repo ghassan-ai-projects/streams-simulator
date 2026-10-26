@@ -4,7 +4,14 @@ import type { Bench } from "./support/session";
 import { addThermalBench, openScriptedBench, planOneRealBoard, startGateway } from "./support/session";
 import { guard } from "./support/audit";
 import { nodesOutsideCanvas } from "./support/fitAudit";
-import { boxOf, controlsOf, cooling, runOfSession, startedSession } from "./support/interruptBench";
+import {
+  boxOf,
+  controlsOf,
+  cooling,
+  refsAfterApproveMode,
+  runOfSession,
+  startedSession,
+} from "./support/interruptBench";
 
 test.setTimeout(240_000);
 
@@ -45,7 +52,7 @@ test("the interrupt bar stays inside a 1280 by 800 window in one row, and the pl
 }) => {
   await page.setViewportSize({ width: 1280, height });
   addThermalBench(lab);
-  const started = await startedSession(page, lab);
+  const started = await startedSession(page, lab, refsAfterApproveMode);
   benches.push(started.bench);
   await page.getByRole("button", { name: "Open live view", exact: true }).click();
   const controls = controlsOf(page);

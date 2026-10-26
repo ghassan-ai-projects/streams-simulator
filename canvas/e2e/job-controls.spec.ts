@@ -41,7 +41,8 @@ test("pause freezes the simulated clock for consecutive polls, step moves it one
   await expect(clockWords(panel)).toHaveText(/^Running · .* · 120 s per s$/);
   await expect(page.getByRole("button", { name: /^Running Factory utilities · .* · 120 s per s$/ })).toBeVisible();
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
 test("the speed select changes the rate the run goes at, and the words follow it", async ({ page }) => {
@@ -51,7 +52,8 @@ test("the speed select changes the rate the run goes at, and the words follow it
   await expect(page.getByRole("button", { name: /^Running Factory utilities · .* · 10 s per s$/ })).toBeVisible();
   await expect(panel.getByRole("combobox", { name: "Speed" })).toHaveValue("10");
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
 test("an Explore run takes a call and a fault now, shows both, and Review lists them as the operator's", async ({
@@ -96,7 +98,7 @@ test("an Evaluate run offers no fault injection, takes a call now, and shows no 
   await planned.getByRole("button", { name: "Add fault" }).click();
   await planned.getByLabel("Fault 1 instance").selectOption("CT-1");
   await planned.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
-  await planned.getByLabel("Fault 1 starts at minute").fill("3");
+  await planned.getByLabel("Fault 1 starts at minute").fill("1");
   await planned.getByRole("button", { name: "Start the run" }).click();
   await expect(planned.getByText(/^Running Factory utilities as run w-/)).toBeVisible();
   await expect(planned.getByRole("button", { name: "Inject now" })).toHaveCount(0);
@@ -104,7 +106,7 @@ test("an Evaluate run offers no fault injection, takes a call now, and shows no 
   await expect(planned.getByText("Faults can only be injected live in Explore runs.")).toBeVisible();
   await callSetpointNow(planned, "7");
   await expect(planned.getByRole("list", { name: "Commands given now" })).toContainText(/CH-1 · set setpoint/);
-  await expect.poll(() => simulatedSeconds(planned), { timeout: 30_000 }).toBeGreaterThan(240);
+  await expect.poll(() => simulatedSeconds(planned), { timeout: 30_000 }).toBeGreaterThan(120);
   const text = await page.locator("body").innerText();
   const attributes = await page.evaluate(() =>
     [...document.body.querySelectorAll("*")].flatMap((element) => [...element.attributes].map((a) => a.value)),
@@ -132,5 +134,6 @@ test("a reload while the run is paused finds it paused, at the same clock, and R
   await again.getByRole("button", { name: "Resume" }).click();
   await expect.poll(() => simulatedSeconds(again)).toBeGreaterThan(frozen);
   await again.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await again.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });

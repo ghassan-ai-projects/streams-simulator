@@ -135,13 +135,13 @@ func readEnd(failed error) error {
 }
 
 func respond(ctx context.Context, link *Link, peer Peer, in domain.Inbound, delay time.Duration) error {
-	if err := answer(ctx, link, peer.Receive(in), delay); err != nil {
-		return err
+	replies := peer.Receive(in)
+	if peer.Accepted() {
+		if err := link.Settle(); err != nil {
+			return err
+		}
 	}
-	if !peer.Accepted() {
-		return nil
-	}
-	return link.Settle()
+	return answer(ctx, link, replies, delay)
 }
 
 func answer(ctx context.Context, link *Link, records []map[string]any, delay time.Duration) error {

@@ -45,7 +45,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race test-long \
         test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin behaviour-pin-check canvas-check phase-gate fmt-check contract-sync gate-ratchet
+        coverage-check behaviour-pin behaviour-pin-check canvas-check canvas-e2e phase-gate fmt-check contract-sync gate-ratchet
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -152,6 +152,10 @@ quick: ## Fast inner-loop check (about 30 s, cached): fmt, function length, buil
 canvas-check: build ## Canvas gates: format, types, lint, layers, architecture register (facades, CSS ownership, ratchet), duplication, dead code, tests with coverage floors, build, emitted stylesheet oracle, e2e against the built binary
 	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-check (Node 24 or later)"; exit 1; fi
 	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm audit --audit-level=high && STREAMSIM_BIN=$(abspath $(BINARY)) npm run check
+
+canvas-e2e: build ## Canvas end-to-end tests only (real binary, real Chrome); on demand, not in CI
+	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-e2e (Node 24 or later)"; exit 1; fi
+	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm run build && STREAMSIM_BIN=$(abspath $(BINARY)) npm run e2e
 
 phase-gate: ci-check canvas-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, canvas gates, Enola check, behaviour pin
 	@git diff --check HEAD

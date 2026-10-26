@@ -14,7 +14,7 @@ async function planExplore(panel: Locator): Promise<void> {
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
   await panel.getByLabel("Fault 1 starts at minute").fill("2");
-  await panel.getByLabel("Fault 1 ends at minute").fill("9");
+  await panel.getByLabel("Fault 1 ends at minute").fill("3");
   await panel.getByRole("button", { name: "Add effector call" }).click();
   await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
   await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });
@@ -38,7 +38,7 @@ async function pausedAfterTheRecovery(page: Page): Promise<Locator> {
   const panel = panelOf(page);
   await planExplore(panel);
   await panel.getByRole("button", { name: "Start the run" }).click();
-  await expect(panel.getByText(/^Running · 00:(1\d|[2-5]\d)/)).toBeVisible({ timeout: 60_000 });
+  await expect(panel.getByText(/^Running · 00:(0[4-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
   await panel.getByRole("button", { name: "Pause" }).click();
   await actNow(panel);
   return panel;

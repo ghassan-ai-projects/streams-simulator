@@ -62,7 +62,7 @@ test("an Explore run shows the injected fault and the call marks on the axis; pi
 
 test("an Evaluate run: the panel shows no fault anywhere while it runs", async ({ page }) => {
   await startWatchRun(page, "Evaluate");
-  await expect(page.getByText(/^Running · 00:(0[6-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/^Running · 00:(0[2-9]|[1-5]\d)/)).toBeVisible({ timeout: 60_000 });
   const panel = await pinTwoLive(page);
   await expect(panel.getByRole("slider")).toHaveCount(2);
   await panel.getByText("How to read these plots").click();

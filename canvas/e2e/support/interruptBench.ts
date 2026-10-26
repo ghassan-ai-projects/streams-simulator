@@ -1,9 +1,18 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import type { Bench } from "./session";
+import type { Bench, ScriptedCommand } from "./session";
 import { listPolicies, openScriptedBench, openSessionPanel, planOneRealBoard, startGateway } from "./session";
 
 export const cooling = { level_percent: 30 };
+
+function scriptedRefs(firstS: number): readonly ScriptedCommand[] {
+  return [
+    { id: "ref-a", afterS: firstS, device: "fan-01", command: "set_cooling", args: cooling },
+    { id: "ref-b", afterS: firstS + 5, device: "fan-01", command: "set_cooling", args: cooling },
+  ];
+}
+
+export const refsAfterApproveMode = scriptedRefs(12);
 
 export function controlsOf(page: Page): Locator {
   return page.getByRole("region", { name: "Interrupts", exact: true });
@@ -17,12 +26,10 @@ export interface Started {
 export async function startedSession(
   page: Page,
   lab: { readonly binary: string },
+  steps: readonly ScriptedCommand[] = scriptedRefs(25),
   policies: readonly string[] = [],
 ): Promise<Started> {
-  const bench = openScriptedBench(lab.binary, [
-    { id: "ref-a", afterS: 25, device: "fan-01", command: "set_cooling", args: cooling },
-    { id: "ref-b", afterS: 30, device: "fan-01", command: "set_cooling", args: cooling },
-  ]);
+  const bench = openScriptedBench(lab.binary, steps);
   try {
     const panel = await openSessionPanel(page);
     await planOneRealBoard(panel, bench, "zone-01");

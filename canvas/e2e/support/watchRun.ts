@@ -14,7 +14,7 @@ export async function startWatchRun(page: Page, mode: RunMode, minutes = 60): Pr
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
-  await panel.getByLabel("Fault 1 starts at minute").fill("4");
+  await panel.getByLabel("Fault 1 starts at minute").fill("1");
   await panel.getByRole("button", { name: "Start the run" }).click();
   await expect(panel.getByText(/^Running Factory utilities as run w-/)).toBeVisible();
   await panel.getByRole("button", { name: "Close the run panel" }).click();

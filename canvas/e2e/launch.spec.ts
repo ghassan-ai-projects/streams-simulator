@@ -114,7 +114,7 @@ test("a live run marks an effector call on its node and holds the mark for 3 s o
   await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
   await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });
   await panel.getByLabel("Effector call 1 setpoint c").fill("7");
-  await panel.getByLabel("Effector call 1 starts at minute").fill("3");
+  await panel.getByLabel("Effector call 1 starts at minute").fill("1");
   await panel.getByRole("button", { name: "Start the run" }).click();
   const chiller = page.getByRole("group", { name: /^CH-1, .*effector call: set setpoint · / });
   await expect(chiller).toBeVisible({ timeout: 20_000 });
@@ -165,7 +165,8 @@ test("the top-bar run indicator brings back a closed run panel, and Stop now kee
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
   await expect(panel.getByRole("button", { name: "Stop now" })).toBeVisible();
   await panel.getByRole("button", { name: "Stop now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
 test("no run plan field paints under the Start footer, at 1440 and at 1280", async ({ page }) => {
@@ -193,14 +194,15 @@ test("a planned fault appears on its node when the run clock reaches its minute 
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
-  await panel.getByLabel("Fault 1 starts at minute").fill("5");
+  await panel.getByLabel("Fault 1 starts at minute").fill("2");
   await panel.getByRole("button", { name: "Start the run" }).click();
   const node = page.locator(".react-flow__node-instance").filter({ hasText: "CT-1" });
   await expect(node).not.toContainText("Fault", { timeout: 10_000 });
   await expect(node).toContainText("Fault · fan failure", { timeout: 30_000 });
-  await expect(panel.getByText(/^Running · 00:(0[5-9]|1\d)/)).toBeVisible();
+  await expect(panel.getByText(/^Running · 00:(0[2-9]|1\d)/)).toBeVisible();
   await finishNow(panel);
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
 });
 
 const fanFailure = /fan[ _]failure|Fault ·/i;
@@ -216,9 +218,9 @@ test("an Evaluate run shows no planned fault on the page, in its text, tooltips 
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
-  await panel.getByLabel("Fault 1 starts at minute").fill("5");
+  await panel.getByLabel("Fault 1 starts at minute").fill("1");
   await panel.getByRole("button", { name: "Start the run" }).click();
-  await expect(panel.getByText(/^Running · 00:(0[6-9]|1\d)/)).toBeVisible({ timeout: 30_000 });
+  await expect(panel.getByText(/^Running · 00:(0[2-9]|1\d)/)).toBeVisible({ timeout: 30_000 });
   await panel.getByRole("button", { name: "Close the run panel" }).click();
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: /CH-1/ }).click();
   const observed = page.getByRole("region", { name: "Observed readings" });
@@ -237,7 +239,8 @@ test("an Evaluate run shows no planned fault on the page, in its text, tooltips 
   await expect(observed).not.toContainText(/fault|broken|failed/i);
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
   await finishNow(panel);
-  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
   const disturbances = page
     .getByRole("complementary", { name: "Run details" })
     .getByRole("region", { name: "Disturbances" });
