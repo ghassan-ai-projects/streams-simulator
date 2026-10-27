@@ -52,7 +52,7 @@ func TestLoopRequiresScenarioEntity(t *testing.T) {
 	t.Parallel()
 	gt := &model.GroundTruthRecord{EntityID: "scenario", ExpectedEffector: "recover"}
 	calls := []world.EffectorCall{{Effector: "recover", EntityID: "other", EffectApplied: true}}
-	if got := loopFrom(&model.Verdict{}, gt, calls); got.ActionAppropriate {
+	if got := loopFrom(&model.Verdict{}, gt, calls, ""); got.ActionAppropriate {
 		t.Fatalf("other entity was credited: %+v", got)
 	}
 }
