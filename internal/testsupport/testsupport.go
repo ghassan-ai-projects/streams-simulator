@@ -182,3 +182,7 @@ func PumpStationDir() string {
 func FirstSliceCampaignSpec() string {
 	return filepath.Join(PumpStationDir(), "campaign", "first-slice.campaign-spec.json")
 }
+
+func PumpStationKindFile(stem string) string {
+	return filepath.Join(PumpStationDir(), "kinds", stem+".kind.json")
+}
