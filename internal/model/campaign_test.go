@@ -7,7 +7,7 @@ import (
 
 func TestValidateCampaignAcceptsARunAndRefusesAnythingThatReadsAsTruth(t *testing.T) {
 	t.Parallel()
-	const run = `{"index":1,"phase":"learn","domain":"pump-station","seed":7,"duration_s":172800,"session_plan":"run-0001.session-plan.json","disturbances":[{"at_s":60,"instance":"site-a/pump-1","fault":"bearing_wear"}]}`
+	const run = `{"index":1,"phase":"learn","domain":"pump-station","seed":7,"duration_s":172800,"session_plan":"run-0001.session-plan.json"}`
 	valid := `{"schema_version":"0.1","domain":"pump-station","seed":1,"runs":[` + run + `]}`
 	if err := ValidateCampaign([]byte(valid)); err != nil {
 		t.Fatalf("ValidateCampaign = %v, want the minimal campaign accepted", err)
@@ -15,6 +15,7 @@ func TestValidateCampaignAcceptsARunAndRefusesAnythingThatReadsAsTruth(t *testin
 	for name, broken := range map[string]string{
 		"expected action": strings.Replace(valid, `"phase":"learn"`, `"phase":"learn","expected_effector":"schedule_maintenance"`, 1),
 		"deadline":        strings.Replace(valid, `"phase":"learn"`, `"phase":"learn","deadline_s":43200`, 1),
+		"injected fault":  strings.Replace(valid, `"phase":"learn"`, `"phase":"learn","disturbances":[{"at_s":60,"instance":"site-a/pump-1","fault":"bearing_wear"}]`, 1),
 		"no runs":         strings.Replace(valid, `[`+run+`]`, `[]`, 1),
 	} {
 		invalid, ok := AsValidationError(ValidateCampaign([]byte(broken)))

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -30,11 +31,11 @@ func smallSpec() *CampaignSpec {
 		}}
 }
 
-func faultCounts(campaign *Campaign, phase string) map[string]int {
+func faultCounts(campaign *Campaign, plans []model.SessionPlan, phase string) map[string]int {
 	counts := map[string]int{}
-	for _, run := range campaign.Runs {
+	for i, run := range campaign.Runs {
 		if run.Phase == phase {
-			counts[run.Disturbances[0].Fault]++
+			counts[plans[i].Disturbances[0].Fault]++
 		}
 	}
 	return counts
@@ -70,10 +71,10 @@ func TestACampaignHoldsExactCountsPerPhaseInOneOrder(t *testing.T) {
 	}
 	learn := map[string]int{"bearing_wear": 2, "misalignment": 2, "sensor_drift": 2, "transient_none": 4}
 	holdout := map[string]int{"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1, "transient_none": 2}
-	if got := faultCounts(campaign, "learn"); !reflect.DeepEqual(got, learn) {
+	if got := faultCounts(campaign, plans, "learn"); !reflect.DeepEqual(got, learn) {
 		t.Fatalf("learn faults = %v, want %v", got, learn)
 	}
-	if got := faultCounts(campaign, "holdout"); !reflect.DeepEqual(got, holdout) {
+	if got := faultCounts(campaign, plans, "holdout"); !reflect.DeepEqual(got, holdout) {
 		t.Fatalf("holdout faults = %v, want %v", got, holdout)
 	}
 	for i, run := range campaign.Runs {
@@ -105,11 +106,11 @@ func TestOnlyTheTransientEndsOnItsOwnAndEveryDisturbanceStartsInTheWindow(t *tes
 		t.Fatal(err)
 	}
 	for i, run := range campaign.Runs {
-		d := run.Disturbances[0]
+		d := plans[i].Disturbances[0]
 		if d.AtS < 0 || d.AtS >= 43200 || (d.Fault == "transient_none") != (d.DurationS != nil) {
 			t.Fatalf("run %d disturbance %+v", run.Index, d)
 		}
-		if plans[i].Seed == nil || *plans[i].Seed != run.Seed || !reflect.DeepEqual(plans[i].Disturbances, run.Disturbances) {
+		if plans[i].Seed == nil || *plans[i].Seed != run.Seed || plans[i].Domain != run.Domain || len(plans[i].Disturbances) != 1 {
 			t.Fatalf("run %d plan %+v does not carry the run", run.Index, plans[i])
 		}
 	}

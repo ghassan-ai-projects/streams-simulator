@@ -23,13 +23,12 @@ type Campaign struct {
 }
 
 type CampaignRun struct {
-	Index        int                 `json:"index"`
-	Phase        string              `json:"phase"`
-	Domain       string              `json:"domain"`
-	Seed         uint64              `json:"seed"`
-	DurationS    float64             `json:"duration_s"`
-	SessionPlan  string              `json:"session_plan"`
-	Disturbances []model.Disturbance `json:"disturbances"`
+	Index       int     `json:"index"`
+	Phase       string  `json:"phase"`
+	Domain      string  `json:"domain"`
+	Seed        uint64  `json:"seed"`
+	DurationS   float64 `json:"duration_s"`
+	SessionPlan string  `json:"session_plan"`
 }
 
 func PlanFileName(index int) string { return fmt.Sprintf("run-%04d.session-plan.json", index) }
@@ -68,7 +67,7 @@ func (b *campaignBuild) addRun(phase *CampaignPhase, fault string, transient boo
 	seed := rng.Next() & maxSafeSeed
 	disturbance := b.disturbance(phase.Domain, fault, transient, rng)
 	b.campaign.Runs = append(b.campaign.Runs, CampaignRun{Index: index, Phase: phase.Name, Domain: phase.Domain, Seed: seed,
-		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index), Disturbances: []model.Disturbance{disturbance}})
+		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index)})
 	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, disturbance))
 }
 

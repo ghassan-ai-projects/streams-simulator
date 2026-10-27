@@ -2,58 +2,84 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/campaign-v0.1.schema.json",
   "title": "campaign-v0.1",
-  "description": "An ordered campaign of one-fault runs that a consumer is driven through, run after run. It names what each run's session must inject and nothing about what the consumer should do: no expected action, no deadline and no label. Truth stays in each run's sealed record.",
+  "description": "An ordered campaign of one-fault runs that a consumer is driven through, run after run. It says which domain, seed and duration each run has and which session-plan file starts it, and nothing about what the run injects or what the consumer should do: no fault, no expected action, no deadline and no label. The injections are in the session plans, which go to plantwire connect unread; truth stays in each run's sealed record.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "domain", "seed", "runs"],
+  "required": [
+    "schema_version",
+    "domain",
+    "seed",
+    "runs"
+  ],
   "properties": {
-    "schema_version": {"const": "0.1"},
+    "schema_version": {
+      "const": "0.1"
+    },
     "domain": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]{2,63}$",
       "description": "The domain the campaign starts in; a run names its own."
     },
-    "seed": {"type": "integer", "minimum": 0, "description": "The campaign seed every run seed is drawn from."},
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The campaign seed every run seed is drawn from."
+    },
     "runs": {
       "type": "array",
       "minItems": 1,
       "maxItems": 4096,
-      "items": {"$ref": "#/$defs/run"}
+      "items": {
+        "$ref": "#/$defs/run"
+      }
     }
   },
   "$defs": {
     "run": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["index", "phase", "domain", "seed", "duration_s", "session_plan", "disturbances"],
+      "required": [
+        "index",
+        "phase",
+        "domain",
+        "seed",
+        "duration_s",
+        "session_plan"
+      ],
       "properties": {
-        "index": {"type": "integer", "minimum": 1, "description": "The run's place in the campaign, counted from 1."},
-        "phase": {"type": "string", "minLength": 1, "maxLength": 64, "description": "A free label the campaign's author gave this stretch of runs, such as learn, holdout or disturb."},
+        "index": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The run's place in the campaign, counted from 1."
+        },
+        "phase": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "A free label the campaign's author gave this stretch of runs, such as learn, holdout or disturb."
+        },
         "domain": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]{2,63}$",
           "description": "The domain this run's session plays."
         },
-        "seed": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "The world seed of the run's session."},
-        "duration_s": {"type": "number", "exclusiveMinimum": 0, "maximum": 2592000, "description": "How long the run lasts in simulated seconds."},
-        "session_plan": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "description": "The file, beside campaign.json, holding the run's session-plan-v0.1."},
-        "disturbances": {
-          "type": "array",
-          "maxItems": 64,
-          "items": {"$ref": "#/$defs/disturbance"}
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "The world seed of the run's session."
+        },
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 2592000,
+          "description": "How long the run lasts in simulated seconds."
+        },
+        "session_plan": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "description": "The file, beside campaign.json, holding the run's session-plan-v0.1. It names the injected fault, so a consumer hands it to plantwire connect without reading it."
         }
-      }
-    },
-    "disturbance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["at_s", "instance", "fault"],
-      "properties": {
-        "at_s": {"type": "number", "minimum": 0, "maximum": 2592000},
-        "instance": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"},
-        "fault": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
-        "duration_s": {"type": "number", "exclusiveMinimum": 0, "maximum": 2592000},
-        "severity": {"type": "number", "minimum": 0}
       }
     }
   }

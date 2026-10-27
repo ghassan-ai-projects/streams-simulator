@@ -89,7 +89,7 @@ func TestTheCampaignFileCarriesNoTruthMember(t *testing.T) {
 		t.Fatal(err)
 	}
 	allowed := map[string]bool{"schema_version": true, "domain": true, "seed": true, "runs": true, "index": true, "phase": true,
-		"duration_s": true, "session_plan": true, "disturbances": true, "at_s": true, "instance": true, "fault": true}
+		"duration_s": true, "session_plan": true}
 	for _, key := range memberNames(document) {
 		if !allowed[key] {
 			t.Errorf("campaign.json holds member %q, which is not part of what a run is told", key)
