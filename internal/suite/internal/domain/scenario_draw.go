@@ -39,10 +39,6 @@ func (g *suiteGeneration) scenarioIdentity(seed, idx uint64, entity, fault strin
 		PreDegraded: degraded, Perturbations: perturbations}
 }
 
-func negativeFault(cfg Config) (string, bool) {
-	return negativeFaultOf(cfg.Domain)
-}
-
 func weightedFault(prof *model.Profile, rng *randutil.SplitMix64) (string, bool) {
 	ids, total := orderedFaultWeights(prof)
 	if total > 0 {

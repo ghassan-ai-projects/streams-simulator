@@ -119,13 +119,7 @@ func grantLeftovers(shares []*faultShare, total int) {
 }
 
 func faultEntities(compiled *domain.Compiled, fault string) []string {
-	var ids []string
-	for _, id := range world.PopulationIDs(compiled, 0) {
-		if kindOfEntity(compiled, id).FaultDecl(fault) != nil {
-			ids = append(ids, id)
-		}
-	}
-	return ids
+	return entitiesDeclaring(compiled, world.PopulationIDs(compiled, 0), fault)
 }
 
 func negativeFaultOf(compiled *domain.Compiled) (string, bool) {
