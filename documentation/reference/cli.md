@@ -693,6 +693,22 @@ Flags:
 - `--seed` — suite seed; defaults to `1`.
 - `--out` — output directory; defaults to `suites`.
 
+### `suite campaign`
+
+Generates a campaign: an ordered list of one-fault runs, each with a phase label, and one `session-plan-v0.1` file per run for `plantwire connect`. The campaign is a pure function of its spec, so the same spec gives the same files byte for byte. The first-slice spec is `examples/pump-station/campaign/first-slice.campaign-spec.json`.
+
+```text
+streamsim suite campaign --spec <file> [flags]
+```
+
+Flags:
+
+- `--spec` — required campaign spec file.
+- `--domains-dir` — directory of domain specs; defaults to `domains`. Every domain a phase names must be in it.
+- `--out` — output directory; defaults to `campaign`. It receives `campaign.json` (`campaign-v0.1`, no truth: no expected action, deadline or label) and `run-NNNN.session-plan.json`.
+
+The spec holds a `seed`, the `host_socket` and optional `policies` every session plan carries (set them to the host's own and generate again), `duration_s`, `fault_start_window_s` (a fault starts within it), `negative_duration_s` (how long the negative-class fault lasts), and `phases`. A phase has a `name`, a `domain`, `runs`, a `negative_share` (a share of the runs injects the domain's negative-class fault) and `faults`, the weights of the positive faults that fill the other runs, split exactly by largest remainders.
+
 ### `score`
 
 Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.

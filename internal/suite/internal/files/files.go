@@ -15,3 +15,9 @@ func Write(dir, name string, data []byte) (string, error) {
 	path := filepath.Join(dir, name)
 	return path, kernel.WriteAtomic(path, data)
 }
+
+const maxSpecBytes = 1 << 20
+
+func Read(path string) ([]byte, error) {
+	return kernel.ReadRegular(path, maxSpecBytes)
+}

@@ -174,3 +174,11 @@ func PumpStationDomain() string {
 func PumpStationProbeDomain() string {
 	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station-probe-b.domain.json")
 }
+
+func PumpStationDir() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station")
+}
+
+func FirstSliceCampaignSpec() string {
+	return filepath.Join(PumpStationDir(), "campaign", "first-slice.campaign-spec.json")
+}

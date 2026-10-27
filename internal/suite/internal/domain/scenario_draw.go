@@ -40,12 +40,7 @@ func (g *suiteGeneration) scenarioIdentity(seed, idx uint64, entity, fault strin
 }
 
 func negativeFault(cfg Config) (string, bool) {
-	for _, fault := range declaredFaults(cfg.Domain) {
-		if fault.IsNegativeClass {
-			return fault.ID, true
-		}
-	}
-	return "", false
+	return negativeFaultOf(cfg.Domain)
 }
 
 func weightedFault(prof *model.Profile, rng *randutil.SplitMix64) (string, bool) {

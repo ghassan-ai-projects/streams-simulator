@@ -10,6 +10,9 @@ import (
 )
 
 func cmdSuite(s *session, args []string) (any, error) {
+	if len(args) > 0 && args[0] == "campaign" {
+		return cmdSuiteCampaign(s, args[1:])
+	}
 	options, err := parseSuiteOptions(args, s.stderr)
 	if err != nil {
 		return nil, err

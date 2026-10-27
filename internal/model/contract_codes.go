@@ -27,6 +27,7 @@ var contractCodes = map[Contract]string{
 	ContractDomainAssumptions: "domain_failed",
 	ContractDomainLineage:     "domain_failed",
 	ContractDomainDiff:        "domain_failed",
+	ContractCampaign:          "suite_failed",
 }
 
 func (c Contract) FailureCode() (string, bool) {

@@ -15,6 +15,9 @@ the graded benchmark a consumer is scored against.
 | Terminal state | The reported reason a domain could not produce the requested admitted scenarios | `TerminalState` | `terminal_state` |
 | Attempt | One draw of the generate-audit-regenerate loop | `Attempts` | `attempts` |
 | Publication | Generate the audited suite of a domain and profile and write it as `<domain>-<profile>-suite.json`; a profile the domain does not declare is refused first | `Publish`, `FileName`, `UnknownProfileError` | `suite --domain --profile --out` |
+| Campaign | An ordered list of one-fault runs, each with a free phase label, generated from a campaign spec as a pure function of it; the consumer keeps its state across runs, the world starts fresh in each | `Campaign`, `CampaignSpec`, `BuildCampaign`, `CampaignSpecError` | `campaign.json` (`campaign-v0.1`), `suite campaign --spec --out` |
+| Campaign phase | A stretch of a campaign with its domain, run count, negative share and positive-fault weights; the counts are exact (largest remainders), the order shuffled from the campaign seed | `CampaignPhase` | `phases[]` of the spec, `phase` of a run |
+| Run plan | The `session-plan-v0.1` of one campaign run: the plant, the host socket and the one disturbance the session injects | `PlanFileName` | `run-NNNN.session-plan.json` |
 | Sample period | The channel sampling period a published suite is generated with: two minutes | `DefaultSampleNS` | – |
 
 ## Retired words

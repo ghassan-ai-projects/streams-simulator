@@ -35,6 +35,7 @@ const (
 	ContractDomainAssumptions Contract = "domain-assumptions-v0.1"
 	ContractDomainLineage     Contract = "domain-lineage-v0.1"
 	ContractDomainDiff        Contract = "domain-diff-v0.1"
+	ContractCampaign          Contract = "campaign-v0.1"
 )
 
 type Issue struct {
