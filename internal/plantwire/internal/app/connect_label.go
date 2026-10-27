@@ -3,9 +3,9 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
@@ -37,11 +37,16 @@ func (p *connectPlan) groundTruth(d model.Disturbance) (*model.GroundTruthRecord
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	start := p.startNS()
-	record, err := truth.BuildRecord(p.spec, solver, truth.Injection{ScenarioID: p.spec.Spec.ID + "/0001", Seed: seed, EntityID: d.Instance,
-		FaultID: d.Fault, OnsetNS: start + int64(math.Round(d.AtS*1e9)), StartNS: start, EntityIDs: world.PopulationIDs(p.spec, 0)})
+	record, err := truth.BuildRecord(p.spec, solver, p.injection(d, seed))
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	return record, nil
+}
+
+func (p *connectPlan) injection(d model.Disturbance, seed uint64) truth.Injection {
+	start := p.startNS()
+	onset := domain.ScheduleDisturbances([]model.Disturbance{d}, start)[0].OnsetNS
+	return truth.Injection{ScenarioID: p.spec.Spec.ID + "/0001", Seed: seed, EntityID: d.Instance, FaultID: d.Fault,
+		OnsetNS: onset, StartNS: start, EntityIDs: world.PopulationIDs(p.spec, 0)}
 }
