@@ -540,3 +540,6 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > verify a sensor case. Found by reading the domain (rule-promotion scenarios, 2026-10-25), not by running it; other domains not
 > checked. Trigger to fix: before the lying-sensor scenario of `docs/rule-promotion/SCENARIOS.md`; then the domain gains a
 > `recalibrate_probe` effector or maintenance clears the bias, with a failing test first.
+> Fixed in `examples/pump-station/pump-station.domain.json` (2026-10-27): `schedule_maintenance` carries a responder on `work_order`,
+> so a work order naming `sensor_drift` or `sensor_failure` clears the fault and the bias falls (`internal/world/pump_station_test.go`).
+> The pinned reference domain keeps the defect.

@@ -166,3 +166,7 @@ func FactoryComposition() string {
 func WorkspaceFolder(root, folder string) string { return filepath.Join(root, folder) }
 
 func WorkspaceFile(folder, name string) string { return folder + "/" + name }
+
+func PumpStationDomain() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station.domain.json")
+}
