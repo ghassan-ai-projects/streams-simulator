@@ -67,16 +67,24 @@ hand-edit ledger, I-13 (lint, test, diff), more situation types.
 After the slice: Tamoz nominating patterns from its memory, feedback from approved, edited and rejected
 proposals, a rule-candidate record with provenance, and a tenant leak test.
 
-## 5. Order of work for the first slice
+## 5. Order of work for the first slice (sequential, one repository at a time)
 
-```text
-0  F1-F4 accepted (2026-10-27)          -> AS-0 design note
-1  SIM-1, SIM-2, SIM-4 | AS-1, AS-2 | TZ-1, TZ-2        (parallel, independent)
-2  SIM-3 campaign      | AS-3, AS-4, AS-5
-3  AS-7 proto first    -> TZ-3          | AS-6
-4  TZ-4, TZ-5          | AS-8 campaign driver (can start on canned proposals after AS-3)
-5  run S1, S2, S7 with arms 0, A, B and C; write the result
-```
+The owner works the repositories one by one, each in its own session, from a self-contained plan in that
+repository:
 
-Each round follows its repository's own gates and commits on that repository's `rule-promotion` branch. Nothing
-merges to main until the first-slice result is written.
+| Session | Repository | Plan | Rounds |
+|---|---|---|---|
+| 1 | streams-simulator | [PLAN-streams-simulator.md](PLAN-streams-simulator.md) | SIM-1 to SIM-4 |
+| 2 | agentic-stream | `/Users/ghassan/my-projects/agentic-stream/documentation/design/rule-promotion.md` | AS-0 to AS-8 |
+| 3 | tamoz | `/Users/ghassan/my-projects/tamoz/docs/RULE_PROMOTION_PLAN.md` | TZ-1 to TZ-5 |
+| 4 | agentic-stream | the same plan, §6 | AS-9: the first-slice run, result in `RESULT.md` here |
+
+Each plan ends with a status and handoff table the next session reads. Each round follows its repository's own
+gates and commits on that repository's `rule-promotion` branch. Nothing merges to main until the first-slice
+result is written.
+
+**Deviation (2026-10-27)**: the first slice's repeating fault families are `bearing_wear`, `misalignment` and
+`sensor_drift` (all repaired by `schedule_maintenance` with a work order naming the fault, through the
+simulator's existing responder), with `transient_none` as the negative class. `overload` and `lubrication_due`,
+named in SCENARIOS.md S1, act on states a command sets and are refused over plant wire until D-116 is fixed;
+they return after the slice. The simulator plan §4 gives the reasons.
