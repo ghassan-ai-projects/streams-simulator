@@ -11,10 +11,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-const (
-	labelSampleNS  int64 = 120 * 1e9
-	labelHorizonNS int64 = 72 * 3600 * 1e9
-)
+const labelSampleNS int64 = 120 * 1e9
 
 func (p *connectPlan) writeLabel(out string) error {
 	if len(p.session.Disturbances) != 1 {
@@ -33,7 +30,7 @@ func (p *connectPlan) writeLabel(out string) error {
 
 func (p *connectPlan) groundTruth(d model.Disturbance) (*model.GroundTruthRecord, error) {
 	seed := p.session.WorldSeed()
-	solver, err := truth.NewSolver(p.spec, seed, labelSampleNS, labelHorizonNS)
+	solver, err := truth.NewSolver(p.spec, seed, labelSampleNS, 0)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
