@@ -170,3 +170,7 @@ func WorkspaceFile(folder, name string) string { return folder + "/" + name }
 func PumpStationDomain() string {
 	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station.domain.json")
 }
+
+func PumpStationProbeDomain() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station-probe-b.domain.json")
+}
