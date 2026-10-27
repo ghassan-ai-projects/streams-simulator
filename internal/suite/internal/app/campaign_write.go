@@ -14,26 +14,23 @@ func writeCampaign(out string, campaign *rules.Campaign, plans []model.SessionPl
 	if err := checkCampaign(campaign); err != nil {
 		return PublishedCampaign{}, err
 	}
-	for i := range plans {
-		if err := writeJSON(out, rules.PlanFileName(i+1), plans[i]); err != nil {
-			return PublishedCampaign{}, err
-		}
+	encoded, err := encodePlans(plans)
+	if err != nil {
+		return PublishedCampaign{}, err
 	}
-	if err := writeJSON(out, rules.CampaignFileName, campaign); err != nil {
+	if err := writeFiles(out, campaign, encoded); err != nil {
 		return PublishedCampaign{}, err
 	}
 	return PublishedCampaign{Path: filepath.Join(out, rules.CampaignFileName), Runs: len(campaign.Runs)}, nil
 }
 
-func writeJSON(dir, name string, document any) error {
-	raw, err := json.MarshalIndent(document, "", "  ")
-	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+func writeFiles(out string, campaign *rules.Campaign, encoded [][]byte) error {
+	for i, raw := range encoded {
+		if err := writeBytes(out, rules.PlanFileName(i+1), raw); err != nil {
+			return err
+		}
 	}
-	if _, err := files.Write(dir, name, append(raw, '\n')); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	return nil
+	return writeJSON(out, rules.CampaignFileName, campaign)
 }
 
 func checkCampaign(campaign *rules.Campaign) error {
@@ -42,6 +39,37 @@ func checkCampaign(campaign *rules.Campaign) error {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	if err := model.ValidateCampaign(raw); err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return nil
+}
+
+func encodePlans(plans []model.SessionPlan) ([][]byte, error) {
+	encoded := make([][]byte, len(plans))
+	for i := range plans {
+		raw, err := json.MarshalIndent(plans[i], "", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("streamsim: %w", err)
+		}
+		if _, err := model.DecodeSessionPlan(raw); err != nil {
+			return nil, fmt.Errorf("streamsim: %w", &rules.CampaignSpecError{
+				Message: fmt.Sprintf("run %d: host_socket or policies break session-plan-v0.1: %v", i+1, err)})
+		}
+		encoded[i] = append(raw, '\n')
+	}
+	return encoded, nil
+}
+
+func writeJSON(dir, name string, document any) error {
+	raw, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return writeBytes(dir, name, append(raw, '\n'))
+}
+
+func writeBytes(dir, name string, raw []byte) error {
+	if _, err := files.Write(dir, name, raw); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	return nil

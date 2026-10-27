@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -125,5 +126,31 @@ func TestACampaignSpecThatCannotBeUsedIsRefused(t *testing.T) {
 	options.SpecPath = filepath.Join(dir, "absent.json")
 	if _, err := PublishCampaign(options); err == nil || errors.As(err, &invalid) {
 		t.Fatalf("a spec file that is absent = %v, want an ordinary read failure", err)
+	}
+}
+
+func TestASpecWhoseSocketOrPoliciesBreakTheSessionPlanContractWritesNothing(t *testing.T) {
+	t.Parallel()
+	spec, err := os.ReadFile(testsupport.FirstSliceCampaignSpec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, change := range map[string][2]string{
+		"relative socket": {`"/tmp/streamsim-host.sock"`, `"host.sock"`},
+		"bad policy":      {`"duration_s": 172800,`, `"policies": ["not-a-digest"], "duration_s": 172800,`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			testsupport.WriteFileIn(t, dir, "spec.json", bytes.Replace(spec, []byte(change[0]), []byte(change[1]), 1))
+			options := CampaignOptions{DomainsDir: testsupport.PumpStationDir(), SpecPath: filepath.Join(dir, "spec.json"), Out: filepath.Join(dir, "out")}
+			var invalid *rules.CampaignSpecError
+			if _, err := PublishCampaign(options); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, "session-plan-v0.1") {
+				t.Fatalf("PublishCampaign = %v, want a CampaignSpecError naming session-plan-v0.1", err)
+			}
+			if _, err := os.Stat(options.Out); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("the output folder exists after a refusal: %v", err)
+			}
+		})
 	}
 }
