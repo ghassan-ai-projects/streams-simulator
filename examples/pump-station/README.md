@@ -11,4 +11,10 @@ Two worlds, their commissioned kind files and the first-slice campaign spec, for
 streamsim suite campaign --spec examples/pump-station/campaign/first-slice.campaign-spec.json --domains-dir examples/pump-station --out <dir>
 ```
 
-Run one session of the campaign with `streamsim plantwire connect --plan <dir>/run-0001.session-plan.json --domains-dir examples/pump-station --out <run-dir>`.
+Run one session of the campaign with `streamsim plantwire connect --plan <dir>/run-0001.session-plan.json --domains-dir examples/pump-station --out <run-dir> --slice-s 60`.
+
+- The plan's `host_socket` must be an absolute path of at most 103 characters in a directory only you can enter; the committed `/tmp/streamsim-host.sock` is a placeholder. Without `policies`, every command is refused.
+- A session never ends by itself: send SIGINT to `connect` when the world time reaches `duration_s`. Closing the host first leaves an incomplete run.
+- `connect` writes `<run-dir>/label.json` when the plan holds exactly one disturbance. It names the fault: never give it to the consumer. Write the verdict to `<run-dir>/verdict.json` and run `streamsim score --run <run-dir>/run.json`. A verdict action's `command_id` is the DCMD `idempotency_key` and its `entity_id` is the instance (`site-a/pump-8`).
+- `work_order` is the exact fault id: `bearing_wear`, `misalignment`, `sensor_drift`. A work order for another fault repairs nothing and does not score as the expected action.
+- A 48 h run takes about 585 MB at `--slice-s 60`.
