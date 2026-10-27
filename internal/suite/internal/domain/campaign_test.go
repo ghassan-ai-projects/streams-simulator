@@ -139,6 +139,7 @@ func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 		"unknown domain":        func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" },
 		"undeclared fault":      func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 },
 		"the negative as a hit": func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 },
+		"a commanded state":     func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 },
 		"zero weight":           func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 },
 		"no positive fault":     func(s *CampaignSpec) { s.Phases[0].Faults = nil },
 	} {
@@ -153,5 +154,25 @@ func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 				t.Fatalf("BuildCampaign = %v, want a CampaignSpecError", err)
 			}
 		})
+	}
+}
+
+func TestAPulseNegativeFaultKeepsItsOwnDurationInThePlan(t *testing.T) {
+	t.Parallel()
+	domains := pumpStation(t)
+	kind := domains["pump-station"].Spec.Kinds[0]
+	for i := range kind.Faults {
+		if kind.Faults[i].ID == "transient_none" {
+			kind.Faults[i].Onset.Shape = model.ShapePulse
+		}
+	}
+	_, plans, err := BuildCampaign(smallSpec(), domains)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plan := range plans {
+		if d := plan.Disturbances[0]; d.Fault == "transient_none" && d.DurationS != nil {
+			t.Fatalf("plan %+v gives a pulse fault a duration, which plantwire connect refuses", plan)
+		}
 	}
 }

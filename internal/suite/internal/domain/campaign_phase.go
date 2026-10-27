@@ -33,9 +33,29 @@ func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 	if len(p.Faults) == 0 && p.negatives() < p.Runs {
 		return specErrorf("phase %q lists no fault for its positive runs", p.Name)
 	}
+	if err := p.checkPositive(compiled, negative); err != nil {
+		return err
+	}
+	return p.checkScriptable(compiled, negative)
+}
+
+func (p *CampaignPhase) checkPositive(compiled *domain.Compiled, negative string) error {
 	for _, id := range slices.Sorted(maps.Keys(p.Faults)) {
 		if p.Faults[id] <= 0 || id == negative || len(faultEntities(compiled, id)) == 0 {
 			return specErrorf("phase %q: fault %q needs a positive weight and must be a positive-class fault %q declares", p.Name, id, p.Domain)
+		}
+	}
+	return nil
+}
+
+func (p *CampaignPhase) checkScriptable(compiled *domain.Compiled, negative string) error {
+	used := slices.Sorted(maps.Keys(p.Faults))
+	if p.negatives() > 0 {
+		used = append(used, negative)
+	}
+	for _, id := range used {
+		if commandedOn(compiled, id) {
+			return specErrorf("phase %q: fault %q acts on a state a command sets, which a session cannot script yet (D-116)", p.Name, id)
 		}
 	}
 	return nil
@@ -114,4 +134,15 @@ func negativeFaultOf(compiled *domain.Compiled) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func commandedOn(compiled *domain.Compiled, fault string) bool {
+	return slices.ContainsFunc(faultEntities(compiled, fault), func(id string) bool {
+		kind := kindOfEntity(compiled, id)
+		return kind.FaultCommanded(kind.FaultDecl(fault))
+	})
+}
+
+func isPulse(compiled *domain.Compiled, entity, fault string) bool {
+	return kindOfEntity(compiled, entity).FaultDecl(fault).IsPulse()
 }

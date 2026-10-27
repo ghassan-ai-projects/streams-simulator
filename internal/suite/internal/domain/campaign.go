@@ -72,10 +72,11 @@ func (b *campaignBuild) addRun(phase *CampaignPhase, fault string, transient boo
 }
 
 func (b *campaignBuild) disturbance(domainID, fault string, transient bool, rng *randutil.SplitMix64) model.Disturbance {
-	entities := faultEntities(b.domains[domainID], fault)
+	compiled := b.domains[domainID]
+	entities := faultEntities(compiled, fault)
 	disturbance := model.Disturbance{Instance: entities[rng.Intn(len(entities))], Fault: fault,
 		AtS: math.Floor(rng.Float64() * b.spec.FaultWindowS)}
-	if transient {
+	if transient && !isPulse(compiled, disturbance.Instance, fault) {
 		duration := b.spec.NegativeDurationS
 		disturbance.DurationS = &duration
 	}
