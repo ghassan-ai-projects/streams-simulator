@@ -5,6 +5,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -129,19 +130,25 @@ func TestAScheduleDrawsFromTheSeedAlone(t *testing.T) {
 func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 	t.Parallel()
 	for name, change := range map[string]func(*CampaignSpec){
-		"another version":       func(s *CampaignSpec) { s.SchemaVersion = "0.2" },
-		"no host socket":        func(s *CampaignSpec) { s.HostSocket = "" },
-		"window past the run":   func(s *CampaignSpec) { s.FaultWindowS = s.DurationS },
-		"no phases":             func(s *CampaignSpec) { s.Phases = nil },
-		"a phase twice":         func(s *CampaignSpec) { s.Phases[1].Name = "learn" },
-		"no runs":               func(s *CampaignSpec) { s.Phases[0].Runs = 0 },
-		"share above one":       func(s *CampaignSpec) { s.Phases[0].NegativeShare = 1.5 },
-		"unknown domain":        func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" },
-		"undeclared fault":      func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 },
-		"the negative as a hit": func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 },
-		"a commanded state":     func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 },
-		"zero weight":           func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 },
-		"no positive fault":     func(s *CampaignSpec) { s.Phases[0].Faults = nil },
+		"another version":        func(s *CampaignSpec) { s.SchemaVersion = "0.2" },
+		"no host socket":         func(s *CampaignSpec) { s.HostSocket = "" },
+		"window past the run":    func(s *CampaignSpec) { s.FaultWindowS = s.DurationS },
+		"no phases":              func(s *CampaignSpec) { s.Phases = nil },
+		"a phase twice":          func(s *CampaignSpec) { s.Phases[1].Name = "learn" },
+		"no runs":                func(s *CampaignSpec) { s.Phases[0].Runs = 0 },
+		"share above one":        func(s *CampaignSpec) { s.Phases[0].NegativeShare = 1.5 },
+		"unknown domain":         func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" },
+		"undeclared fault":       func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 },
+		"the negative as a hit":  func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 },
+		"a commanded state":      func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 },
+		"a weight beyond range":  func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 1e308 },
+		"a duration beyond 30 d": func(s *CampaignSpec) { s.DurationS = 1e9 },
+		"a transient past run":   func(s *CampaignSpec) { s.NegativeDurationS = s.DurationS },
+		"a phase of billions":    func(s *CampaignSpec) { s.Phases[0].Runs = 1_000_000_000_000 },
+		"too many runs":          func(s *CampaignSpec) { s.Phases[0].Runs, s.Phases[1].Runs = 3000, 3000 },
+		"a long phase name":      func(s *CampaignSpec) { s.Phases[0].Name = strings.Repeat("p", 65) },
+		"zero weight":            func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 },
+		"no positive fault":      func(s *CampaignSpec) { s.Phases[0].Faults = nil },
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

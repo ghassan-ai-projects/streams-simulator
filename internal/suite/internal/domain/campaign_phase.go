@@ -41,8 +41,8 @@ func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 
 func (p *CampaignPhase) checkPositive(compiled *domain.Compiled, negative string) error {
 	for _, id := range slices.Sorted(maps.Keys(p.Faults)) {
-		if p.Faults[id] <= 0 || id == negative || len(faultEntities(compiled, id)) == 0 {
-			return specErrorf("phase %q: fault %q needs a positive weight and must be a positive-class fault %q declares", p.Name, id, p.Domain)
+		if p.Faults[id] <= 0 || p.Faults[id] > maxFaultWeight || id == negative || len(faultEntities(compiled, id)) == 0 {
+			return specErrorf("phase %q: fault %q needs a weight above 0 and at most %g and must be a positive-class fault %q declares", p.Name, id, maxFaultWeight, p.Domain)
 		}
 	}
 	return nil

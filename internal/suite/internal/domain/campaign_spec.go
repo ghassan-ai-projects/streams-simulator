@@ -8,7 +8,13 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
 
-const CampaignSpecVersion = "0.1"
+const (
+	CampaignSpecVersion = "0.1"
+	maxCampaignRuns     = 4096
+	maxRunSeconds       = 2592000
+	maxPhaseName        = 64
+	maxFaultWeight      = 1e6
+)
 
 type CampaignSpec struct {
 	SchemaVersion     string          `json:"schema_version"`
@@ -46,8 +52,10 @@ func (s *CampaignSpec) DomainIDs() []string {
 }
 
 func (s *CampaignSpec) Check(domains map[string]*domain.Compiled) error {
-	if err := s.checkHeader(); err != nil {
-		return err
+	for _, check := range []func() error{s.checkHeader, s.checkTiming, s.checkSize} {
+		if err := check(); err != nil {
+			return err
+		}
 	}
 	seen := map[string]bool{}
 	for i := range s.Phases {
@@ -72,12 +80,34 @@ func (s *CampaignSpec) checkHeader() error {
 		return specErrorf("schema_version must be %q, got %q", CampaignSpecVersion, s.SchemaVersion)
 	case s.HostSocket == "":
 		return specErrorf("host_socket is required")
-	case s.DurationS <= 0 || s.NegativeDurationS <= 0:
-		return specErrorf("duration_s and negative_duration_s must be positive")
-	case s.FaultWindowS <= 0 || s.FaultWindowS >= s.DurationS:
-		return specErrorf("fault_start_window_s must be positive and shorter than duration_s")
 	case len(s.Phases) == 0:
 		return specErrorf("at least one phase is required")
+	}
+	return nil
+}
+
+func (s *CampaignSpec) checkTiming() error {
+	switch {
+	case s.DurationS <= 0 || s.DurationS > maxRunSeconds:
+		return specErrorf("duration_s must be above 0 and at most %d", maxRunSeconds)
+	case s.NegativeDurationS <= 0 || s.FaultWindowS <= 0:
+		return specErrorf("negative_duration_s and fault_start_window_s must be positive")
+	case s.FaultWindowS+s.NegativeDurationS > s.DurationS:
+		return specErrorf("fault_start_window_s plus negative_duration_s must fit inside duration_s")
+	}
+	return nil
+}
+
+func (s *CampaignSpec) checkSize() error {
+	total := 0
+	for _, phase := range s.Phases {
+		if len(phase.Name) > maxPhaseName || phase.Runs > maxCampaignRuns {
+			return specErrorf("phase %q: a name is at most %d characters and a phase at most %d runs", phase.Name, maxPhaseName, maxCampaignRuns)
+		}
+		total += max(phase.Runs, 0)
+	}
+	if total > maxCampaignRuns {
+		return specErrorf("a campaign has at most %d runs, got %d", maxCampaignRuns, total)
 	}
 	return nil
 }
