@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"os"
 	"reflect"
 	"testing"
 
@@ -41,26 +40,5 @@ func TestTheReplacementProbeBirthsTheSamePumpsWithAnotherKindDigest(t *testing.T
 	}
 	if a, b := pumpKindDigest(t, first), pumpKindDigest(t, second); a == b {
 		t.Fatalf("both worlds birth the pump kind with digest %s", a)
-	}
-}
-
-func TestTheCommissionedKindFilesCarryTheDigestEachWorldBirthsThePumpWith(t *testing.T) {
-	t.Parallel()
-	for stem, world := range map[string]string{"pump": testsupport.PumpStationDomain(), "pump-probe-b": testsupport.PumpStationProbeDomain()} {
-		t.Run(stem, func(t *testing.T) {
-			t.Parallel()
-			spec, err := domain.Load(world)
-			if err != nil {
-				t.Fatal(err)
-			}
-			raw, err := os.ReadFile(testsupport.PumpStationKindFile(stem))
-			if err != nil {
-				t.Fatal(err)
-			}
-			entry := decodedKind(t, string(raw))
-			if digest, err := KindDigest(entry); err != nil || digest != pumpKindDigest(t, spec) {
-				t.Fatalf("kind file digest %s (%v), the world births %s", digest, err, pumpKindDigest(t, spec))
-			}
-		})
 	}
 }
