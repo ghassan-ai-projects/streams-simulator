@@ -28,8 +28,8 @@ func (p *CampaignPhase) check(compiled *domain.Compiled) error {
 
 func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 	negative, hasNegative := negativeFaultOf(compiled)
-	if p.negatives() > 0 && !hasNegative {
-		return specErrorf("phase %q asks for negative runs, which %q declares no negative-class fault for", p.Name, p.Domain)
+	if p.negatives() > 0 && (!hasNegative || len(faultEntities(compiled, negative)) == 0) {
+		return specErrorf("phase %q asks for negative runs, which %q has no instance with a negative-class fault for", p.Name, p.Domain)
 	}
 	if len(p.Faults) == 0 && p.negatives() < p.Runs {
 		return specErrorf("phase %q lists no fault for its positive runs", p.Name)

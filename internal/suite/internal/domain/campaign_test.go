@@ -204,3 +204,25 @@ func TestEveryNegativeClassFaultIsRefusedAsAPositiveOne(t *testing.T) {
 		t.Fatalf("BuildCampaign = %v, want transient_none refused as a positive fault", err)
 	}
 }
+
+func TestNegativeRunsAreRefusedWhenNoInstanceCanCarryTheNegativeFault(t *testing.T) {
+	t.Parallel()
+	domains := pumpStation(t)
+	spare := domains["pump-station"].Spec.Kinds[0]
+	spare.Name = "spare"
+	var carried, kept []model.Fault
+	for _, fault := range spare.Faults {
+		if fault.IsNegativeClass {
+			carried = append(carried, fault)
+		} else {
+			kept = append(kept, fault)
+		}
+	}
+	spare.Faults = carried
+	domains["pump-station"].Spec.Kinds[0].Faults = kept
+	domains["pump-station"].Spec.Kinds = append(domains["pump-station"].Spec.Kinds, spare)
+	var invalid *CampaignSpecError
+	if _, _, err := BuildCampaign(smallSpec(), domains); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, "no instance") {
+		t.Fatalf("BuildCampaign = %v, want a CampaignSpecError saying no instance can carry the fault", err)
+	}
+}
