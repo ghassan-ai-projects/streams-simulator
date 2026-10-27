@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -92,6 +93,23 @@ func TestAMaintenanceCommandNamingTheFaultReachesTheWorldAndTheResponderClearsIt
 		t.Fatal("the sealed journal does not show the wear cleared by the responder")
 	}
 	replaysWhole(t, session.out, testsupport.PumpStationDir())
+	assertLabelOfTheWear(t, session.out)
+}
+
+func assertLabelOfTheWear(t *testing.T, out string) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(out, model.FileLabel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var label model.GroundTruthRecord
+	if err := model.ValidateGroundTruth(raw); err != nil || json.Unmarshal(raw, &label) != nil {
+		t.Fatalf("label.json: %v\n%s", err, raw)
+	}
+	if label.Label != "bearing_wear" || label.EntityID != stationPump || label.Domain != "pump-station" || !label.ExpectedEpisode ||
+		label.ExpectedEffector != "schedule_maintenance" || label.InjectionTimeNS != model.DefaultStartTimeNS || label.FirstObservableTimeNS <= label.InjectionTimeNS {
+		t.Fatalf("label = %+v, want the planned wear on %s with its solved observability", label, stationPump)
+	}
 }
 
 func TestTheNodeBirthCarriesThePumpKindWithTheDigestOfItsCommissionedFile(t *testing.T) {
@@ -144,5 +162,13 @@ func TestAReduceLoadCommandMovesThePumpLoadDown(t *testing.T) {
 	loads := pumpLoads(t, session.out)
 	if len(loads) < 2 || math.Abs(loads[0]-0.8) > 1e-9 || math.Abs(loads[len(loads)-1]-0.6) > 0.01 {
 		t.Fatalf("pump load history of %d snapshots from %v to %v, want it from 0.8 down to 0.6", len(loads), loads[0], loads[len(loads)-1])
+	}
+}
+
+func TestASessionWithoutOneDisturbanceWritesNoLabel(t *testing.T) {
+	t.Parallel()
+	session := runStationSession(t, "pump-station", "", "", nil, 0.05)
+	if _, err := os.Stat(filepath.Join(session.out, model.FileLabel)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("a session with no planned disturbance wrote a label: %v", err)
 	}
 }

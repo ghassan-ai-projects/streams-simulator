@@ -137,7 +137,14 @@ func serveNode(ctx context.Context, o ConnectOptions, p *connectPlan, r *run.Run
 	r.SetInterruptLog(file.digest())
 	abandonFailed(r, "plantwire connect", failure)
 	_, ended := r.End(o.Out)
-	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(failure, errors.Join(sealed, ended))
+	return ConnectResult{Out: o.Out, Stopped: stopped}, joined(failure, errors.Join(sealed, ended, p.labelEnded(o.Out, failure, ended)))
+}
+
+func (p *connectPlan) labelEnded(out string, failure, ended error) error {
+	if failure != nil || ended != nil {
+		return nil
+	}
+	return p.writeLabel(out)
 }
 
 func abandonFailed(r *run.Run, session string, failure error) {
