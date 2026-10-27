@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
@@ -22,7 +23,7 @@ func cmdSuiteCampaign(s *session, args []string) (any, error) {
 		return nil, usagef("%s", invalid.Error())
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 	return map[string]any{"campaign": published.Path, "runs": published.Runs}, nil
 }

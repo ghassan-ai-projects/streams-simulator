@@ -201,13 +201,34 @@ Goal: prove the closed loop the consumer will use.
 
 ## 8. Status and handoff (update at the end of the session)
 
+Deviations, each better than the plan or forced by the code:
+
+- **SIM-1**: the responder has no `on_match` / `on_miss`. The effector's own effect already restores lubrication and clears the backlog on every call, so a second delta would double it. A work order naming no active fault therefore still restores lubrication and leaves the fault.
+- **SIM-3, spec location**: `examples/pump-station/campaign/first-slice.campaign-spec.json`, not the folder root. The domain catalog loads every `.json` in a domains directory, so the spec cannot sit beside the domains.
+- **SIM-3, spec content**: the spec also carries `host_socket` and optional `policies`, because a session plan requires the first and refuses every command without the second. The committed `host_socket` is a placeholder; the campaign driver sets both and generates again (the output is a pure function of the spec).
+- **SIM-3, counts**: phase counts are exact (largest remainders over the fault weights, negatives by `negative_share`), then shuffled from the seed, instead of random draws. The learn phase is 100 runs: 20 per family, 40 `transient_none`. `negative_duration_s` (3600) bounds the negative-class fault; positive faults last to the end of the run.
+- **SIM-3, campaign.json**: each run also names its `session_plan` file. Campaign runs are not put through the trivial-baseline audit that `suite` runs; each run is graded by `score` against its own sealed record.
+- **SIM-3, gates**: additions only. `cli_wiring_test` registers `suite_campaign.go`, `facade_rules_test` registers `CampaignSpecError`, `BEHAVIOUR_PIN.txt` takes the new usage line. No cap raised, no allow-list grown, no floor lowered.
+
 | Round | State | Commit | Notes |
 |---|---|---|---|
-| SIM-1 | not started | | |
-| SIM-2 | not started | | |
-| SIM-3 | not started | | |
-| SIM-4 | not started | | |
+| SIM-1 | done | cfb7f42c | `examples/pump-station/pump-station.domain.json`; five world tests in `internal/world/pump_station_test.go`; D-121 entry updated. |
+| SIM-2 | done | 2b3dabc6 | `pump-station-probe-b.domain.json`: vibration range 0-60, resolution 0.05, gain 1.1. |
+| SIM-3 | done | 85dfb3e4 | `streamsim suite campaign`, `campaign-v0.1`, `suite.PublishCampaign`. |
+| SIM-4 | done | 529ec472 | Session tests in `internal/plantwire/internal/app/connect_pump_station_test.go`; kind files in `examples/pump-station/kinds/`. |
 
-Hand off to session 2 (agentic-stream) with: the commits above; the path of `examples/pump-station/` and of the
-generated first-slice campaign folder; the `pump` kind digests of both worlds; the exact `plantwire connect`
-command line a host test can use; any deviation recorded here.
+Hand-off to session 2 (agentic-stream):
+
+- **Worlds and files**: `examples/pump-station/` (README there). Domains directory for every command: `examples/pump-station`.
+- **Pump kind digests**: `pump-station` `sha256:17f5e82f53bc294d167f8543598ba2d49f5c60373985b78aa9ebe17288e79f19` (`kinds/pump.kind.json`); `pump-station-probe-b` `sha256:ad23e9ee18970de5f2f8d749e1e506108dd30535cd7779e80ab61766b4786c6a` (`kinds/pump-probe-b.kind.json`). Both files define the kind `pump`, so commission one at a time.
+- **Devices**: `site-a:pump-1` to `site-a:pump-8` on the wire (instances `site-a/pump-N`). Commands: `schedule_maintenance {pump_id, work_order}`, `reduce_load {pump_id, target_load}`, `stop_motor {pump_id}`. `work_order` is a fault id: `bearing_wear`, `misalignment`, `sensor_drift`, `sensor_failure`. A DCMD needs `fallback_on_lease_loss` and a `policy_digest` the plan lists.
+- **Generate the first-slice campaign** (160 runs, 100 learn, 50 holdout, 10 disturb on the probe variant). Set `host_socket` and `policies` in a copy of the spec first:
+
+```text
+streamsim suite campaign --spec examples/pump-station/campaign/first-slice.campaign-spec.json --domains-dir examples/pump-station --out <campaign-dir>
+```
+
+- **Run one session**: `streamsim plantwire connect --plan <campaign-dir>/run-0001.session-plan.json --domains-dir examples/pump-station --out <run-dir>`. The consumer's state persists across runs; the world starts fresh each run, so the host reconnects per run.
+- **Timing**: a fault starts within the first 12 h of a 48 h run; `schedule_maintenance` takes 1 h to clear a fault, and vibration returns to its level within about 3 h more; the cavitation burst lasts 1 h and needs no action.
+- **Grading**: `streamsim score --run <run-dir>/run.json --label <label>` per run, with that run's sealed record.
+- **Known limits**: one fault per run (F5); `overload` and `lubrication_due` wait for the D-116 fix (§6); every pump shares one normal; the world has no header coupling.
