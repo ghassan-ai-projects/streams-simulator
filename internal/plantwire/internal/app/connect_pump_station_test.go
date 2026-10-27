@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	modeldomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -62,26 +61,26 @@ func runStationSession(t *testing.T, domainID, disturbances, command string, arg
 	return stationSession{out: out, received: host.snapshot()}
 }
 
-func pumpKindDigestOf(t *testing.T, domainFile string) string {
+func commissionedDigest(t *testing.T, stem string) string {
 	t.Helper()
-	spec, err := modeldomain.Load(domainFile)
+	raw, err := os.ReadFile(testsupport.PumpStationKindFile(stem))
 	if err != nil {
 		t.Fatal(err)
 	}
-	kinds := make([]*model.Kind, len(spec.Spec.Kinds))
-	for i := range spec.Spec.Kinds {
-		kinds[i] = &spec.Spec.Kinds[i]
+	var entry map[string]any
+	if err := model.DecodeBytes(raw, &entry); err != nil {
+		t.Fatal(err)
 	}
-	templates, err := domain.WithKindDigests(domain.KindTemplates(kinds))
+	digest, err := domain.KindDigest(entry)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return templates[0].(map[string]any)["kind_digest"].(string)
+	return digest
 }
 
 func TestAMaintenanceCommandNamingTheFaultReachesTheWorldAndTheResponderClearsIt(t *testing.T) {
 	t.Parallel()
-	const wear = `,"disturbances":[{"at_s":120,"instance":"` + stationPump + `","fault":"bearing_wear"}]`
+	const wear = `,"disturbances":[{"at_s":0,"instance":"` + stationPump + `","fault":"bearing_wear"}]`
 	session := runStationSession(t, "pump-station", wear, "schedule_maintenance", map[string]any{"pump_id": stationPump, "work_order": "bearing_wear"}, 2)
 	if status, reason := receiptOf(session.received, "cmd-1"); status != "accepted" || outcomeOf(session.received, "cmd-1") != "succeeded" {
 		t.Fatalf("command receipt %q (%s) result %q, want an executed maintenance", status, reason, outcomeOf(session.received, "cmd-1"))
@@ -95,9 +94,9 @@ func TestAMaintenanceCommandNamingTheFaultReachesTheWorldAndTheResponderClearsIt
 	replaysWhole(t, session.out, testsupport.PumpStationDir())
 }
 
-func TestTheNodeBirthCarriesThePumpKindAndItsDigest(t *testing.T) {
+func TestTheNodeBirthCarriesThePumpKindWithTheDigestOfItsCommissionedFile(t *testing.T) {
 	t.Parallel()
-	for domainID, file := range map[string]string{"pump-station": testsupport.PumpStationDomain(), "pump-station-probe-b": testsupport.PumpStationProbeDomain()} {
+	for stem, domainID := range map[string]string{"pump": "pump-station", "pump-probe-b": "pump-station-probe-b"} {
 		t.Run(domainID, func(t *testing.T) {
 			t.Parallel()
 			session := runStationSession(t, domainID, "", "", nil, 0.05)
@@ -107,8 +106,8 @@ func TestTheNodeBirthCarriesThePumpKindAndItsDigest(t *testing.T) {
 			}
 			kinds, _ := births[0]["kinds"].([]any)
 			pump, _ := kinds[0].(map[string]any)
-			if pump["kind"] != "pump" || pump["kind_digest"] != pumpKindDigestOf(t, file) {
-				t.Fatalf("born kind = %v %v, want pump with digest %s", pump["kind"], pump["kind_digest"], pumpKindDigestOf(t, file))
+			if want := commissionedDigest(t, stem); pump["kind"] != "pump" || pump["kind_digest"] != want {
+				t.Fatalf("born kind = %v %v, want pump with the commissioned digest %s", pump["kind"], pump["kind_digest"], want)
 			}
 			if !hasRecord(session.received, "DBIRTH", "device", domain.WireID(stationPump)) {
 				t.Fatalf("the device %s was not born", domain.WireID(stationPump))

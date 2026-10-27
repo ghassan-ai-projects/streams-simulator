@@ -543,3 +543,11 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > Fixed in `examples/pump-station/pump-station.domain.json` (2026-10-27): `schedule_maintenance` carries a responder on `work_order`,
 > so a work order naming `sensor_drift` or `sensor_failure` clears the fault and the bias falls (`internal/world/pump_station_test.go`).
 > The pinned reference domain keeps the defect.
+
+> D-122 (**Medium**; a responder clears a fault that has not started): `dispatchResponder` (`internal/world/internal/domain/follow_up.go`)
+> matches the faults registered on the entity and active at the arrival time (the call plus `delay_s`), whatever their onset. A
+> planned disturbance of a connected session is registered when the session starts, so a work order sent before its onset clears
+> it if the onset falls within `delay_s`; the same fault injected later by the director is not yet registered and is not cleared.
+> With `pump-station` (1 h job, fault onset within the first 12 h) about one bearing run in twelve could be cured by an early,
+> routine work order. Found in review of the pump-station round (2026-10-27). Trigger to fix: before a campaign consumer sends work
+> orders before it sees a fault; then the responder matches only faults whose onset is at or before the call, with a failing test first.

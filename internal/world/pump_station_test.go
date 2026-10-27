@@ -134,7 +134,7 @@ func TestReducingLoadMasksWearWithoutRepairingIt(t *testing.T) {
 	}
 }
 
-func TestACavitationTransientSettlesOnItsOwn(t *testing.T) {
+func TestAClearedCavitationBurstSettlesBackToTheNominalLevel(t *testing.T) {
 	t.Parallel()
 	w, pump := newPumpStation(t)
 	id, err := w.InjectFault(pump, "transient_none", stationSecond(0), nil)
@@ -154,6 +154,6 @@ func TestACavitationTransientSettlesOnItsOwn(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := stateAt(w, pump, "vibration_true", 6); math.Abs(got-nominalShaft) > 0.01 {
-		t.Fatalf("vibration at 6 h = %v, want it settled at %v with no action", got, nominalShaft)
+		t.Fatalf("vibration at 6 h = %v, want it settled at %v once the episode ended", got, nominalShaft)
 	}
 }

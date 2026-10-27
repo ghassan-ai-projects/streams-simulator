@@ -129,36 +129,40 @@ func TestAScheduleDrawsFromTheSeedAlone(t *testing.T) {
 
 func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 	t.Parallel()
-	for name, change := range map[string]func(*CampaignSpec){
-		"another version":        func(s *CampaignSpec) { s.SchemaVersion = "0.2" },
-		"no host socket":         func(s *CampaignSpec) { s.HostSocket = "" },
-		"window past the run":    func(s *CampaignSpec) { s.FaultWindowS = s.DurationS },
-		"no phases":              func(s *CampaignSpec) { s.Phases = nil },
-		"a phase twice":          func(s *CampaignSpec) { s.Phases[1].Name = "learn" },
-		"no runs":                func(s *CampaignSpec) { s.Phases[0].Runs = 0 },
-		"share above one":        func(s *CampaignSpec) { s.Phases[0].NegativeShare = 1.5 },
-		"unknown domain":         func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" },
-		"undeclared fault":       func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 },
-		"the negative as a hit":  func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 },
-		"a commanded state":      func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 },
-		"a weight beyond range":  func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 1e308 },
-		"a duration beyond 30 d": func(s *CampaignSpec) { s.DurationS = 1e9 },
-		"a transient past run":   func(s *CampaignSpec) { s.NegativeDurationS = s.DurationS },
-		"a phase of billions":    func(s *CampaignSpec) { s.Phases[0].Runs = 1_000_000_000_000 },
-		"too many runs":          func(s *CampaignSpec) { s.Phases[0].Runs, s.Phases[1].Runs = 3000, 3000 },
-		"a long phase name":      func(s *CampaignSpec) { s.Phases[0].Name = strings.Repeat("p", 65) },
-		"zero weight":            func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 },
-		"no positive fault":      func(s *CampaignSpec) { s.Phases[0].Faults = nil },
+	for _, tc := range []struct {
+		name   string
+		change func(*CampaignSpec)
+		reason string
+	}{
+		{"another version", func(s *CampaignSpec) { s.SchemaVersion = "0.2" }, "schema_version"},
+		{"no host socket", func(s *CampaignSpec) { s.HostSocket = "" }, "host_socket"},
+		{"window past the run", func(s *CampaignSpec) { s.FaultWindowS = s.DurationS }, "must fit inside duration_s"},
+		{"no phases", func(s *CampaignSpec) { s.Phases = nil }, "at least one phase"},
+		{"a phase twice", func(s *CampaignSpec) { s.Phases[1].Name = "learn" }, "listed twice"},
+		{"no runs", func(s *CampaignSpec) { s.Phases[0].Runs = 0 }, "at least one run"},
+		{"share above one", func(s *CampaignSpec) { s.Phases[0].NegativeShare = 1.5 }, "negative_share"},
+		{"unknown domain", func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" }, "not available"},
+		{"undeclared fault", func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 }, `"no_such_fault"`},
+		{"the negative as a hit", func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 }, `"transient_none"`},
+		{"a commanded state", func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 }, "D-116"},
+		{"a weight beyond range", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 1e308 }, "at most 1e+06"},
+		{"a duration beyond 30 d", func(s *CampaignSpec) { s.DurationS = 1e9 }, "duration_s must be above 0"},
+		{"a transient past run", func(s *CampaignSpec) { s.NegativeDurationS = s.DurationS }, "must fit inside"},
+		{"a phase of billions", func(s *CampaignSpec) { s.Phases[0].Runs = 1_000_000_000_000 }, "at most 4096 runs"},
+		{"too many runs", func(s *CampaignSpec) { s.Phases[0].Runs, s.Phases[1].Runs = 3000, 3000 }, "a campaign has at most 4096"},
+		{"a long phase name", func(s *CampaignSpec) { s.Phases[0].Name = strings.Repeat("p", 65) }, "64 characters"},
+		{"zero weight", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 }, `"bearing_wear"`},
+		{"no positive fault", func(s *CampaignSpec) { s.Phases[0].Faults = nil }, "lists no fault"},
 	} {
-		t.Run(name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			spec := smallSpec()
 			spec.Phases[1].Faults = maps.Clone(spec.Phases[1].Faults)
 			spec.Phases[0].Faults = maps.Clone(spec.Phases[0].Faults)
-			change(spec)
+			tc.change(spec)
 			var invalid *CampaignSpecError
-			if _, _, err := BuildCampaign(spec, pumpStation(t)); !errors.As(err, &invalid) {
-				t.Fatalf("BuildCampaign = %v, want a CampaignSpecError", err)
+			if _, _, err := BuildCampaign(spec, pumpStation(t)); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, tc.reason) {
+				t.Fatalf("BuildCampaign = %v, want a CampaignSpecError saying %q", err, tc.reason)
 			}
 		})
 	}
