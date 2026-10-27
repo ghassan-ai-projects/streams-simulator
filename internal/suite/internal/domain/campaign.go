@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -32,6 +33,10 @@ type CampaignRun struct {
 }
 
 func PlanFileName(index int) string { return fmt.Sprintf("run-%04d.session-plan.json", index) }
+
+func IsCampaignFile(name string) bool {
+	return name == CampaignFileName || (strings.HasPrefix(name, "run-") && strings.HasSuffix(name, ".session-plan.json"))
+}
 
 type campaignBuild struct {
 	spec     *CampaignSpec

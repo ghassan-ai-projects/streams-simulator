@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -33,15 +34,15 @@ func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 	if len(p.Faults) == 0 && p.negatives() < p.Runs {
 		return specErrorf("phase %q lists no fault for its positive runs", p.Name)
 	}
-	if err := p.checkPositive(compiled, negative); err != nil {
+	if err := p.checkPositive(compiled); err != nil {
 		return err
 	}
 	return p.checkScriptable(compiled, negative)
 }
 
-func (p *CampaignPhase) checkPositive(compiled *domain.Compiled, negative string) error {
+func (p *CampaignPhase) checkPositive(compiled *domain.Compiled) error {
 	for _, id := range slices.Sorted(maps.Keys(p.Faults)) {
-		if p.Faults[id] <= 0 || p.Faults[id] > maxFaultWeight || id == negative || len(faultEntities(compiled, id)) == 0 {
+		if p.Faults[id] <= 0 || p.Faults[id] > maxFaultWeight || isNegativeClass(compiled, id) || len(faultEntities(compiled, id)) == 0 {
 			return specErrorf("phase %q: fault %q needs a weight above 0 and at most %g and must be a positive-class fault %q declares", p.Name, id, maxFaultWeight, p.Domain)
 		}
 	}
@@ -145,4 +146,8 @@ func commandedOn(compiled *domain.Compiled, fault string) bool {
 
 func isPulse(compiled *domain.Compiled, entity, fault string) bool {
 	return kindOfEntity(compiled, entity).FaultDecl(fault).IsPulse()
+}
+
+func isNegativeClass(compiled *domain.Compiled, fault string) bool {
+	return slices.ContainsFunc(declaredFaults(compiled), func(f *model.Fault) bool { return f.ID == fault && f.IsNegativeClass })
 }

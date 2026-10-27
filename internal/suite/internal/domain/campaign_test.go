@@ -183,3 +183,20 @@ func TestAPulseNegativeFaultKeepsItsOwnDurationInThePlan(t *testing.T) {
 		}
 	}
 }
+
+func TestEveryNegativeClassFaultIsRefusedAsAPositiveOne(t *testing.T) {
+	t.Parallel()
+	domains := pumpStation(t)
+	kind := domains["pump-station"].Spec.Kinds[0]
+	for i := range kind.Faults {
+		if kind.Faults[i].ID == "misalignment" {
+			kind.Faults[i].IsNegativeClass = true
+		}
+	}
+	spec := smallSpec()
+	spec.Phases[0].Faults = map[string]float64{"bearing_wear": 1, "transient_none": 1}
+	var invalid *CampaignSpecError
+	if _, _, err := BuildCampaign(spec, domains); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, `"transient_none"`) {
+		t.Fatalf("BuildCampaign = %v, want transient_none refused as a positive fault", err)
+	}
+}

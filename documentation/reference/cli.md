@@ -705,7 +705,7 @@ Flags:
 
 - `--spec` — required campaign spec file.
 - `--domains-dir` — directory of domain specs; defaults to `domains`. Every domain a phase names must be in it.
-- `--out` — output directory; defaults to `campaign`. It receives `campaign.json` (`campaign-v0.1`: per run the phase, domain, seed, duration and session-plan file; no fault, expected action, deadline or label) and `run-NNNN.session-plan.json`. The injected fault is only in the session plan, which goes to `plantwire connect` unread.
+- `--out` — output directory; defaults to `campaign`; a folder that already holds a campaign is refused. It receives `campaign.json` (`campaign-v0.1`: per run the phase, domain, seed, duration and session-plan file; no fault, expected action, deadline or label) and `run-NNNN.session-plan.json`. The injected fault is only in the session plan, which goes to `plantwire connect` unread.
 
 The spec holds a `seed`, the `host_socket` and optional `policies` every session plan carries (set them to the host's own and generate again), `duration_s`, `fault_start_window_s` (a fault starts within it), `negative_duration_s` (how long the negative-class fault lasts), and `phases`. A phase has a `name`, a `domain`, `runs`, a `negative_share` (a share of the runs injects the domain's negative-class fault) and `faults`, the weights of the positive faults that fill the other runs, split exactly by largest remainders.
 

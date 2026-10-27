@@ -154,3 +154,23 @@ func TestASpecWhoseSocketOrPoliciesBreakTheSessionPlanContractWritesNothing(t *t
 		})
 	}
 }
+
+func TestACampaignFolderThatAlreadyHoldsOneIsRefusedAndLeftAsItWas(t *testing.T) {
+	t.Parallel()
+	options, published := firstSlice(t)
+	before, err := os.ReadFile(published.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PublishCampaign(options); !errors.Is(err, ErrFolderTaken) {
+		t.Fatalf("a second publication into the same folder = %v, want ErrFolderTaken", err)
+	}
+	if after, err := os.ReadFile(published.Path); err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("the refused publication changed campaign.json (%v)", err)
+	}
+	other := filepath.Join(t.TempDir(), "out")
+	options.Out = other
+	if _, err := PublishCampaign(options); err != nil {
+		t.Fatalf("a new folder = %v, want it accepted", err)
+	}
+}

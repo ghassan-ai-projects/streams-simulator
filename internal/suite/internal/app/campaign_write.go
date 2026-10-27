@@ -2,13 +2,17 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/suite/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite/internal/files"
 )
+
+var ErrFolderTaken = errors.New("the output folder already holds a campaign; generate into a new folder")
 
 func writeCampaign(out string, campaign *rules.Campaign, plans []model.SessionPlan) (PublishedCampaign, error) {
 	if err := checkCampaign(campaign); err != nil {
@@ -25,12 +29,26 @@ func writeCampaign(out string, campaign *rules.Campaign, plans []model.SessionPl
 }
 
 func writeFiles(out string, campaign *rules.Campaign, encoded [][]byte) error {
+	if err := refuseTakenFolder(out); err != nil {
+		return err
+	}
 	for i, raw := range encoded {
 		if err := writeBytes(out, rules.PlanFileName(i+1), raw); err != nil {
 			return err
 		}
 	}
 	return writeJSON(out, rules.CampaignFileName, campaign)
+}
+
+func refuseTakenFolder(out string) error {
+	names, err := files.Names(out)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	if slices.ContainsFunc(names, rules.IsCampaignFile) {
+		return fmt.Errorf("streamsim: %w: %s", ErrFolderTaken, out)
+	}
+	return nil
 }
 
 func checkCampaign(campaign *rules.Campaign) error {
