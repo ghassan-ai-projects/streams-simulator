@@ -23,7 +23,8 @@
     "seed": {
       "type": "integer",
       "minimum": 0,
-      "description": "The campaign seed every run seed is drawn from."
+      "description": "The campaign seed every run seed is drawn from.",
+      "maximum": 9007199254740991
     },
     "runs": {
       "type": "array",

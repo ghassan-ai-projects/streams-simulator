@@ -78,6 +78,8 @@ func (s *CampaignSpec) checkHeader() error {
 	switch {
 	case s.SchemaVersion != CampaignSpecVersion:
 		return specErrorf("schema_version must be %q, got %q", CampaignSpecVersion, s.SchemaVersion)
+	case s.Seed > maxSafeSeed:
+		return specErrorf("seed must be at most %d, the largest integer a JSON consumer reads exactly", maxSafeSeed)
 	case s.HostSocket == "":
 		return specErrorf("host_socket is required")
 	case len(s.Phases) == 0:

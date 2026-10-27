@@ -135,6 +135,7 @@ func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 		reason string
 	}{
 		{"another version", func(s *CampaignSpec) { s.SchemaVersion = "0.2" }, "schema_version"},
+		{"a seed beyond 2^53", func(s *CampaignSpec) { s.Seed = 1 << 60 }, "seed must be at most"},
 		{"no host socket", func(s *CampaignSpec) { s.HostSocket = "" }, "host_socket"},
 		{"window past the run", func(s *CampaignSpec) { s.FaultWindowS = s.DurationS }, "must fit inside duration_s"},
 		{"no phases", func(s *CampaignSpec) { s.Phases = nil }, "at least one phase"},
