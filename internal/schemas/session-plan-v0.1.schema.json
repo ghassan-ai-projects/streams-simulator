@@ -6,6 +6,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "domain", "host_socket"],
+  "not": {"required": ["pace", "start_s"]},
   "properties": {
     "schema_version": {"const": "0.1"},
     "domain": {
@@ -38,6 +39,13 @@
       "maxItems": 64,
       "description": "Faults the session injects into its simulated world: each starts at_s seconds after the world starts and, with duration_s, is cleared that much later. They are injected when the session starts, recorded in the run's command log and its sealed truth like any injected fault, and never sent to the host or echoed in the check or the journal. Equal times are applied in list order.",
       "items": {"$ref": "#/$defs/disturbance"}
+    },
+    "start_s": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 315360000,
+      "x-expected": "whole seconds from 0 to 315360000 (ten years), and no pace member",
+      "description": "Seconds after the default world start (2026-01-01T00:00:00Z) at which the world starts, so the runs of a campaign follow one another in world time. Absent: the default start. Not with pace, which starts the world at the wall time."
     },
     "pace": {
       "enum": ["wall"],

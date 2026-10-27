@@ -73,7 +73,7 @@ func (b *campaignBuild) addRun(phase *CampaignPhase, fault string, transient boo
 	disturbance := b.disturbance(phase.Domain, fault, transient, rng)
 	b.campaign.Runs = append(b.campaign.Runs, CampaignRun{Index: index, Phase: phase.Name, Domain: phase.Domain, Seed: seed,
 		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index)})
-	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, disturbance))
+	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, int64(index-1)*int64(b.spec.DurationS), disturbance))
 }
 
 func (b *campaignBuild) disturbance(domainID, fault string, transient bool, rng *randutil.SplitMix64) model.Disturbance {
@@ -88,7 +88,7 @@ func (b *campaignBuild) disturbance(domainID, fault string, transient bool, rng 
 	return disturbance
 }
 
-func (b *campaignBuild) sessionPlan(domainID string, seed uint64, disturbance model.Disturbance) model.SessionPlan {
-	return model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: domainID, Seed: &seed,
+func (b *campaignBuild) sessionPlan(domainID string, seed uint64, startS int64, disturbance model.Disturbance) model.SessionPlan {
+	return model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: domainID, Seed: &seed, StartS: &startS,
 		HostSocket: b.spec.HostSocket, Policies: b.spec.Policies, Disturbances: []model.Disturbance{disturbance}}
 }

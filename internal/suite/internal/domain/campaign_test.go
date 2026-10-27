@@ -82,6 +82,9 @@ func TestACampaignHoldsExactCountsPerPhaseInOneOrder(t *testing.T) {
 		if run.Index != i+1 || run.SessionPlan != PlanFileName(i+1) || (i < 10) != (run.Phase == "learn") {
 			t.Fatalf("run %d = %+v, want index %d and its phase in order", i, run, i+1)
 		}
+		if start := plans[i].StartS; start == nil || *start != int64(i)*int64(run.DurationS) {
+			t.Fatalf("run %d starts at %v, want right after the run before it", run.Index, start)
+		}
 	}
 }
 

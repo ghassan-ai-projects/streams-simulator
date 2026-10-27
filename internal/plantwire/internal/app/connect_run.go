@@ -188,7 +188,7 @@ func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
 
 func (p *connectPlan) startNS() int64 {
 	if p.pacer == nil {
-		return model.DefaultStartTimeNS
+		return p.session.WorldStartNS()
 	}
 	return p.pacer.StartNS()
 }

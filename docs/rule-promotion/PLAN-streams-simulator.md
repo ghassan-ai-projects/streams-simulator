@@ -229,7 +229,7 @@ Hand-off to session 2 (agentic-stream):
 streamsim suite campaign --spec examples/pump-station/campaign/first-slice.campaign-spec.json --domains-dir examples/pump-station --out <campaign-dir>
 ```
 
-- **Run one session**: `streamsim plantwire connect --plan <campaign-dir>/run-0001.session-plan.json --domains-dir examples/pump-station --out <run-dir> --slice-s 60`. The world starts fresh each run, so the host reconnects per run; the consumer keeps its own state across runs.
+- **Run one session**: `streamsim plantwire connect --plan <campaign-dir>/run-0001.session-plan.json --domains-dir examples/pump-station --out <run-dir> --slice-s 60`. The world starts fresh each run, so the host reconnects per run; the consumer keeps its own state across runs. Each run's plan carries `start_s` (session 4), so run N's world starts where run N−1's ended.
   - **Host socket**: the plan's `host_socket` must be an absolute path of at most 103 characters whose directory only you can enter (`/tmp` itself is refused). The committed `/tmp/streamsim-host.sock` is a placeholder: set your own and generate again. Without `policies` every command is refused `policy_not_allowed`.
   - **Stop**: a session never ends by itself. Watch the world time of the `NSYNC` records and send SIGINT to `connect` once it reaches the run's `duration_s` (172800 s) after the start. Do not close the host first: the run is then incomplete and unreproducible.
   - **Size**: a 48 h run at `--slice-s 60` takes about 16 s and 585 MB (`--slice-s 1` is about 30 MB per simulated hour). Scoring needs only `run.json`, `verdict.json` and `label.json`; keep `sealed/journal.jsonl` too if you want `report`.
