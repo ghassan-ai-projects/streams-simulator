@@ -5,7 +5,8 @@
 - **Products**: Tamoz (learns and drafts), Agentic Stream (checks, stores, runs), Streams Simulator (proves it)
 - **Origin**: idea I-3 in Agentic Stream `docs/investor-challenges-2026-10-11/04-ideas.md`
 
-The acceptance scenarios, the campaign and the four arms are in [SCENARIOS.md](SCENARIOS.md).
+The acceptance scenarios, the campaign and the four arms are in [SCENARIOS.md](SCENARIOS.md); the work per
+repository is in [PLAN.md](PLAN.md).
 
 ## 1. Goal
 
