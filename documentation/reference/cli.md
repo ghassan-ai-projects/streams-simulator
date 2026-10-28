@@ -712,12 +712,23 @@ The spec holds a `seed`, the `host_socket` and optional `policies` every session
 
 ### `score`
 
-Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
+Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact, or `labels.json` when the folder holds that instead (a plan with no disturbance or several, see [artifacts](artifacts.md)); an explicit `--label` file holds one label object or an array of them. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
 
 An effector call counts as the expected action only if it also names the fault: when the expected effector declares a `responder`, the call's `match_arg` value must equal the label's fault id, so a work order for another fault is not appropriate, not on time and not resolved.
 
+With exactly one label the document is that label's scorecard, as always. With several labels it is one JSON document `{"run_id", "scorecards", "unexpected"}`: one scorecard per label in label order, each judged on its own entity alone (its detections, actions and effector calls; its `judgment` and `loop` count nothing from another entity, while the instrument and consumer admission sections describe the whole run), and `unexpected`, counted once for the run, holds the detections and actions the verdict reports on entities that have no label and the number of effector calls (`effect_calls`) made on them: all of them are false. With no label (a warm-up run) `scorecards` is empty and `unexpected` still lists what the consumer reported or did.
+
+```json
+{"run_id": "r-1",
+ "scorecards": [{"schema_version": "0.1", "ground_truth": {"entity_id": "site-a/pump-1", "label": "bearing_wear"}, "judgment": {"detected": true}, "loop": {"action_appropriate": true}},
+                {"schema_version": "0.1", "ground_truth": {"entity_id": "site-a/pump-2", "label": "misalignment"}, "judgment": {"detected": false}, "loop": {"action_appropriate": false}}],
+ "unexpected": {"detections": [], "actions": [{"entity_id": "site-a/pump-3", "effector": "schedule_maintenance"}], "effect_calls": 1}}
+```
+
+(The example shows only some members of each scorecard and action.)
+
 ```text
-streamsim score --run <run.json> [--label <label.json>] [--domains-dir <path>] [--adapters-dir <path>]
+streamsim score --run <run.json> [--label <label.json | labels.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
 ### `report`

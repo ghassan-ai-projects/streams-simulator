@@ -4,6 +4,15 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A campaign run can carry several faults at once, each graded on its own entity.** A `suite campaign` phase takes
+  `faults_per_run` (default 1; 0 with no `faults` is a warm-up phase with no disturbance) and `negatives_per_run` (default 0):
+  the phase's fault slots are split by weight, shuffled with the campaign seed and dealt to the runs, every disturbance of a run
+  is on a different entity, and `negative_share` stays for `faults_per_run` 1 (existing specs generate the same plans).
+  `plantwire connect` writes `labels.json` (an array, one sealed label per planned disturbance, `[]` for none) instead of
+  `label.json` when the plan does not hold exactly one disturbance. `streamsim score` reads either; with one label the
+  document is unchanged, otherwise `{run_id, scorecards, unexpected}` (`cli-output` def `score_run`): one scorecard per label
+  judged on its own entity, and the detections, actions and effector calls on entities without a label counted once.
+
 - **A reloaded run keeps its live actions; the run row names a running job; the stop question reads as a clock (control-plane
   review of the live diagnosis).** The job status gains `planned_calls` (`{entity_id, effector, args, at_s}`, the plan's effector
   calls in plan order, executed or not, always a list, visible in Evaluate jobs too because they are the operator's own commands)
