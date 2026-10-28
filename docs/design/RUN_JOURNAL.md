@@ -54,7 +54,7 @@ it and the `at_ns` of the one before, and is outside the stream digest (§3).
 | `effector.acknowledged` | `command_id`, `effector`, `entity_id`, `response` (`model.EffectorAcknowledgement`, exactly what the operator received) | Per acknowledged invocation |
 | `consumer.reported` (session) | `quiesced_through_ns`, `verdict_submitted` | Per consumer report |
 | `wire` (session) | One plant wire record: `direction` (`node` sent it, `host` sent it to the node) and the `record` exactly as on the wire (phase P7d). Outside the stream digest; the wire is reproduced by replaying the host's records | - |
-| `pacing` (session) | One plant wire barrier: `through_seq`, `waited_ms` (wall time), `missed` (phase P7d); live control adds its own pacing in P10 | - |
+| `pacing` (session) | One plant wire barrier: `through_seq`, `waited_ms` (wall time), `missed` (phase P7d; a slow host, never by itself a lost one, since contract 1.5.0); live control adds its own pacing in P10 | - |
 | `origin` (session) | Where a device born to the host comes from: `instance`, `device`, `board`, `environment`, `boot_id` (R8) | Per device birth of a connected or mixed session |
 | `binding` (session) | The outcome of a gateway handshake against the session plan: matched or refused, with the issues (R8) | Per gateway handshake of a plan that binds an instance |
 | `session` (session) | `mode: connected` and `plan`, the checked session plan (`plantwire connect --check`), so the run keeps its classification and simulated instances without the bridge (R10) | Once, as the first observer record after `run.opened`, in a connected session. Like `live` it is outside the digest and not integrity-protected (D-79): a reader ignores a `session` record anywhere else |

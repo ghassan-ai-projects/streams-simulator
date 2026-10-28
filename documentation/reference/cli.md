@@ -463,8 +463,8 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   refused `expired` even when the world lags it.
   Each slice is released when the wall clock reaches the world time it ends at, on an absolute schedule (no drift adds up), so
   a 10 minute session takes 10 minutes and world time is UTC; a slice that is already late is released at once, so after a
-  stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), three missed barriers still
-  end the world, and an operator control waits at most one slice. The `NBIRTH` announces `node_metrics.clock_mode` `wall`
+  stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), a missed barrier is recorded and never ends the world (three
+  missed host heartbeats do), and an operator control waits at most one slice. The `NBIRTH` announces `node_metrics.clock_mode` `wall`
   (the merged birth of a mixed session too). A paced session longer than 30 days ends with the run span limit. Absent, the
   world starts at 2026-01-01, or `start_s` seconds after it when the plan gives `start_s` (not with `pace`), and slices
   follow one another as fast as the host answers, as before.

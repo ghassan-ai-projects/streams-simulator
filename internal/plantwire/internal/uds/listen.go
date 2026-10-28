@@ -98,14 +98,14 @@ func turn(ctx context.Context, link *Link, peer Peer, beats <-chan time.Time, de
 		if !open {
 			return false, false, readEnd(link.failed)
 		}
-		return true, true, respond(ctx, link, peer, in, delay)
+		return respond(ctx, link, peer, in, beats, delay)
 	case <-beats:
-		return beat(ctx, link, peer)
+		return beat(link, peer)
 	}
 }
 
-func beat(ctx context.Context, link *Link, peer Peer) (heard, open bool, err error) {
-	if err := answer(ctx, link, peer.Beat(), 0); err != nil {
+func beat(link *Link, peer Peer) (heard, open bool, err error) {
+	if err := answer(link, peer.Beat()); err != nil {
 		heard, err = endOrFail(link, err)
 		return heard, false, err
 	}
@@ -134,36 +134,53 @@ func readEnd(failed error) error {
 	return fmt.Errorf("plantwire host: read: %w", failed)
 }
 
-func respond(ctx context.Context, link *Link, peer Peer, in domain.Inbound, delay time.Duration) error {
+func respond(ctx context.Context, link *Link, peer Peer, in domain.Inbound, beats <-chan time.Time, delay time.Duration) (heard, open bool, err error) {
+	if in.Type == "NSYNC" {
+		if open, err := hold(ctx, link, peer, beats, delay); err != nil || !open {
+			return true, open, err
+		}
+	}
+	return true, true, reply(link, peer, in)
+}
+
+func hold(ctx context.Context, link *Link, peer Peer, beats <-chan time.Time, delay time.Duration) (open bool, err error) {
+	if delay <= 0 {
+		return true, nil
+	}
+	deadline := time.After(delay)
+	for {
+		over, open, err := heldTurn(ctx, link, peer, beats, deadline)
+		if over || err != nil || !open {
+			return open, err
+		}
+	}
+}
+
+func heldTurn(ctx context.Context, link *Link, peer Peer, beats, deadline <-chan time.Time) (over, open bool, err error) {
+	select {
+	case <-ctx.Done():
+		return true, false, fmt.Errorf("plantwire host: %w", ctx.Err())
+	case <-deadline:
+		return true, true, nil
+	case <-beats:
+		_, open, err = beat(link, peer)
+		return false, open, err
+	}
+}
+
+func reply(link *Link, peer Peer, in domain.Inbound) error {
 	replies := peer.Receive(in)
 	if peer.Accepted() {
 		if err := link.Settle(); err != nil {
 			return err
 		}
 	}
-	return answer(ctx, link, replies, delay)
+	return answer(link, replies)
 }
 
-func answer(ctx context.Context, link *Link, records []map[string]any, delay time.Duration) error {
-	for _, record := range records {
-		if err := pause(ctx, record, delay); err != nil {
-			return err
-		}
-	}
+func answer(link *Link, records []map[string]any) error {
 	if len(records) == 0 {
 		return nil
 	}
 	return link.Send(records)
-}
-
-func pause(ctx context.Context, record map[string]any, delay time.Duration) error {
-	if record["type"] != "HSYNC" || delay <= 0 {
-		return nil
-	}
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("plantwire host: %w", ctx.Err())
-	case <-time.After(delay):
-		return nil
-	}
 }

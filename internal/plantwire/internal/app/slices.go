@@ -8,8 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-const missedBarriersForHostLoss = 3
-
 func (s *Session) step(ctx context.Context, at int64) error {
 	if s.options.Pace == nil {
 		return s.slice(ctx, at)
@@ -76,15 +74,12 @@ func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 	if err := s.interruptsAtBarrier(); err != nil {
 		return err
 	}
-	return s.settleBarrier(inbound, met)
+	return s.settleBarrier(inbound)
 }
 
-func (s *Session) settleBarrier(inbound []domain.Inbound, met bool) error {
+func (s *Session) settleBarrier(inbound []domain.Inbound) error {
 	if processed := s.process(inbound); processed != nil || s.finished {
 		return processed
-	}
-	if err := s.countBarrier(met); err != nil {
-		return err
 	}
 	return s.runQueue()
 }
@@ -110,16 +105,4 @@ func (s *Session) awaitSync(ctx context.Context, syncSeq uint64) ([]domain.Inbou
 		return inbound, met, fmt.Errorf("plantwire: barrier: %w", err)
 	}
 	return inbound, met, nil
-}
-
-func (s *Session) countBarrier(met bool) error {
-	if met {
-		s.missed = 0
-		return nil
-	}
-	s.missed++
-	if s.missed >= missedBarriersForHostLoss {
-		return ErrHostLost
-	}
-	return nil
 }

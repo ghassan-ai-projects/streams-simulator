@@ -32,14 +32,14 @@ The JSON schemas under [`contracts/`](../../contracts/) are the canonical contra
 The plant wire has its own self-contained contract under
 [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md): the specification, one schema per record, fixtures (valid,
 invalid, rules, must-ignore, injection and exchanges), a pinned `DIGEST` and its `VERSION`. `internal/plantwire` embeds a byte-identical copy of the
-schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract. A host and the simulator accept only the contract version and digest they were built with (currently 1.4.0). A kind file (`schemas/KIND`) is exactly one `NBIRTH.kinds` entry without its `kind_digest`; since contract 1.1.0 every announced kind carries `kind_digest`, the SHA-256 of the entry's RFC 8785 canonical JSON, and a host refuses a session whose digest does not hold (`inventory_mismatch`). Since contract 1.2.0 every board in
+schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract. A host and the simulator accept only the contract version and digest they were built with (currently 1.5.0). A kind file (`schemas/KIND`) is exactly one `NBIRTH.kinds` entry without its `kind_digest`; since contract 1.1.0 every announced kind carries `kind_digest`, the SHA-256 of the entry's RFC 8785 canonical JSON, and a host refuses a session whose digest does not hold (`inventory_mismatch`). Since contract 1.2.0 every board in
 an `NBIRTH` names its environment (`simulated` or `hardware`) and a node may be `mixed`; a host checks the node against its
 boards and against its own setting (SPEC section 2). Since contract 1.3.0 an `HSYNC` may carry `command_evidence`: the host's own decision whether a
 command's declared feedback metric was observed, per command, device, boot and metric (SPEC section 9); without it a
 command's effect is unknown, and a receipt or a board's report never stands for it. Since contract 1.4.0 a board mapping
 (`schemas/BOARD`, `<board type>.board.json`) holds the raw values one board type uses for its kinds (raw command and
 arguments, the lease, raw readings and words) with its `board_digest` (SPEC section 15); no record changed. A node and a twin
-translate kind commands and readings through the mapping; no record carries `board_digest` (that would be contract 1.5.0), so
+translate kind commands and readings through the mapping; no record carries `board_digest` (that would be a later contract version), so
 the simulator records it in what a run produces instead: `run.json` `board_digests`, the check document, the `session` and
 `binding` journal records and the twin report. The validator refuses, beyond the schema, a read-back table that misses a raw
 word (`board_table_incomplete`), a table row that reads back as another word (`board_readback_mismatch`) and two metrics on

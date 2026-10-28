@@ -10,6 +10,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 )
 
 func TestASessionBirthsEveryDeviceBeforeItsDataAndSyncsEachSlice(t *testing.T) {
@@ -70,10 +71,22 @@ func TestAHostSequenceGapEndsTheSession(t *testing.T) {
 	}
 }
 
-func TestThreeMissedBarriersAreHostLoss(t *testing.T) {
+func TestMissedBarriersAreRecordedAndNeverLoseTheHost(t *testing.T) {
 	t.Parallel()
 	host := &scriptedHost{t: t, silent: true}
-	if _, err := session(t, host, 5); !errors.Is(err, ErrHostLost) || countOf(host.types(), "NSYNC") != 3 {
+	if _, err := session(t, host, 5); err != nil || countOf(host.types(), "NSYNC") != 5 {
+		t.Fatalf("err %v after %v, want every slice to advance without a host loss", err, host.types())
+	}
+}
+
+func TestAHostWhoseLinkReportsSilenceIsLostAtThatBarrier(t *testing.T) {
+	t.Parallel()
+	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
+		if syncs == 3 {
+			h.silent, h.hangUp = true, uds.ErrHostSilent
+		}
+	}}
+	if _, err := session(t, host, 5); !errors.Is(err, ErrHostLost) || !errors.Is(err, uds.ErrHostSilent) || countOf(host.types(), "NSYNC") != 3 {
 		t.Fatalf("err %v after %v", err, host.types())
 	}
 }

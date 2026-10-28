@@ -115,7 +115,7 @@ func (h *Host) missingFromBirth(m domain.Message) bool {
 }
 
 func (h *Host) state(online bool, refusal string) map[string]any {
-	state := map[string]any{"host_id": "reference-host", "online": online, "heartbeat": h.heartbeat, "heartbeat_interval_ms": HeartbeatIntervalMS,
+	state := map[string]any{"host_id": "reference-host", "online": online, "heartbeat": h.heartbeat, "heartbeat_interval_ms": HeartbeatInterval(h.options).Milliseconds(),
 		"authority_epoch": h.options.Epoch, "protocol_min": domain.Version, "protocol_max": h.options.ProtocolMax}
 	if refusal != "" {
 		state["refusal"] = refusal
