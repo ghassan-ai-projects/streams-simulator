@@ -13,6 +13,16 @@ import (
 )
 
 func (p *CampaignPhase) check(compiled *domain.Compiled) error {
+	if err := p.checkShape(); err != nil {
+		return err
+	}
+	if compiled == nil {
+		return specErrorf("phase %q: domain %q is not available", p.Name, p.Domain)
+	}
+	return p.checkFaults(compiled)
+}
+
+func (p *CampaignPhase) checkShape() error {
 	switch {
 	case p.Name == "":
 		return specErrorf("a phase needs a name")
@@ -20,24 +30,42 @@ func (p *CampaignPhase) check(compiled *domain.Compiled) error {
 		return specErrorf("phase %q needs at least one run", p.Name)
 	case p.NegativeShare < 0 || p.NegativeShare > 1:
 		return specErrorf("phase %q: negative_share must be within 0 and 1", p.Name)
-	case compiled == nil:
-		return specErrorf("phase %q: domain %q is not available", p.Name, p.Domain)
 	}
-	return p.checkFaults(compiled)
+	return p.checkCounts()
+}
+
+func (p *CampaignPhase) checkCounts() error {
+	switch {
+	case p.faultsPerRun() < 0 || p.NegativesPerRun < 0 || p.disturbancesPerRun() > maxDisturbancesPerRun:
+		return specErrorf("phase %q: faults_per_run and negatives_per_run are counts, together at most %d", p.Name, maxDisturbancesPerRun)
+	case p.NegativeShare > 0 && p.faultsPerRun() != 1:
+		return specErrorf("phase %q: negative_share needs faults_per_run 1; use negatives_per_run for more", p.Name)
+	}
+	return nil
 }
 
 func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 	negative, hasNegative := negativeFaultOf(compiled)
-	if p.negatives() > 0 && (!hasNegative || len(faultEntities(compiled, negative)) == 0) {
+	if p.usesNegative() && (!hasNegative || len(faultEntities(compiled, negative)) == 0) {
 		return specErrorf("phase %q asks for negative runs, which %q has no instance with a negative-class fault for", p.Name, p.Domain)
 	}
-	if len(p.Faults) == 0 && p.negatives() < p.Runs {
+	for _, check := range []func() error{p.checkWeights, func() error { return p.checkPositive(compiled) },
+		func() error { return p.checkScriptable(compiled, negative) }, func() error { return p.checkCrowding(compiled, negative) }} {
+		if err := check(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *CampaignPhase) checkWeights() error {
+	switch {
+	case len(p.Faults) == 0 && p.positiveSlots() > 0:
 		return specErrorf("phase %q lists no fault for its positive runs", p.Name)
+	case len(p.Faults) > 0 && p.faultsPerRun() == 0:
+		return specErrorf("phase %q: faults_per_run is 0, so it lists no fault", p.Name)
 	}
-	if err := p.checkPositive(compiled); err != nil {
-		return err
-	}
-	return p.checkScriptable(compiled, negative)
+	return nil
 }
 
 func (p *CampaignPhase) checkPositive(compiled *domain.Compiled) error {
@@ -50,11 +78,7 @@ func (p *CampaignPhase) checkPositive(compiled *domain.Compiled) error {
 }
 
 func (p *CampaignPhase) checkScriptable(compiled *domain.Compiled, negative string) error {
-	used := slices.Sorted(maps.Keys(p.Faults))
-	if p.negatives() > 0 {
-		used = append(used, negative)
-	}
-	for _, id := range used {
+	for _, id := range p.usedFaults(negative) {
 		if commandedOn(compiled, id) {
 			return specErrorf("phase %q: fault %q acts on a state a command sets, which a session cannot script yet (D-116)", p.Name, id)
 		}
@@ -62,18 +86,63 @@ func (p *CampaignPhase) checkScriptable(compiled *domain.Compiled, negative stri
 	return nil
 }
 
+func (p *CampaignPhase) checkCrowding(compiled *domain.Compiled, negative string) error {
+	for _, id := range p.usedFaults(negative) {
+		if eligible := len(faultEntities(compiled, id)); eligible < p.disturbancesPerRun() {
+			return specErrorf("phase %q: a run holds %d disturbances on distinct entities, but fault %q is declared on only %d", p.Name, p.disturbancesPerRun(), id, eligible)
+		}
+	}
+	return nil
+}
+
+func (p *CampaignPhase) usedFaults(negative string) []string {
+	used := slices.Sorted(maps.Keys(p.Faults))
+	if p.usesNegative() {
+		used = append(used, negative)
+	}
+	return used
+}
+
+func (p *CampaignPhase) faultsPerRun() int {
+	if p.FaultsPerRun == nil {
+		return 1
+	}
+	return *p.FaultsPerRun
+}
+
+func (p *CampaignPhase) disturbancesPerRun() int {
+	return p.faultsPerRun() + p.NegativesPerRun
+}
+
+func (p *CampaignPhase) usesNegative() bool {
+	return p.negatives() > 0 || p.NegativesPerRun > 0
+}
+
 func (p *CampaignPhase) negatives() int {
 	return int(math.Round(float64(p.Runs) * p.NegativeShare))
 }
 
+func (p *CampaignPhase) positiveSlots() int {
+	return p.Runs*p.faultsPerRun() - p.negatives()
+}
+
 func (p *CampaignPhase) schedule(negative string, rng *randutil.SplitMix64) []string {
 	faults := slices.Repeat([]string{negative}, p.negatives())
-	faults = append(faults, apportion(p.Faults, p.Runs-p.negatives())...)
+	faults = append(faults, apportion(p.Faults, p.positiveSlots())...)
 	for i := len(faults) - 1; i > 0; i-- {
 		j := rng.Intn(i + 1)
 		faults[i], faults[j] = faults[j], faults[i]
 	}
 	return faults
+}
+
+func (p *CampaignPhase) deal(slots []string, negative string) [][]string {
+	per := p.faultsPerRun()
+	runs := make([][]string, p.Runs)
+	for i := range runs {
+		runs[i] = append(slices.Clone(slots[i*per:(i+1)*per]), slices.Repeat([]string{negative}, p.NegativesPerRun)...)
+	}
+	return runs
 }
 
 type faultShare struct {
@@ -83,6 +152,9 @@ type faultShare struct {
 }
 
 func apportion(weights map[string]float64, total int) []string {
+	if total == 0 {
+		return nil
+	}
 	shares := floorShares(weights, total)
 	grantLeftovers(shares, total)
 	var faults []string

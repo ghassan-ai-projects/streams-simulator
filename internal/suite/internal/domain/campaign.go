@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -61,24 +62,35 @@ func (b *campaignBuild) addPhase(phase *CampaignPhase) {
 	compiled := b.domains[phase.Domain]
 	negative, _ := negativeFaultOf(compiled)
 	rng := randutil.Substream(b.spec.Seed, "campaign/phase/"+phase.Name)
-	for _, fault := range phase.schedule(negative, rng) {
-		b.addRun(phase, fault, fault == negative)
+	for _, faults := range phase.deal(phase.schedule(negative, rng), negative) {
+		b.addRun(phase, faults, negative)
 	}
 }
 
-func (b *campaignBuild) addRun(phase *CampaignPhase, fault string, transient bool) {
+func (b *campaignBuild) addRun(phase *CampaignPhase, faults []string, negative string) {
 	index := len(b.campaign.Runs) + 1
 	rng := randutil.Substream(b.spec.Seed, fmt.Sprintf("campaign/run/%d", index))
 	seed := rng.Next() & maxSafeSeed
-	disturbance := b.disturbance(phase.Domain, fault, transient, rng)
+	disturbances := b.disturbances(phase.Domain, faults, negative, rng)
 	b.campaign.Runs = append(b.campaign.Runs, CampaignRun{Index: index, Phase: phase.Name, Domain: phase.Domain, Seed: seed,
 		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index)})
-	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, int64(index-1)*int64(b.spec.DurationS), disturbance))
+	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, int64(index-1)*int64(b.spec.DurationS), disturbances))
 }
 
-func (b *campaignBuild) disturbance(domainID, fault string, transient bool, rng *randutil.SplitMix64) model.Disturbance {
+func (b *campaignBuild) disturbances(domainID string, faults []string, negative string, rng *randutil.SplitMix64) []model.Disturbance {
+	var disturbances []model.Disturbance
+	taken := map[string]bool{}
+	for _, fault := range faults {
+		disturbance := b.disturbance(domainID, fault, fault == negative, taken, rng)
+		taken[disturbance.Instance] = true
+		disturbances = append(disturbances, disturbance)
+	}
+	return disturbances
+}
+
+func (b *campaignBuild) disturbance(domainID, fault string, transient bool, taken map[string]bool, rng *randutil.SplitMix64) model.Disturbance {
 	compiled := b.domains[domainID]
-	entities := faultEntities(compiled, fault)
+	entities := slices.DeleteFunc(faultEntities(compiled, fault), func(id string) bool { return taken[id] })
 	disturbance := model.Disturbance{Instance: entities[rng.Intn(len(entities))], Fault: fault,
 		AtS: math.Floor(rng.Float64() * b.spec.FaultWindowS)}
 	if transient && !isPulse(compiled, disturbance.Instance, fault) {
@@ -88,7 +100,7 @@ func (b *campaignBuild) disturbance(domainID, fault string, transient bool, rng 
 	return disturbance
 }
 
-func (b *campaignBuild) sessionPlan(domainID string, seed uint64, startS int64, disturbance model.Disturbance) model.SessionPlan {
+func (b *campaignBuild) sessionPlan(domainID string, seed uint64, startS int64, disturbances []model.Disturbance) model.SessionPlan {
 	return model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: domainID, Seed: &seed, StartS: &startS,
-		HostSocket: b.spec.HostSocket, Policies: b.spec.Policies, Disturbances: []model.Disturbance{disturbance}}
+		HostSocket: b.spec.HostSocket, Policies: b.spec.Policies, Disturbances: disturbances}
 }

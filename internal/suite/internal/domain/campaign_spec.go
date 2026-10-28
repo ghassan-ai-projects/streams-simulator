@@ -14,6 +14,8 @@ const (
 	maxRunSeconds       = 2592000
 	maxPhaseName        = 64
 	maxFaultWeight      = 1e6
+
+	maxDisturbancesPerRun = 64
 )
 
 type CampaignSpec struct {
@@ -33,6 +35,9 @@ type CampaignPhase struct {
 	Runs          int                `json:"runs"`
 	NegativeShare float64            `json:"negative_share"`
 	Faults        map[string]float64 `json:"faults"`
+
+	FaultsPerRun    *int `json:"faults_per_run,omitempty"`
+	NegativesPerRun int  `json:"negatives_per_run,omitempty"`
 }
 
 type CampaignSpecError struct{ Message string }
