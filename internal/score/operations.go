@@ -8,3 +8,7 @@ import (
 func Score(ev Evidence, gt *model.GroundTruthRecord) (*Scorecard, error) {
 	return layer.Score(ev, gt)
 }
+
+func ScoreRun(ev Evidence, gts []*model.GroundTruthRecord) (*RunScore, error) {
+	return layer.ScoreRun(ev, gts)
+}
