@@ -31,7 +31,7 @@ func ScoreRun(ev Evidence, gts []*model.GroundTruthRecord) (*RunScore, error) {
 	return &RunScore{RunID: ev.RunID, Scorecards: cards, Unexpected: unexpectedOf(ev, disturbedEntities(gts))}, nil
 }
 
-func (r *RunScore) Document() any {
+func Document(r *RunScore) any {
 	if len(r.Scorecards) == 1 {
 		return r.Scorecards[0]
 	}

@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 
 	catalog "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -13,19 +15,45 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-func loadReports(dir, label string) (*model.Verdict, *model.GroundTruthRecord, error) {
-	if label == "" {
-		label = filepath.Join(dir, model.FileLabel)
-	}
+func loadReports(dir, label string) (*model.Verdict, []*model.GroundTruthRecord, error) {
 	var verdict model.Verdict
 	if err := loadDocument(filepath.Join(dir, model.FileVerdict), model.ValidateVerdict, &verdict); err != nil {
 		return nil, nil, err
 	}
-	var gt model.GroundTruthRecord
-	if err := loadDocument(label, model.ValidateGroundTruth, &gt); err != nil {
+	labels, err := loadLabels(dir, label)
+	if err != nil {
 		return nil, nil, err
 	}
-	return &verdict, &gt, nil
+	return &verdict, labels, nil
+}
+
+func loadLabels(dir, label string) ([]*model.GroundTruthRecord, error) {
+	raw, path, err := readLabels(dir, label)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+	return domain.DecodeLabels(raw, path)
+}
+
+func readLabels(dir, label string) ([]byte, string, error) {
+	if label == "" {
+		return readBesideRun(dir)
+	}
+	raw, err := files.Read(label)
+	return raw, label, err
+}
+
+func readBesideRun(dir string) ([]byte, string, error) {
+	single := filepath.Join(dir, model.FileLabel)
+	raw, err := files.Read(single)
+	if !errors.Is(err, fs.ErrNotExist) {
+		return raw, single, err
+	}
+	several := filepath.Join(dir, model.FileLabels)
+	if raw, again := files.Read(several); again == nil {
+		return raw, several, nil
+	}
+	return nil, single, err
 }
 
 func loadDocument(path string, validate func([]byte) error, dst any) error {

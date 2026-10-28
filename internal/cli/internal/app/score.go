@@ -15,12 +15,12 @@ func cmdScore(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	card, err := grading.Grade(context.Background(), grading.Options{Artifact: options.artifact, Label: options.label,
+	graded, err := grading.GradeRun(context.Background(), grading.Options{Artifact: options.artifact, Label: options.label,
 		DomainsDir: options.domainsDir, AdaptersDir: options.adaptersDir})
 	if err != nil {
 		return nil, gradingFailure(err)
 	}
-	return card, nil
+	return grading.Document(graded), nil
 }
 
 func gradingFailure(err error) error {
@@ -35,7 +35,7 @@ func parseScoreOptions(args []string, stderr io.Writer) (scoreOptions, error) {
 	var options scoreOptions
 	fs := newFlagSet("score", stderr)
 	fs.StringVar(&options.artifact, "run", "", "run artifact (run.json)")
-	fs.StringVar(&options.label, "label", "", "ground truth label (JSON)")
+	fs.StringVar(&options.label, "label", "", "ground truth label (JSON; default label.json or labels.json beside the run)")
 	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return scoreOptions{}, err

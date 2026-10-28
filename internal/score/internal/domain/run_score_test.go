@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -75,7 +76,7 @@ func TestARunWithoutADisturbanceHasNoScorecardButKeepsItsUnexpectedFindings(t *t
 	if err != nil || len(graded.Scorecards) != 0 || len(graded.Unexpected.Detections) != 2 || len(graded.Unexpected.Actions) != 2 || graded.Unexpected.EffectCalls != 2 {
 		t.Fatalf("ScoreRun = %+v, %v, want no scorecard and all findings unexpected", graded, err)
 	}
-	if graded.Document() != graded {
+	if Document(graded) != any(graded) {
 		t.Fatal("a run without a scorecard prints the run document")
 	}
 }
@@ -88,7 +89,7 @@ func TestOneDisturbanceScoresExactlyAsItAlwaysDid(t *testing.T) {
 		t.Fatal(err)
 	}
 	graded, err := ScoreRun(ev, []*model.GroundTruthRecord{gt})
-	if err != nil || graded.Document() != any(graded.Scorecards[0]) {
+	if err != nil || Document(graded) != any(graded.Scorecards[0]) {
 		t.Fatalf("ScoreRun = %+v, %v, want the single scorecard as the document", graded, err)
 	}
 	if *graded.Scorecards[0] != *alone {
@@ -98,7 +99,7 @@ func TestOneDisturbanceScoresExactlyAsItAlwaysDid(t *testing.T) {
 
 func TestScoreRunNeedsTheVerdict(t *testing.T) {
 	t.Parallel()
-	if _, err := ScoreRun(Evidence{RunID: "run-1"}, nil); err == nil {
+	if _, err := ScoreRun(Evidence{RunID: "run-1"}, nil); err == nil || !strings.Contains(err.Error(), "no verdict submitted") {
 		t.Fatal("a run without a verdict was scored")
 	}
 }

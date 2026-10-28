@@ -12,3 +12,7 @@ func Score(ev Evidence, gt *model.GroundTruthRecord) (*Scorecard, error) {
 func ScoreRun(ev Evidence, gts []*model.GroundTruthRecord) (*RunScore, error) {
 	return layer.ScoreRun(ev, gts)
 }
+
+func Document(graded *RunScore) any {
+	return layer.Document(graded)
+}
