@@ -1,17 +1,77 @@
 # Rule promotion: first-slice result
 
 - **Date**: 2026-10-28
-- **Status**: both arms ran to the end of the holdout (campaign 2). Learning worked end to end with the real model,
-  but the learned rule never acted in the holdout, so arm B equals arm A: **P1 fails**, P3, P6 and S2 pass, and P4
-  and P5 have nothing to measure (§3). The reason is a design limit, the rule's envelope (§5.1), not a defect.
-- **Builds**: Agentic Stream `3b80a31f`, Tamoz `d9fcbdb7` (model through `ZAI_API_BASE`), Streams Simulator
-  `5baed2eb`, all on `rule-promotion`. Plant wire contract 1.5.0.
-- **Evidence**: [evidence/campaign-2/](evidence/campaign-2/) holds the campaign spec and, per arm, every recorded
-  model answer (`responses.jsonl`), every request sent to Tamoz with its streamed answer (`worker-exchanges.jsonl`),
-  the campaign score, an extract of the consumer's ledgers (`ledgers.json`: cases, drafts, proposals, rule
-  evaluations, policy results, commands) and each run's labels and consumer verdict; arm B also has the playbook it
-  learned. [evidence/arm-a/](evidence/arm-a/) is campaign 1. Full run folders and databases are kept outside the
-  repositories in `~/my-projects/rule-promotion-runs/` (`settled-B`, `settled-A`, `slice3-A`).
+- **Status**: campaign 2 ran twice. The first run (§2, §3) showed learning working end to end but the learned rule
+  never acting, because its envelope was too narrow and the rate limit counted wall-clock hours. After two design
+  changes in Agentic Stream (§0) the rerun, **campaign 2b**, shows the rule doing the work it was learned for:
+  P2, P3, P4, P6 and S2 pass; **P1 fails** (only one of three fault families got a rule) and **P5 fails** (the
+  scheduler's debounce counts wall-clock time and rule episodes queue behind model episodes).
+- **Builds** (campaign 2b): Agentic Stream `62ccc278`, Tamoz `d9fcbdb7` (model through `ZAI_API_BASE`), Streams
+  Simulator `5baed2eb` (code), all on `rule-promotion`. Plant wire contract 1.5.0.
+- **Evidence**: [evidence/campaign-2b/](evidence/campaign-2b/) and [evidence/campaign-2/](evidence/campaign-2/) hold
+  the campaign spec and, per arm, every recorded model answer (`responses.jsonl`), every request sent to Tamoz with
+  its streamed answer (`worker-exchanges.jsonl`), the campaign score, an extract of the consumer's ledgers
+  (`ledgers.json`: cases, drafts, proposals with envelope and cap, rule evaluations, rule fires, policy results,
+  commands) and each run's labels and consumer verdict; arm B also has the playbook it learned.
+  [evidence/arm-a/](evidence/arm-a/) is campaign 1. Full run folders and databases are kept outside the repositories
+  in `~/my-projects/rule-promotion-runs/` (`cap-B`, `cap-A`, `settled-B`, `settled-A`, `slice3-A`; `cap-B-ratelimited`,
+  `cap-B-slept` and `cap-A-slow` are interrupted attempts).
+
+## 0. Campaign 2b: after the envelope and rate-limit changes
+
+Same campaign spec and seed as campaign 2 (§1), with two design changes in Agentic Stream:
+
+- **Envelope** (`adbad905`): a rule's cap widens its source cases' range by `envelopeMargin` (0.1) of each feature's
+  magnitude instead of the range's width, an active rule acts anywhere inside its approved cap (the envelope stays
+  the record of what the source cases covered), and only shadow matches inside the cap count toward the shadow exit.
+  The misalignment rule's cap on `axial_mean_15m` went from 2.746 to 2.765 (campaign 2) to 2.47 to 3.04.
+- **Rate limit** (`5fe03bb1`): the policy plane's hourly limit counts the event time of the situation version an
+  intent answers, not the wall clock. The playbook's per-rule rate cap already did.
+
+Arm B learned for 3 runs (learning settled), then played the 3 holdout runs in 56 minutes; arm A played the same
+holdout from arm B's learned database in 25 minutes. No booking was denied by the rate limit in either arm.
+
+### Learning (arm B)
+
+- **Misalignment rule**: `axial_mean_15m / axial_mean_24h ≥ 1.3`, radial vibration and current not risen, heartbeat
+  present. Replay clean, approved, 3 shadow agreements inside the cap, promoted to active during learn run 2.
+- **Bearing wear**: proposed three times and rejected three times by the careful approver, each replay showing one
+  disagreement; the key is closed until new evidence.
+- **Sensor drift**: never diagnosed (always called bearing wear), so never a key.
+
+### Holdout (3 runs, 18 faults, 3 look-alikes)
+
+| | Arm B | Arm A |
+|---|---|---|
+| Model episodes | 13 | 15 |
+| Rule decisions | 5 | 0 |
+| Faults detected (right pump) | 17 of 18 | 15 of 18 |
+| Right diagnosis | 11 of 18 | 11 of 18 |
+| Right repair by the deadline | 7 of 18 | 6 of 18 |
+| Misalignment: right repair by the deadline | 5 of 6 | 5 of 6 |
+| Bearing wear: right repair by the deadline | 2 of 6 | 1 of 6 |
+| Sensor drift: right repair by the deadline | 0 of 6 | 0 of 6 |
+| Action on a look-alike | 0 of 3 | 0 of 3 |
+| Bookings denied `rate_limited` | 0 | 0 |
+
+- Every rule decision was a true misalignment (pumps 2 and 8 in holdout run 1, 5 and 8 in run 2, 3 in run 3), each
+  booked with the right work order before its deadline. The sixth misalignment (pump 4, run 1) got no repair in
+  either arm: its pump was blocked by an unknown outcome earlier (§5.3).
+- The bearing-wear difference between the arms comes from the model, not from a rule: no bearing-wear rule exists.
+
+### Pass conditions (campaign 2b)
+
+| | Condition | Result |
+|---|---|---|
+| P1 | Model calls per handled fault: B at most 50% of A | **Fail.** 13 of 17 detected faults (0.76) against 15 of 15 (1.00): 76%. The misalignments the rule handled took no model call; bearing wear and sensor drift got no rule. |
+| P2 | Damage: B no more than A | **Pass.** 11 faults unrepaired by the deadline in B, 12 in A. |
+| P3 | False actions on healthy pumps: B no more than A, none by a rule | **Pass.** 0 and 0. |
+| P4 | Every rule-handled case right (action and deadline) | **Pass.** 5 of 5. |
+| P5 | Situation to recommendation for rule cases ≤ 1 s p95, wall time | **Fail.** 147 s p95. The rule itself answers in about 1 ms; each case waits the trigger's `debounce: 1m`, counted in wall-clock time (§5.5), then up to 87 s behind model episodes, because episodes of a tenant run one at a time. |
+| P6 | Every pair with 3 verified, uncontradicted cases got a proposal | **Pass.** Misalignment and bearing wear. |
+| P7 | Masking trap | **Not covered.** |
+| S2 | Cavitation look-alike | **Pass.** 0 of 3 in both arms. |
+| S7 | | **Not covered.** |
 
 ## 1. What ran
 
@@ -36,7 +96,7 @@ written, one fault per 24 h run. It was stopped early because three consumer def
 Wall time: arm B 57 min (7 runs), arm A 26 min (3 runs). Learning settled after 3 learn runs, so learn runs 4 to 7
 were skipped.
 
-## 2. Results (campaign 2)
+## 2. Results (campaign 2, before the changes)
 
 ### 2.1 Learning (arm B)
 
@@ -77,7 +137,7 @@ Barrier answers held at about 0.17 s per 60 s slice for the whole campaign (§4.
 to 90 s each). No episode failed; 33 produced a decision in arm B and 33 in arm A (including the learn phase arm A
 inherited).
 
-## 3. Pass conditions (holdout, B against A)
+## 3. Pass conditions (campaign 2, before the changes)
 
 | | Condition | Result |
 |---|---|---|
@@ -120,10 +180,14 @@ covered by a regression test.
    retried (`d9fcbdb7`).
 7. **The campaign shape was wrong** (mine): back-to-back 16 h runs refaulted pumps inside their 24 h settle window,
    so cases could not be verified. Runs are now 30 h (§1).
+8. **The campaign driver scanned the whole event log every half second** to read a run's world time (1.9 s per
+   query on a 1 GB database); it now reads by event log position (6 ms, `62ccc278`). An attempt at campaign 2b also
+   stopped because the computer slept with its lid closed: the runtime's one-minute owner lease expired during the
+   sleep and it stopped, which is the intended fencing; the rerun kept the computer awake.
 
 ## 5. Open questions (design decisions needed)
 
-1. **The envelope stops every rule from generalising.** A rule acts only when each of its features lies inside the
+1. **The envelope stopped every rule from generalising** (resolved in campaign 2b, §0). A rule acts only when each of its features lies inside the
    range seen in its source cases, widened by `envelopeMargin` (0.1) *of that range*. The simulator's faults have
    nearly identical sizes, so the misalignment rule's envelope is `axial_mean_15m` 2.747 to 2.763 and the margin
    adds 0.0016. The envelope pins absolute levels while the condition is a ratio to the pump's own baseline, so
@@ -131,7 +195,7 @@ covered by a regression test.
    first slice. Options: an envelope over the condition's own terms (the ratio), a margin relative to the values
    rather than the range, or envelope growth now. Shadow promotion also counted matches outside the envelope,
    where the rule can never act.
-2. **The rate limit counts wall-clock hours.** `schedule_maintenance` is limited to 8 per hour, bucketed by the
+2. **The rate limit counted wall-clock hours** (resolved in campaign 2b, §0). `schedule_maintenance` is limited to 8 per hour, bucketed by the
    policy plane's wall-clock time. A paced simulated world puts about 30 simulated hours into 8 minutes, so 13
    bookings per arm were denied. Should a rate limit count the world's time (event time)?
 3. **An unknown outcome on a command with nothing to read back blocks its pump.** The simulator drew `ack_lost`
@@ -144,6 +208,12 @@ covered by a regression test.
    within 24 h, so a wrong diagnosis feeds the bearing-wear key. Verification by "no recurrence" cannot tell a
    repair from a fault that a maintenance visit happened to clear.
 
+5. **The scheduler's debounce and cooldown count wall-clock time**, like the rate limit did. In a paced world each
+   rule case waits a real minute before admission, which alone breaks P5. Counting them in event time would make a
+   simulated world and a replay meet the same timing as the live plant.
+6. **Rule episodes queue behind model episodes**: a tenant's episodes run one at a time, so a 1 ms rule decision can
+   wait for a 30 to 90 s model episode on another pump. Rule episodes could bypass that queue.
+
 ## 6. Campaign 1 (arm A only)
 
 14 runs of 24 h, one fault each, before the defects of §4.1 to §4.3 were fixed: every faulted run got an episode on
@@ -154,7 +224,7 @@ Run-by-run detail is in [evidence/arm-a/](evidence/arm-a/).
 
 ## 7. Next
 
-1. Decide §5.1 and §5.2, change the design, then run campaign 2 again: with an envelope that admits the next pump's
-   case and a rate limit in world time, P1, P2, P4 and P5 become measurable.
-2. Decide §5.3.
-3. Before the next long run: check its shape on paper, and smoke-test it at full fault density.
+1. Decide §5.5 and §5.6, then rerun campaign 2b to read P5.
+2. Decide §5.3 (a pump blocked after an unknown outcome on a command with nothing to read back).
+3. P1 needs rules for more than one family: bearing wear was rejected for a disagreement in its replay each time,
+   and sensor drift is never diagnosed (§5.4).
