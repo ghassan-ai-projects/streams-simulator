@@ -222,9 +222,29 @@ wrong ones being the two `sensor_drift` runs called `bearing_wear`; Tamoz booked
 confidence 0.45; about 2 episodes per fault. No repair reached the plant (§4.1), so damage could not be judged.
 Run-by-run detail is in [evidence/arm-a/](evidence/arm-a/).
 
-## 7. Next
+## 7. After campaign 2b
 
-1. Decide §5.5 and §5.6, then rerun campaign 2b to read P5.
-2. Decide §5.3 (a pump blocked after an unknown outcome on a command with nothing to read back).
-3. P1 needs rules for more than one family: bearing wear was rejected for a disagreement in its replay each time,
-   and sensor drift is never diagnosed (§5.4).
+Landed on Agentic Stream `rule-promotion` after the final run, so the numbers above do not include them:
+
+- **§5.3, a pump blocked after a lost acknowledgement** (`f32312f4`): a command with nothing to read back concludes
+  as `manual_review` at once when its outcome is unknown, and no longer holds its device's reconciliation barrier;
+  the device clears with its next good reading. Commands that read back are unchanged.
+- **§5.4, wrong diagnoses that verify** (`3aed6499`, `52b08710`): each maintenance diagnosis declares a recovery
+  check (`promotion.recovery`: a reading, its baseline and a tolerance), and a case is verified only if the
+  reading at the situation's closing version is back within the tolerance of the baseline frozen at decision
+  time. Replayed over campaign 2b's ledger with the chosen tolerances (0.2 for vibration, 0.3 for axial), all 9
+  sensor drifts diagnosed as bearing wear turn not verified and all 16 genuine repairs stay verified. The margin
+  for bearing wear is thin (worst genuine 0.13, nearest drift 0.255).
+
+Not landed: **§5.5, scheduling on the world's clock** is on its own branch, `world-clock` (`63ff9e13`). A paced
+simulated world gives cognition and admission a decision clock that follows the simulator's barrier time. It
+passes its own tests, but it still breaks `TestAnUnknownPlantWireOutcomeIsReconciledByTheDevicesOwnReading` (a
+node that is born but never sends a barrier freezes scheduling), and the campaign driver's ledger compares
+decision-time stamps with a wall-time run start. Both need fixing before it can be merged.
+
+## 8. Next
+
+1. Finish `world-clock`, then rerun campaign 2b to read P5; §5.6 (rule episodes queued behind model episodes)
+   is needed too.
+2. Rerun campaign 2b with the recovery check: the bearing-wear key should now see only genuine cases.
+3. P1 needs rules for more than one family.
