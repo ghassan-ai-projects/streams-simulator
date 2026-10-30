@@ -33,8 +33,8 @@ holdout from arm B's learned database in 25 minutes. No booking was denied by th
 
 ### Learning (arm B)
 
-- **Misalignment rule**: `axial_mean_15m / axial_mean_24h ≥ 1.3`, radial vibration and current not risen, heartbeat
-  present. Replay clean, approved, 3 shadow agreements inside the cap, promoted to active during learn run 2.
+- **Misalignment rule**: `axial_mean_15m / axial_mean_24h ≥ 1.25` and heartbeat present; its cap keeps radial
+  vibration and current inside the range it learned from (`arm-b/site-a.playbook.yaml`). Replay clean, approved, 3 shadow agreements inside the cap, promoted to active during learn run 2.
 - **Bearing wear**: proposed three times and rejected three times by the careful approver, each replay showing one
   disagreement; the key is closed until new evidence.
 - **Sensor drift**: never diagnosed (always called bearing wear), so never a key.
