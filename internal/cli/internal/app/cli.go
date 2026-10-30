@@ -176,6 +176,7 @@ Commands:
                                         (--mcp <url> --token <t> --run <id> closes
                                         the loop over the operator endpoint)
   suite --domain --profile              Generate an audited graded suite
+  suite campaign --spec --out           Generate a campaign of one-fault runs and their session plans
   score --run --label                   Offline scorecard from artifacts
   report <run-dir>                      Summarize a run folder (--format json|markdown,
                                         --out <file>, --replay)

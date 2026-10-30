@@ -85,7 +85,7 @@ func verdictTrivialString(v *audit.Verdict) string {
 
 func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMix64, isNegative bool) string {
 	if isNegative {
-		if fault, found := negativeFault(cfg); found {
+		if fault, found := negativeFaultOf(cfg.Domain); found {
 			return fault
 		}
 	}

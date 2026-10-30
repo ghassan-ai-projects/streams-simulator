@@ -1,0 +1,48 @@
+apiVersion: agentic-stream/v1
+kind: Playbook
+metadata:
+    name: site-a
+    spec: pump_station
+rules:
+    - id: misalignment.schedule-maintenance.misalignment.17f5e82f53bc
+      version: 1
+      diagnosisCode: misalignment
+      when: (features.axial_mean_15m / features.axial_mean_24h) >= 1.25 && !(features.heartbeat_missing_5m)
+      recommend:
+        intent: schedule_maintenance
+        preset: misalignment
+      envelope:
+        axial_mean_15m:
+            min: 2.7470588235294113
+            max: 2.7629411764705876
+        axial_mean_24h:
+            min: 2.0546569646569615
+            max: 2.0582340720221604
+        current_mean_15m:
+            min: 29.97669902912623
+            max: 30.03168316831684
+      cap:
+        axial_mean_15m:
+            min: 2.745470588235294
+            max: 2.764529411764705
+        axial_mean_24h:
+            min: 2.0542992539204414
+            max: 2.0585917827586804
+        current_mean_15m:
+            min: 29.97120061520717
+            max: 30.0371815822359
+      pinnedKind:
+        name: pump
+        digest: sha256:17f5e82f53bc294d167f8543598ba2d49f5c60373985b78aa9ebe17288e79f19
+      mode: active
+      shadowExit:
+        agreeing: 3
+        disagreeing: 0
+      auditEvery: 3
+      rateCapPerHour: 6
+      provenance:
+        sourceEpisodes:
+            - epi_8tuxrBUTRygbSAeY
+            - epi_B8yLq3fYdPKDw2D4
+            - epi_DB7kwxTY1XdtVylp
+        approvalDigest: sha256:ba10de67e94c9a7fe07e3e195088ad8ba80b29e2038454324a3dbab311e23ae2

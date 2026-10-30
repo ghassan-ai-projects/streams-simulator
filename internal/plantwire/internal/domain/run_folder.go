@@ -13,7 +13,7 @@ var ErrRunFolderTaken = errors.New("plantwire: the run folder already holds a ru
 
 var runFiles = []string{model.FileRunArtifact, model.FileTrace, model.FileLedger, model.FileHistory, model.FileFieldTrace,
 	model.FileInterruptLog, model.FileInterruptLogRejected, model.FileObserverJournal, model.FileDirectorJournal,
-	model.FileVerdict, model.FileLabel}
+	model.FileVerdict, model.FileLabel, model.FileLabels}
 
 func CheckFreshRunFolder(dir string, present []string) error {
 	for _, name := range slices.Sorted(slices.Values(present)) {

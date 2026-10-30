@@ -7,7 +7,7 @@
 | Session | One connection: its own `session_id`, both sequences from 0 |
 | Birth | `NBIRTH` (kinds once) and `DBIRTH` (one device, its board, boot and current values) |
 | Slice | One step of world time; the node sends its data, then `NSYNC`, and waits for `HSYNC` |
-| Barrier | The wait for `HSYNC`, capped in wall time; three missed barriers are host loss |
+| Barrier | The wait for `HSYNC`, capped in wall time (a pacing bound: a missed barrier is recorded, never host loss; three missed heartbeats are) |
 | Lane | Transmit priority (`control` before `data`); `seq` is assigned at transmission |
 | Rebirth | `NBIRTH` with the next `bd_seq` and every `DBIRTH`, in the same session |
 | Epoch floor | The highest `authority_epoch` the host announced |

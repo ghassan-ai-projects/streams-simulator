@@ -463,10 +463,11 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   refused `expired` even when the world lags it.
   Each slice is released when the wall clock reaches the world time it ends at, on an absolute schedule (no drift adds up), so
   a 10 minute session takes 10 minutes and world time is UTC; a slice that is already late is released at once, so after a
-  stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), three missed barriers still
-  end the world, and an operator control waits at most one slice. The `NBIRTH` announces `node_metrics.clock_mode` `wall`
+  stall the world catches up at the host's speed. The barrier stays a cap (`--barrier-cap-ms`), a missed barrier is recorded and never ends the world (three
+  missed host heartbeats do), and an operator control waits at most one slice. The `NBIRTH` announces `node_metrics.clock_mode` `wall`
   (the merged birth of a mixed session too). A paced session longer than 30 days ends with the run span limit. Absent, the
-  world starts at 2026-01-01 and slices follow one another as fast as the host answers, as before.
+  world starts at 2026-01-01, or `start_s` seconds after it when the plan gives `start_s` (not with `pace`), and slices
+  follow one another as fast as the host answers, as before.
 
 - `--check` — reads the plan against its domain and kind files and starts nothing. The document is
   `{domain, environment, gateway, instances: [{instance, origin, kind, kind_digest?, board?, device?, board_type?, board_digest?}], implements_checked, policies}`
@@ -693,12 +694,41 @@ Flags:
 - `--seed` — suite seed; defaults to `1`.
 - `--out` — output directory; defaults to `suites`.
 
-### `score`
+### `suite campaign`
 
-Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
+Generates a campaign: an ordered list of one-fault runs, each with a phase label, and one `session-plan-v0.1` file per run for `plantwire connect`. The campaign is a pure function of its spec, so the same spec gives the same files byte for byte. The first-slice spec is `examples/pump-station/campaign/first-slice.campaign-spec.json`.
 
 ```text
-streamsim score --run <run.json> [--label <label.json>] [--domains-dir <path>] [--adapters-dir <path>]
+streamsim suite campaign --spec <file> [flags]
+```
+
+Flags:
+
+- `--spec` — required campaign spec file.
+- `--domains-dir` — directory of domain specs; defaults to `domains`. Every domain a phase names must be in it.
+- `--out` — output directory; defaults to `campaign`; a folder that already holds a campaign is refused. It receives `campaign.json` (`campaign-v0.1`: per run the phase, domain, seed, duration and session-plan file; no fault, expected action, deadline or label) and `run-NNNN.session-plan.json`. Each plan's `start_s` starts its world where the run before it ended (run N at N−1 times `duration_s`), so a consumer that keeps its state across runs sees world time move forward. The injected fault is only in the session plan, which goes to `plantwire connect` unread.
+
+The spec holds a `seed`, the `host_socket` and optional `policies` every session plan carries (set them to the host's own and generate again), `duration_s`, `fault_start_window_s` (a fault starts within it), `negative_duration_s` (how long the negative-class fault lasts), and `phases`. A phase has a `name`, a `domain`, `runs`, a `negative_share` (a share of the runs injects the domain's negative-class fault) and `faults`, the weights of the positive faults that fill the other runs, split exactly by largest remainders. `faults_per_run` (default 1) is how many positive faults each run carries; with more than 1, the phase's `runs` times `faults_per_run` fault slots are split by weight (the same largest remainders), shuffled with the campaign seed and dealt to the runs, and `negative_share` is refused (use `negatives_per_run`). `negatives_per_run` (default 0) adds that many negative-class disturbances to every run. Each disturbance of a run is on a different entity that declares its fault, starts inside `fault_start_window_s`, and a phase is refused when `faults_per_run` plus `negatives_per_run` exceeds the entities a fault is declared on. `faults_per_run: 0` with no `faults` makes a warm-up phase: its runs carry no disturbance (or only the negatives). Example: `{"name": "multi", "domain": "pump-station", "runs": 20, "faults_per_run": 2, "negatives_per_run": 1, "faults": {"bearing_wear": 1, "misalignment": 1}}`; a warm-up: `{"name": "warmup", "domain": "pump-station", "runs": 2, "faults_per_run": 0}`.
+
+### `score`
+
+Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact, or `labels.json` when the folder holds that instead (a plan with no disturbance or several, see [artifacts](artifacts.md)); an explicit `--label` file holds one label object or an array of them. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
+
+An effector call counts as the expected action only if it also names the fault: when the expected effector declares a `responder`, the call's `match_arg` value must equal the label's fault id, so a work order for another fault is not appropriate, not on time and not resolved.
+
+With exactly one label the document is that label's scorecard, as always. With several labels it is one JSON document `{"run_id", "scorecards", "unexpected"}`: one scorecard per label in label order, each judged on its own entity alone (its detections, actions and effector calls; its `judgment` and `loop` count nothing from another entity, while the instrument and consumer admission sections describe the whole run), and `unexpected`, counted once for the run, holds the detections and actions the verdict reports on entities that have no label and the number of effector calls (`effect_calls`) made on them: all of them are false. With no label (a warm-up run) `scorecards` is empty and `unexpected` still lists what the consumer reported or did.
+
+```json
+{"run_id": "r-1",
+ "scorecards": [{"schema_version": "0.1", "ground_truth": {"entity_id": "site-a/pump-1", "label": "bearing_wear"}, "judgment": {"detected": true}, "loop": {"action_appropriate": true}},
+                {"schema_version": "0.1", "ground_truth": {"entity_id": "site-a/pump-2", "label": "misalignment"}, "judgment": {"detected": false}, "loop": {"action_appropriate": false}}],
+ "unexpected": {"detections": [], "actions": [{"entity_id": "site-a/pump-3", "effector": "schedule_maintenance"}], "effect_calls": 1}}
+```
+
+(The example shows only some members of each scorecard and action.)
+
+```text
+streamsim score --run <run.json> [--label <label.json | labels.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
 ### `report`

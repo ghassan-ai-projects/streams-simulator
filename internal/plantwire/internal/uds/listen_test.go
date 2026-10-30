@@ -52,6 +52,41 @@ func TestAHostServesOneNodeOverAnOwnerOnlySocketAndWaitsBeforeEachSync(t *testin
 	}
 }
 
+func TestAHostKeepsHeartbeatingWhileItHoldsItsAnswer(t *testing.T) {
+	t.Parallel()
+	path := testsupport.SocketPath(t)
+	ready := make(chan struct{})
+	peer := &stubPeer{replies: []map[string]any{{"type": "HSYNC"}}, beat: map[string]any{"type": "STATE"}}
+	go func() {
+		_ = ServeHost(t.Context(), path, peer, Pacing{Delay: 300 * time.Millisecond, Handshake: time.Second, Heartbeat: 50 * time.Millisecond}, func() { close(ready) })
+	}()
+	<-ready
+	conn, err := (&net.Dialer{}).DialContext(t.Context(), "unix", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.Write([]byte("{\"type\":\"NSYNC\"}\n")); err != nil {
+		t.Fatal(err)
+	}
+	reader, beats := bufio.NewReader(conn), 0
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			t.Fatalf("the answer never came: %v", err)
+		}
+		var record map[string]any
+		_ = json.Unmarshal(line, &record)
+		if record["type"] == "HSYNC" {
+			break
+		}
+		beats++
+	}
+	if beats < 3 {
+		t.Fatalf("%d heartbeats while the answer was held, want at least 3", beats)
+	}
+}
+
 func TestAHostStopsWaitingForANodeWhenCancelled(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())
@@ -72,12 +107,12 @@ func TestAHostCannotListenUnderAFile(t *testing.T) {
 	}
 }
 
-func TestACancelledPauseStopsBeforeTheSync(t *testing.T) {
+func TestACancelledHoldStopsBeforeTheSync(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	if err := pause(ctx, map[string]any{"type": "HSYNC"}, time.Hour); !errors.Is(err, context.Canceled) {
-		t.Fatalf("pause = %v", err)
+	if open, err := hold(ctx, nil, &stubPeer{}, nil, time.Hour); open || !errors.Is(err, context.Canceled) {
+		t.Fatalf("hold = %v, %v", open, err)
 	}
 }
 

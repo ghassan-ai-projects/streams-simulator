@@ -22,7 +22,7 @@ The current checkout implements the documented pipeline and passes the repositor
 - The simulator is not a production broker, controller, physics engine, or hosted service.
 - HTTP-push is an integration sink, not a deterministic local benchmark transport.
 - The operator MCP role is not a standalone CLI mode; it is served by a director process.
-- The score command reads `verdict.json` and `ledger.jsonl` beside the run artifact and `label.json` beside it unless `--label` is provided. It does not accept a `--verdict` flag.
+- The score command reads `verdict.json` and `ledger.jsonl` beside the run artifact and `label.json` (or `labels.json`) beside it unless `--label` is provided. It does not accept a `--verdict` flag.
 - The offline score command does not receive an effector-call log, so action-loop metrics are incomplete. Use the MCP director score path when action evidence is required.
 - Suite generation is not a complete batch runner: it produces audited scenario definitions and labels, while a harness must choose an adapter, execute scenarios, and persist score output.
 - The CLI replay and verify commands replay the domain and adapter specifications recorded in the run artifact, so editing a domain afterwards does not break earlier runs; the result reports `domain_changed` when the domains directory now holds a different digest.

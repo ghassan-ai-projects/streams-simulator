@@ -1,0 +1,106 @@
+package domain
+
+import (
+	"fmt"
+	"math"
+	"slices"
+	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
+)
+
+const (
+	CampaignSchemaVersion = "0.1"
+	CampaignFileName      = "campaign.json"
+	maxSafeSeed           = 1<<53 - 1
+)
+
+type Campaign struct {
+	SchemaVersion string        `json:"schema_version"`
+	Domain        string        `json:"domain"`
+	Seed          uint64        `json:"seed"`
+	Runs          []CampaignRun `json:"runs"`
+}
+
+type CampaignRun struct {
+	Index       int     `json:"index"`
+	Phase       string  `json:"phase"`
+	Domain      string  `json:"domain"`
+	Seed        uint64  `json:"seed"`
+	DurationS   float64 `json:"duration_s"`
+	SessionPlan string  `json:"session_plan"`
+}
+
+func PlanFileName(index int) string { return fmt.Sprintf("run-%04d.session-plan.json", index) }
+
+func IsCampaignFile(name string) bool {
+	return name == CampaignFileName || (strings.HasPrefix(name, "run-") && strings.HasSuffix(name, ".session-plan.json"))
+}
+
+type campaignBuild struct {
+	spec     *CampaignSpec
+	domains  map[string]*domain.Compiled
+	campaign *Campaign
+	plans    []model.SessionPlan
+}
+
+func BuildCampaign(spec *CampaignSpec, domains map[string]*domain.Compiled) (*Campaign, []model.SessionPlan, error) {
+	if err := spec.Check(domains); err != nil {
+		return nil, nil, err
+	}
+	b := &campaignBuild{spec: spec, domains: domains,
+		campaign: &Campaign{SchemaVersion: CampaignSchemaVersion, Domain: spec.Phases[0].Domain, Seed: spec.Seed}}
+	for i := range spec.Phases {
+		b.addPhase(&spec.Phases[i])
+	}
+	return b.campaign, b.plans, nil
+}
+
+func (b *campaignBuild) addPhase(phase *CampaignPhase) {
+	compiled := b.domains[phase.Domain]
+	negative, _ := negativeFaultOf(compiled)
+	rng := randutil.Substream(b.spec.Seed, "campaign/phase/"+phase.Name)
+	for _, faults := range phase.deal(phase.schedule(negative, rng), negative) {
+		b.addRun(phase, faults, negative)
+	}
+}
+
+func (b *campaignBuild) addRun(phase *CampaignPhase, faults []string, negative string) {
+	index := len(b.campaign.Runs) + 1
+	rng := randutil.Substream(b.spec.Seed, fmt.Sprintf("campaign/run/%d", index))
+	seed := rng.Next() & maxSafeSeed
+	disturbances := b.disturbances(phase.Domain, faults, negative, rng)
+	b.campaign.Runs = append(b.campaign.Runs, CampaignRun{Index: index, Phase: phase.Name, Domain: phase.Domain, Seed: seed,
+		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index)})
+	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, int64(index-1)*int64(b.spec.DurationS), disturbances))
+}
+
+func (b *campaignBuild) disturbances(domainID string, faults []string, negative string, rng *randutil.SplitMix64) []model.Disturbance {
+	var disturbances []model.Disturbance
+	taken := map[string]bool{}
+	for _, fault := range faults {
+		disturbance := b.disturbance(domainID, fault, fault == negative, taken, rng)
+		taken[disturbance.Instance] = true
+		disturbances = append(disturbances, disturbance)
+	}
+	return disturbances
+}
+
+func (b *campaignBuild) disturbance(domainID, fault string, transient bool, taken map[string]bool, rng *randutil.SplitMix64) model.Disturbance {
+	compiled := b.domains[domainID]
+	entities := slices.DeleteFunc(faultEntities(compiled, fault), func(id string) bool { return taken[id] })
+	disturbance := model.Disturbance{Instance: entities[rng.Intn(len(entities))], Fault: fault,
+		AtS: math.Floor(rng.Float64() * b.spec.FaultWindowS)}
+	if transient && !isPulse(compiled, disturbance.Instance, fault) {
+		duration := b.spec.NegativeDurationS
+		disturbance.DurationS = &duration
+	}
+	return disturbance
+}
+
+func (b *campaignBuild) sessionPlan(domainID string, seed uint64, startS int64, disturbances []model.Disturbance) model.SessionPlan {
+	return model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: domainID, Seed: &seed, StartS: &startS,
+		HostSocket: b.spec.HostSocket, Policies: b.spec.Policies, Disturbances: disturbances}
+}

@@ -74,7 +74,13 @@
       "$ref": "#/$defs/suite"
     },
     {
+      "$ref": "#/$defs/suite_campaign"
+    },
+    {
       "$ref": "#/$defs/score"
+    },
+    {
+      "$ref": "#/$defs/score_run"
     },
     {
       "$ref": "#/$defs/refconsumer"
@@ -698,6 +704,24 @@
         }
       }
     },
+    "suite_campaign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "campaign",
+        "runs"
+      ],
+      "properties": {
+        "campaign": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runs": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
     "suite": {
       "type": "object",
       "additionalProperties": false,
@@ -722,6 +746,54 @@
         },
         "terminal_state": {
           "type": "string"
+        }
+      }
+    },
+    "score_run": {
+      "type": "object",
+      "description": "What score prints for a run that holds no disturbance or several: one scorecard per disturbance, each judged on its own entity alone, and what the consumer reported or did on entities with no disturbance, counted once.",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "scorecards",
+        "unexpected"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "scorecards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/score"
+          }
+        },
+        "unexpected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "detections",
+            "actions",
+            "effect_calls"
+          ],
+          "properties": {
+            "detections": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "effect_calls": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     },

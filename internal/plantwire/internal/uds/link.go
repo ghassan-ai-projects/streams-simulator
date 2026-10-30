@@ -25,6 +25,7 @@ type Link struct {
 	stop     func() bool
 	waited   int64
 	failed   error
+	beats    beats
 }
 
 func Dial(ctx context.Context, path string, wait time.Duration) (*Link, error) {

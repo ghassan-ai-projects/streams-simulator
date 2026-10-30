@@ -78,6 +78,7 @@ var cliAppFiles = map[string]cliFile{
 	"report.go":             {"command: report", []string{cliF, "internal/report"}, 80},
 	"score.go":              {"command: score", []string{"internal/grading"}, 70},
 	"suite.go":              {"command: suite", []string{"internal/suite"}, 80},
+	"suite_campaign.go":     {"command: suite campaign", []string{"internal/suite"}, 45},
 	"plantwire.go":          {"command: plantwire node and host", []string{cliF, "internal/model", "internal/plantwire", "internal/run"}, 110},
 	"plantwire_options.go":  {"option parsing", []string{"internal/plantwire"}, 85},
 	"plantwire_relay.go":    {"command: plantwire relay", []string{"internal/plantwire"}, 22},

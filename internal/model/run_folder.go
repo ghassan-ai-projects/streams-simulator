@@ -15,6 +15,7 @@ const (
 
 	FileVerdict = "verdict.json"
 	FileLabel   = "label.json"
+	FileLabels  = "labels.json"
 )
 
 const (

@@ -44,7 +44,7 @@ def boards_of(env_name):
         return [{"board": "board-01", "environment": "simulated", "members": ["P1"]}, {"board": "board-02", "environment": "hardware", "members": ["P2"]}]
     return [{"board": "board-01", "environment": env_name, "members": ["P1", "P2"]}]
 def nbirth(seq=0, env_name="simulated", pmax=1, bd=0, prior=-1, boards=None):
-    return env("NBIRTH", "control", seq, protocol_min=1, protocol_max=pmax, contract_version="1.4.0", contract_digest=CONTRACT, environment=env_name,
+    return env("NBIRTH", "control", seq, protocol_min=1, protocol_max=pmax, contract_version="1.5.0", contract_digest=CONTRACT, environment=env_name,
         bd_seq=bd, prior_last_seq=prior, capability_digest=CAPABILITY, kinds=kinds, boards=boards or boards_of(env_name),
         node_metrics={"clock_mode": "virtual", "run_state": "running"})
 def dbirth(seq, dev="P1", boot="board-01-boot-1"):

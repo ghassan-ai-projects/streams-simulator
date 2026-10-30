@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -30,5 +31,23 @@ func TestPublishWritesASuiteFileAndRefusesAnUnknownProfile(t *testing.T) {
 	var unknown *suite.UnknownProfileError
 	if _, err := suite.Publish(options); !errors.As(err, &unknown) || unknown.Profile != "no-such-profile" {
 		t.Fatalf("err = %v, want an UnknownProfileError", err)
+	}
+}
+
+func TestPublishCampaignWritesTheCampaignAndRefusesASpecThatBreaksARule(t *testing.T) {
+	t.Parallel()
+	options := suite.CampaignOptions{DomainsDir: testsupport.PumpStationDir(), SpecPath: testsupport.FirstSliceCampaignSpec(), Out: t.TempDir()}
+	published, err := suite.PublishCampaign(options)
+	if err != nil || published.Runs != 160 {
+		t.Fatalf("published = %+v, %v", published, err)
+	}
+	options.DomainsDir = testsupport.DomainsDir()
+	if _, err := suite.PublishCampaign(options); !errors.Is(err, domain.ErrUnknownDomain) {
+		t.Fatalf("a campaign naming a domain the directory lacks = %v, want ErrUnknownDomain", err)
+	}
+	options.DomainsDir, options.SpecPath = testsupport.PumpStationDir(), testsupport.PumpStationDomain()
+	var invalid *suite.CampaignSpecError
+	if _, err := suite.PublishCampaign(options); !errors.As(err, &invalid) {
+		t.Fatalf("err = %v, want a CampaignSpecError", err)
 	}
 }

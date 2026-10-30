@@ -13,3 +13,9 @@ type PublishOptions = app.PublishOptions
 type Published = app.Published
 
 type UnknownProfileError = layer.UnknownProfileError
+
+type CampaignOptions = app.CampaignOptions
+
+type PublishedCampaign = app.PublishedCampaign
+
+type CampaignSpecError = layer.CampaignSpecError

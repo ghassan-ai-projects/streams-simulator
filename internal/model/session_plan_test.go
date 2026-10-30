@@ -130,6 +130,24 @@ func TestASessionPlanIsPacedByTheWallClockOnlyWhenItSaysSo(t *testing.T) {
 	}
 }
 
+func TestASessionPlanStartsItsWorldAtItsOffsetButNeverWithAPace(t *testing.T) {
+	t.Parallel()
+	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h"`
+	plan, err := DecodeSessionPlan([]byte(base + `,"start_s":172800}`))
+	if err != nil || plan.WorldStartNS() != DefaultStartTimeNS+172800*1e9 {
+		t.Fatalf("DecodeSessionPlan = %+v, %v, want the world two days after the default start", plan, err)
+	}
+	if plan, err := DecodeSessionPlan([]byte(base + `}`)); err != nil || plan.WorldStartNS() != DefaultStartTimeNS {
+		t.Fatalf("DecodeSessionPlan = %+v, %v, want the default start", plan, err)
+	}
+	for _, refused := range []string{`,"start_s":-1}`, `,"start_s":1.5}`, `,"start_s":60,"pace":"wall"}`} {
+		_, err := DecodeSessionPlan([]byte(base + refused))
+		if invalid, ok := AsValidationError(err); !ok || invalid.Contract != ContractSessionPlan {
+			t.Errorf("DecodeSessionPlan(%s) = %v, want a session-plan violation", refused, err)
+		}
+	}
+}
+
 func TestASessionPlanDecodesItsDisturbancesAndRefusesOnesItsSchemaForbids(t *testing.T) {
 	t.Parallel()
 	base := `{"schema_version":"0.1","domain":"arduino-thermal","host_socket":"/h","disturbances":[`

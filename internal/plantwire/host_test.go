@@ -103,20 +103,26 @@ func TestASlowReferenceHostIsNeverOutrunAndVerifiesItsCommand(t *testing.T) {
 	}
 }
 
-func TestAHostSlowerThanTheCapIsRecordedAsMissedBarriersThenLost(t *testing.T) {
+func TestAHostHoldingItsAnswerPastSeveralCapsButHeartbeatingStaysConnectedWhileTheWorldAdvances(t *testing.T) {
 	t.Parallel()
-	result := pair(t, referenceOptions(), 400*time.Millisecond, 150*time.Millisecond, nil)
-	if !errors.Is(result.node, ErrHostLost) {
-		t.Fatalf("node %v, want host loss", result.node)
+	options := referenceOptions()
+	options.HeartbeatMS = 150
+	result := pair(t, options, 700*time.Millisecond, 150*time.Millisecond, nil)
+	if result.node != nil {
+		t.Fatalf("node %v, want a live host that is only slow to stay connected", result.node)
+	}
+	if clock := result.run.Status().ClockNS; clock != model.DefaultStartTimeNS+300e9 {
+		t.Fatalf("world clock %d, want every slice advanced to the end", clock)
 	}
 	pacing := journalRecords(t, result.run, "pacing")
-	if len(pacing) != 3 {
-		t.Fatalf("pacing %v, want three missed barriers", pacing)
-	}
+	missed := 0
 	for _, barrier := range pacing {
-		if waited, _ := barrier["waited_ms"].(json.Number).Int64(); barrier["missed"] != true || waited < 150 {
-			t.Fatalf("a missed barrier was not recorded: %v", barrier)
+		if barrier["missed"] == true {
+			missed++
 		}
+	}
+	if len(pacing) != 5 || missed < 3 {
+		t.Fatalf("pacing %v, want five barriers, at least three of them missed", pacing)
 	}
 }
 
