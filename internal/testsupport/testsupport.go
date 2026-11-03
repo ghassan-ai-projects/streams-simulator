@@ -166,3 +166,23 @@ func FactoryComposition() string {
 func WorkspaceFolder(root, folder string) string { return filepath.Join(root, folder) }
 
 func WorkspaceFile(folder, name string) string { return folder + "/" + name }
+
+func PumpStationDomain() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station.domain.json")
+}
+
+func PumpStationProbeDomain() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station", "pump-station-probe-b.domain.json")
+}
+
+func PumpStationDir() string {
+	return filepath.Join(RepositoryRoot(), "examples", "pump-station")
+}
+
+func FirstSliceCampaignSpec() string {
+	return filepath.Join(PumpStationDir(), "campaign", "first-slice.campaign-spec.json")
+}
+
+func PumpStationKindFile(stem string) string {
+	return filepath.Join(PumpStationDir(), "kinds", stem+".kind.json")
+}

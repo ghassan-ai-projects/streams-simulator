@@ -1,8 +1,8 @@
 # Security and trust boundaries
 
-> Status: Implemented local trust model. Authority: MCP role wiring, capability checks, contracts, and security policy. Verified by: MCP strictness/operator tests and repository review. Last verified: 2026-08-17.
+> Status: Implemented local trust model. Authority: MCP role wiring, capability checks, contracts, and security policy. Verified by: MCP strictness/operator tests and repository review. Last verified: 2026-11-03.
 
-Streams Simulator is a local test instrument, not a hosted multi-tenant service. Its security model is about preventing the simulator from helping a consumer cheat, preventing producer text from becoming control input, and making capability boundaries explicit.
+Streams Simulator is a local tool, not a hosted multi-tenant service. Its security model is about preventing the simulator from helping a consumer cheat, preventing producer text from becoming control input, and making capability boundaries explicit.
 
 ## Role separation
 

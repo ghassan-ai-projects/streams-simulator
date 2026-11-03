@@ -15,3 +15,7 @@ type JudgmentMetrics = layer.JudgmentMetrics
 var ErrNoLabel = layer.ErrNoLabel
 
 type Evidence = layer.Evidence
+
+type RunScore = layer.RunScore
+
+type Unexpected = layer.Unexpected

@@ -39,9 +39,13 @@ A change is done when:
 
 ```bash
 make help
+make quick         # inner loop, about 30 s with a warm cache
 make docs-check
 make ci-check
+make phase-gate    # once per pull request: ci-check, canvas-check, Enola architecture, behaviour pin
 ```
+
+`make canvas-check` (Node 24) is required when `canvas/` or `contracts/` change. `make test-long` and `make test-race` run on demand only. Never loosen a gate to make a change pass: `make gate-ratchet` fails when a cap rises, an allow-list grows, a coverage floor falls or a test hook is added against the branch point from main. A gate change needs the owner's approval, recorded as an `Owner-approved-gate-change: <reason>` commit line, and the PR lists every gate change (`git diff main -- test/architecture scripts`).
 
 For code changes, include tests in every modified package. For documentation-only changes, run the narrowest useful checks and explain anything skipped.
 

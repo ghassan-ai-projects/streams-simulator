@@ -99,6 +99,11 @@ func (h *wireHost) handle(in domain.Inbound) {
 	}
 }
 
+func (h *wireHost) beat(heartbeat, intervalMS int) {
+	h.write(domain.Record{Type: "STATE", Lane: domain.LaneControl, Fields: map[string]any{"host_id": "wire-host", "online": true, "heartbeat": heartbeat,
+		"heartbeat_interval_ms": intervalMS, "authority_epoch": 7, "protocol_min": 1, "protocol_max": 1}})
+}
+
 func hsyncRecord(seq uint64) domain.Record {
 	return domain.Record{Type: "HSYNC", Lane: domain.LaneControl, Fields: map[string]any{"through_seq": seq}}
 }

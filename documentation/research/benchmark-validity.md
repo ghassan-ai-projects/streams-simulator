@@ -1,6 +1,6 @@
 # Benchmark-validity summary
 
-A benchmark can be reproducible and still be invalid. Streams Simulator therefore treats validity controls as product behavior.
+A benchmark can be reproducible and still be invalid. Grading a consumer is one use of Streams Simulator, and for that use it treats validity controls as product behavior.
 
 ## Threats to validity
 

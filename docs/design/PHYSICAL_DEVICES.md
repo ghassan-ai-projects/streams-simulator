@@ -228,6 +228,10 @@ input came in R8 (below); clock pacing is not built (D-71); hold, approve and e-
   the relay redials on every tick. When the host is back the relay sends the gateway's cached `NBIRTH`, forwards the host's
   `STATE` and asks the gateway for a rebirth, which goes up in the same host session with the next `bd_seq`. A host that
   refuses the relayed session has its `STATE` forwarded to the gateway and ends the relay (`ErrRefused`, an operator's action).
+  A simulated node judges host loss the same way since contract 1.5.0: three missed heartbeats in wall time, once the host has
+  sent one above zero, in a barrier wait and in a pace drain alike. A barrier that no `HSYNC` answers within the cap is
+  recorded (`missed`) and the world advances, but it is never host loss; a host holds its answer as long as it reasons and
+  keeps heartbeating meanwhile.
   Gateway lost (end of stream, a handshake silent for 10 s, a line over 1 MiB, or its own `NDEATH`): a `DDEATH link_down` for
   each device it had born, in device order, and the host session is kept, because later boards share it. A returning gateway
   is answered with the host's last `STATE` and reborn upward as a rebirth.
@@ -581,7 +585,7 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 
 - **Time in mixed sessions.** Agentic Stream can hold a simulated world at each barrier; a real board cannot be held. How the
   world is paced when a real board is present is decided when M3 starts. *Decided in M3: not paced; the world advances barrier
-  by barrier as fast as the host answers (D-71).*
+  by barrier as fast as the host answers (D-71). Contract 1.5.0: a barrier held for long never loses the host, only silent heartbeats do.*
 - Authentication, several users, customer sites and production reliability of the control plane (D6).
 - Remote gateways: TCP needs mutual authentication in a new contract version.
 - Incident reproduction with faults injected on a recording; more boards; fleet-scale mixed runs.

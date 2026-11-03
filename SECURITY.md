@@ -21,7 +21,7 @@ Include:
 
 This project keeps these controls enabled:
 
-- `govulncheck`, `go vet`, and race-enabled tests in CI. `gosec` is not currently a CI gate.
+- `govulncheck`, `go vet`, `deadcode`, the short test tier with shuffle and bounded fuzzing in CI (`make ci-check`); the race detector runs on demand (`make test-race`), not in CI. `gosec` is not currently a CI gate.
 - Pre-commit hooks for file hygiene, formatting, vetting, imports, and linting.
 - Secret scanning and branch protection in the hosting platform.
 - Least-privilege tokens for CI and automation.

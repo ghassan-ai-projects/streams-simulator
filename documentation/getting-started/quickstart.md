@@ -1,8 +1,8 @@
 # Quickstart
 
-> Status: Verified local deterministic path. Authority: current CLI and shipped domain/adapter files. Verified by: adapter validation, domain validation, run, and replay. Last verified: 2026-08-17.
+> Status: Verified local deterministic path. Authority: current CLI and shipped domain/adapter files. Verified by: adapter validation, domain validation, run, and replay. Last verified: 2026-11-03.
 
-This path exercises the local, deterministic workflow: inspect the catalog, validate an adapter, run a short scenario, and verify the resulting artifact.
+This path exercises the local, deterministic workflow, run on a shipped domain: inspect the catalog, validate an adapter, run a short scenario, and verify the resulting artifact.
 
 ## 1. Inspect installed data
 
@@ -47,6 +47,8 @@ Verification loads the artifact, replays the command log against a fresh world b
 
 ## 5. Explore the next layer
 
+- Compose a plant from the component library: `go run ./cmd/streamsim component examples`, then `component example <id>` and `domain compose` (see the [CLI reference](../reference/cli.md) and [authoring domains](../guides/authoring-domains.md)).
+- Build the canvas (see [install](install.md)) and open it with `streamsim canvas` to author, run and disturb plants visually.
 - Add a declared fault or perturbation with the syntax in [the CLI reference](../reference/cli.md).
 - Run the [reference consumer](../guides/consumer-integration.md) against a native JSONL trace.
 - Use [replay and debugging](../guides/replay-and-debugging.md) to inspect a failure.

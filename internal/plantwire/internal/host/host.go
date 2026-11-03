@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 
@@ -19,6 +20,7 @@ type Options struct {
 	Policy      string
 	Inventory   map[string]string
 	Script      []Scripted
+	HeartbeatMS int64
 	Ready       func()
 }
 
@@ -143,7 +145,11 @@ func ParseInventory(raw []byte) (map[string]string, error) {
 
 func (h *Host) Accepted() bool { return h.accepted }
 
-const HeartbeatIntervalMS = 1000
+const DefaultHeartbeatMS = 1000
+
+func HeartbeatInterval(o Options) time.Duration {
+	return time.Duration(cmp.Or(o.HeartbeatMS, DefaultHeartbeatMS)) * time.Millisecond
+}
 
 func (h *Host) Beat() []map[string]any {
 	if !h.accepted || h.Done() {

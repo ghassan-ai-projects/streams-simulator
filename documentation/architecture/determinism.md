@@ -1,6 +1,6 @@
 # Determinism and replay
 
-> Status: Implemented for the deterministic local path. Authority: `internal/run` and the run-artifact schema. Verified by: quickstart replay and CLI subprocess tests. Last verified: 2026-08-17.
+> Status: Implemented for the deterministic local path. Authority: `internal/run` and the run-artifact schema. Verified by: quickstart replay and CLI subprocess tests. Last verified: 2026-11-03.
 
 The determinism boundary is the set of inputs that must be stable for a run to reproduce:
 

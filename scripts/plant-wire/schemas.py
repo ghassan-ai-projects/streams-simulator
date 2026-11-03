@@ -125,7 +125,7 @@ schemas = {
     "host_id": ident, "online": {"type": "boolean"}, "heartbeat": u64, "heartbeat_interval_ms": {"type": "integer", "minimum": 100, "maximum": 600000},
     "authority_epoch": u64, "protocol_min": {"type": "integer", "minimum": 1}, "protocol_max": {"type": "integer", "minimum": 1},
     "refusal": {"enum": ["version_unsupported", "contract_unsupported", "environment_mismatch", "inventory_mismatch", "protocol_invalid"]}},
-    "Host state and heartbeat; with online false and a refusal, the host refuses the session. online false is otherwise a graceful goodbye."),
+    "Host state and heartbeat, sent every heartbeat_interval_ms of wall time and also while the host holds an HSYNC; with online false and a refusal, the host refuses the session. online false is otherwise a graceful goodbye."),
  "NCMD": envelope("NCMD", "control", ["command"], {"command": {"enum": ["rebirth"]}},
     "Node command: rebirth republishes every birth before further data."),
  "DCMD": envelope("DCMD", "control", ["command_id", "idempotency_key", "device", "command", "args", "expected_boot_id", "deadline_ns", "not_before_ns", "authority_epoch", "policy_digest", "fallback_on_lease_loss"], {
@@ -136,7 +136,7 @@ schemas = {
  "DQUERY": envelope("DQUERY", "control", ["device"], {"device": ident}, "State query for reconciliation."),
  "HSYNC": envelope("HSYNC", "control", ["through_seq"], {"through_seq": u64,
     "command_evidence": {"type": "array", "maxItems": 128, "items": evidence}},
-    "Barrier reply: the host has processed every node record up to through_seq and sent its commands for that slice."),
+    "Barrier reply: the host has processed every node record up to through_seq and sent its commands for that slice. The host may hold it for as long as it reasons; it keeps sending STATE heartbeats meanwhile."),
 }
 schemas["DCMD"]["additionalProperties"] = False
 schemas["DRECEIPT"]["if"] = {"properties": {"status": {"const": "refused"}}, "required": ["status"]}

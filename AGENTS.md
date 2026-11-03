@@ -4,11 +4,11 @@ Canonical instructions for coding agents in this repository. Read this file firs
 
 ## Purpose
 
-Streams Simulator (`streamsim`) is a standalone, deterministic, closed-loop world simulator for testing stream processors. It generates realistic event streams from data-defined domains, corrupts their delivery in specified ways, carries sealed ground truth, accepts commands back through declared effectors so the world actually changes, and scores whatever consumed it.
+Streams Simulator (`streamsim`) is a standalone, deterministic, closed-loop world simulator. It builds worlds from data (domains, and plants composed from a component library), runs them on a seeded clock, delivers their events in a consumer's own wire format with declared delivery faults, carries sealed ground truth, accepts commands back through declared effectors so the world actually changes, and grades whatever consumed it. Around that core it provides a visual canvas, physical-device sessions over the plant wire (real boards beside simulated ones), run journals and reports, and generated suites and campaigns.
 
-It is a **test instrument**. An instrument less trustworthy than the system it measures is worse than no instrument, because it produces confident wrong answers. Determinism guarantees, generative ground truth, and analytic oracles come before features.
+Grading a stream processor is one use among several; building and exploring worlds, driving agents and controllers, and bench work with real boards are others. None may weaken the trust properties: a simulator less trustworthy than what it drives gives confident wrong answers. Determinism guarantees, generative ground truth, and analytic oracles come before features.
 
-The design and evidence archive is maintained in [docs/](docs/README.md); the curated public documentation is in [documentation/](documentation/README.md). The nine non-negotiables in the spec (determinism, analytic cross-check, reference consumer, delivery ledger, quiescence barrier, sealed oracle, injection probe, `silent_no_effect` test, trivial-baseline audit) are not negotiable.
+The curated, current documentation is in [documentation/](documentation/README.md). [docs/](docs/README.md) is a dated working archive of design notes, research, plans and evidence; it may be out of date, so prefer `documentation/`, `contracts/`, the code and its tests when they disagree with it. The nine non-negotiables (determinism, analytic cross-check, reference consumer, delivery ledger, quiescence barrier, sealed oracle, injection probe, `silent_no_effect` test, trivial-baseline audit) are not negotiable.
 
 ## Engineering Priorities
 
@@ -53,7 +53,7 @@ Before editing:
 
 1. Read this file.
 2. Read [README.md](README.md).
-3. Read the relevant design docs in `docs/design/` and `docs/research/` before touching architecture or protocol surfaces.
+3. Read the relevant pages in `documentation/` and `contracts/` before touching architecture or protocol surfaces; use `docs/design/` and `docs/research/` for the history behind a decision, and verify what they say against the code.
 4. Check the worktree with `git status --short`.
 5. Read the smallest relevant context files under `.agents/context/`.
 6. Make a short plan before editing.
@@ -72,13 +72,14 @@ Use the prompt files under `.agents/prompts/` when the task matches them.
 ## Current Repository State
 
 - Module path: `github.com/ghassan-ai-projects/streams-simulator` (set).
-- Design, research, contracts, and implementation evidence are maintained under `docs/`; public usage documentation is under `documentation/`.
+- Public usage and architecture documentation is under `documentation/`; JSON contracts are under `contracts/`; dated design, research and evidence notes are archived under `docs/`.
 - The implementation includes `cmd/streamsim` and the `internal/` packages described below.
 - Eight domains are committed in `domains/` and two adapters are committed in `adapters/`; the schema suite validates every shipped domain, so new inputs must be reconciled with the tests and release manifest in the same change.
 - The root package in [doc.go](doc.go) remains so Go tooling has a stable module root.
+- The canvas client is in `canvas/`; physical-device sessions use the plant wire in `contracts/plant-wire/`.
 - Historical stage planning is in [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md); current status and limitations are in [documentation/limitations.md](documentation/limitations.md).
 
-Do not invent architecture outside the documented design. The spec was written to be built as specified; deviations need a design change first.
+Do not invent architecture outside the documented design. Deviations need a design change first.
 
 ## Architecture Overview
 
@@ -116,8 +117,8 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 
 Dependency direction:
 
-- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
-- `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`; `mcp` imports none of those directly
+- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `plantwire`, `canvasbridge`, `component`, `lint`, `device`, `deviceworld`, `domain`, `adapter`, `kernel`, `model`)
+- `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`component`; `mcp` imports none of those directly
 - `grading` -> `run`/`score`; `report` -> `grading`/`run`/`journal`; the CLI holds no business logic, only flags, documents and failures
 - `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `plantwire` drives a `run` as a plant wire node. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.

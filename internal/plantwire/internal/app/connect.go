@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"time"
 
 	simdomain "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -144,23 +143,11 @@ func planInstances(spec *simdomain.Compiled, checked []model.ImplementsChecked) 
 }
 
 func planFaults(kind *model.Kind) []domain.PlanFault {
-	commanded := commandedStates(kind)
 	faults := make([]domain.PlanFault, len(kind.Faults))
-	for i, fault := range kind.Faults {
-		faults[i] = domain.PlanFault{ID: fault.ID, Pulse: fault.Onset.Shape == model.ShapePulse,
-			Commanded: slices.ContainsFunc(fault.Affects, func(e model.FaultEffect) bool { return commanded[e.State] })}
+	for i := range kind.Faults {
+		faults[i] = domain.PlanFault{ID: kind.Faults[i].ID, Pulse: kind.Faults[i].IsPulse(), Commanded: kind.FaultCommanded(&kind.Faults[i])}
 	}
 	return faults
-}
-
-func commandedStates(kind *model.Kind) map[string]bool {
-	states := map[string]bool{}
-	for _, effector := range kind.Effectors {
-		for _, delta := range effector.Effect.StateDeltas {
-			states[delta.State] = true
-		}
-	}
-	return states
 }
 
 func planViolation(source string, issues []model.Issue) error {

@@ -113,3 +113,8 @@ func InterruptLog() []byte { return interruptLog }
 var twinReport []byte
 
 func TwinReport() []byte { return twinReport }
+
+//go:embed campaign-v0.1.schema.json
+var campaign []byte
+
+func Campaign() []byte { return campaign }

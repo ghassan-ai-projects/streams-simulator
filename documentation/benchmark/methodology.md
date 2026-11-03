@@ -1,6 +1,8 @@
 # Benchmark methodology
 
-> Status: Implemented methodology with partial batch automation. Authority: scoring/audit contracts and design records. Verified by: audit and scoring tests. Last verified: 2026-08-17.
+This is the method for one use of the simulator: grading a consumer. Nothing here constrains building, exploring or driving worlds without a graded suite.
+
+> Status: Implemented methodology with partial batch automation. Authority: scoring/audit contracts and design records. Verified by: audit and scoring tests. Last verified: 2026-11-03.
 
 The benchmark design is built around four ways a stream benchmark can flatter a consumer: trivial scenarios, transport ambiguity, oracle leakage, and action acknowledgements that are mistaken for effects.
 
@@ -24,7 +26,7 @@ The action tuple includes the command identity, declared effector, target entity
 
 ## Reproducibility
 
-Every executed accepted scenario must retain its domain and adapter digests, simulator version, seed, profile, command log, sink choice, truth label, ledger, verdict, and score. Suite generation supplies the scenario definition and label; the execution harness supplies the selected adapter and run evidence. The exact artifact set must reproduce before a result is compared with another consumer.
+Every executed accepted scenario must retain its domain and adapter digests, simulator version, seed, profile, command log, sink choice, truth label, ledger, verdict, and score. Suite or campaign generation supplies the scenario definition, session plan and label; the execution harness supplies the selected adapter and run evidence. The exact artifact set must reproduce before a result is compared with another consumer.
 
 ## What to report
 

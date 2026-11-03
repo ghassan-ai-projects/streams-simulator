@@ -19,6 +19,7 @@ type SimLink struct {
 	down   *Mailbox[domain.Inbound]
 	wait   time.Duration
 	waited int64
+	beats  beats
 }
 
 func NewSimLink(wait time.Duration) *SimLink {
@@ -35,7 +36,10 @@ func (l *SimLink) Send(records []map[string]any) error {
 	return ErrSimOverflow
 }
 
-func (l *SimLink) Deliver(in domain.Inbound) bool { return l.down.Put(in) }
+func (l *SimLink) Deliver(in domain.Inbound) bool {
+	l.beats.note(in)
+	return l.down.Put(in)
+}
 
 func (l *SimLink) TakeUp() []map[string]any { return l.up.Take() }
 
@@ -91,6 +95,8 @@ func (l *SimLink) idle(ctx context.Context, expiry <-chan time.Time) (bool, erro
 		return false, fmt.Errorf("plantwire: %w", ctx.Err())
 	case <-expiry:
 		return true, nil
+	case <-l.beats.alarm():
+		return false, ErrHostSilent
 	case <-l.down.Ready():
 		return false, nil
 	}

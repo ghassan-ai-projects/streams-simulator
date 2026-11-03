@@ -1,8 +1,17 @@
 # Consumer integration
 
-> Status: Implemented file and MCP integration paths. Authority: CLI/refconsumer and MCP operator code. Verified by: reference-consumer and operator tests. Last verified: 2026-08-17.
+> Status: Implemented file and MCP integration paths. Authority: CLI/refconsumer and MCP operator code. Verified by: reference-consumer and operator tests. Last verified: 2026-11-03.
 
-The reference consumer demonstrates the supported boundary: evidence arrives through a sink, while control and actuation happen through the operator MCP surface.
+A consumer (a stream processor, an agent, a controller, a plant wire host) meets the simulator at one boundary: evidence arrives through a sink in the adapter's wire format, while control and actuation happen through the capability-scoped operator MCP surface. The reference consumer shows both sides of it.
+
+Pick the integration path:
+
+| Your consumer | Path |
+| --- | --- |
+| Reads a stream in its own format | Write an [adapter](authoring-adapters.md), run with `--adapter`, read the sink (`inproc`, `file` or `http-push`). |
+| Must act on the world | The operator endpoint below: nameplate, effectors, invoke, verdict. |
+| Speaks the plant wire (a host with simulated or real devices) | `plantwire node` or `connect`; see [physical devices](physical-devices.md). |
+| Is driven by an agent or a script over MCP | The director tools; see the [MCP reference](../reference/mcp.md). |
 
 ## File-based consumer path
 
@@ -12,7 +21,7 @@ For a local trace, the reference consumer reads native JSONL and writes a verdic
 go run ./cmd/streamsim refconsumer --trace /path/to/trace.jsonl --out /path/to/verdict.json
 ```
 
-The detector parameters are explicit flags (`--threshold` and `--window`). This path is useful for smoke tests and offline scoring; it does not close the action loop unless the MCP options are supplied.
+The detector parameters are explicit flags (`--threshold`, default 4, and `--window`, default 30). This path is useful for smoke tests and offline scoring (`streamsim run` writes `trace.jsonl` in its run folder; `streamsim score` then reads the `verdict.json` beside the run); it does not close the action loop unless the MCP options are supplied.
 
 ## Closed-loop operator path
 
@@ -22,7 +31,7 @@ Start a director with an operator endpoint:
 go run ./cmd/streamsim mcp --role director --operator-addr 127.0.0.1:0 --out runs
 ```
 
-The director serves control over stdio and the operator role over streamable HTTP. `sim.world.create` returns the operator endpoint and a capability token. The consumer uses that token to read the nameplate, list effectors, invoke a declared effector with a unique `command_id`, and submit its verdict.
+The director serves control over stdio and the operator role over streamable HTTP. `sim.world.create` returns the operator endpoint and a capability token. The consumer uses that token with `sim.nameplate.read`, `sim.effector.list`, `sim.effector.invoke` (a unique `command_id`) and `sim.consumer.report` (verdict and quiescence). The reference consumer does this with `refconsumer --mcp <url> --token <t> --run <id> --effector <name>`.
 
 The operator role is not a separate standalone process. A request for `--role operator` is rejected; the director owns world state and resolves the token to the corresponding operator view.
 

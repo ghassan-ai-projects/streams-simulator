@@ -200,3 +200,12 @@ func TestACrossReferenceViolationIsADomainIssueAtItsPointer(t *testing.T) {
 		t.Fatalf("failure = %v, want one domain_invalid issue at the expected_effector member naming the effector", failure)
 	}
 }
+
+func TestTheCampaignCommandDocumentMatchesTheContract(t *testing.T) {
+	t.Parallel()
+	got := invoke(t, "suite", "campaign", "--spec", testsupport.FirstSliceCampaignSpec(), "--domains-dir", testsupport.PumpStationDir(),
+		"--out", filepath.Join(t.TempDir(), "campaign")).mustSucceed(t).document(t, "suite_campaign")
+	if got["runs"] != float64(160) {
+		t.Fatalf("campaign result = %v, want 160 runs", got)
+	}
+}

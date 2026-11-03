@@ -1,12 +1,12 @@
 # Core concepts
 
-> Status: Implemented conceptual model. Authority: current world, run, perturbation, and scoring packages. Verified by: architecture review and package tests. Last verified: 2026-08-17.
+> Status: Implemented conceptual model. Authority: current world, run, perturbation, and scoring packages. Verified by: architecture review and package tests. Last verified: 2026-11-03.
 
-Streams Simulator is easier to use when five distinctions stay clear: world truth, delivered evidence, commands, artifacts, and verdicts.
+Streams Simulator is easier to use when a few distinctions stay clear: world truth, delivered evidence, commands, artifacts, and verdicts. Whatever drives a world (a person in the canvas, a script, a stream processor, an agent, a controller, a real board) meets the same ones.
 
 ## World
 
-A world is a seeded discrete-event system compiled from one domain specification. It owns entities, state variables, natural dynamics, faults, effectors, and the simulation clock. The world emits native `sim-event-v0.1` records describing what happened at a simulation time.
+A world is a seeded discrete-event system compiled from one domain specification. A domain is written by hand or composed from the component library (equipment, instruments and vocabulary as data); a composition is written out as an ordinary domain. It owns entities, state variables, natural dynamics, faults, effectors, and the simulation clock. The world emits native `sim-event-v0.1` records describing what happened at a simulation time.
 
 ## Delivery
 
@@ -30,6 +30,10 @@ An effector invocation is a command with an idempotency key. The command is acce
 
 A run artifact records the inputs and command history needed to replay a run: simulator version, domain and adapter identities/digests (and embedded specs when available), seed, world configuration, command log, expected trace digest, counts, and completion status. Replay re-executes the command log against a fresh world; it does not re-issue the original MCP conversation.
 
+## Devices, runs and campaigns
+
+A real board can join a session beside simulated ones over the plant wire; a node can hold, approve or stop commands, and a twin-versus-board report compares the board with its simulated twin. Every run writes a run folder (artifact, trace, ledger, journals) that `report` summarises and `score` grades offline. `suite campaign` generates one-fault runs with session plans, so arms can be compared over a campaign. See [physical devices](../guides/physical-devices.md) and the [CLI reference](../reference/cli.md).
+
 ## Truth and verdict
 
 Ground truth is sealed for the consumer-facing phase. The consumer submits a verdict describing detections, actions, and optional resource evidence. The scorer compares that verdict with sealed truth, the delivery ledger, and effector history. Truth reveal is a one-way unblind transition for a run.
@@ -39,6 +43,9 @@ Ground truth is sealed for the consumer-facing phase. The consumer submits a ver
 | Term | Meaning |
 | --- | --- |
 | Domain | JSON specification of entities, channels, state, dynamics, faults, effectors, and profiles. |
+| Component library | Equipment, instruments and vocabulary as data, composed into a domain. |
+| Kind file | Declaration of a device kind (readings, commands, safe stops) shared by a twin and a real board. |
+| Run folder | The files one run leaves: artifact, trace, ledger, state history and journals. |
 | Adapter | JSON projection from native simulator events to a consumer wire format. |
 | Perturbation | A declared transformation of delivery; it does not rewrite world history. |
 | Sink | In-process, file, or HTTP-push destination for rendered evidence. |

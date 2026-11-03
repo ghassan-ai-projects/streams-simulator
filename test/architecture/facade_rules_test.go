@@ -40,6 +40,11 @@ var aliasedValueTypes = map[string]aliasReview{
 		methods: []string{"Error"},
 		reason:  "the refusal to grade a replay that diverged: an error whose only method renders its message, carrying the replay report",
 	},
+	"internal/suite:CampaignSpecError": {
+		target:  "CampaignSpecError",
+		methods: []string{"Error"},
+		reason:  "the refusal to publish a campaign from a spec that breaks its rules: an error whose only method renders its message",
+	},
 	"internal/suite:UnknownProfileError": {
 		target:  "UnknownProfileError",
 		methods: []string{"Error"},

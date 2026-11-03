@@ -1,6 +1,6 @@
 # Operations guide
 
-> Status: Implemented local operations guidance. Authority: run/artifact lifecycle and sink implementations. Verified by: artifact and sink tests. Last verified: 2026-08-17.
+> Status: Implemented local operations guidance. Authority: run/artifact lifecycle and sink implementations. Verified by: artifact and sink tests. Last verified: 2026-11-03.
 
 Streams Simulator is a local instrument. Operations are about preserving evidence, controlling egress, and stopping safely when a run is incomplete or ambiguous.
 
@@ -14,10 +14,12 @@ runs/<world-or-run>/
 ├── trace.jsonl
 ├── ledger.jsonl
 ├── world_state_history.jsonl
+├── journal.jsonl      observer journal
+├── sealed/journal.jsonl   director journal, truth-bearing
 └── verdict.json       optional
 ```
 
-Keep the label/ground truth and release manifest beside the run when doing an evaluation. Use restrictive permissions when data is not public.
+Sessions with a gateway or control socket add `field-trace.jsonl` and `interrupts.jsonl`; the [artifact reference](../reference/artifacts.md) lists every file. Keep the label/ground truth and release manifest beside the run when doing an evaluation. Use restrictive permissions when data is not public.
 
 ## Safe lifecycle
 

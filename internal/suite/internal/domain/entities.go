@@ -14,9 +14,13 @@ func (g *suiteGeneration) faultEntities(fault string) []string {
 	if g.cfg.Domain.FaultKind(fault) == nil {
 		return g.entities
 	}
+	return entitiesDeclaring(g.cfg.Domain, g.entities, fault)
+}
+
+func entitiesDeclaring(spec *domain.Compiled, ids []string, fault string) []string {
 	var out []string
-	for _, id := range g.entities {
-		if kindOfEntity(g.cfg.Domain, id).FaultDecl(fault) != nil {
+	for _, id := range ids {
+		if kindOfEntity(spec, id).FaultDecl(fault) != nil {
 			out = append(out, id)
 		}
 	}

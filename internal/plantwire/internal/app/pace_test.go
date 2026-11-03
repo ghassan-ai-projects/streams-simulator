@@ -5,6 +5,8 @@ import (
 	"errors"
 	"slices"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 )
 
 type fakePacer struct {
@@ -76,9 +78,14 @@ func TestAnInterruptDuringThePaceEndsTheSessionBeforeThatSlice(t *testing.T) {
 	}
 }
 
-func TestPacingIsNotTheBarrierASilentHostIsStillLostAfterThreeMisses(t *testing.T) {
+func TestPacingIsNotTheBarrierAHostThatStopsHeartbeatingIsStillLost(t *testing.T) {
 	t.Parallel()
-	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, _ int) { h.silent = true }}
+	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
+		h.silent = true
+		if syncs == 3 {
+			h.hangUp = uds.ErrHostSilent
+		}
+	}}
 	pacer, err := pacedSession(t, host, 10, 0)
 	if !errors.Is(err, ErrHostLost) || len(pacer.released) != countOf(host.types(), "NSYNC") || len(pacer.released) > 4 {
 		t.Fatalf("err %v after %d releases and %d barriers, want host loss within four slices", err, len(pacer.released), countOf(host.types(), "NSYNC"))

@@ -6,7 +6,7 @@
 // safety envelope a real firmware+gateway would (boot identity, expiry, target
 // and operation allowlist, parameter bounds, idempotency), and drives a plant
 // so that state and verification reflect what the world actually did rather
-// than what a command asked for. It is a test instrument: the effect a command
+// than what a command asked for. The effect a command
 // has on the plant is the ground truth, and an acknowledgement is never proof
 // of that effect.
 //

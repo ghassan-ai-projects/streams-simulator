@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1",
+  "seed": 20261027,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "duration_s": 172800,
+  "fault_start_window_s": 43200,
+  "negative_duration_s": 3600,
+  "phases": [
+    {
+      "name": "learn",
+      "domain": "pump-station",
+      "runs": 100,
+      "negative_share": 0.4,
+      "faults": {"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1}
+    },
+    {
+      "name": "holdout",
+      "domain": "pump-station",
+      "runs": 50,
+      "negative_share": 0.4,
+      "faults": {"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1}
+    },
+    {
+      "name": "disturb",
+      "domain": "pump-station-probe-b",
+      "runs": 10,
+      "negative_share": 0.4,
+      "faults": {"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1}
+    }
+  ]
+}

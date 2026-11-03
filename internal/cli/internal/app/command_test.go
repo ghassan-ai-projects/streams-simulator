@@ -113,6 +113,8 @@ func TestUsageFailuresExitTwoWithAUsageDocument(t *testing.T) {
 		{"effector offset infinite", []string{"run", "--domain", pondDomain, "--effector", "start_aerator@site-a/pond-1@-Inf"}, `offset "-Inf" must be a number of seconds`},
 		{"unknown run profile", append([]string{"run", "--domain", pondDomain, "--profile", "bogus"}, append(domains, adapters...)...), `has no profile "bogus"`},
 		{"suite without domain", []string{"suite"}, "suite requires --domain"},
+		{"campaign without spec", []string{"suite", "campaign"}, "suite campaign requires --spec"},
+		{"campaign with a broken spec", []string{"suite", "campaign", "--spec", testsupport.Contract("campaign-v0.1")}, "campaign spec:"},
 		{"suite of no scenarios", []string{"suite", "--domain", pondDomain, "--n", "0"}, "--n must be at least 1"},
 		{"unknown suite profile", append([]string{"suite", "--domain", pondDomain, "--profile", "bogus"}, domains...), `has no profile "bogus"`},
 		{"refconsumer empty window", []string{"refconsumer", "--trace", "t.jsonl", "--window", "0"}, "--window must be at least 1"},

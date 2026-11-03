@@ -1,0 +1,697 @@
+{
+ "case_verifications": [
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T09:55:09.970542659Z",
+   "window_ends_at": "2026-01-03T09:55:09.970542659Z",
+   "settled_at": "2026-10-28T20:58:24.229721000Z"
+  },
+  {
+   "entity_id": "site-a:pump-7",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:32:16.085102529Z",
+   "window_ends_at": "2026-01-03T10:32:16.085102529Z",
+   "settled_at": "2026-10-28T20:58:31.519617000Z"
+  },
+  {
+   "entity_id": "site-a:pump-6",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:43:00.000000000Z",
+   "window_ends_at": "2026-01-03T10:43:00.000000000Z",
+   "settled_at": "2026-10-28T20:58:33.569608000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:55:49.740185018Z",
+   "window_ends_at": "2026-01-03T10:55:49.740185018Z",
+   "settled_at": "2026-10-28T20:58:36.171042000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T13:53:14.499635613Z",
+   "window_ends_at": "2026-01-03T13:53:14.499635613Z",
+   "settled_at": "2026-10-28T20:59:22.362560000Z"
+  },
+  {
+   "entity_id": "site-a:pump-7",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T14:53:31.808550849Z",
+   "window_ends_at": "2026-01-04T14:53:31.808550849Z",
+   "settled_at": "2026-10-28T21:06:45.524628000Z"
+  },
+  {
+   "entity_id": "site-a:pump-1",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T15:08:17.191427817Z",
+   "window_ends_at": "2026-01-04T15:08:17.191427817Z",
+   "settled_at": "2026-10-28T21:07:11.979400000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T15:39:44.559771149Z",
+   "window_ends_at": "2026-01-04T15:39:44.559771149Z",
+   "settled_at": "2026-10-28T21:07:11.979400000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T16:54:57.737329576Z",
+   "window_ends_at": "2026-01-04T16:54:57.737329576Z",
+   "settled_at": "2026-10-28T21:07:11.979400000Z"
+  },
+  {
+   "entity_id": "site-a:pump-6",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-04T00:36:45.202886181Z",
+   "window_ends_at": "2026-01-05T00:36:45.202886181Z",
+   "settled_at": "2026-10-28T21:08:40.486549000Z"
+  },
+  {
+   "entity_id": "site-a:pump-4",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "not_verified",
+   "reason": "the action was not acknowledged",
+   "acted_at": "2026-01-04T22:09:07.740220578Z",
+   "window_ends_at": "2026-01-05T22:09:07.740220578Z",
+   "settled_at": "2026-10-28T21:10:46.570977000Z"
+  },
+  {
+   "entity_id": "site-a:pump-1",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-04T22:46:28.352197750Z",
+   "window_ends_at": "2026-01-05T22:46:28.352197750Z",
+   "settled_at": "2026-10-28T21:15:05.738474000Z"
+  },
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-04T22:46:49.084478155Z",
+   "window_ends_at": "2026-01-05T22:46:49.084478155Z",
+   "settled_at": "2026-10-28T21:15:05.790217000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "not_verified",
+   "reason": "a new situation opened on the entity inside the settle window",
+   "acted_at": "2026-01-05T06:49:08.157398376Z",
+   "window_ends_at": "2026-01-06T06:49:08.157398376Z",
+   "settled_at": "2026-10-28T21:16:03.340920000Z"
+  },
+  {
+   "entity_id": "site-a:pump-2",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-06T03:54:58.752360066Z",
+   "window_ends_at": "2026-01-07T03:54:58.752360066Z",
+   "settled_at": "2026-10-28T21:22:51.512204000Z"
+  },
+  {
+   "entity_id": "site-a:pump-6",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-06T04:52:27.695092294Z",
+   "window_ends_at": "2026-01-07T04:52:27.695092294Z",
+   "settled_at": "2026-10-28T21:23:02.659486000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-06T04:57:24.729486086Z",
+   "window_ends_at": "2026-01-07T04:57:24.729486086Z",
+   "settled_at": "2026-10-28T21:23:03.725608000Z"
+  },
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-06T06:49:09.079184841Z",
+   "window_ends_at": "2026-01-07T06:49:09.079184841Z",
+   "settled_at": "2026-10-28T21:23:32.133523000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "not_verified",
+   "reason": "a new situation opened on the entity inside the settle window",
+   "acted_at": "2026-01-06T13:45:01.000000000Z",
+   "window_ends_at": "2026-01-07T13:45:01.000000000Z",
+   "settled_at": "2026-10-28T21:24:21.879991000Z"
+  },
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-07T10:12:02.000000000Z",
+   "window_ends_at": "2026-01-08T10:12:02.000000000Z",
+   "settled_at": "2026-10-28T21:31:35.981300000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-07T11:22:27.888096785Z",
+   "window_ends_at": "2026-01-08T11:22:27.888096785Z",
+   "settled_at": "2026-10-28T21:31:50.230219000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-07T11:25:06.821627178Z",
+   "window_ends_at": "2026-01-08T11:25:06.821627178Z",
+   "settled_at": "2026-10-28T21:31:50.765794000Z"
+  },
+  {
+   "entity_id": "site-a:pump-1",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-07T13:42:37.964018419Z",
+   "window_ends_at": "2026-01-08T13:42:37.964018419Z",
+   "settled_at": "2026-10-28T21:32:23.961426000Z"
+  },
+  {
+   "entity_id": "site-a:pump-6",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-07T19:27:14.078462293Z",
+   "window_ends_at": "2026-01-08T19:27:14.078462293Z",
+   "settled_at": "2026-10-28T21:33:31.761191000Z"
+  },
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-08T15:29:28.419742586Z",
+   "window_ends_at": "2026-01-09T15:29:28.419742586Z",
+   "settled_at": "2026-10-28T21:40:49.981640000Z"
+  },
+  {
+   "entity_id": "site-a:pump-1",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-08T15:56:11.287145399Z",
+   "window_ends_at": "2026-01-09T15:56:11.287145399Z",
+   "settled_at": "2026-10-28T21:40:55.631357000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-08T15:56:49.222125512Z",
+   "window_ends_at": "2026-01-09T15:56:49.222125512Z",
+   "settled_at": "2026-10-28T21:40:55.734688000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-08T16:04:03.000000000Z",
+   "window_ends_at": "2026-01-09T16:04:03.000000000Z",
+   "settled_at": "2026-10-28T21:40:57.331337000Z"
+  }
+ ],
+ "rule_drafts": [
+  {
+   "draft_id": "rdraft_074144e3f9ede4a71ac50d7b",
+   "diagnosis_code": "misalignment",
+   "status": "proposed",
+   "attempts": 2,
+   "evidence_cases": 3,
+   "reason": "",
+   "input_tokens": 1138,
+   "output_tokens": 1684,
+   "created_at": "2026-10-28T20:58:36.171042000Z"
+  },
+  {
+   "draft_id": "rdraft_046faeafd7de72353d430314",
+   "diagnosis_code": "bearing_wear",
+   "status": "proposed",
+   "attempts": 1,
+   "evidence_cases": 3,
+   "reason": "",
+   "input_tokens": 1150,
+   "output_tokens": 1440,
+   "created_at": "2026-10-28T21:06:45.524628000Z"
+  },
+  {
+   "draft_id": "rdraft_190fa90e18eb915121d17d87",
+   "diagnosis_code": "bearing_wear",
+   "status": "proposed",
+   "attempts": 1,
+   "evidence_cases": 5,
+   "reason": "",
+   "input_tokens": 1600,
+   "output_tokens": 1582,
+   "created_at": "2026-10-28T21:08:12.305944000Z"
+  },
+  {
+   "draft_id": "rdraft_0956e612c783221bf33b772b",
+   "diagnosis_code": "bearing_wear",
+   "status": "proposed",
+   "attempts": 1,
+   "evidence_cases": 6,
+   "reason": "",
+   "input_tokens": 1818,
+   "output_tokens": 1790,
+   "created_at": "2026-10-28T21:11:12.290165000Z"
+  }
+ ],
+ "rule_proposals": [
+  {
+   "proposal_id": "rprop_074144e3f9ede4a71ac50d7b",
+   "diagnosis_code": "misalignment",
+   "status": "written",
+   "rule_when": "((features.axial_mean_15m / features.axial_mean_24h) >= 1.25) && (features.heartbeat_missing_5m == false)",
+   "envelope": "{\"axial_mean_15m\":{\"min\":2.7470588235294113,\"max\":2.7629411764705876},\"axial_mean_24h\":{\"min\":2.0545706371191104,\"max\":2.058262975778546},\"current_mean_15m\":{\"min\":29.97669902912623,\"max\":30.03168316831684}}",
+   "cap": "{\"axial_mean_15m\":{\"min\":2.4707647058823525,\"max\":3.0392352941176464},\"axial_mean_24h\":{\"min\":1.8487443395412557,\"max\":2.2640892733564004},\"current_mean_15m\":{\"min\":26.973530712294547,\"max\":33.03485148514852}}",
+   "replay_json": "b'{\"versions_examined\":29,\"would_fire\":3,\"decided\":3,\"agree\":3,\"disagree\":0,\"source_cases\":3,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T20:59:22.357551000Z",
+   "updated_at": "2026-10-28T21:00:08.930375000Z"
+  },
+  {
+   "proposal_id": "rprop_046faeafd7de72353d430314",
+   "diagnosis_code": "bearing_wear",
+   "status": "rejected",
+   "rule_when": "(features.vibration_mean_15m / features.vibration_mean_24h) > 1.25 && features.heartbeat_missing_5m == false",
+   "envelope": "{\"current_mean_15m\":{\"min\":29.983333333333327,\"max\":30.04757281553399},\"vibration_mean_15m\":{\"min\":4.110000000000001,\"max\":4.287222222222223},\"vibration_mean_24h\":{\"min\":3.0788573407202198,\"max\":3.2692525951557068}}",
+   "cap": "{\"current_mean_15m\":{\"min\":26.97857605177993,\"max\":33.05233009708739},\"vibration_mean_15m\":{\"min\":3.6812777777777788,\"max\":4.715944444444445},\"vibration_mean_24h\":{\"min\":2.7519320812046493,\"max\":3.5961778546712773}}",
+   "replay_json": "b'{\"versions_examined\":47,\"would_fire\":6,\"decided\":6,\"agree\":5,\"disagree\":1,\"source_cases\":3,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T21:07:11.937309000Z",
+   "updated_at": "2026-10-28T21:08:12.252785000Z"
+  },
+  {
+   "proposal_id": "rprop_190fa90e18eb915121d17d87",
+   "diagnosis_code": "bearing_wear",
+   "status": "rejected",
+   "rule_when": "((features.vibration_mean_15m / features.vibration_mean_24h) >= 1.25) && (!features.heartbeat_missing_5m)",
+   "envelope": "{\"current_mean_15m\":{\"min\":29.983333333333327,\"max\":30.04757281553399},\"vibration_mean_15m\":{\"min\":4.110000000000001,\"max\":4.290588235294117},\"vibration_mean_24h\":{\"min\":3.0788573407202198,\"max\":3.2692525951557068}}",
+   "cap": "{\"current_mean_15m\":{\"min\":26.97857605177993,\"max\":33.05233009708739},\"vibration_mean_15m\":{\"min\":3.6809411764705895,\"max\":4.719647058823529},\"vibration_mean_24h\":{\"min\":2.7519320812046493,\"max\":3.5961778546712773}}",
+   "replay_json": "b'{\"versions_examined\":137,\"would_fire\":7,\"decided\":7,\"agree\":6,\"disagree\":1,\"source_cases\":5,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T21:08:40.078517000Z",
+   "updated_at": "2026-10-28T21:11:12.272562000Z"
+  },
+  {
+   "proposal_id": "rprop_0956e612c783221bf33b772b",
+   "diagnosis_code": "bearing_wear",
+   "status": "rejected",
+   "rule_when": "(features.vibration_mean_15m / features.vibration_mean_24h > 1.1) && ((features.vibration_mean_15m - features.vibration_mean_24h) > 0.5)",
+   "envelope": "{\"current_mean_15m\":{\"min\":29.983333333333327,\"max\":30.04757281553399},\"vibration_mean_15m\":{\"min\":4.110000000000001,\"max\":5.321176470588236},\"vibration_mean_24h\":{\"min\":3.0788573407202198,\"max\":4.588898891966752}}",
+   "cap": "{\"current_mean_15m\":{\"min\":26.97857605177993,\"max\":33.05233009708739},\"vibration_mean_15m\":{\"min\":3.5778823529411774,\"max\":5.85329411764706},\"vibration_mean_24h\":{\"min\":2.6199674515235447,\"max\":5.047788781163428}}",
+   "replay_json": "b'{\"versions_examined\":141,\"would_fire\":10,\"decided\":8,\"agree\":7,\"disagree\":1,\"source_cases\":6,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T21:11:41.574876000Z",
+   "updated_at": "2026-10-28T21:12:28.253319000Z"
+  }
+ ],
+ "rule_evaluations": [
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 1,
+   "in_cap": 1,
+   "event_time": "2026-01-04T22:09:07.740220578Z",
+   "created_at": "2026-10-28T21:09:13.745081000Z"
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 0,
+   "in_cap": 1,
+   "event_time": "2026-01-04T22:46:28.352197750Z",
+   "created_at": "2026-10-28T21:09:20.445184000Z"
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 0,
+   "in_cap": 1,
+   "event_time": "2026-01-04T22:46:49.084478155Z",
+   "created_at": "2026-10-28T21:09:20.544216000Z"
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "audit",
+   "verdict": "agree",
+   "in_envelope": 1,
+   "in_cap": 1,
+   "event_time": "2026-01-06T04:57:24.729486086Z",
+   "created_at": "2026-10-28T21:18:30.414816000Z"
+  }
+ ],
+ "rule_fires": [
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "entity_id": "site-a:pump-2",
+   "event_time": "2026-01-06T03:54:58.752360066Z",
+   "situation_version": 3
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "entity_id": "site-a:pump-8",
+   "event_time": "2026-01-06T04:57:24.729486086Z",
+   "situation_version": 24
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "entity_id": "site-a:pump-5",
+   "event_time": "2026-01-07T10:12:02.000000000Z",
+   "situation_version": 29
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "entity_id": "site-a:pump-8",
+   "event_time": "2026-01-07T11:22:27.888096785Z",
+   "situation_version": 28
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "entity_id": "site-a:pump-3",
+   "event_time": "2026-01-08T16:04:03.000000000Z",
+   "situation_version": 33
+  }
+ ],
+ "policy_evaluations": [
+  {
+   "result": "approved",
+   "reason": "automatic_r0_r1",
+   "n": 35
+  }
+ ],
+ "commands": [
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T20:52:44.319926000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T20:53:03.221737000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T20:53:37.421754000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T20:54:01.970237000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T20:54:29.369989000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "schedule_maintenance",
+   "status": "reconciling",
+   "created_at": "2026-10-28T20:54:56.873238000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:00:54.075744000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-1",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:01:18.675370000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:01:56.625948000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T21:02:26.125031000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:02:46.674646000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:05:01.594985000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T21:09:24.737852000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "schedule_maintenance",
+   "status": "failed",
+   "created_at": "2026-10-28T21:09:40.337917000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-1",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:10:24.338958000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:10:46.540252000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:13:02.342417000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-2",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:17:12.864603000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:17:55.842389000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:17:55.843269000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:18:30.448352000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:21:06.869194000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:25:11.674002000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T21:26:06.532004000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:26:06.532946000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:26:43.082050000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-1",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:27:05.033713000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:29:39.660828000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:34:15.578141000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-1",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:34:44.229771000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:35:19.381176000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T21:35:19.383148000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "install_watch_condition",
+   "status": "failed",
+   "created_at": "2026-10-28T21:36:00.791003000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T21:38:29.633094000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T21:39:00.771401000Z"
+  }
+ ]
+}

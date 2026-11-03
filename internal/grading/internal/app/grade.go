@@ -15,7 +15,7 @@ import (
 
 type Options struct{ Artifact, Label, DomainsDir, AdaptersDir string }
 
-func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
+func GradeRun(ctx context.Context, options Options) (*score.RunScore, error) {
 	art, err := run.LoadArtifact(options.Artifact)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
@@ -26,9 +26,20 @@ func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
 	return gradeArtifact(ctx, options, art)
 }
 
-func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.Scorecard, error) {
+func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
+	graded, err := GradeRun(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+	if len(graded.Scorecards) != 1 {
+		return nil, fmt.Errorf("streamsim: %w: the run holds %d", domain.ErrNotOneLabel, len(graded.Scorecards))
+	}
+	return graded.Scorecards[0], nil
+}
+
+func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.RunScore, error) {
 	dir := filepath.Dir(options.Artifact)
-	verdict, gt, err := loadReports(dir, options.Label)
+	verdict, labels, err := loadReports(dir, options.Label)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +48,17 @@ func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact)
 		return nil, err
 	}
 	evidence.Verdict = verdict
-	return gradeRun(evidence, gt)
+	return gradeRun(evidence, labels)
 }
 
-func gradeRun(evidence score.Evidence, gt *model.GroundTruthRecord) (*score.Scorecard, error) {
-	card, err := score.Score(evidence, gt)
+func gradeRun(evidence score.Evidence, labels []*model.GroundTruthRecord) (*score.RunScore, error) {
+	graded, err := score.ScoreRun(evidence, labels)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return card, nil
+	return graded, nil
+}
+
+func Document(graded *score.RunScore) any {
+	return score.Document(graded)
 }

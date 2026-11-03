@@ -8,9 +8,9 @@ const (
 )
 
 const (
-	relayName        = "relay"
-	relayProtocol    = 1
-	heartbeatsMissed = 3
+	relayName             = "relay"
+	relayProtocol         = 1
+	HeartbeatsForHostLoss = 3
 )
 
 type Traced struct {

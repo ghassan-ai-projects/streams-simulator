@@ -1,6 +1,8 @@
 # Benchmark and release evidence
 
-> Status: Implemented evidence requirements; repository gates are green at the snapshot commit, with per-release evidence generation. Authority: CI, manifest command, artifacts, and tests. Verified by: smoke validation, full `make ci-check` run, and working-tree review. Last verified: 2026-09-13.
+This page covers the evidence behind a graded result (one use of the simulator) and, since the release gates are shared, behind a release claim.
+
+> Status: Implemented evidence requirements; repository gates are green at the snapshot commit, with per-release evidence generation. Authority: CI, manifest command, artifacts, and tests. Verified by: smoke validation, full `make ci-check` run, and working-tree review. Last verified: 2026-11-03.
 
 Evidence is part of the benchmark output. A prose statement such as “all gates are green” is not a substitute for the exact command, commit, toolchain, inputs, and artifact that support it.
 
@@ -24,14 +26,15 @@ Before publishing benchmark numbers, run the project’s required checks and the
 make ci-check
 make soak
 make perf
+make canvas-check   # when the canvas or its contracts changed
 make manifest MANIFEST_AUTHOR="Name <author@example>" MANIFEST_REVIEWER="Reviewer <review@example>"
 ```
 
-These commands are meaningful only when their required tools are present and the output is retained. The `ci-check` target intentionally fails closed for missing release-gate tools.
+These commands are meaningful only when their required tools are present and the output is retained. The `ci-check` target intentionally fails closed for missing release-gate tools. `soak`, `perf`, `test-long` and `test-race` are not part of `ci-check` or CI and run on demand; `phase-gate` adds `canvas-check`, the Enola `architecture` check and `behaviour-pin-check` to `ci-check`.
 
 ## Current repository status
 
-The full gate is green at the snapshot commit and the shipped inventory is eight committed domains. The checked-in [`release-manifest.json`](../../release-manifest.json) still describes the commit it was generated at, so regenerate it for the exact commit whose evidence you publish; a manifest from another commit is historical evidence only.
+The shipped inventory is eight committed domains and two adapters. The checked-in [`release-manifest.json`](../../release-manifest.json) records the commit it was generated at (`daad36e`) and placeholder author and reviewer identities, so it is not a release claim for any later commit; regenerate it for the exact commit whose evidence you publish; a manifest from another commit is historical evidence only.
 
 ## Evidence ownership
 

@@ -8,31 +8,32 @@ import (
 func loop(ev Evidence, gt *model.GroundTruthRecord) LoopMetrics {
 	v := ev.Verdict
 	calls := ev.Calls
-	m := loopFrom(v, gt, calls)
+	matchArg := responderArg(ev, gt)
+	m := loopFrom(v, gt, calls, matchArg)
 	if gt.ExpectedEffector != "" && len(calls) > 0 {
-		m.Resolved, m.TimeToResolutionNS = resolveTime(ev, gt)
+		m.Resolved, m.TimeToResolutionNS = resolveTime(ev, gt, matchArg)
 	}
 	if gt.DeadlineNS > 0 {
-		m.DeadlineAdhered = actsBeforeDeadline(calls, gt) && !m.FalseSuccess && !m.UnnecessaryAction
+		m.DeadlineAdhered = actsBeforeDeadline(calls, gt, matchArg) && !m.FalseSuccess && !m.UnnecessaryAction
 	}
 	return m
 }
 
-func resolveTime(ev Evidence, gt *model.GroundTruthRecord) (bool, int64) {
+func resolveTime(ev Evidence, gt *model.GroundTruthRecord, matchArg string) (bool, int64) {
 	state, faulted, deviation, ok := recoveryTarget(ev, gt)
 	if !ok {
 		return false, 0
 	}
-	start := firstSuccessfulCall(ev.Calls, gt.ExpectedEffector)
+	start := firstRightCall(ev.Calls, gt, matchArg)
 	if start == 0 {
 		return false, 0
 	}
 	return recoveryAfter(ev, gt.EntityID, state, start, faulted+0.5*deviation, deviation)
 }
 
-func actsBeforeDeadline(calls []world.EffectorCall, gt *model.GroundTruthRecord) bool {
+func actsBeforeDeadline(calls []world.EffectorCall, gt *model.GroundTruthRecord, matchArg string) bool {
 	for _, call := range calls {
-		if call.Effector == gt.ExpectedEffector && call.EntityID == gt.EntityID && call.EffectApplied && call.AtNS <= gt.DeadlineNS {
+		if rightCall(call, gt, matchArg) && call.AtNS <= gt.DeadlineNS {
 			return true
 		}
 	}
@@ -63,10 +64,10 @@ func recoveryLevels(ev Evidence, gt *model.GroundTruthRecord, state string) (flo
 	return faulted, deviation, deviation != 0
 }
 
-func firstSuccessfulCall(calls []world.EffectorCall, effector string) int64 {
+func firstRightCall(calls []world.EffectorCall, gt *model.GroundTruthRecord, matchArg string) int64 {
 	start := int64(0)
 	for _, call := range calls {
-		if call.Effector == effector && call.EffectApplied && (start == 0 || call.AtNS < start) {
+		if rightCall(call, gt, matchArg) && (start == 0 || call.AtNS < start) {
 			start = call.AtNS
 		}
 	}

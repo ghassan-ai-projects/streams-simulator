@@ -1,0 +1,331 @@
+{
+ "case_verifications": [
+  {
+   "entity_id": "site-a:pump-5",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T09:55:09.970542659Z",
+   "window_ends_at": "2026-01-03T09:55:09.970542659Z",
+   "settled_at": "2026-10-28T15:44:46.765437000Z"
+  },
+  {
+   "entity_id": "site-a:pump-7",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:32:16.085102529Z",
+   "window_ends_at": "2026-01-03T10:32:16.085102529Z",
+   "settled_at": "2026-10-28T15:44:53.647743000Z"
+  },
+  {
+   "entity_id": "site-a:pump-6",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:43:00.000000000Z",
+   "window_ends_at": "2026-01-03T10:43:00.000000000Z",
+   "settled_at": "2026-10-28T15:44:55.776057000Z"
+  },
+  {
+   "entity_id": "site-a:pump-3",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T10:55:49.740185018Z",
+   "window_ends_at": "2026-01-03T10:55:49.740185018Z",
+   "settled_at": "2026-10-28T15:44:58.046757000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-02T13:53:14.499635613Z",
+   "window_ends_at": "2026-01-03T13:53:14.499635613Z",
+   "settled_at": "2026-10-28T15:45:47.683156000Z"
+  },
+  {
+   "entity_id": "site-a:pump-7",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T14:53:31.808550849Z",
+   "window_ends_at": "2026-01-04T14:53:31.808550849Z",
+   "settled_at": "2026-10-28T15:53:37.295496000Z"
+  },
+  {
+   "entity_id": "site-a:pump-1",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "verified",
+   "reason": "closed and stayed closed through the settle window",
+   "acted_at": "2026-01-03T15:08:17.191427817Z",
+   "window_ends_at": "2026-01-04T15:08:17.191427817Z",
+   "settled_at": "2026-10-28T15:54:11.650550000Z"
+  },
+  {
+   "entity_id": "site-a:pump-8",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "verdict": "pending",
+   "reason": "awaiting the settle window",
+   "acted_at": "2026-01-05T07:02:15.880067048Z",
+   "window_ends_at": "2026-01-06T07:02:15.880067048Z",
+   "settled_at": null
+  }
+ ],
+ "rule_drafts": [
+  {
+   "draft_id": "rdraft_074144e3f9ede4a71ac50d7b",
+   "diagnosis_code": "misalignment",
+   "intent": "schedule_maintenance",
+   "preset": "misalignment",
+   "status": "proposed",
+   "attempts": 2,
+   "evidence_cases": 3,
+   "reason": "",
+   "input_tokens": 1133,
+   "output_tokens": 1514,
+   "created_at": "2026-10-28T15:44:58.046757000Z"
+  },
+  {
+   "draft_id": "rdraft_046faeafd7de72353d430314",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "status": "proposed",
+   "attempts": 1,
+   "evidence_cases": 3,
+   "reason": "",
+   "input_tokens": 1141,
+   "output_tokens": 1669,
+   "created_at": "2026-10-28T15:53:37.295496000Z"
+  },
+  {
+   "draft_id": "rdraft_44d0eb239f95023de738aad7",
+   "diagnosis_code": "bearing_wear",
+   "intent": "schedule_maintenance",
+   "preset": "bearing_wear",
+   "status": "proposed",
+   "attempts": 1,
+   "evidence_cases": 4,
+   "reason": "",
+   "input_tokens": 1365,
+   "output_tokens": 999,
+   "created_at": "2026-10-28T15:55:04.307275000Z"
+  }
+ ],
+ "rule_proposals": [
+  {
+   "proposal_id": "rprop_074144e3f9ede4a71ac50d7b",
+   "diagnosis_code": "misalignment",
+   "status": "written",
+   "rule_when": "(features.axial_mean_15m / features.axial_mean_24h) >= 1.25 && !(features.heartbeat_missing_5m)",
+   "envelope": "{\"axial_mean_15m\":{\"min\":2.7470588235294113,\"max\":2.7629411764705876},\"axial_mean_24h\":{\"min\":2.0546569646569615,\"max\":2.0582340720221604},\"current_mean_15m\":{\"min\":29.97669902912623,\"max\":30.03168316831684}}",
+   "replay_json": "b'{\"versions_examined\":215,\"would_fire\":3,\"decided\":3,\"agree\":3,\"disagree\":0,\"source_cases\":3,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T15:45:47.661097000Z",
+   "updated_at": "2026-10-28T15:46:33.374835000Z"
+  },
+  {
+   "proposal_id": "rprop_046faeafd7de72353d430314",
+   "diagnosis_code": "bearing_wear",
+   "status": "rejected",
+   "rule_when": "(features.vibration_mean_15m / features.vibration_mean_24h) >= 1.25 && features.heartbeat_missing_5m == false",
+   "envelope": "{\"current_mean_15m\":{\"min\":29.983333333333327,\"max\":30.04757281553399},\"vibration_mean_15m\":{\"min\":4.110000000000001,\"max\":4.287222222222223},\"vibration_mean_24h\":{\"min\":3.079294605809127,\"max\":3.269349030470912}}",
+   "replay_json": "b'{\"versions_examined\":230,\"would_fire\":6,\"decided\":6,\"agree\":5,\"disagree\":1,\"source_cases\":3,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T15:54:11.629476000Z",
+   "updated_at": "2026-10-28T15:55:04.259406000Z"
+  },
+  {
+   "proposal_id": "rprop_44d0eb239f95023de738aad7",
+   "diagnosis_code": "bearing_wear",
+   "status": "rejected",
+   "rule_when": "(features.vibration_mean_15m > (1.2 * features.vibration_mean_24h)) && (!features.heartbeat_missing_5m)",
+   "envelope": "{\"current_mean_15m\":{\"min\":29.983333333333327,\"max\":30.04757281553399},\"vibration_mean_15m\":{\"min\":4.110000000000001,\"max\":4.290588235294117},\"vibration_mean_24h\":{\"min\":3.079294605809127,\"max\":3.269349030470912}}",
+   "replay_json": "b'{\"versions_examined\":457,\"would_fire\":8,\"decided\":7,\"agree\":6,\"disagree\":1,\"source_cases\":4,\"source_not_verified\":0}'",
+   "reason": "campaign approver",
+   "created_at": "2026-10-28T15:55:27.056924000Z",
+   "updated_at": "2026-10-28T15:58:14.767804000Z"
+  }
+ ],
+ "rule_evaluations": [
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 1,
+   "in_cap": 1,
+   "event_time": "2026-01-04T22:09:07.740220578Z",
+   "created_at": "2026-10-28T15:56:05.537896000Z"
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 0,
+   "in_cap": 0,
+   "event_time": "2026-01-04T22:46:28.352197750Z",
+   "created_at": "2026-10-28T15:56:12.136233000Z"
+  },
+  {
+   "rule_id": "misalignment.schedule-maintenance.misalignment.17f5e82f53bc",
+   "kind": "shadow",
+   "verdict": "agree",
+   "in_envelope": 0,
+   "in_cap": 0,
+   "event_time": "2026-01-04T22:46:49.084478155Z",
+   "created_at": "2026-10-28T15:56:12.142465000Z"
+  }
+ ],
+ "policy_evaluations": [
+  {
+   "result": "approved",
+   "reason": "automatic_r0_r1",
+   "n": 20
+  },
+  {
+   "result": "denied",
+   "reason": "rate_limited",
+   "n": 13
+  }
+ ],
+ "commands": [
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:38:49.498854000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:39:22.396984000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:39:51.047556000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:40:12.897693000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:40:58.197708000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "schedule_maintenance",
+   "status": "reconciling",
+   "created_at": "2026-10-28T15:41:36.050264000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-7",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:47:14.943686000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-1",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T15:48:02.893835000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T15:48:58.043704000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T15:51:56.775022000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:00:26.133815000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-2",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:30:37.021308000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T16:31:17.771327000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:31:47.219267000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:32:17.672611000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-3",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:34:51.122653000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-5",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:39:00.820006000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-4",
+   "effector_route": "schedule_maintenance",
+   "status": "failed",
+   "created_at": "2026-10-28T16:39:35.970206000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-8",
+   "effector_route": "schedule_maintenance",
+   "status": "manual_review",
+   "created_at": "2026-10-28T16:40:00.570743000Z"
+  },
+  {
+   "normalized_target": "site-a:pump-6",
+   "effector_route": "install_watch_condition",
+   "status": "succeeded",
+   "created_at": "2026-10-28T16:44:00.369606000Z"
+  }
+ ]
+}

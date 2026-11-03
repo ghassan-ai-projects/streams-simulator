@@ -1,6 +1,6 @@
 # Troubleshooting
 
-> Status: Current evidence-first troubleshooting guide. Authority: CLI errors, MCP error taxonomy, artifacts, and known limitations. Verified by: failure-mode review. Last verified: 2026-08-17.
+> Status: Current evidence-first troubleshooting guide. Authority: CLI errors, MCP error taxonomy, artifacts, and known limitations. Verified by: failure-mode review. Last verified: 2026-11-03.
 
 Diagnose from evidence in this order: command output, run artifact, replay result, ledger, then world history and consumer verdict.
 
@@ -17,6 +17,8 @@ Diagnose from evidence in this order: command output, run artifact, replay resul
 | Shipped-domain schema failure | Working-tree inventory | A file in `domains/` failed validation or the inventory changed without matching test and manifest updates; see [limitations](../limitations.md). |
 | Gateway refused (`inventory_mismatch`, `contract_unsupported`, `environment_mismatch`), commands `policy_not_allowed` or `local_control`, a device `stale` or "Origin unknown" | Physical devices | [Physical devices: when something does not work](../guides/physical-devices.md#when-something-does-not-work). |
 | `make ci-check` stops early | Tooling or code | Read the first failing target; missing release tools are intentional failures. |
+| `make gate-ratchet` fails | Gate change | A cap rose, an allow-list grew, a coverage floor fell or a test hook was added against the branch point from main; move the code instead of loosening the gate (see [AGENTS.md](../../AGENTS.md)). |
+| `make canvas-check` or `make phase-gate` fails | Canvas or architecture tooling | Needs Node 24 and, for `architecture`, a pinned Enola baseline (`make architecture-baseline`); the first failing gate is the cause. |
 
 ## Escalation packet
 

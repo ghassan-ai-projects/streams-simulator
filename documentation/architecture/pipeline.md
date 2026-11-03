@@ -1,6 +1,6 @@
 # Event pipeline and delivery ledger
 
-> Status: Implemented summary. Authority: `internal/world`, `internal/perturb`, `internal/adapter`, `internal/sink`, and `internal/run`. Verified by: ledger and adapter tests. Last verified: 2026-08-17.
+> Status: Implemented summary. Authority: `internal/world`, `internal/perturb`, `internal/adapter`, `internal/sink`, `internal/run` and `internal/journal`. Verified by: ledger and adapter tests. Last verified: 2026-11-03.
 
 The pipeline answers one question precisely: what did the world do, and what did the consumer actually receive?
 
@@ -41,6 +41,10 @@ This placement prevents a common scoring error: a missing record can be a transp
 ## Delivery outcomes
 
 The ledger can distinguish successful delivery from perturbation and transport outcomes. Delayed, duplicated, reordered, rewritten, and mangled records can still be `delivered=true` transformations; dropped, omitted, or sink-error records are `delivered=false` outcomes. Consumers should not infer the reason for an absence from the trace alone; the ledger is the director-side evidence used after the consumer phase.
+
+## Run journal
+
+While a run happens, `internal/journal` writes two append-only JSON Lines streams (`run-journal-v0.1`): the observer stream, which holds only what a consumer could know, and the director stream under `sealed/`, which is truth-bearing. A report or grading step reads a finished run folder from these and the digests in `run.json`; see the [artifact reference](../reference/artifacts.md).
 
 ## Quiescence
 

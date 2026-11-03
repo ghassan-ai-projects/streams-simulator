@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -13,7 +14,38 @@ import (
 
 const MaxRecordsPerWait = 4096
 
-var ErrFlooded = errors.New("plantwire: the host sent more records than a barrier allows")
+var (
+	ErrFlooded    = errors.New("plantwire: the host sent more records than a barrier allows")
+	ErrHostSilent = errors.New("plantwire: no host heartbeat for three heartbeat intervals")
+)
+
+type beats struct {
+	mu    sync.Mutex
+	timer *time.Timer
+}
+
+func (b *beats) note(in domain.Inbound) {
+	interval, ok := domain.HeartbeatInterval(in)
+	if !ok {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if limit := domain.HeartbeatsForHostLoss * interval; b.timer == nil {
+		b.timer = time.NewTimer(limit)
+	} else {
+		b.timer.Reset(limit)
+	}
+}
+
+func (b *beats) alarm() <-chan time.Time {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.timer == nil {
+		return nil
+	}
+	return b.timer.C
+}
 
 func (l *Link) read() {
 	scanner := bufio.NewScanner(l.conn)
@@ -28,6 +60,7 @@ func (l *Link) read() {
 }
 
 func (l *Link) deliver(got domain.Inbound) bool {
+	l.beats.note(got)
 	select {
 	case l.incoming <- got:
 		return true
@@ -84,6 +117,8 @@ func (l *Link) next(ctx context.Context, expiry <-chan time.Time) (domain.Inboun
 		return stopped(ctx)
 	case <-expiry:
 		return domain.Inbound{}, true, nil
+	case <-l.beats.alarm():
+		return domain.Inbound{}, false, ErrHostSilent
 	case got, open := <-l.incoming:
 		return l.arrived(got, open)
 	}

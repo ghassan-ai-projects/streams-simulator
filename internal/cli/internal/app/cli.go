@@ -128,7 +128,7 @@ func (s *session) usage() {
 	_, _ = fmt.Fprint(s.stderr, usageText)
 }
 
-const usageText = `streamsim — deterministic world simulator for testing stream processors
+const usageText = `streamsim — deterministic, closed-loop world simulator
 
 Usage: streamsim <command> [flags]
 
@@ -138,15 +138,15 @@ Commands:
                                         kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
+  domain lint <path> [--hours 24] [--seed 1]
+                                        Plausibility check of a nominal day of a domain
   domain assumptions <domain> [--twin <choices> --kinds-dir]
-                                        What a domain or twin assumes (instruments, ranges, noise, responses)
-                                        and what it does not model; reads files only
+                                        What a domain or twin assumes and does not model
   domain lineage --domains-dir <dir>    How each plant is produced (composition or twin), its kind files,
                                         runs and edit route (--kinds-dir --twins-dir --compositions-dir --runs-dir)
   domain diff <a> <b> [--format]        What differs between two domains, each a domain file or a run folder
-                                        (read from run.json only): per kind readings, dynamics, commands,
-                                        faults, states, affected instances and relations; flags a changed
-                                        model under an unchanged version (--format json|markdown)
+                                        (run.json only); flags a changed model under an unchanged version
+                                        (--format json|markdown)
   kind validate <file>...|--stdin       Validate kind files (*.kind.json) or one document on stdin
                                         against the plant wire kind schema (--twin: also what a twin needs)
   kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
@@ -165,23 +165,24 @@ Commands:
   scenario from-run <run.json> --out f  Export the scenario that reproduces a run
   replay <run.json>                     Reproduce a run from its artifact
   verify <run.json>                     Verify a run artifact reproduces
-  mcp --role director                   Serve the director role over stdio
-                                        (--operator-addr binds the operator role
-                                        over streamable HTTP; sim.world.create
-                                        returns the endpoint with the token;
-                                        --kinds-dir checks domains that implement kind files)
+  mcp --role director                   Serve the director role over stdio (--operator-addr binds
+                                        the operator role over streamable HTTP; --kinds-dir)
   canvas --workspace <dir> --ui-dir <d> Serve the visual canvas on a loopback address
                                         (prints the address and a pairing code)
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json
                                         (--mcp <url> --token <t> --run <id> closes
                                         the loop over the operator endpoint)
   suite --domain --profile              Generate an audited graded suite
+  suite campaign --spec --out           Generate a campaign of one-fault runs and their session plans
   score --run --label                   Offline scorecard from artifacts
   report <run-dir>                      Summarize a run folder (--format json|markdown,
                                         --out <file>, --replay)
   report compare --a --b                Compare two ended runs (reference a)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
+  plantwire host|node|relay|connect|replay-trace|twin-report
+                                        Plant wire sessions: a run beside real or simulated devices
+                                        (connect --plan <file>; see documentation/reference/cli.md)
   device serve --socket <path>          Serve the device emulator over a UDS
                                         (state/receipt link; --world enables plant wiring)
   help

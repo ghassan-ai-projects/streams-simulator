@@ -203,7 +203,7 @@ func (r *Relay) TickBy(elapsedMS int64) Moves {
 		return moves
 	}
 	r.host.silent += elapsedMS
-	if r.host.silent >= heartbeatsMissed*r.host.interval {
+	if r.host.silent >= HeartbeatsForHostLoss*r.host.interval {
 		r.loseHost(&moves)
 	}
 	return moves

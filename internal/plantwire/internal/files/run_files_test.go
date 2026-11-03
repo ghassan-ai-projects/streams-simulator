@@ -60,3 +60,26 @@ func TestARunFileOverItsLimitIsRefusedBeforeItIsHeldInMemory(t *testing.T) {
 		t.Fatalf("ReadRunFileUpTo = %v, %v, want kernel.ErrTooLarge", err, present)
 	}
 }
+
+func TestARunFileIsWrittenOwnerOnlyAndReadBack(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if err := WriteRunFile(dir, "label.json", []byte("{}\n")); err != nil {
+		t.Fatal(err)
+	}
+	raw, present, err := ReadRunFile(dir, "label.json")
+	if err != nil || !present || string(raw) != "{}\n" {
+		t.Fatalf("ReadRunFile = %q, %v, %v, want what was written", raw, present, err)
+	}
+	if info, err := os.Stat(filepath.Join(dir, "label.json")); err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("mode = %v (%v), want 0600", info.Mode().Perm(), err)
+	}
+}
+
+func TestARunFileThatCannotBeWrittenIsNamedInTheError(t *testing.T) {
+	t.Parallel()
+	err := WriteRunFile(filepath.Join(t.TempDir(), "absent"), "label.json", nil)
+	if !errors.Is(err, os.ErrNotExist) || !strings.Contains(err.Error(), "write label.json") {
+		t.Fatalf("WriteRunFile = %v, want the file named and the cause kept", err)
+	}
+}

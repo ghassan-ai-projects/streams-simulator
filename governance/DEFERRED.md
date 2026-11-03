@@ -540,3 +540,15 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > verify a sensor case. Found by reading the domain (rule-promotion scenarios, 2026-10-25), not by running it; other domains not
 > checked. Trigger to fix: before the lying-sensor scenario of `docs/rule-promotion/SCENARIOS.md`; then the domain gains a
 > `recalibrate_probe` effector or maintenance clears the bias, with a failing test first.
+> Still open in the pinned reference domain. Worked around in `examples/pump-station/pump-station.domain.json` (2026-10-27): its
+> `schedule_maintenance` carries a responder on `work_order`, so a work order naming `sensor_drift` or `sensor_failure` clears the
+> fault and the bias falls (`internal/world/pump_station_test.go`). A test keeps that world equal to the reference apart from the
+> responder (`internal/domain/pump_station_fork_test.go`).
+
+> D-122 (**Medium**; a responder clears a fault that has not started): `dispatchResponder` (`internal/world/internal/domain/follow_up.go`)
+> matches the faults registered on the entity and active at the arrival time (the call plus `delay_s`), whatever their onset. A
+> planned disturbance of a connected session is registered when the session starts, so a work order sent before its onset clears
+> it if the onset falls within `delay_s`; the same fault injected later by the director is not yet registered and is not cleared.
+> With `pump-station` (1 h job, fault onset within the first 12 h) about one bearing run in twelve could be cured by an early,
+> routine work order. Found in review of the pump-station round (2026-10-27). Trigger to fix: before a campaign consumer sends work
+> orders before it sees a fault; then the responder matches only faults whose onset is at or before the call, with a failing test first.

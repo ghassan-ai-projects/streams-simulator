@@ -9,4 +9,6 @@ type Options = app.Options
 
 var ErrRunUnblinded = layer.ErrRunUnblinded
 
+var ErrNotOneLabel = layer.ErrNotOneLabel
+
 type ReplayMismatchError = layer.ReplayMismatchError

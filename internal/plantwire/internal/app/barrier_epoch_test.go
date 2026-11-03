@@ -1,11 +1,10 @@
 package app
 
 import (
-	"errors"
 	"testing"
 )
 
-func TestAMetBarrierResetsTheMissedCount(t *testing.T) {
+func TestMissedBarriersBetweenMetOnesNeverLoseTheHost(t *testing.T) {
 	t.Parallel()
 	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) { h.silent = syncs%3 != 0 }}
 	if _, err := session(t, host, 9); err != nil {
@@ -13,17 +12,6 @@ func TestAMetBarrierResetsTheMissedCount(t *testing.T) {
 	}
 	if got := countOf(host.types(), "NSYNC"); got != 9 {
 		t.Fatalf("%d barriers, want all 9", got)
-	}
-}
-
-func TestMissesSeparatedByAMetBarrierNeverAddUpToHostLoss(t *testing.T) {
-	t.Parallel()
-	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) { h.silent = syncs != 3 }}
-	if _, err := session(t, host, 6); !errors.Is(err, ErrHostLost) {
-		t.Fatalf("err = %v, want host loss after three consecutive misses following the met barrier", err)
-	}
-	if got := countOf(host.types(), "NSYNC"); got != 6 {
-		t.Fatalf("%d barriers, want 2 misses + 1 met + 3 misses = 6", got)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	wire "github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -177,6 +178,9 @@ func TestAQueuedCommandRunsAtAMissedBarrierButNeverAfterTheHostIsLost(t *testing
 				h.reply("DCMD", set(commandFields("c-later", "meter-1", "shed_load", map[string]any{"meter_id": "m"}, sliceEnd(1)), "not_before_ns", sliceEnd(dueSlice)))
 				h.reply("HSYNC", map[string]any{"through_seq": uint64(0)})
 				h.silent = true
+			}
+			if syncs == 3 {
+				h.hangUp = uds.ErrHostSilent
 			}
 		}}
 		options := sliceOptions(6)

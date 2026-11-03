@@ -98,6 +98,24 @@ func TestAnUnpacedSessionKeepsTheFixedStartAndAVirtualClock(t *testing.T) {
 	}
 }
 
+func TestAnUnpacedSessionStartsItsWorldAtThePlansOffset(t *testing.T) {
+	t.Parallel()
+	hostPath, out := testsupport.SocketPath(t), filepath.Join(t.TempDir(), "c-2")
+	host := serveWireHost(t, hostPath, false)
+	plan := strings.TrimSuffix(planText(hostPath, ""), "}") + `,"start_s":86400}`
+	options := connectOptions(t, plan, out)
+	cancel, done := startConnect(t, options, false)
+	host.waitFor(func(r []map[string]any) bool { return len(syncTimes(r)) >= 2 })
+	cancel()
+	if ended := <-done; ended.err != nil {
+		t.Fatal(ended.err)
+	}
+	want := model.DefaultStartTimeNS + 86400*int64(time.Second)
+	if start, times := recordedStartNS(t, out), syncTimes(host.snapshot()); start != want || times[0] != want+options.SliceNS {
+		t.Fatalf("the session starts at %d and first syncs %d, want %d and one slice later", start, times[0], want)
+	}
+}
+
 func TestAPacedMixedSessionAnnouncesTheWallClockAndRecordsItsStart(t *testing.T) {
 	t.Parallel()
 	hostPath, out := testsupport.SocketPath(t), filepath.Join(t.TempDir(), "c-3")

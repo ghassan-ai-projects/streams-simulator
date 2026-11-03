@@ -36,3 +36,10 @@ func ReadRunFileUpTo(dir, name string, limit int64) (raw []byte, present bool, e
 	}
 	return raw, true, nil
 }
+
+func WriteRunFile(dir, name string, data []byte) error {
+	if err := kernel.WriteAtomic(filepath.Join(dir, name), data); err != nil {
+		return fmt.Errorf("plantwire: write %s: %w", name, err)
+	}
+	return nil
+}

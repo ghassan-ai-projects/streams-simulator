@@ -16,6 +16,7 @@ type SessionPlan struct {
 	Real          []RealBinding `json:"real,omitempty"`
 	Policies      []string      `json:"policies,omitempty"`
 	Disturbances  []Disturbance `json:"disturbances,omitempty"`
+	StartS        *int64        `json:"start_s,omitempty"`
 	Pace          string        `json:"pace,omitempty"`
 }
 
@@ -38,6 +39,13 @@ func (p *SessionPlan) WorldSeed() uint64 {
 		return 1
 	}
 	return *p.Seed
+}
+
+func (p *SessionPlan) WorldStartNS() int64 {
+	if p.StartS == nil {
+		return DefaultStartTimeNS
+	}
+	return DefaultStartTimeNS + *p.StartS*1e9
 }
 
 func (p *SessionPlan) PacedByWall() bool {

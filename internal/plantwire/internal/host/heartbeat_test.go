@@ -9,7 +9,7 @@ func TestTheHostBeatsWithAnIncreasingHeartbeatOnlyWhileItsSessionIsLive(t *testi
 		t.Fatalf("a host without a session beat: %v", beats)
 	}
 	accepted := h.Receive(birth(t, "simulated"))
-	if accepted[0]["heartbeat"] != int64(0) || accepted[0]["heartbeat_interval_ms"] != HeartbeatIntervalMS {
+	if accepted[0]["heartbeat"] != int64(0) || accepted[0]["heartbeat_interval_ms"] != int64(DefaultHeartbeatMS) {
 		t.Fatalf("handshake STATE = %v, want heartbeat 0 at the declared interval", accepted[0])
 	}
 	for want := int64(1); want <= 3; want++ {
