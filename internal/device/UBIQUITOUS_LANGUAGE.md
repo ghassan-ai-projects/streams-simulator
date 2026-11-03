@@ -1,7 +1,7 @@
 # Ubiquitous language — device
 
 A wire-faithful emulator of the serial device at the far end of the
-Agentic Stream serial-effector boundary. It is a test instrument: the effect a
+Agentic Stream serial-effector boundary. The effect a
 command has on the plant is the ground truth, and an acknowledgement is never
 proof of that effect.
 

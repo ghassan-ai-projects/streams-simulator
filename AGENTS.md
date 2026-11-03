@@ -117,8 +117,8 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 
 Dependency direction:
 
-- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
-- `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`; `mcp` imports none of those directly
+- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `plantwire`, `canvasbridge`, `component`, `lint`, `device`, `deviceworld`, `domain`, `adapter`, `kernel`, `model`)
+- `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`component`; `mcp` imports none of those directly
 - `grading` -> `run`/`score`; `report` -> `grading`/`run`/`journal`; the CLI holds no business logic, only flags, documents and failures
 - `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `plantwire` drives a `run` as a plant wire node. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
