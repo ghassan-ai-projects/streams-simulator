@@ -51,3 +51,22 @@ func TestScoreRefusesAMissingLabelAndToleratesAMissingDomain(t *testing.T) {
 		t.Fatalf("a run without a domain scores without loop recovery levels: %v", err)
 	}
 }
+
+func TestScoreRunDocumentIsTheCardForOneLabelAndTheRunForOtherCounts(t *testing.T) {
+	t.Parallel()
+	ev := score.Evidence{RunID: "r-1", Verdict: &model.Verdict{}, Ledger: []model.LedgerRecord{}}
+	one, err := score.ScoreRun(ev, []*model.GroundTruthRecord{label()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := score.Document(one).(*score.Scorecard); !ok {
+		t.Fatalf("one label: document = %T, want the scorecard", score.Document(one))
+	}
+	none, err := score.ScoreRun(ev, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := score.Document(none).(*score.RunScore); !ok || got.RunID != "r-1" || len(got.Scorecards) != 0 {
+		t.Fatalf("no label: document = %+v", score.Document(none))
+	}
+}
