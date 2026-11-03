@@ -1,8 +1,8 @@
 # Physical devices: a real board beside simulated ones
 
-> Status: Implemented for the binary, the bridge and the canvas; the physical side is not verified by this repository. Authority: `internal/plantwire`, `internal/canvasbridge`, `canvas/`, the [plant wire contract](../../contracts/plant-wire/SPEC.md) and the session, node-control, interrupt-log and twin-report contracts. Verified by: unit, contract, component and end-to-end tests that run the real binary against a scripted stand-in gateway. No test or claim here involves a real microcontroller; the bench checks are the owner's. Last verified: 2026-10-19.
+> Status: Implemented for the binary, the bridge and the canvas; the physical side is not verified by this repository. Authority: `internal/plantwire`, `internal/canvasbridge`, `canvas/`, the [plant wire contract](../../contracts/plant-wire/SPEC.md) and the session, node-control, interrupt-log and twin-report contracts. Verified by: unit, contract, component and end-to-end tests that run the real binary against a scripted stand-in gateway. No test or claim here involves a real microcontroller; the bench checks are the owner's. Last verified: 2026-11-03.
 
-This guide is for someone who has to test a stream processor (a consumer, together with its plant wire host) against a real board that sits next to simulated ones, and who wants the session recorded so it can be replayed. It explains the concepts first, then one path through the canvas and the command line, then the limits.
+This guide is for someone who wants a real board to sit next to simulated ones, in front of a consumer and its plant wire host, with the session recorded so it can be replayed. It explains the concepts first, then one path through the canvas and the command line, then the limits.
 
 ## What this is for
 

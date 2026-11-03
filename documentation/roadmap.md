@@ -1,6 +1,6 @@
 # Roadmap and open work
 
-> Status: Maintainer backlog, not a delivery promise. Authority: current limitations and accepted decisions. Verified by: documentation review. Last verified: 2026-09-13.
+> Status: Maintainer backlog, not a delivery promise. Authority: current limitations and accepted decisions. Verified by: documentation review. Last verified: 2026-11-03.
 
 This is a status map, not a promise of dates. The implementation plan and historical reviews remain in [`docs/`](../docs/); this page names the work that matters to users and maintainers now.
 
@@ -9,6 +9,8 @@ This is a status map, not a promise of dates. The implementation plan and histor
 - Deterministic world, dynamics, faults, perturbations, adapters, sinks, run artifacts, replay, and verification.
 - Director MCP surface and token-scoped operator endpoint.
 - Reference consumer, truth sealing/reveal, scoring, suite generation, baseline audit, and release-manifest command.
+- Plant authoring: the component library, composition, `domain lint`, `domain diff`, `domain assumptions` and `domain lineage`, with the visual canvas (`streamsim canvas`) as a client of the same commands.
+- Run folders with journals, reports (`report`, `report compare`) and offline grading; generated suites and one-fault campaigns (`suite campaign`).
 - Test coverage for the nine non-negotiables, including analytic cross-check, ledger, quiescence, oracle isolation, injection, silent no-effect, and trivial-baseline controls.
 - Physical devices ([guide](guides/physical-devices.md)): kind files and twins, kind capture from a board, the relay and mixed sessions, the field trace, the live control plane, node interrupts, the twin-versus-board report and the session policy allow-list, all tested against a scripted stand-in gateway.
 
@@ -39,7 +41,7 @@ Nothing below changes a contract unless it says so. The deferred items with thei
 
 ## Change policy
 
-Every roadmap item must identify its affected contract, invariant, test evidence, and documentation page before implementation. “More domains” or “more scenarios” is not progress if it makes the instrument less trustworthy.
+Every roadmap item must identify its affected contract, invariant, test evidence, and documentation page before implementation. “More domains” or “more scenarios” is not progress if it makes the simulator less trustworthy.
 
 ## Next reads
 

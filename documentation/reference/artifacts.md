@@ -1,6 +1,6 @@
 # Artifact reference
 
-> Status: Implemented reference. Authority: `internal/model/run.go`, `internal/run/internal/app/run.go`, and the run-artifact schema. Verified by: quickstart output inventory and replay tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/model/run.go`, `internal/run/internal/app/run.go`, and the run-artifact schema. Verified by: quickstart output inventory and replay tests. Last verified: 2026-11-03.
 
 An output directory is the evidence bundle for one run. The exact contents depend on the sink and whether a verdict was submitted, but the standard file-based path writes these files:
 
@@ -19,9 +19,9 @@ An output directory is the evidence bundle for one run. The exact contents depen
 | `label.json` | Ground-truth label supplied beside a run when offline scoring needs it. | External scoring input; not written by `run.End`. `plantwire connect` writes it when a session ends cleanly and its plan holds exactly one disturbance (the sealed ground truth of that disturbance); it names the fault, so the consumer under test never gets it. |
 | `labels.json` | The sealed ground truth of a session with no disturbance or several: a JSON array with one `label.json` record per planned disturbance, in plan order (`scenario_id` `<domain>/0001`, `/0002`, …; a negative-class disturbance has `is_negative_class`), empty for a plan with none. | Written by `plantwire connect` instead of `label.json` when the plan does not hold exactly one disturbance. Same secrecy as `label.json`. `streamsim score` reads whichever of the two the folder holds. |
 
-The standard run output is the five files through `verdict.json` in the table above. `label.json` is an external input. `streamsim score` prints a derived scorecard to standard output; it does not write a `scorecard.json` file. A reporting harness may save that output beside the run, but such a file is not a simulator contract.
+A run with `--out` writes six files: `run.json`, `trace.jsonl`, `ledger.jsonl`, `world_state_history.jsonl`, `journal.jsonl` and `sealed/journal.jsonl`. The other files in the table exist only for the sessions or steps named there: `verdict.json` is the consumer's report (`refconsumer --out` writes one), and `label.json` is an external input. `streamsim score` prints a derived scorecard to standard output; it does not write a `scorecard.json` file. A reporting harness may save that output beside the run, but such a file is not a simulator contract.
 
-`run.json` also carries the experiment identity and status fields needed for replay: `world_config`, `platform`, `world_digest`, `applied_perturbations`, `unblinded`, `mode` (`evaluate` or `explore`), `journal_digest`, `sealed_journal_digest`, `error`, and nested `counts`. Consult the [run-artifact schema](../../contracts/run-artifact-v0.1.schema.json) for exact field types and required properties.
+`run.json` also carries the experiment identity and status fields needed for replay: `world_config`, `platform`, `world_digest`, `applied_perturbations`, `unblinded`, `mode` (`evaluate` or `explore`), `expected_trace_digest`, `ledger_digest`, `history_digest`, `journal_digest`, `sealed_journal_digest`, `journal_file_digest`, `sealed_journal_file_digest`, `error`, and nested `counts`. The `*_file_digest` members cover the journal files as written, session records included; `journal_digest` and `sealed_journal_digest` cover the replayable stream only. Consult the [run-artifact schema](../../contracts/run-artifact-v0.1.schema.json) for exact field types and required properties.
 
 ## The field trace
 

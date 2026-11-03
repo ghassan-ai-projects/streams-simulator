@@ -1,6 +1,6 @@
 # Evaluation workflow
 
-> Status: Partially automated workflow. Authority: suite, run, score, and MCP implementations. Verified by: CLI smoke tests and current limitations. Last verified: 2026-08-17.
+> Status: Partially automated workflow. Authority: suite, run, score, and MCP implementations. Verified by: CLI smoke tests and current limitations. Last verified: 2026-11-03.
 
 This is the operational path for generating and scoring a consumer evaluation. It assumes the exact domain, profile, adapter, seed, and consumer version have been chosen before the run begins.
 
@@ -10,7 +10,7 @@ This is the operational path for generating and scoring a consumer evaluation. I
 go run ./cmd/streamsim suite --domain rotating-machinery --profile nominal --n 100 --seed 7 --out suites
 ```
 
-The command reports the suite path, admitted scenarios, trivial exclusions, and terminal audit state. The suite records the domain, profile, seed, scenarios, and labels; it does not select an adapter or execute the scenarios. Do not treat requested scenario count as admitted count.
+The command prints `{suite, scenarios, trivial_excluded, terminal_state}`: the suite path, admitted scenarios, trivial exclusions, and the terminal audit state. A small `--n` cannot meet the suite's coverage rules, and `terminal_state` then lists what is unmet; read it before using the suite. The suite records the domain, profile, seed, scenarios, and labels; it does not select an adapter or execute the scenarios. Do not treat requested scenario count as admitted count.
 
 ## 2. Run the consumer
 
@@ -22,7 +22,7 @@ This step is currently a harness responsibility, not a `streamsim suite` subcomm
 go run ./cmd/streamsim score --run /path/to/run.json --label /path/to/label.json
 ```
 
-The current CLI reads `verdict.json` and `ledger.jsonl` beside the run artifact and uses `label.json` beside it unless `--label` is supplied. It prints the derived scorecard to standard output; a batch harness must persist that output. Offline CLI scoring does not receive an effector-call log, so action-loop metrics are incomplete; use the MCP director score path when action evidence is part of the benchmark.
+The CLI reads `verdict.json` beside the run artifact and uses `label.json` (or `labels.json`) beside it unless `--label` is supplied. It replays the artifact, so the effector calls, ledger and state history that decide action-loop metrics come from the replay, not from files a consumer could edit, and the scorecard agrees with the online one. It prints the scorecard to standard output; a batch harness must persist that output. For many one-fault runs, `suite campaign` generates the plans and labels; see the [CLI reference](../reference/cli.md#suite-campaign).
 
 ## 4. Verify and preserve evidence
 

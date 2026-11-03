@@ -1,14 +1,14 @@
 # Contract reference
 
-> Status: Implemented contract index. Authority: machine-readable schemas under `contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-10-13.
+> Status: Implemented contract index. Authority: machine-readable schemas under `contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-11-03.
 
-The JSON schemas under [`contracts/`](../../contracts/) are the canonical contract files for this repository. The copies under [`internal/schemas/`](../../internal/schemas/) are embedded runtime copies; tests prove they are byte-identical to the canonical files.
+The JSON schemas under [`contracts/`](../../contracts/) are the canonical contract files for this repository. The copies under [`internal/schemas/`](../../internal/schemas/) are embedded runtime copies; tests prove they are byte-identical to the canonical files. Two contracts have no embedded copy: `sim-event-v0.1` (validated by adapter conformance tests) and `cli-output-v0.1` (validated by tests over real command output).
 
 ## Schema catalog
 
 | Contract | Role |
 | --- | --- |
-| [`sim-event-v0.1`](../../contracts/sim-event-v0.1.schema.json) | Native event envelope emitted by the world. |
+| [`sim-event-v0.1`](../../contracts/sim-event-v0.1.schema.json) | Native event envelope emitted by the world. Not embedded: adapter conformance tests validate against it. |
 | [`output-adapter-v0.1`](../../contracts/output-adapter-v0.1.schema.json) | Declarative projection from native events to consumer output. |
 | [`domain-spec-v0.2`](../../contracts/domain-spec-v0.2.schema.json) | Data-defined world as kinds and instances: state, dynamics, channels, faults, effectors, profiles. |
 | [`ground-truth-v0.1`](../../contracts/ground-truth-v0.1.schema.json) | Sealed oracle record used after the consumer phase. |
@@ -27,12 +27,16 @@ The JSON schemas under [`contracts/`](../../contracts/) are the canonical contra
 | [`domain-assumptions-v0.1`](../../contracts/domain-assumptions-v0.1.schema.json) | The document `streamsim domain assumptions <domain.json>` prints: per reading the instrument, range, resolution, noise and cadence, per command the response, gain and time constant, where each fact is recorded, and what the model does not reproduce, as stable codes ([the command](cli.md#domain-assumptions)). Embedded: the command validates its document against it before printing. |
 | [`domain-lineage-v0.1`](../../contracts/domain-lineage-v0.1.schema.json) | The document `streamsim domain lineage` prints: per plant the composition or twin that produces it and whether it still does, its kind files, the runs that used it and whether they used its current version, and the edit route; per kind file the twins that include it ([the command](cli.md#domain-lineage)). Embedded: the command validates its document against it before printing. |
 | [`domain-diff-v0.1`](../../contracts/domain-diff-v0.1.schema.json) | The document `streamsim domain diff <a> <b>` prints: what differs between two domain documents (files or the `domain_spec` of run folders), per device kind with the instances and relations each change reaches, whether the model changed under an unchanged id and version, and a count of everything that is equal ([the command](cli.md#domain-diff)). Embedded: the command validates its document against it before printing. |
+| [`component-v0.1`](../../contracts/component-v0.1.schema.json) | Reusable equipment: a domain-spec kind without channels or name, with its measurement points, ports, presets and parameters. Embedded: the library loader validates every file against it. |
+| [`instrument-v0.1`](../../contracts/instrument-v0.1.schema.json) | A reusable sensor: attached at a measurement point it becomes a channel. Embedded: the library loader validates every file against it. |
+| [`component-vocabulary-v0.1`](../../contracts/component-vocabulary-v0.1.schema.json) | Units, unit families, port types and ISA-5.1 tag letters a component library uses; a customer library may add its own. Embedded: the library loader validates it. |
+| [`composition-v0.1`](../../contracts/composition-v0.1.schema.json) | A plant built from library equipment and instruments; `domain compose` writes it as an ordinary domain ([the command](cli.md#domain-compose)). Embedded: the command validates every composition against it. |
 | [`cli-output-v0.1`](../../contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
 
 The plant wire has its own self-contained contract under
 [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md): the specification, one schema per record, fixtures (valid,
 invalid, rules, must-ignore, injection and exchanges), a pinned `DIGEST` and its `VERSION`. `internal/plantwire` embeds a byte-identical copy of the
-schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract. A host and the simulator accept only the contract version and digest they were built with (currently 1.5.0). A kind file (`schemas/KIND`) is exactly one `NBIRTH.kinds` entry without its `kind_digest`; since contract 1.1.0 every announced kind carries `kind_digest`, the SHA-256 of the entry's RFC 8785 canonical JSON, and a host refuses a session whose digest does not hold (`inventory_mismatch`). Since contract 1.2.0 every board in
+schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract. A host and the simulator accept only the contract version and digest they were built with (currently 1.5.0). Since contract 1.5.0 a host is lost only by missed `STATE` heartbeats on every node, simulated or hardware; a missed barrier is recorded and the world advances (SPEC section 8; no record changed). A kind file (`schemas/KIND`) is exactly one `NBIRTH.kinds` entry without its `kind_digest`; since contract 1.1.0 every announced kind carries `kind_digest`, the SHA-256 of the entry's RFC 8785 canonical JSON, and a host refuses a session whose digest does not hold (`inventory_mismatch`). Since contract 1.2.0 every board in
 an `NBIRTH` names its environment (`simulated` or `hardware`) and a node may be `mixed`; a host checks the node against its
 boards and against its own setting (SPEC section 2). Since contract 1.3.0 an `HSYNC` may carry `command_evidence`: the host's own decision whether a
 command's declared feedback metric was observed, per command, device, boot and metric (SPEC section 9); without it a

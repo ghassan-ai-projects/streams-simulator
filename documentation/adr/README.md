@@ -9,6 +9,7 @@ The full decision record is [`docs/DECISIONS.md`](../../docs/DECISIONS.md). This
 | Data-defined domains/effectors | Domain behavior is JSON data loaded through one path; no per-domain production branch. | Implemented |
 | File-based run artifacts | Run replay and persistence use JSON/JSONL artifacts rather than a database. | Implemented; supersedes earlier storage design text |
 | Director/operator separation | The director owns truth; the operator receives only nameplate, effectors, invocation, and report. | Implemented |
+| Gates only ratchet | A gate cap, allow-list, coverage floor or test hook may not loosen without owner approval; `make gate-ratchet` enforces it against the branch point from main. | Implemented |
 | Quiescence before scoring | Consumer work must settle or the run is marked incomplete. | Implemented |
 
 ## How to read decisions

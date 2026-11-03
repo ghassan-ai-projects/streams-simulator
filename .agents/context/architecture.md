@@ -2,7 +2,7 @@
 
 ## Repository Architecture
 
-The accepted architecture is summarized in [`documentation/architecture/`](../../documentation/architecture/), while the detailed design record remains in [docs/design/](../../docs/design/). Read both when a change affects a protocol, contract, trust boundary, or replay guarantee.
+The public summary of the architecture is [`documentation/architecture/overview.md`](../../documentation/architecture/overview.md) (module groups, system shape and import direction); this file adds the per-module layers and ownership notes agents need. The complete import allow-list is `test/architecture/dependencies_test.go`; the package kinds and layer rules are in [`governance/MODULARITY_STANDARD.md`](../../governance/MODULARITY_STANDARD.md). The design record in [docs/design/](../../docs/design/) is a dated archive: read it for history, and verify it against the code and `contracts/`. Read the relevant `documentation/architecture/` page when a change affects a protocol, contract, trust boundary, or replay guarantee.
 
 ## Current Structure
 
@@ -12,7 +12,10 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `.github/workflows/ci.yml` defines CI parity for core checks.
 - `.golangci.yml` and `.pre-commit-config.yaml` enforce code quality and hygiene.
 - `documentation/` holds curated public usage, architecture, benchmark, operations, and governance docs.
-- `docs/` holds the engineering archive, canonical contract sources, design history, research, adapters/examples fixtures, and reviews.
+- `contracts/` holds every JSON Schema contract and the self-contained plant wire contract (`contracts/plant-wire/`); `domains/`, `adapters/` and `examples/` hold shipped data.
+- `canvas/` is the TypeScript canvas client (its own toolchain; `canvas/ARCHITECTURE.md` is generated from `canvas/architecture.json`).
+- `governance/` holds the registers the gates read; `test/architecture` holds the executable gates.
+- `docs/` is a dated working archive of design notes, research, plans and reviews; nothing outside it reads from it.
 
 ## Current Package Ownership
 
@@ -40,7 +43,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/refconsumer`: shipped reference detector and operator-client integration; facade over `internal/refconsumer/internal/domain`, `app` (`Consume`: trace file in, verdict file out, optionally over the operator endpoint), the `mcpclient` edge and a `files` edge
 - `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec), the `uds` transport edge (including `Serve`, the socket served until interrupted) and a `files` edge (capability catalog)
 - `internal/device/contract`: the vendored device wire-protocol schemas (embedded) and conformance fixtures
-- `internal/plantwire`: the plant wire node: a run spoken to a host as births, data, the `NSYNC`/`HSYNC` barrier and host records over the host's owner-only socket; facade over `internal/plantwire/internal/domain` (records, digests, schema checks, sequencing, kind capture from a birth), `app` (the session), a `uds` edge and `standin`, a scripted node for tests that production never imports
+- `internal/plantwire`: the plant wire node: a run spoken to a host as births, data, the `NSYNC`/`HSYNC` barrier and host records over the host's owner-only socket; facade over `internal/plantwire/internal/domain` (records, digests, schema checks, sequencing, kind capture from a birth, relay, interrupt rules, board mapping, twin report), `app` (the session, relay loop, control port), the edges `uds` (sockets, ticks, control server), `host` (the reference host) and `files`, and `standin`, a scripted node for tests that production never imports
 - `internal/plantwire/contract`: the embedded plant wire schemas, byte-identical with `contracts/plant-wire/schemas`
 - `internal/deviceworld`: device-to-world effector binding and `OpenDevice` (capabilities, fault schedule, bindings, world and plant composed before any listener opens); facade over `internal/deviceworld/internal/domain`, `app` and a `files` edge
 - `internal/domain`: load, validate, compile and digest domain data, including a directory into a catalog (`NewCatalogFromDir`); facade over `internal/domain/internal/domain` with a `files` edge
@@ -53,6 +56,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/randutil`: seeded random streams
 - `internal/jsonvalue`: one reading of decoded JSON values: numbers of any decoded form, documents that refuse undeclared fields
 - `internal/wall`: wall-clock seam and deterministic build replacement
+- `canvas/` (not Go): the browser client; Go never imports it and it reaches the binary only through `canvasbridge`
 - `internal/testsupport`: shipped-fixture paths and short socket paths for tests; imported only by `_test.go` files
 - `test/`: integration and end-to-end suites
 
@@ -64,14 +68,16 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 
 ## Dependency Direction
 
-- `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
-- `component` -> `domain`/`canonical`/`jsonschema`/`schemas`/`model`
-- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`lint`/`model`
+- `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`component`/`domain`/`model`
+- `component` -> `domain` + foundations; `canvasbridge` -> `kernel` only (it drives the binary as child processes)
+- `cmd` -> `cli` -> the facades it wires: `mcp`/`canvasbridge`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`plantwire`/`component`/`domain`/`adapter`/`lint`/`model`/`kernel`
 - `grading` -> `run`/`score`/`domain`/`world`/`model`; `report` -> `grading`/`run`/`journal`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`journal`/`domain`/`model`/`canonical`; `journal` -> `model`
 - `lint` -> `world`/`domain`/`model`
 - `truth` -> `world`/`domain`/`model`; `score` -> `domain`/`world`/`model` (hosts pack a `score.Evidence`)
-- `deviceworld` -> `device`/`domain`/`world`/`model`; neither core imports the bridge
+- `suite` -> `audit`/`truth`/`perturb`/`world`/`domain`/`model`/`randutil`; `audit` -> `domain`/`perturb`/`world`/`model`
+- `plantwire` -> `run`/`truth`/`world`/`domain`/`model`; `deviceworld` -> `device`/`domain`/`world`/`model`; neither core imports the bridge
+- Only module edge packages import `kernel`
 - Dependencies flow downward only.
 - `test/architecture/dependencies_test.go` is the complete direct-import allowlist; this list is an ownership summary.
 - Domain specs, adapters, and effectors are data (JSON), never code.
@@ -87,7 +93,8 @@ Avoid:
 
 ## Modularity standard
 
-Package kinds, layer shapes, purity/I-O rules (M1-M11) and the migration plan
-are in [docs/refactoring/modularity-20261010/](../../docs/refactoring/modularity-20261010/README.md).
-Where this file and `STANDARD.md` disagree about layering, `STANDARD.md` is
-current and this file is updated in the same round that changes ownership.
+Package kinds, layer shapes and purity/I-O rules (M1-M11) are in
+[governance/MODULARITY_STANDARD.md](../../governance/MODULARITY_STANDARD.md); the migration rounds are in
+[governance/MODULARITY_PLAN.md](../../governance/MODULARITY_PLAN.md). Where this file and the standard
+disagree about layering, the standard and `test/architecture` are current and this file is updated in the
+same round that changes ownership.

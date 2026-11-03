@@ -1,19 +1,19 @@
 # Limitations and current status
 
-> Status: Current working-tree report. Authority: repository state, tests, and implementation review. Verified by: full `go test ./...` run, `make ci-check`, and inventory review. Last verified: 2026-09-13.
+> Status: Current working-tree report. Authority: repository state, tests, and implementation review. Verified by: full `go test ./...` run, `make ci-check`, and inventory review. Last verified: 2026-11-03.
 
 This page is the honest counterpart to the product overview. It separates implemented capability from release evidence and from design intent.
 
 ## Current working-tree status
 
-The current checkout implements the documented pipeline and passes the repository gates at its commit. The remaining observations are about release evidence and environment boundaries, not about a red suite:
+The current checkout implements the documented pipeline and passes the repository gates at its commit; compatibility notes are in [compatibility](overview/compatibility.md). The remaining observations are about release evidence and environment boundaries, not about a red suite:
 
 | Observation | Evidence | Consequence |
 | --- | --- | --- |
 | Eight domains are shipped and validated together. | [`domains/`](../domains/) contains eight committed domain files; the embedded-schema suite validates each one. | New domains must land together with test, inventory, and manifest updates in the same change. |
 | Some integration tests need local loopback sockets. | MCP operator endpoint tests and HTTP-push equivalence tests bind local listeners. | A restricted execution environment may fail those tests with `operation not permitted`; rerun in a network-capable environment before interpreting the result. |
 | The checked-in release manifest is historical. | [`release-manifest.json`](../release-manifest.json) pins the commit and toolchain it was generated at. | Generate a fresh manifest for the exact commit before publishing evidence. |
-| Design and implementation records disagree in places. | Earlier design text describes SQLite, Go 1.26, and commands not present in the current CLI; decisions and code record file artifacts and Go 1.25.12. | Treat archive design text as status-labeled source material, not an unqualified promise. |
+| Design and implementation records disagree in places. | Earlier design text describes SQLite and commands not present in the current CLI; decisions and code record file artifacts. `go.mod` declares Go 1.25.12 while CI builds with Go 1.26.10. | Treat archive design text as status-labeled source material, not an unqualified promise. |
 | The repository lacks a formal compatibility matrix and release channel. | No current support matrix or release policy establishes one. | Validate the exact commit and toolchain for every external result. |
 | Documentation checking is deliberately lightweight. | `make docs-check` checks required pages and executable smoke commands; it does not fetch links or parse every Markdown construct. | Review links, commands, fences, and diagrams manually as part of contribution review. |
 
@@ -22,12 +22,12 @@ The current checkout implements the documented pipeline and passes the repositor
 - The simulator is not a production broker, controller, physics engine, or hosted service.
 - HTTP-push is an integration sink, not a deterministic local benchmark transport.
 - The operator MCP role is not a standalone CLI mode; it is served by a director process.
-- The score command reads `verdict.json` and `ledger.jsonl` beside the run artifact and `label.json` (or `labels.json`) beside it unless `--label` is provided. It does not accept a `--verdict` flag.
-- The offline score command does not receive an effector-call log, so action-loop metrics are incomplete. Use the MCP director score path when action evidence is required.
-- Suite generation is not a complete batch runner: it produces audited scenario definitions and labels, while a harness must choose an adapter, execute scenarios, and persist score output.
+- The score command reads `verdict.json` beside the run artifact, replays the artifact for the ledger, and reads `label.json` (or `labels.json`) beside it unless `--label` is provided. It does not accept a `--verdict` flag.
+- Offline `score` replays the run artifact, so effector calls, the ledger and state history come from the replay and agree with the online scorecard; see the [CLI reference](reference/cli.md#score).
+- `suite` produces audited scenario definitions and labels, and `suite campaign` produces one-fault runs with session plans; a harness still has to choose an adapter, execute the runs, and persist score output.
 - The CLI replay and verify commands replay the domain and adapter specifications recorded in the run artifact, so editing a domain afterwards does not break earlier runs; the result reports `domain_changed` when the domains directory now holds a different digest.
 - The current code uses file-based JSON/JSONL run artifacts; older SQLite language in the design archive is historical or superseded by the accepted decision.
-- No actual external production consumer is shipped; the reference consumer is a test instrument and integration example.
+- No actual external production consumer is shipped; the reference consumer is a worked example of the operator protocol and a baseline for the trivial-baseline audit.
 
 The `streamsim device serve` command is a deterministic emulator gateway link,
 not a physical-HIL claim. Its capability catalog is a simulator-side device
@@ -121,6 +121,7 @@ configuration; the adapter does not contain per-domain argument callbacks.
 | Limitation | Why it matters | What to do |
 | --- | --- | --- |
 | Desktop only, 1280 px or wider. | The shell does not adapt to narrower windows. | Use a wider window. |
+| The built canvas is not embedded in the binary; `streamsim canvas` needs `--ui-dir` pointing at a build made with Node 24 and npm. | A bare `go build` has no UI. | Build `canvas/` first (see [install](getting-started/install.md)). |
 | The live view is a projection of what the host saw; a snapshot that cannot be decoded is shown as unreadable, not skipped, and the note names a snapshot even when the dropped record was an interrupt record (D-87). A control reply is ordered against snapshots by content, not by time (D-102). Node tags on the plant use short words (D-103). The frame is transiently clipped for up to a second after the Interrupts bar resizes (D-109). Overlapping timeline pills are not de-collided, and while events arrive the live scrubber lane grows and moves the plant's top. | Cosmetic and ordering edge cases. | Reload the view. |
 | The stand-in gateway used by the end-to-end tests ends by itself after about five minutes. It is test support, not a feature. | Long bench sessions with it need a restart. | Use a real gateway for long sessions. |
 
@@ -130,12 +131,9 @@ The presence of tests for all nine non-negotiables is valuable evidence, but it 
 
 ## How to clear the limitations
 
-1. ~~Decide whether `cold-chain-transit` is shipped~~ Done: the domain is committed and validated with the rest of the inventory.
-2. ~~Reconcile stale design, README, context, and decision text~~ Done for the public set and agent instructions; archive text under `docs/` remains status-labeled by decision.
-3. ~~Add or document compatibility, support, conduct, changelog, and release policy~~ Done: see [compatibility](overview/compatibility.md), [SUPPORT](../SUPPORT.md), [CODE_OF_CONDUCT](../CODE_OF_CONDUCT.md), [CHANGELOG](../CHANGELOG.md), and the [release procedure](operations/release.md).
-4. Extend `docs-check` with local link/fragment and example checks, then keep it in CI; manual diagram and prose review will still be required.
-5. Add a suite runner that records the selected adapter and persists per-scenario score evidence.
-6. Generate fresh release evidence (gates, soak, perf, manifest) from a clean, intentional commit at publication time.
+1. Extend `docs-check` with local link/fragment and example checks, then keep it in CI; manual diagram and prose review will still be required.
+2. Add a suite runner that records the selected adapter and persists per-scenario score evidence.
+3. Generate fresh release evidence (gates, soak, perf, manifest) from a clean, intentional commit at publication time.
 
 ## Next reads
 

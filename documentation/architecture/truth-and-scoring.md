@@ -1,6 +1,6 @@
 # Truth, verdicts, and scoring
 
-> Status: Implemented; release evidence remains conditional. Authority: `internal/truth`, `internal/score`, MCP handlers, and versioned schemas. Verified by: truth, scoring, MCP and online/offline parity tests. Last verified: 2026-10-03.
+> Status: Implemented; release evidence remains conditional. Authority: `internal/truth`, `internal/score`, MCP handlers, and versioned schemas. Verified by: truth, scoring, MCP and online/offline parity tests. Last verified: 2026-11-03.
 
 The simulator’s oracle must be stronger than the consumer it evaluates. Truth is therefore created and held on the director side, while the consumer sees only the operator surface and the delivered stream.
 
@@ -42,7 +42,7 @@ Sealed truth and scoring apply to simulated devices. A real board announced thro
 
 The scoring bundle `scorecard-bundle-v0.2` uses shared online/offline policies for judgment, delivery admission, evidence grounding and action fidelity. Judgment selects the earliest detection regardless of verdict ordering. Identity-conflict handling requires a reported conflict admission when identity reuse applies; appropriate-action credit requires the scenario entity. Malformed citations fail grounding in both paths. Online resolution and deadline metrics still require world history and are not inferred by the offline path. An unavailable offline ledger produces conservative zero metrics; an available empty ledger retains the existing vacuous-success convention. These metric corrections retain the JSON field layout.
 
-Truth lifecycle behavior is implemented in [`internal/truth/`](../../internal/truth/) and exposed through [`internal/mcp/`](../../internal/mcp/). Scoring is implemented in [`internal/score/`](../../internal/score/), with [online/offline parity regressions](../../internal/score/internal/domain/shared_policy_test.go). Local test evidence and remaining release risks are recorded in the [refactoring review](../../docs/refactoring/clean-code-20261002/REVIEW.md); passing tests do not establish complete offline evidence validation or release readiness.
+Truth lifecycle behavior is implemented in [`internal/truth/`](../../internal/truth/) and held by [`internal/director/`](../../internal/director/) and exposed through [`internal/mcp/`](../../internal/mcp/). Scoring is implemented in [`internal/score/`](../../internal/score/); the offline path (`streamsim score`) is [`internal/grading/`](../../internal/grading/), which replays the run artifact for its effector calls and scores with `score`. Parity is covered by the [online/offline parity regressions](../../internal/score/internal/domain/shared_policy_test.go). Local test evidence and remaining release risks are recorded in the [refactoring review](../../docs/refactoring/clean-code-20261002/REVIEW.md); passing tests do not establish complete offline evidence validation or release readiness.
 
 ## Next reads
 

@@ -1,18 +1,20 @@
 # Product overview
 
-> Status: Implemented product summary with conditional release posture. Authority: root README, current code/tests, and accepted decisions. Verified by: repository review and quickstart. Last verified: 2026-08-17.
+> Status: Implemented product summary with conditional release posture. Authority: root README, current code/tests, and accepted decisions. Verified by: repository review and quickstart. Last verified: 2026-11-03.
 
-Streams Simulator (`streamsim`) is a standalone, deterministic, closed-loop world simulator for testing stream processors.
+Streams Simulator (`streamsim`) is a standalone, deterministic, closed-loop world simulator.
 
-It generates event streams from data-defined domains, applies declared delivery faults, carries sealed ground truth, accepts commands through declared effectors, and scores a consumer’s verdict against what actually happened.
+It builds worlds from data (domains, or plants composed from a component library), generates their event streams, applies declared delivery faults, carries sealed ground truth, accepts commands through declared effectors, and can grade a consumer’s verdict against what actually happened. A visual canvas, physical-device sessions over the plant wire, run reports and generated campaigns are built on the same core.
 
 ## What it is
 
-The simulator is a test instrument. Its credibility comes from making the observed evidence and the hidden truth precise enough to reproduce and audit.
+A simulation platform whose credibility comes from making the observed evidence and the hidden truth precise enough to reproduce and audit. Typical uses: exploring and authoring plants, driving a stream processor, agent or controller in a closed loop, benchmarking consumers, running a real board beside simulated ones, and comparing learning against non-learning arms over a campaign.
 
 - **Data-defined worlds.** Domains, channels, states, faults, effectors, and scenario profiles are JSON data loaded through common code.
 - **Deterministic execution.** Seeds, versioned inputs, command logs, and sink choice define a replayable run.
 - **Explicit delivery corruption.** Perturbations change what the consumer receives, not what the world did. The delivery ledger records the distinction.
+- **Authoring and exploring.** Plants are composed from equipment, instruments and vocabulary, linted for plausibility, diffed, run, disturbed and reviewed in the canvas or from the CLI and MCP tools.
+- **Physical devices.** A real board can join a session beside simulated ones over the plant wire, with interrupts, approvals and a twin-versus-board report.
 - **Closed-loop actuation.** An effector command changes world state; later events can show whether the change took effect.
 - **Sealed truth.** A consumer interacts through an operator surface without receiving the ground truth before the declared reveal transition.
 - **Independent scoring.** The simulator scores verdicts using truth, delivery evidence, and action records rather than trusting the consumer’s own summary.
@@ -27,6 +29,8 @@ The simulator is a test instrument. Its credibility comes from making the observ
 
 ## Who it serves
 
+- Plant and system designers who want to build, disturb and review a plant before or beside the real one.
+- Bench engineers running a real board beside simulated ones.
 - Stream-processor authors who need controlled faults, delayed or missing evidence, and replayable failures.
 - Benchmark authors who need a world model, a delivery ledger, and an oracle independent of the consumer.
 - Integration authors who need a stable native event contract and declarative output adapters.

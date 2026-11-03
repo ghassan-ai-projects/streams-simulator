@@ -2,14 +2,14 @@
 
 ## What This Repo Is
 
-Streams Simulator (`streamsim`) is a deterministic, closed-loop world simulator for testing stream processors. It is an independent product with no knowledge of its consumers: a consumer is a file (an output adapter) plus, optionally, an MCP client that invokes effectors and submits a verdict.
+Streams Simulator (`streamsim`) is a deterministic, closed-loop world simulator: worlds as data, a seeded clock, delivery faults, effectors that change the world, sealed ground truth and grading. Around that core sit a visual canvas (`canvas/`), physical-device sessions over the plant wire, run journals and reports, and generated suites and campaigns. It is an independent product with no knowledge of its consumers: a consumer is a file (an output adapter) plus, optionally, an MCP client that invokes effectors and submits a verdict.
 
-It is a test instrument first. Determinism, sealed ground truth, and analytic oracles constrain everything.
+Grading a consumer is one use of it, not its whole scope. Determinism, sealed ground truth, and analytic oracles constrain everything.
 
 ## Current State
 
 - The implementation is present under `cmd/streamsim` and `internal/`; the original S0–S6 plan is historical execution context.
-- The engineering archive is under [`docs/`](../../docs/README.md); the curated public documentation is under [`documentation/`](../../documentation/README.md).
+- The curated, current documentation is under [`documentation/`](../../documentation/README.md); [`docs/`](../../docs/README.md) is a dated working archive that may be out of date.
 - Module path `github.com/ghassan-ai-projects/streams-simulator` is set.
 - Eight domain files and two adapters are committed; the schema suite validates every shipped domain, so new inputs must land together with test, inventory, and manifest updates.
 - The root [doc.go](../../doc.go) package remains so Go tooling has a stable module root.

@@ -1,8 +1,8 @@
-# Benchmarking Streams Simulator consumers
+# Grading a consumer
 
-> Status: Partially implemented benchmark workflow. Authority: suite, audit, score, and manifest packages. Verified by: package tests and the limitations recorded below. Last verified: 2026-08-17.
+> Status: Partially implemented grading and benchmark workflow. Authority: suite, audit, score, grading and manifest packages. Verified by: package tests and the limitations recorded below. Last verified: 2026-11-03.
 
-Streams Simulator is useful for benchmark work only when the benchmark measures consumer reasoning rather than transport accidents, leaked labels, or a simulator bug.
+Grading a consumer is one use of Streams Simulator, not the whole product: worlds can also be built, explored, driven from the canvas, joined by physical devices through the plant wire, and run as campaigns (see the [product overview](../overview/product.md)). This section covers the grading use. It is useful for benchmark work only when the benchmark measures consumer reasoning rather than transport accidents, leaked labels, or a simulator bug.
 
 ## What is being measured
 
@@ -20,7 +20,7 @@ The simulator is not the consumer. The same run can be used to compare consumers
 
 ## Benchmark readiness
 
-The repository has suite generation, trivial-baseline auditing, scoring, release-manifest generation, and tests for the nine non-negotiables. Suite generation is not yet a complete batch runner: it emits scenario definitions and labels, while a harness must choose the adapter, execute each scenario, collect run evidence, and invoke scoring. No benchmark result should be published without fresh validation and a manifest for the exact commit and inputs.
+The repository has suite generation (`streamsim suite`), campaign generation of seeded one-fault runs (`streamsim suite campaign`), trivial-baseline auditing, online and offline scoring (`streamsim score`), run reports, release-manifest generation, and tests for the nine non-negotiables. Suite and campaign generation are not a complete batch runner: they emit scenario definitions, session plans and labels, while a harness must choose the adapter, execute each scenario, collect run evidence, and invoke scoring. No benchmark result should be published without fresh validation and a manifest for the exact commit and inputs.
 
 ## Recommended reading order
 

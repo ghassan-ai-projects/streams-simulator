@@ -1,8 +1,8 @@
 # Nine non-negotiables
 
-> Status: Implemented test gates with conditional release status. Authority: named tests and the design archive. Verified by: per-gate evidence below; full working-tree validation remains conditional. Last verified: 2026-08-17.
+> Status: Implemented test gates with conditional release status. Authority: named tests and the design archive. Verified by: per-gate evidence below; full working-tree validation remains conditional. Last verified: 2026-11-03.
 
-These guarantees distinguish a test instrument from a trace generator. The design may cut other features; it may not quietly cut these.
+These guarantees distinguish a trustworthy simulator from a trace generator. The design may cut other features; it may not quietly cut these.
 
 | Gate | Guarantee | Current evidence | Validation and scope |
 | --- | --- | --- | --- |

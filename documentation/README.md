@@ -1,17 +1,19 @@
 # Streams Simulator documentation
 
-This is the curated documentation set for Streams Simulator (`streamsim`), a deterministic, closed-loop world simulator for testing stream processors.
+This is the curated documentation set for Streams Simulator (`streamsim`), a deterministic, closed-loop world simulator: worlds built from data, a seeded clock, delivery faults, effectors that change the world, sealed ground truth and grading, with a visual canvas, physical-device sessions and campaigns around it.
 
 The repository has two documentation layers:
 
 - **`documentation/`** is the public set: product explanation, getting started, architecture, guides, operations, benchmark methodology, and reference material.
-- **`docs/`** is the engineering archive: detailed design records, research notes, plans, reviews, audits, fixtures, and machine-readable contract files. It is authoritative for design intent and historical evidence, not automatically for current behavior.
+- **`docs/`** is a dated working archive: design records, research notes, plans, reviews and audits. It records how decisions were made and may be out of date; it is never the authority for current behavior.
 
 Read [limitations](limitations.md) before treating the current checkout as a release. Read [the quality bar](QUALITY_BAR.md) before changing the documentation set.
 
 ## Choose a path
 
 ### I want to understand the product
+
+The canvas and campaigns have their own guides: [the canvas](guides/canvas.md) and [campaigns](guides/campaigns.md).
 
 - [Product](overview/product.md) — what the simulator is, is not, and who it serves
 - [Concepts](overview/concepts.md) — worlds, events, perturbations, truth, and scoring
@@ -22,12 +24,14 @@ Read [limitations](limitations.md) before treating the current checkout as a rel
 
 - [Install and build](getting-started/install.md)
 - [Quickstart](getting-started/quickstart.md)
+- [The canvas](guides/canvas.md) — the visual client: build, run, disturb, review
 - [CLI reference](reference/cli.md)
 - [Replay and debugging](guides/replay-and-debugging.md)
 
 ### I want to test against a real board
 
 - [Physical devices: a real board beside simulated ones](guides/physical-devices.md) — kind files, twins, capture, mixed sessions, live mode, interrupts, the twin report
+- [Campaigns](guides/campaigns.md) — many labelled one-fault runs, session plans, scoring
 - [Physical devices: architecture](architecture/physical-devices.md) — modules, data flow, determinism and the truth boundary
 - [Physical devices: limitations](limitations.md#physical-devices) — read before trusting a bench result
 - [Security model](architecture/security-model.md#physical-devices-and-the-control-socket) — the control socket and the policy allow-list
@@ -68,6 +72,8 @@ Read [limitations](limitations.md) before treating the current checkout as a rel
 
 - **Evaluator:** [product](overview/product.md) → [quickstart](getting-started/quickstart.md) → [methodology](benchmark/methodology.md) → [limitations](limitations.md) → [evidence](benchmark/evidence.md)
 - **Consumer integrator:** [quickstart](getting-started/quickstart.md) → [consumer integration](guides/consumer-integration.md) → [MCP](reference/mcp.md) → [contracts](reference/contracts.md) → [artifacts](reference/artifacts.md)
+- **Campaign runner:** [campaigns](guides/campaigns.md) → [CLI: `suite campaign`](reference/cli.md#suite-campaign) → [physical devices guide](guides/physical-devices.md) → [CLI: `score`](reference/cli.md#score) → [artifacts](reference/artifacts.md)
+- **Canvas user:** [canvas guide](guides/canvas.md) → [quickstart](getting-started/quickstart.md) → [physical devices guide](guides/physical-devices.md) → [replay](guides/replay-and-debugging.md)
 - **Bench engineer (real board):** [physical devices guide](guides/physical-devices.md) → [physical devices limitations](limitations.md#physical-devices) → [CLI: `plantwire`](reference/cli.md#plantwire-connect) → [artifacts](reference/artifacts.md) → [security model](architecture/security-model.md#physical-devices-and-the-control-socket)
 - **Domain author:** [concepts](overview/concepts.md) → [domain authoring](guides/authoring-domains.md) → [domain contract](reference/contracts.md) → [validation](architecture/domains-and-adapters.md)
 - **Adapter author:** [concepts](overview/concepts.md) → [adapter authoring](guides/authoring-adapters.md) → [adapter contract](reference/contracts.md) → [golden verification](guides/authoring-adapters.md#workflow)
@@ -84,7 +90,7 @@ Public pages explain the current product in reader-friendly terms. They do not r
 | --- | --- |
 | What JSON is accepted or emitted? | Canonical schemas under [`contracts/`](../contracts/); embedded copies under [`internal/schemas/`](../internal/schemas/) are verified against them. |
 | What is implemented? | Go packages under [`internal/`](../internal/) plus their tests. |
-| Why does the architecture work this way? | Accepted deviations in [`docs/DECISIONS.md`](../docs/DECISIONS.md); design history under [`docs/design/`](../docs/design/) is status-labeled. |
+| Why does the architecture work this way? | The [architecture pages](architecture/overview.md) and [invariants](architecture/invariants.md); the history behind a decision is in [`docs/DECISIONS.md`](../docs/DECISIONS.md) and [`docs/design/`](../docs/design/), which are dated and must be checked against the code. |
 | What evidence supports a release claim? | Exact-commit CI output and manifest, summarized in [benchmark evidence](benchmark/evidence.md). |
 
 If a public page and a contract disagree, trust the contract and open a documentation issue. If a public page and runtime behavior disagree, trust code/tests and update the page. If a public page describes a behavior that is only designed, it must say so.

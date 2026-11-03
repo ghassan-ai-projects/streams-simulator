@@ -1,6 +1,6 @@
 # Physical devices: architecture
 
-> Status: Implemented. Authority: `internal/plantwire`, `internal/run`, `internal/journal`, `internal/canvasbridge`, `canvas/` and the contracts named below. Verified by: package tests, `test/architecture`, `test/contract`, and canvas end-to-end tests against the real binary with a scripted stand-in gateway. Not verified against hardware. Last verified: 2026-10-19.
+> Status: Implemented. Authority: `internal/plantwire`, `internal/run`, `internal/journal`, `internal/canvasbridge`, `canvas/` and the contracts named below. Verified by: package tests, `test/architecture`, `test/contract`, and canvas end-to-end tests against the real binary with a scripted stand-in gateway. Not verified against hardware. Last verified: 2026-11-03.
 
 This page explains how a real board is brought beside simulated ones without breaking the simulator's guarantees. For the user's path see [the guide](../guides/physical-devices.md); for exact flags and files see the [CLI](../reference/cli.md), [contract](../reference/contracts.md) and [artifact](../reference/artifacts.md) references.
 
@@ -33,7 +33,7 @@ What the relay may originate is small and fixed: a rebirth request to the gatewa
 | Module or layer | Responsibility |
 | --- | --- |
 | `internal/plantwire` facade | Delegates; no rule of its own. |
-| `plantwire/internal/domain` | The rules, as pure state machines and functions with no clock, socket or map-order output: records, digests, sequencing, kind files and the `implements` check, kind capture from a birth, the relay (admission, routing, bindings, liveness, stops), the live projection (health, reading states, command stages), the interrupt rules (scopes, precedence, approvals, latch, replay), the policy allow-list, the session plan check, and the twin report rules. |
+| `plantwire/internal/domain` | The rules, as pure state machines and functions with no clock, socket or map-order output: records, digests, sequencing, kind files and the `implements` check, kind capture from a birth, the board mapping (`BOARD`) rules, the relay (admission, routing, bindings, liveness, stops), the live projection (health, reading states, command stages), the interrupt rules (scopes, precedence, approvals, latch, replay), the policy allow-list, the session plan check, and the twin report rules. |
 | `plantwire/internal/app` | One use case per command: the node session, the relay loop, `connect`, `capture`, the twin report, the control port, the interrupt log writer and verifier. It supplies records and clock readings to the domain rules. |
 | `plantwire/internal/uds` | The socket edge: owner-only listeners and dialers, the gateway slot, 250 ms ticks, the control server, and the in-process link between the relay and the simulated node. |
 | `plantwire/internal/host` | The reference host used by tests and the bench. |
@@ -46,7 +46,7 @@ What the relay may originate is small and fixed: a rebirth request to the gatewa
 | `internal/canvasbridge` | The loopback bridge: an action registry mapped to binary commands, the child process of a connected session, the control forwarder, the workspace files. It validates nothing the binary owns. |
 | `canvas/` | The browser client. Layers `model`, `app`, `adapters`, `ui`; the device editor, the Connect session panel, the live review, the Interrupts region and the twin panel are modules in those layers. It decodes the binary's documents strictly and parses no message text. |
 
-Dependencies flow downward as in the [architecture overview](overview.md). The canvas and the bridge call the binary; nothing in `internal/` imports `canvas/`.
+Dependencies flow downward as in the [architecture overview](overview.md); `internal/deviceworld` and `internal/device` serve the older emulated-device path and are separate from the plant wire. The canvas and the bridge call the binary; nothing in `internal/` imports `canvas/`.
 
 ## Records and the contract
 

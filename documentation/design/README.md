@@ -11,6 +11,15 @@ This section gives the public reading order for the simulator design. The detail
 5. [Ground truth and scoring](../../docs/design/GROUND_TRUTH_AND_SCORING.md) — oracle, ledger, action, and benchmark rules.
 6. [Domain catalog](../../docs/design/DOMAIN_CATALOG.md) — specified coverage and build order; specified is not shipped.
 
+## Later design records
+
+These records in `docs/design/` and `docs/` describe surfaces added after the original spine; each carries its own status note, so read it before relying on the text.
+
+- [Domain spec v0.2](../../docs/design/DOMAIN_SPEC_V0_2.md), [components](../../docs/design/COMPONENTS_V0_1.md) and [scenario file](../../docs/design/SCENARIO_FILE.md) — worlds as data.
+- [Run journal](../../docs/design/RUN_JOURNAL.md) and [run report](../../docs/design/RUN_REPORT.md) — what a run records and how it is summarised.
+- [CLI surface](../../docs/design/CLI_SURFACE.md) and [canvas bridge](../../docs/design/CANVAS_BRIDGE.md) — the CLI and the canvas as clients of the same modules.
+- [Rule promotion](../../docs/rule-promotion/PLAN.md) — campaigns that play a consumer with and without learning (work in progress).
+
 ## Physical devices
 
 [Physical devices](../../docs/design/PHYSICAL_DEVICES.md) is the design record for kind files, twins, the relay, mixed sessions, the live control plane, node interrupts and the twin report, with an as-built note for each round. It is implemented; the public summary is [the guide](../guides/physical-devices.md), [the architecture page](../architecture/physical-devices.md) and [the limitations](../limitations.md#physical-devices).

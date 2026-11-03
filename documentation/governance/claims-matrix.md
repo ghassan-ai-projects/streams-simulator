@@ -1,13 +1,13 @@
 # Documentation claim-to-source matrix
 
-Validation snapshot: verified 2026-09-13 against commit `523fb77`. The repository declares Go `1.25.12` as its module minimum; CI uses the patched Go `1.25.13` toolchain. This local review ran with a compatible toolchain. The shipped inventory is eight committed domains and two adapters.
+Validation snapshot: rows were verified 2026-09-13 against commit `523fb77`; the toolchain, CI, release-gate and policy rows and every file path below were re-checked 2026-11-03. The repository declares Go `1.25.12` as its module minimum (`go.mod`); CI uses Go `1.26.10` (`GO_VERSION` in `.github/workflows/ci.yml`). The shipped inventory is eight committed domains and two adapters.
 
 This matrix is the handoff evidence for public claims. It prevents the curated documentation from becoming a second, drifting implementation record.
 
 | Claim area | Public home | Authority | Verification/evidence | Status |
 | --- | --- | --- | --- | --- |
 | Product purpose and boundaries | [`overview/product.md`](../overview/product.md) | `README.md`, design decisions, implementation boundaries | Repository review and package map | Verified summary |
-| Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified: module minimum Go 1.25.12; CI Go 1.25.13 |
+| Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified 2026-11-03: module minimum Go 1.25.12; CI Go 1.26.10 |
 | CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/internal/app/cli.go`](../../internal/cli/internal/app/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
 | Domain inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `domains/`, release manifest, shipped-domain tests | `catalog list`; `go test ./internal/schemas` | Verified: eight shipped domains, each validated by the schema test |
 | Adapter inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `adapters/`, adapter tests | `adapter list`; `adapter verify` | Verified |
@@ -25,14 +25,17 @@ This matrix is the handoff evidence for public claims. It prevents the curated d
 | Twin-versus-board report | [`guides/physical-devices.md`](../guides/physical-devices.md), [`reference/cli.md`](../reference/cli.md) | `internal/plantwire/internal/domain/twin_*.go`, `twin-report-v0.1` | twin report tests; `canvas/e2e/twin-report.spec.ts` (reaches "cannot judge" only) | Verified for the rules; the end-to-end test cannot reach `agrees` or `diverges` |
 | Policy allow-list | [`guides/physical-devices.md`](../guides/physical-devices.md), [`architecture/security-model.md`](../architecture/security-model.md) | `internal/plantwire/internal/domain/policies.go`, `session-plan-v0.1` | `internal/plantwire/internal/app/policies_test.go`; `canvas/e2e/policies.spec.ts` | Verified for simulated devices; a real board's list is the gateway's |
 | Physical-device limitations | [`limitations.md`](../limitations.md#physical-devices) | [`governance/DEFERRED.md`](../../governance/DEFERRED.md) D-56 to D-116 | document review | Current |
+| Grading, suites and campaigns | [`benchmark/`](../benchmark/README.md), [`guides/benchmark-workflow.md`](../guides/benchmark-workflow.md) | `internal/suite`, `internal/score`, `internal/grading`, `internal/audit`, `contracts/campaign-v0.1.schema.json` | package tests; `streamsim suite campaign` in the CLI help | Implemented; one use of the simulator, batch execution is the harness's |
+| Gates and ratchet | [`operations/release.md`](../operations/release.md), [`quality.md`](quality.md) | `Makefile` (`ci-check`, `gate-ratchet`, `phase-gate`, `canvas-check`), `.github/workflows/ci.yml`, `canvas.yml`, `test/architecture`, `scripts/` | `make help`; workflow review | Verified 2026-11-03 against the Makefile and workflows; targets not rerun |
+| Visual canvas | [`canvas/README.md`](../../canvas/README.md) | `canvas/`, `governance/CANVAS_UI_ACCEPTANCE.md` | `make canvas-check` | CI runs static and unit jobs only; e2e runs on demand |
 | Open-source policies | root policy files and [governance](quality.md) | `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `CHANGELOG.md` | file presence and review | Present |
 
-## Current validation snapshot
+## Validation snapshot (2026-09-13 commands, not rerun on 2026-11-03)
 
 - `go run ./cmd/streamsim adapter verify adapters/native-jsonl.adapter.json` — passed.
 - `go run ./cmd/streamsim domain validate domains/rotating-machinery.domain.json` — passed.
 - Documented deterministic run and `verify` — passed with matching digest.
-- `make docs-check` — passed.
+- `make docs-check` — passed at the 2026-09-13 snapshot; not rerun in the 2026-11-03 review.
 - Link-target scan over `README.md` and `documentation/**/*.md` — zero broken local targets.
 - `go test ./...` — full suite passes, including the shipped-domain schema validation over all eight domains and the loopback-bound operator and HTTP-push tests. A restricted sandbox may block loopback listeners; see [limitations](../limitations.md).
 
