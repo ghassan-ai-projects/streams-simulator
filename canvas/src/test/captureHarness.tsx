@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createDeviceDesk } from "../app/devices";
 import { createWorkspaceStore } from "../app/workspace";
-import { CaptureScreen } from "../ui/workspace";
+import { CaptureScreen } from "../ui/capture";
 import { announced, captureResult, savedPump, savedPumpPath, serveCapture } from "./captureFixture";
 import { FakeBridge } from "./fakeBridge";
 import { navigation } from "./workspaceHarness";

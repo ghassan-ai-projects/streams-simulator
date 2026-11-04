@@ -28,6 +28,7 @@
         "app/review",
         "app/workspace",
         "test",
+        "ui/capture",
         "ui/plant",
         "ui/review",
         "ui/workspace"
@@ -41,7 +42,7 @@
       "folders": ["src/model/devices"],
       "mayImport": ["model/shared"],
       "entrypoint": "src/model/devices/index.ts",
-      "callers": ["app/devices", "test", "ui/devices", "ui/workspace"]
+      "callers": ["app/devices", "test", "ui/capture", "ui/devices", "ui/workspace"]
     },
     "app/devices": {
       "kind": "application",
@@ -51,7 +52,7 @@
       "folders": ["src/app/devices"],
       "mayImport": ["app/ports", "app/shared", "model/devices", "model/workspace"],
       "entrypoint": "src/app/devices/index.ts",
-      "callers": ["root", "test", "ui/devices", "ui/shell", "ui/workspace"]
+      "callers": ["root", "test", "ui/capture", "ui/devices", "ui/shell", "ui/workspace"]
     },
     "ui/devices": {
       "kind": "ui",
@@ -124,6 +125,7 @@
       "entrypoint": "src/ui/primitives/index.ts",
       "callers": [
         "test",
+        "ui/capture",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -179,6 +181,7 @@
         "model/plant",
         "model/review",
         "model/workspace",
+        "ui/capture",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -311,7 +314,7 @@
       "folders": ["src/app/workspace"],
       "mayImport": ["app/ports", "app/shared", "model/workspace"],
       "entrypoint": "src/app/workspace/index.ts",
-      "callers": ["app/shell", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": ["app/shell", "root", "test", "ui/capture", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
     },
     "app/plant": {
       "kind": "application",
@@ -370,13 +373,23 @@
         "model/shell"
       ],
       "entrypoint": "src/app/shell/index.ts",
-      "callers": ["root", "test", "ui/devices", "ui/editor", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": [
+        "root",
+        "test",
+        "ui/capture",
+        "ui/devices",
+        "ui/editor",
+        "ui/plant",
+        "ui/review",
+        "ui/shell",
+        "ui/workspace"
+      ]
     },
     "ui/workspace": {
       "kind": "ui",
       "layer": "ui",
       "lifetime": "components",
-      "responsibility": "workspace catalogue screen and the capture-from-a-board screen",
+      "responsibility": "workspace catalogue screen",
       "folders": ["src/ui/workspace"],
       "mayImport": [
         "app/devices",
@@ -391,6 +404,16 @@
         "ui/primitives"
       ],
       "entrypoint": "src/ui/workspace/index.ts",
+      "callers": ["test", "ui/shell"]
+    },
+    "ui/capture": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "the capture-from-a-board screen",
+      "folders": ["src/ui/capture"],
+      "mayImport": ["app/devices", "app/shell", "app/workspace", "model/devices", "model/workspace", "ui/primitives"],
+      "entrypoint": "src/ui/capture/index.ts",
       "callers": ["test", "ui/shell"]
     },
     "ui/plant": {
@@ -486,6 +509,7 @@
         "app/workspace",
         "model/launch",
         "model/shell",
+        "ui/capture",
         "ui/devices",
         "ui/editor",
         "ui/plant",
