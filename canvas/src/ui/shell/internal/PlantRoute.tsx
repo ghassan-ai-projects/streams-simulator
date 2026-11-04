@@ -1,4 +1,4 @@
-import { watchedWorld } from "../../../app/launch";
+import { followingOf } from "../../../app/launch";
 import type { ReadyPlant } from "../../../app/plant";
 import type { Route } from "../../../model/shell";
 import { PlantScreen } from "../../plant";
@@ -6,17 +6,10 @@ import { ConnectedPlant, RunWatchHold } from "../../review";
 import { useStore } from "../../primitives";
 import type { Stores } from "./stores";
 
-interface Following {
-  readonly kind: "session" | "watch";
-  readonly run: string | null;
-}
-
-function useFollowing(stores: Stores, ready: ReadyPlant | null): Following {
+function useFollowing(stores: Stores, ready: ReadyPlant | null) {
   const connected = useStore(stores.launch.connect);
   const launched = useStore(stores.launch);
-  const session = connected.phase === "live" && connected.domain === ready?.plant.id ? connected.run : null;
-  if (session !== null || ready === null) return { kind: "session", run: session };
-  return { kind: "watch", run: watchedWorld(launched, ready.plant.id) };
+  return followingOf(connected, launched, ready?.plant.id);
 }
 
 export function PlantRoute({

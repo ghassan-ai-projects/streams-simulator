@@ -1,8 +1,9 @@
 import { idleControl } from "../../../model/launch";
 import { describe, expect, it } from "vitest";
+import { offeredSession } from "../../../test/interruptFixture";
 import { plan, origin as launched } from "../../../test/launchRun";
 import type { LaunchState } from "./launchState";
-import { watchedWorld } from "./watchedWorld";
+import { followingOf, watchedWorld } from "./watchedWorld";
 
 const running = (worldId: string | null, domain = "factory"): LaunchState => ({
   phase: "running",
@@ -44,5 +45,22 @@ describe("the world a plant should watch", () => {
       calls: [],
     };
     expect(watchedWorld(done, "factory")).toBeNull();
+  });
+});
+
+describe("what a plant follows", () => {
+  const session = { ...offeredSession, domain: "factory", run: "c-1" };
+
+  it("is the connected session on that plant before any job", () => {
+    expect(followingOf(session, running("w-7"), "factory")).toEqual({ kind: "session", run: "c-1" });
+  });
+
+  it("is the job running on that plant when the session is elsewhere or absent", () => {
+    expect(followingOf(session, running("w-7", "mini"), "mini")).toEqual({ kind: "watch", run: "w-7" });
+    expect(followingOf({ phase: "idle" }, running("w-7"), "factory")).toEqual({ kind: "watch", run: "w-7" });
+  });
+
+  it("is nothing while no plant is ready", () => {
+    expect(followingOf(session, running("w-7"), undefined)).toEqual({ kind: "session", run: null });
   });
 });

@@ -1,5 +1,5 @@
 export { createLaunchStore } from "./internal/launchStore";
-export { watchedWorld } from "./internal/watchedWorld";
+export { followingOf, watchedWorld } from "./internal/watchedWorld";
 export type {
   ConnectSession,
   ConnectState,
