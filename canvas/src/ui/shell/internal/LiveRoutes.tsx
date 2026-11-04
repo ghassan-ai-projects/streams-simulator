@@ -1,12 +1,7 @@
-import type { WorkspaceState } from "../../../app/workspace";
+import { runIsLive } from "../../../app/shell";
 import { LiveSessionHold, ReviewScreen } from "../../review";
 import { useStore } from "../../primitives";
 import type { Stores } from "./stores";
-
-function listedRunning(listing: WorkspaceState, worldId: string): boolean {
-  if (listing.phase !== "ready") return false;
-  return listing.workspace.runs.some((run) => run.worldId === worldId && run.connected === "running");
-}
 
 export function ReviewRoute({
   stores,
@@ -20,7 +15,7 @@ export function ReviewRoute({
   const held = useStore(stores.liveReview);
   const connected = useStore(stores.launch.connect);
   const listing = useStore(stores.workspace);
-  const live = (connected.phase === "live" && connected.run === worldId) || listedRunning(listing, worldId);
+  const live = runIsLive(connected, listing, worldId);
   return (
     <ReviewScreen
       live={live}
