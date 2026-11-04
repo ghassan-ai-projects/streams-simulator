@@ -3,7 +3,7 @@
 - **Date:** 2026-11-04 · **Branch:** `canvas-modularity-audit`, from `main` at `c3906add`
 - **Scope:** `canvas/` only. No Go, contract, `test/architecture` or root `scripts/` change.
 - **Hard rule:** no behaviour change. DOM, accessible names, classes visible to e2e, CSS cascade, bridge calls, timing of effects and user-visible wording all stay as they are.
-- **Status:** revised after two reviews (§6). R1, R4, R5 and R7 need no owner decision. R2 and R3 wait for the owner (§3).
+- **Status:** R1, R4, R5 and R7 done, see [evidence.md](evidence.md). R2 and R3 wait for the owner (§3).
 
 ## 1. Audit result
 
@@ -93,7 +93,7 @@ The final list is confirmed from the code in each round. Invariant: a new module
 
 ### R4. Feature folders inside `internal/` (one commit per module, plain moves)
 
-Applies to `ui/review`, `model/review`, `ui/launch`, `ui/devices` and `adapters/bridge`; the file table is in §7. Criterion: the folder graph has no cycle over TypeScript imports, measured with this table. Files stay at the `internal/` root when they are the module's entry or a sheet shared across folders.
+Applies to `ui/review`, `model/review`, `ui/launch`, `ui/devices` and `adapters/bridge`; the file table is in §7. Criterion: the folder graph, counting the `internal/` root as a node, has no cycle over TypeScript imports. Files stay at the `internal/` root when they are the module's entry or a sheet shared across folders.
 
 Then a rename commit: `app/review` `twinStore.ts` → `twinReportStore.ts`, and `policyWords.test.ts` to match what it tests.
 
@@ -217,11 +217,12 @@ Production files per folder; tests follow their source. `.css` means `.module.cs
 
 **`adapters/bridge`**
 
-| Folder       | Files                                                                                                                                                                                   |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `devices`    | captureDecoder, devices, kindIssues, lintAction, twinDecoders                                                                                                                           |
-| `launch`     | connect, jobPlan, jobs, planCatalog, policyDefault                                                                                                                                      |
-| `provenance` | assumptionsDecoder, lineageDecoder, provenanceGateway                                                                                                                                   |
-| `review`     | compareDecoder, compareItems, compareResults, control, diffDecoder, interruptDecoder, journalDecoder, liveDecoder, reportDecoder, reportQuestions, twinReportDecoder, twinReportGateway |
-| `transport`  | browserTransport, decodeKit, failures, http                                                                                                                                             |
-| (root)       | client, decoders, follow, parameterDecoder                                                                                                                                              |
+| Folder       | Files                                                                                                                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `devices`    | captureDecoder, devices, kindIssues, lintAction, twinDecoders                                                                                                                                   |
+| `launch`     | connect, jobPlan, jobs, planCatalog, policyDefault                                                                                                                                              |
+| `provenance` | assumptionsDecoder, lineageDecoder, provenanceGateway                                                                                                                                           |
+| `review`     | compareDecoder, compareItems, compareResults, control, diffDecoder, follow, interruptDecoder, journalDecoder, liveDecoder, reportDecoder, reportQuestions, twinReportDecoder, twinReportGateway |
+| `transport`  | browserTransport, decodeKit, failures, http                                                                                                                                                     |
+| `documents`  | decoders, parameterDecoder                                                                                                                                                                      |
+| (root)       | client                                                                                                                                                                                          |
