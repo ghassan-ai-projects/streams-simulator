@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { TwinChart, TwinCoverage } from "../../../../model/review";
-import { chartFrame, chartOf, metricLine, truncationNote } from "../../../../model/review";
+import type { TwinChart, TwinCoverage } from "../../../../model/twinReport";
+import { chartFrame, chartOf, metricLine, truncationNote } from "../../../../model/twinReport";
 import { codeTitle, displayUnit } from "../../../../model/shared/units";
 import styles from "./Twin.module.css";
 

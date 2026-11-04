@@ -1,7 +1,8 @@
 import type { ReviewSession, ReviewState, TwinState } from "../../../../app/review";
 import { twinFor } from "../../../../app/review";
-import type { TwinCoverage, TwinReport } from "../../../../model/review";
-import { coverageOf, isRealBoard, twinOffer } from "../../../../model/review";
+import type { TwinCoverage, TwinReport } from "../../../../model/twinReport";
+import { isRealBoard } from "../../../../model/review";
+import { coverageOf, twinOffer } from "../../../../model/twinReport";
 import { shared, useStore } from "../../../primitives";
 import { Section } from "../report/ReportParts";
 import parts from "../report/ReportParts.module.css";

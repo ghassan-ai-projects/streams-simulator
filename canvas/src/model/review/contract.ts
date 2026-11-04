@@ -45,19 +45,6 @@ export type {
 } from "./internal/interrupts/interrupts";
 export type { BadgeKind, ControlResult, NodeNow, StateCheck } from "./internal/interrupts/interruptWords";
 export type { ActiveScope, ScopeChoice, ScopeStatus, SeenState } from "./internal/interrupts/interruptSelect";
-export type {
-  TwinCommand,
-  TwinDivergence,
-  TwinMetric,
-  TwinReport,
-  TwinRequest,
-  TwinSeries,
-  TwinSummary,
-  TwinTolerance,
-  TwinVerdict,
-} from "./internal/twin/twin";
-export type { TwinChart } from "./internal/twin/twinChart";
-export type { TwinCoverage } from "./internal/twin/twinSelect";
 export type { Watched } from "./internal/playback/watchList";
 export type { SavedTrends, TrendSize } from "./internal/playback/savedTrends";
 export type { Span } from "./internal/playback/trend";

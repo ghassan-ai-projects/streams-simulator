@@ -1,7 +1,7 @@
-import { withUnit } from "../../../shared/units";
-import { counted } from "../../../shared/words";
-import type { Connection } from "../report/origins";
-import { runClock } from "../report/timeline";
+import { withUnit } from "../../shared/units";
+import { counted } from "../../shared/words";
+import type { Connection } from "../../review";
+import { runClock } from "../../review";
 import type { TwinDivergence, TwinMetric, TwinReport, TwinSeries, TwinTolerance } from "./twin";
 import { notComparedWords, numberWords, toleranceSourceWords } from "./twinWords";
 

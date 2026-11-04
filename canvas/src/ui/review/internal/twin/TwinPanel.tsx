@@ -1,6 +1,6 @@
 import type { ReviewSession, ReviewState, TwinState } from "../../../../app/review";
 import { twinFor } from "../../../../app/review";
-import { twinOffer } from "../../../../model/review";
+import { twinOffer } from "../../../../model/twinReport";
 import { failureLine, useFocusOnMount, useStore } from "../../../primitives";
 import { Section } from "../report/ReportParts";
 import parts from "../report/ReportParts.module.css";

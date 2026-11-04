@@ -6,7 +6,7 @@ import type {
   TwinSeries,
   TwinSummary,
   TwinTolerance,
-} from "../../../../model/review";
+} from "../../../../model/twinReport";
 import {
   commandOrigins,
   commandStatuses,
@@ -15,7 +15,7 @@ import {
   toleranceSources,
   twinJudgeReasons,
   twinVerdicts,
-} from "../../../../model/review";
+} from "../../../../model/twinReport";
 import { isRecord } from "../../../../model/shared/json";
 import { names, optional, optionalTexts, pick, requiredTexts, rows } from "../transport/decodeKit";
 

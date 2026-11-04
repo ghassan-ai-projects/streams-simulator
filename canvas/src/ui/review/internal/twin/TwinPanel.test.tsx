@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { createReviewSession } from "../../../../app/review";
-import { verdictWords } from "../../../../model/review";
+import { verdictWords } from "../../../../model/twinReport";
 import { deferred } from "../../../../test/deferred";
 import { FakeBridge, cannedFailure } from "../../../../test/fakeBridge";
 import type { Canned } from "../../../../test/fakeFailures";

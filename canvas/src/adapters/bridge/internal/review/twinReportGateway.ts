@@ -1,5 +1,5 @@
 import type { Outcome, TwinFailure } from "../../../../app/ports";
-import type { TwinReport, TwinRequest } from "../../../../model/review";
+import type { TwinReport, TwinRequest } from "../../../../model/twinReport";
 import { twinFailure } from "../transport/failures";
 import type { Transport } from "../transport/http";
 import { action } from "../transport/http";

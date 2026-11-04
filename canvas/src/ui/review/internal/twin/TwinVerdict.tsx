@@ -1,6 +1,6 @@
 import { CircleCheck, CircleQuestionMark, TriangleAlert } from "lucide-react";
-import type { TwinVerdict } from "../../../../model/review";
-import { verdictWords } from "../../../../model/review";
+import type { TwinVerdict } from "../../../../model/twinReport";
+import { verdictWords } from "../../../../model/twinReport";
 import { cx } from "../../../primitives";
 import chips from "../evidence/SessionEvidence.module.css";
 

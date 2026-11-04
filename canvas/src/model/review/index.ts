@@ -28,17 +28,6 @@ export type {
   SessionLive,
   SessionReading,
   StateCheck,
-  TwinChart,
-  TwinCommand,
-  TwinCoverage,
-  TwinDivergence,
-  TwinMetric,
-  TwinReport,
-  TwinRequest,
-  TwinSeries,
-  TwinSummary,
-  TwinTolerance,
-  TwinVerdict,
   Waiting,
 } from "./contract";
 export { interruptMarks } from "./internal/interrupts/interruptMarks";
@@ -64,36 +53,6 @@ export {
   waitingWords,
 } from "./internal/interrupts/interruptWords";
 export { deviceOf, originOf, readingWords } from "./internal/interrupts/sessionLive";
-export {
-  commandOrigins,
-  commandStatuses,
-  notAppliedReasons,
-  notComparedReasons,
-  toleranceSources,
-  twinJudgeReasons,
-  twinVerdicts,
-} from "./internal/twin/twin";
-export { chartFrame, chartOf } from "./internal/twin/twinChart";
-export {
-  coverageOf,
-  divergenceLine,
-  inForceWords,
-  metricLine,
-  ruleWords,
-  truncationNote,
-  twinOffer,
-  unitOfMetric,
-} from "./internal/twin/twinSelect";
-export {
-  commandStatusWords,
-  judgeReasonWords,
-  noDivergenceWords,
-  notAppliedWords,
-  notComparedWords,
-  originWords,
-  unboundEvidenceWords,
-  verdictWords,
-} from "./internal/twin/twinWords";
 export { recordedPolicyWords } from "../launch";
 export {
   acceptanceDetail,

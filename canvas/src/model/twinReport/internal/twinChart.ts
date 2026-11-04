@@ -1,4 +1,4 @@
-import { runClock } from "../report/timeline";
+import { runClock } from "../../review";
 import type { TwinDivergence, TwinMetric } from "./twin";
 import { numberWords } from "./twinWords";
 

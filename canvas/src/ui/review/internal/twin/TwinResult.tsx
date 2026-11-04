@@ -1,6 +1,6 @@
 import type { ReviewSession, TwinState } from "../../../../app/review";
-import type { TwinReport, TwinRequest } from "../../../../model/review";
-import { judgeReasonWords, ruleWords, unboundEvidenceWords, verdictWords } from "../../../../model/review";
+import type { TwinReport, TwinRequest } from "../../../../model/twinReport";
+import { judgeReasonWords, ruleWords, unboundEvidenceWords, verdictWords } from "../../../../model/twinReport";
 import { useFocusOnMount } from "../../../primitives";
 import parts from "../report/ReportParts.module.css";
 import styles from "./Twin.module.css";

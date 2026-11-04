@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstOf, twinModel } from "../../../../test/twinReportFixture";
+import { firstOf, twinModel } from "../../../test/twinReportFixture";
 import type { TwinMetric } from "./twin";
 import { chartFrame, chartOf } from "./twinChart";
 

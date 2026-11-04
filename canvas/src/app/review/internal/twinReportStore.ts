@@ -1,4 +1,4 @@
-import type { TwinReport, TwinRequest } from "../../../model/review";
+import type { TwinReport, TwinRequest } from "../../../model/twinReport";
 import type { ReviewGateway, TwinFailure } from "../../ports";
 import type { Store } from "../../shared";
 import { Observable, createOperationIdentity } from "../../shared";

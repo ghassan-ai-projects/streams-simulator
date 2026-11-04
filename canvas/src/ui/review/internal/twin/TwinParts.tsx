@@ -1,4 +1,5 @@
-import type { TwinCommand, TwinDivergence, TwinMetric, TwinReport } from "../../../../model/review";
+import type { TwinCommand, TwinDivergence, TwinMetric, TwinReport } from "../../../../model/twinReport";
+import { runClock } from "../../../../model/review";
 import {
   commandStatusWords,
   divergenceLine,
@@ -8,9 +9,8 @@ import {
   notAppliedWords,
   notComparedWords,
   originWords,
-  runClock,
   unitOfMetric,
-} from "../../../../model/review";
+} from "../../../../model/twinReport";
 import { cx, shared } from "../../../primitives";
 import parts from "../report/ReportParts.module.css";
 import { Section } from "../report/ReportParts";
