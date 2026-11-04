@@ -1,5 +1,5 @@
-import { clockOf } from "../../../shared/duration";
-import { counted, humanise } from "../../../shared/words";
+import { clockOf } from "../../shared/duration";
+import { counted, humanise } from "../../shared/words";
 import type {
   ComparedCall,
   ComparedEnvironment,

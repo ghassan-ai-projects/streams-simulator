@@ -7,7 +7,7 @@ import type {
   Presence,
   Scope,
   SystemCounts,
-} from "../../../../model/review";
+} from "../../../../model/compare";
 import { isRecord, record } from "../../../../model/shared/json";
 import { finiteOrNull } from "../transport/decodeKit";
 

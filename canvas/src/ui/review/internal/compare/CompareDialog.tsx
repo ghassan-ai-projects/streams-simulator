@@ -4,7 +4,7 @@ import type { CompareState, ReviewSession } from "../../../../app/review";
 import { compareFor } from "../../../../app/review";
 import type { ProvenanceSession, WorkspaceStore } from "../../../../app/workspace";
 import type { Report } from "../../../../model/review";
-import { referenceChoices, referenceRole, thisRunRole } from "../../../../model/review";
+import { referenceChoices, referenceRole, thisRunRole } from "../../../../model/compare";
 import { runRows } from "../../../../model/workspace";
 import { cx, failureLine, shared, useStore } from "../../../primitives";
 import { ComparisonView } from "./ComparisonView";

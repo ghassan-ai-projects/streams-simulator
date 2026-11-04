@@ -5,7 +5,7 @@ import type {
   ComparedPerturbation,
   Diff,
   Paired,
-} from "../../../../model/review";
+} from "../../../../model/compare";
 import { isRecord, record, text } from "../../../../model/shared/json";
 import { outcomeText } from "./reportDecoder";
 import { finiteOrNull } from "../transport/decodeKit";

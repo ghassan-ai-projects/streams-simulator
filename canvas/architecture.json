@@ -89,7 +89,7 @@
       "lifetime": "singleton",
       "responsibility": "dependency interfaces only; no workflow",
       "folders": ["src/app/ports"],
-      "mayImport": ["model/editor", "model/launch", "model/plant", "model/review", "model/workspace"],
+      "mayImport": ["model/compare", "model/editor", "model/launch", "model/plant", "model/review", "model/workspace"],
       "entrypoint": "src/app/ports/index.ts",
       "callers": [
         "adapters",
@@ -175,6 +175,7 @@
         "app/session",
         "app/shell",
         "app/workspace",
+        "model/compare",
         "model/devices",
         "model/graph",
         "model/launch",
@@ -226,6 +227,7 @@
       "entrypoint": null,
       "callers": [
         "adapters",
+        "model/compare",
         "model/devices",
         "model/editor",
         "model/graph",
@@ -304,7 +306,17 @@
       "folders": ["src/model/review"],
       "mayImport": ["model/graph", "model/launch", "model/plant", "model/shared"],
       "entrypoint": "src/model/review/index.ts",
-      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review", "ui/workspace"]
+      "callers": ["adapters", "app/ports", "app/review", "model/compare", "test", "ui/review", "ui/workspace"]
+    },
+    "model/compare": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "run comparison values, plan lanes, tables and choices",
+      "folders": ["src/model/compare"],
+      "mayImport": ["model/review", "model/shared"],
+      "entrypoint": "src/model/compare/index.ts",
+      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review"]
     },
     "app/workspace": {
       "kind": "application",
@@ -352,7 +364,7 @@
       "lifetime": "singleton",
       "responsibility": "report and verification loading, observer playback and review selection",
       "folders": ["src/app/review"],
-      "mayImport": ["app/plant", "app/ports", "app/shared", "model/review", "model/workspace"],
+      "mayImport": ["app/plant", "app/ports", "app/shared", "model/compare", "model/review", "model/workspace"],
       "entrypoint": "src/app/review/index.ts",
       "callers": ["app/shell", "root", "test", "ui/review", "ui/shell"]
     },
@@ -480,6 +492,7 @@
         "app/review",
         "app/shell",
         "app/workspace",
+        "model/compare",
         "model/graph",
         "model/plant",
         "model/review",
@@ -567,7 +580,7 @@
       "lifetime": "singleton",
       "responsibility": "bridge and browser edges: transport, protocol encoding, boundary decoding, browser location, preferences, theme and time",
       "folders": ["src/adapters"],
-      "mayImport": ["app/ports", "model/plant", "model/review", "model/shared", "model/workspace"],
+      "mayImport": ["app/ports", "model/compare", "model/plant", "model/review", "model/shared", "model/workspace"],
       "entrypoint": null,
       "callers": ["root", "test"]
     }

@@ -144,9 +144,6 @@ export {
 } from "./internal/report/reportViews";
 export { rerunOf } from "./internal/report/rerun";
 export { storyOf, storyWindow } from "./internal/report/actionStory";
-export { planLanes } from "./internal/compare/comparePlan";
-export { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "./internal/compare/compareTables";
-export { referenceChoices, referenceRole, thisRunRole } from "./internal/compare/compareChoices";
 export {
   endedGate,
   evidenceWords,
@@ -177,29 +174,6 @@ export {
 } from "./internal/report/timeline";
 export type {
   ActionStory,
-  AlarmLine,
-  KpiLine,
-  PlanLane,
-  PlanRow,
-  SystemLine,
-  Table,
-  AlarmStats,
-  ComparabilityLimit,
-  ComparedAlarm,
-  ComparedAlarmSystem,
-  ComparedCall,
-  ComparedEnvironment,
-  ComparedFault,
-  ComparedKpi,
-  ComparedPerturbation,
-  ComparedRun,
-  Comparison,
-  Diff,
-  KpiStats,
-  Paired,
-  Presence,
-  Scope,
-  SystemCounts,
   OverlayEvent,
   PlannedFault,
   Plot,

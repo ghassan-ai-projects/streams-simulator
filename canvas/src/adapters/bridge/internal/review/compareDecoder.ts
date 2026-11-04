@@ -1,4 +1,4 @@
-import type { ComparabilityLimit, ComparedRun, Comparison } from "../../../../model/review";
+import type { ComparabilityLimit, ComparedRun, Comparison } from "../../../../model/compare";
 import { isRecord, list, record, text } from "../../../../model/shared/json";
 import { callItem, diffOf, environmentItem, faultItem, perturbationItem } from "./compareItems";
 import { alarmRow, alarmSystemOf, kpiRow } from "./compareResults";

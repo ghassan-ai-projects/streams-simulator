@@ -1,9 +1,8 @@
-import { clockOf } from "../../../shared/duration";
-import { displayUnit } from "../../../shared/units";
-import { humanise } from "../../../shared/words";
+import { clockOf } from "../../shared/duration";
+import { displayUnit } from "../../shared/units";
+import { humanise } from "../../shared/words";
 import type { ComparedAlarm, ComparedKpi, Comparison, Presence, Scope } from "./comparison";
-import { kpiFigure, kpiWords } from "../report/reportViews";
-import { alarmRow } from "../report/words";
+import { kpiFigure, kpiWords, alarmRow } from "../../review";
 
 const none = "–";
 

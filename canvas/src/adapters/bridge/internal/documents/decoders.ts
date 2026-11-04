@@ -2,7 +2,8 @@ import type { ComposeSummary, DomainDocument, FileContent } from "../../../../ap
 import type { Workspace } from "../../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../../model/plant";
-import type { Comparison, Replay, Report } from "../../../../model/review";
+import type { Replay, Report } from "../../../../model/review";
+import type { Comparison } from "../../../../model/compare";
 import { parseComparisonPayload } from "../review/compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "../review/reportDecoder";
 import { isRecord, list, record, text } from "../../../../model/shared/json";

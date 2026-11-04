@@ -65,25 +65,4 @@ export type { TrendSpan, WindowChoice } from "./internal/playback/trendWindow";
 export type { Plot } from "./internal/playback/trendPlot";
 export type { Readout } from "./internal/playback/trendReadout";
 export type { OverlayEvent, PlannedFault } from "./internal/playback/trendOverlay";
-export type {
-  AlarmStats,
-  ComparabilityLimit,
-  ComparedAlarm,
-  ComparedAlarmSystem,
-  ComparedCall,
-  ComparedEnvironment,
-  ComparedFault,
-  ComparedKpi,
-  ComparedPerturbation,
-  ComparedRun,
-  Comparison,
-  Diff,
-  KpiStats,
-  Paired,
-  Presence,
-  Scope,
-  SystemCounts,
-} from "./internal/compare/comparison";
 export type { ActionStory } from "./internal/report/actionStory";
-export type { PlanLane, PlanRow } from "./internal/compare/comparePlan";
-export type { AlarmLine, KpiLine, SystemLine, Table } from "./internal/compare/compareTables";

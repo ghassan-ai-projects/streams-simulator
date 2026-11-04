@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import type { ProvenanceSession, WorkspaceStore } from "../../../../app/workspace";
 import type { Report } from "../../../../model/review";
-import { referenceChoices } from "../../../../model/review";
+import { referenceChoices } from "../../../../model/compare";
 import { runRows } from "../../../../model/workspace";
 import { cx, shared, useStore } from "../../../primitives";
 import { ModelDiffPanel } from "./ModelDiffPanel";

@@ -1,5 +1,5 @@
-import { durationOf } from "../../../shared/duration";
-import { seedWords } from "../../../shared/words";
+import { durationOf } from "../../shared/duration";
+import { seedWords } from "../../shared/words";
 
 export const referenceRole = "Reference (A)";
 export const thisRunRole = "This run (B)";

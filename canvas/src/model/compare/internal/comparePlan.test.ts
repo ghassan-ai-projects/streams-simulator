@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparison } from "../../../../test/compareFixture";
+import { comparison } from "../../../test/compareFixture";
 import { planLanes } from "./comparePlan";
 
 describe("what differs between the two plans", () => {

@@ -1,4 +1,4 @@
-import type { Comparison } from "../../../../model/review";
+import type { Comparison } from "../../../../model/compare";
 import { CompareDiff } from "./CompareDiff";
 import { CompareResults } from "./CompareResults";
 import styles from "./Compare.module.css";

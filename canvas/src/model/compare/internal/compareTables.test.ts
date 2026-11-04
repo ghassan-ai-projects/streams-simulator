@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparison } from "../../../../test/compareFixture";
+import { comparison } from "../../../test/compareFixture";
 import {
   alarmSystemTable,
   alarmTable,

@@ -1,5 +1,5 @@
-import type { AlarmLine, Comparison, KpiLine, SystemLine, Table } from "../../../../model/review";
-import { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "../../../../model/review";
+import type { AlarmLine, Comparison, KpiLine, SystemLine, Table } from "../../../../model/compare";
+import { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "../../../../model/compare";
 import styles from "./Compare.module.css";
 
 type Unit = (entity: string, state: string) => string;
