@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  acceptanceDetail,
-  copiedWords,
-  copyFailedWords,
-  digestListedWords,
-  refusalWords,
-} from "../interrupts/sessionWords";
-import type { SessionCommand } from "../interrupts/sessionLive";
+import { acceptanceDetail, copiedWords, copyFailedWords, digestListedWords, refusalWords } from "./sessionWords";
+import type { SessionCommand } from "./sessionLive";
 
 const refused: SessionCommand = {
   sentAtNs: 1,

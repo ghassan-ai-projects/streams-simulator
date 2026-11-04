@@ -8,8 +8,8 @@ import { ControlStore } from "./controlStore";
 import type { HandoverSession } from "./handoverStore";
 import { HandoverStore } from "./handoverStore";
 import { ReviewStore } from "./reviewStore";
-import type { TwinSession } from "./twinStore";
-import { TwinStore } from "./twinStore";
+import type { TwinSession } from "./twinReportStore";
+import { TwinStore } from "./twinReportStore";
 import type { WatchSession } from "./watchStore";
 import { WatchStore } from "./watchStore";
 

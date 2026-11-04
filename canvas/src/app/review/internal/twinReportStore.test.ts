@@ -4,7 +4,7 @@ import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { failure, success } from "../../../test/outcome";
 import { cannotJudgeWire, twinReportWire } from "../../../test/twinReportFixture";
-import { TwinStore, twinFor } from "./twinStore";
+import { TwinStore, twinFor } from "./twinReportStore";
 
 const request = { run: "c-1", domain: "mini", tolerance: "" };
 
