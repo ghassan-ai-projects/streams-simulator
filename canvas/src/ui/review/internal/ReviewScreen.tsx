@@ -6,16 +6,16 @@ import type { PlantSession } from "../../../app/plant";
 import type { ReviewSession } from "../../../app/review";
 import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
 import { cx, shared, useStore } from "../../primitives";
-import { Centre } from "./ReviewCentre";
-import type { ActionsProps } from "./ReviewActions";
-import { ReviewActions } from "./ReviewActions";
-import { Side } from "./ReviewSide";
-import { Header } from "./RunHeader";
-import { RunPanel } from "./RunPanel";
-import { useReviewOpen } from "./useReviewOpen";
-import { useClosePlant, useRunPlant, useUnitOf } from "./useRunPlant";
-import { usePlaybackKeys } from "./usePlaybackKeys";
-import { useShownOrigins } from "./useShownOrigins";
+import { Centre } from "./screen/ReviewCentre";
+import type { ActionsProps } from "./screen/ReviewActions";
+import { ReviewActions } from "./screen/ReviewActions";
+import { Side } from "./screen/ReviewSide";
+import { Header } from "./screen/RunHeader";
+import { RunPanel } from "./screen/RunPanel";
+import { useReviewOpen } from "./screen/useReviewOpen";
+import { useClosePlant, useRunPlant, useUnitOf } from "./screen/useRunPlant";
+import { usePlaybackKeys } from "./playback/usePlaybackKeys";
+import { useShownOrigins } from "./screen/useShownOrigins";
 import styles from "./ReviewScreen.module.css";
 
 interface ReviewScreenProps {
