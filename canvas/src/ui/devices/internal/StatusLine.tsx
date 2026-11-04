@@ -1,4 +1,4 @@
-import type { saveStatusOf } from "../../../app/devices";
+import type { SaveStatus } from "../../../app/devices";
 import styles from "./Devices.module.css";
 
 const tones = {
@@ -9,7 +9,7 @@ const tones = {
 } as const;
 
 interface StatusLineProps {
-  readonly status: ReturnType<typeof saveStatusOf>;
+  readonly status: SaveStatus;
   readonly id?: string;
 }
 
