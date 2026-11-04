@@ -5,13 +5,13 @@ import type { LaunchStore } from "../../../app/launch";
 import type { Plant } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
 import { useStore } from "../../primitives";
-import { Body } from "./LaunchBody";
-import { ProposalNote } from "./ProposalNote";
-import { RunMode } from "./RunMode";
-import { RunningMark } from "./RunningMark";
-import { Session } from "./Session";
-import { useLaunchDraft } from "./useLaunchDraft";
-import { useRunMode } from "./useRunMode";
+import { Body } from "./progress/LaunchBody";
+import { ProposalNote } from "./progress/ProposalNote";
+import { RunMode } from "./session/RunMode";
+import { RunningMark } from "./progress/RunningMark";
+import { Session } from "./session/Session";
+import { useLaunchDraft } from "./plan/useLaunchDraft";
+import { useRunMode } from "./session/useRunMode";
 import styles from "./LaunchPanel.module.css";
 
 interface LaunchPanelProps {
