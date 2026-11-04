@@ -4,7 +4,7 @@ import { FakeBridge } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
 import { flushPromises } from "../../../test/deferred";
 import { report, reportWire } from "../../../test/runFixture";
-import { readyReport, startNsOf } from "./readyReport";
+import { readyReport, startNsOf, timelineSpan } from "./readyReport";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
@@ -49,5 +49,24 @@ describe("ready report", () => {
       null,
     );
     expect(startNsOf(store.snapshot(), store)).toBe(100e9);
+  });
+
+  it("spans the report, the live history and the newest reading, and stands at the start until a position is set", async () => {
+    const { store } = setup();
+    store.open("w-1");
+    await flushPromises();
+    const state = store.snapshot();
+    expect(timelineSpan(state, store)).toEqual({
+      startNs: report.startNs,
+      endNs: report.endNs,
+      positionNs: report.startNs,
+    });
+    const history = { entries: [], startNs: report.startNs - 5, endNs: report.endNs, trimmedBeforeNs: null };
+    const later = { ...state, liveHistory: history, newestNs: report.endNs + 5, positionNs: report.startNs + 1 };
+    expect(timelineSpan(later, store)).toEqual({
+      startNs: report.startNs - 5,
+      endNs: report.endNs + 5,
+      positionNs: report.startNs + 1,
+    });
   });
 });

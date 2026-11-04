@@ -2,7 +2,7 @@ export { compareFor } from "./internal/compareStore";
 export { handoverFor } from "./internal/handoverStore";
 export { createReviewSession } from "./internal/reviewSession";
 export { twinFor } from "./internal/twinReportStore";
-export { readyReport, runGoing, startNsOf } from "./internal/readyReport";
+export { readyReport, runGoing, startNsOf, timelineSpan } from "./internal/readyReport";
 export { rerunProposalOf } from "./internal/rerunProposal";
 export { reviewPlantFor, showRunPlant } from "./internal/reviewPlant";
 export type {

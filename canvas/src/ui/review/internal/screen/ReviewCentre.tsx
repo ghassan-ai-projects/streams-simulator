@@ -1,8 +1,7 @@
 import type { ConnectSession } from "../../../../app/launch";
 import type { NavigationStore } from "../../../../app/shell";
-import type { ReviewSession, ReviewState } from "../../../../app/review";
-import { readyReport } from "../../../../app/review";
-import { runSpan } from "../../../../model/review";
+import type { ReviewSession } from "../../../../app/review";
+import { readyReport, timelineSpan } from "../../../../app/review";
 import type { EventMark } from "../../../../model/review";
 import { MissingRun } from "./MissingRun";
 import { Graph } from "./ReviewGraph";
@@ -49,21 +48,15 @@ interface CentreProps extends GraphProps {
   readonly review: ReviewSession;
 }
 
-function startOf(review: ReviewSession, state: ReviewState): number {
-  const span = runSpan(readyReport(state), review.index.bounds());
-  return Math.min(span.startNs, state.liveHistory?.startNs ?? span.startNs);
-}
-
 function Timeline({ review, state }: Pick<CentreProps, "review" | "state">) {
-  const report = readyReport(state);
-  const span = runSpan(report, review.index.bounds());
+  const span = timelineSpan(state, review);
   return (
     <Scrubber
-      startNs={startOf(review, state)}
-      endNs={Math.max(span.endNs, state.newestNs)}
+      startNs={span.startNs}
+      endNs={span.endNs}
       liveMarks={state.liveMarks}
-      positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
-      report={report}
+      positionNs={span.positionNs}
+      report={readyReport(state)}
       origins={state.origins}
       binding={state.binding}
       playing={state.playing}
@@ -76,7 +69,7 @@ function Timeline({ review, state }: Pick<CentreProps, "review" | "state">) {
 function LiveTop({ review, state, connect, now }: Omit<CentreProps, "worldId" | "navigation">) {
   return (
     <div className={styles.liveTop}>
-      <LiveControls review={review} state={state} startNs={startOf(review, state)} now={now} />
+      <LiveControls review={review} state={state} startNs={timelineSpan(state, review).startNs} now={now} />
       <Interrupts review={review} state={state} connect={connect} now={now} />
     </div>
   );
