@@ -1,6 +1,6 @@
 import type { BoardCapture, CapturedKind } from "../../../../app/ports";
 import { isRecord, text } from "../../../../model/shared/json";
-import { rows } from "../decoders";
+import { rows } from "../documents/decoders";
 import { issueList } from "../transport/http";
 
 type Comparison = CapturedKind["comparison"];

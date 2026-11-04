@@ -1,6 +1,6 @@
 import type { DomainChecked, LibraryInstrument, LintReport, TwinMade } from "../../../../app/ports";
 import { isRecord, list, number, record, text } from "../../../../model/shared/json";
-import { workspace } from "../decoders";
+import { workspace } from "../documents/decoders";
 import { finiteOrNull } from "../transport/decodeKit";
 
 function matchOf(value: unknown): LibraryInstrument["match"] {

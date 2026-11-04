@@ -1,6 +1,6 @@
 import type { BridgeAdapters } from "../../../../app/ports";
 import { assumptions } from "./assumptionsDecoder";
-import { composeSummary, fileContent } from "../decoders";
+import { composeSummary, fileContent } from "../documents/decoders";
 import { modelDiff } from "../review/diffDecoder";
 import { documentFailure } from "../transport/failures";
 import type { Transport } from "../transport/http";

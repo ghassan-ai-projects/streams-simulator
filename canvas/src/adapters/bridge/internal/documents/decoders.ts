@@ -1,13 +1,13 @@
-import type { ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
-import type { Workspace } from "../../../model/workspace";
-import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
-import type { ComponentSpec, PortSpec } from "../../../model/plant";
-import type { Comparison, Replay, Report } from "../../../model/review";
-import { parseComparisonPayload } from "./review/compareDecoder";
-import { parseReportPayload, parseReplayPayload } from "./review/reportDecoder";
-import { isRecord, list, record, text } from "../../../model/shared/json";
+import type { ComposeSummary, DomainDocument, FileContent } from "../../../../app/ports";
+import type { Workspace } from "../../../../model/workspace";
+import type { ExamplePlant, LibraryEntry, Presets } from "../../../../model/plant";
+import type { ComponentSpec, PortSpec } from "../../../../model/plant";
+import type { Comparison, Replay, Report } from "../../../../model/review";
+import { parseComparisonPayload } from "../review/compareDecoder";
+import { parseReportPayload, parseReplayPayload } from "../review/reportDecoder";
+import { isRecord, list, record, text } from "../../../../model/shared/json";
 import { parametersOf, presetsOf } from "./parameterDecoder";
-import { finiteOrNull } from "./transport/decodeKit";
+import { finiteOrNull } from "../transport/decodeKit";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;

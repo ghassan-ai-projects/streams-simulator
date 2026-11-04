@@ -1,7 +1,7 @@
 import type { Outcome, PolicyDefaultFailure, PolicyDefaultFile } from "../../../../app/ports";
 import { isRecord } from "../../../../model/shared/json";
 import { names } from "../transport/decodeKit";
-import { fileContent, written } from "../decoders";
+import { fileContent, written } from "../documents/decoders";
 import { policyDefaultFailure } from "../transport/failures";
 import type { Transport } from "../transport/http";
 import { putFile, request } from "../transport/http";

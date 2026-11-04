@@ -2,7 +2,7 @@ import type { ConnectGateway, ConnectStatus, PlannedInstance, SessionCheck } fro
 import { isRecord, list, record, text } from "../../../../model/shared/json";
 import { names } from "../transport/decodeKit";
 import { connectFailure } from "../transport/failures";
-import { followRun } from "../follow";
+import { followRun } from "../review/follow";
 import type { Transport } from "../transport/http";
 import { action, issueList } from "../transport/http";
 import { readPolicyDefault, savePolicyDefault } from "./policyDefault";

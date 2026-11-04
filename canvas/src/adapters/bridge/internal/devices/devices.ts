@@ -1,5 +1,5 @@
 import type { BridgeAdapters, InstrumentQuery } from "../../../../app/ports";
-import { fileContent, written } from "../decoders";
+import { fileContent, written } from "../documents/decoders";
 import { deviceFailure } from "../transport/failures";
 import { boardCapture } from "./captureDecoder";
 import type { Transport } from "../transport/http";

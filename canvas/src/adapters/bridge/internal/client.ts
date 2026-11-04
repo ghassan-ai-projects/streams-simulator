@@ -5,7 +5,7 @@ import { catalogGateway } from "./launch/planCatalog";
 import { jobGateway } from "./launch/jobs";
 import { controlSession } from "./review/control";
 import { devicesGateway } from "./devices/devices";
-import { followRun } from "./follow";
+import { followRun } from "./review/follow";
 import { lintAction } from "./devices/lintAction";
 import { provenanceGateway } from "./provenance/provenanceGateway";
 import { requestTwinReport } from "./review/twinReportGateway";
@@ -27,7 +27,7 @@ import {
   runDomain,
   written,
   workspace,
-} from "./decoders";
+} from "./documents/decoders";
 import {
   documentFailure,
   editorFailure,

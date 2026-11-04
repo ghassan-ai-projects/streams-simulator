@@ -1,6 +1,6 @@
-import type { RunFollower } from "../../../app/ports";
-import type { Transport } from "./transport/http";
-import { journalEntry } from "./review/journalDecoder";
+import type { RunFollower } from "../../../../app/ports";
+import type { Transport } from "../transport/http";
+import { journalEntry } from "./journalDecoder";
 
 const streamClosed = 2;
 
