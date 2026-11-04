@@ -1,3 +1,4 @@
+import { unescaped } from "../../shared/json";
 import { isTwinKeyword, plainIssue } from "./issueWords";
 import type { FieldIssue, KindFile, RawIssue, Selection } from "./types";
 
@@ -24,10 +25,6 @@ const fieldWords: Readonly<Record<string, string>> = {
   metrics: "Readings",
   commands: "Commands",
 };
-
-function unescaped(part: string): string {
-  return part.replaceAll("~1", "/").replaceAll("~0", "~");
-}
 
 function ownerOf(kind: KindFile, collection: string, index: string): Owner | null {
   if (!/^\d+$/.test(index)) return null;

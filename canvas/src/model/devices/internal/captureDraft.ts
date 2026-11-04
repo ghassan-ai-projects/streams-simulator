@@ -1,4 +1,4 @@
-import { isRecord, list, text } from "../../shared/json";
+import { isRecord, list, text, unescaped } from "../../shared/json";
 import { rangeWords } from "./instruments";
 import { issueText, issueTitle, resolveIssues } from "./issues";
 import { parseKind } from "./kindFile";
@@ -101,7 +101,7 @@ export function draftIssues(draft: Fields, found: readonly RawIssue[]): readonly
 function pointerValue(root: unknown, pointer: string): unknown {
   let current: unknown = root;
   for (const part of pointer.split("/").slice(1)) {
-    const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
+    const key = unescaped(part);
     if (Array.isArray(current)) current = current[Number(key)];
     else if (isRecord(current)) current = current[key];
     else return undefined;
