@@ -1,8 +1,8 @@
-export type { BannerWarning } from "./internal/banners";
-export type { JournalEntry, Opening } from "./internal/playback";
+export type { BannerWarning } from "./internal/report/banners";
+export type { JournalEntry, Opening } from "./internal/playback/playback";
 export type { Quality } from "../shared/quality";
-export type { ObservedRow } from "./internal/observedRows";
-export type { Trend } from "./internal/trend";
+export type { ObservedRow } from "./internal/playback/observedRows";
+export type { Trend } from "./internal/playback/trend";
 export type {
   AlarmActivation,
   Badge,
@@ -13,13 +13,19 @@ export type {
   Report,
   ReportReplay,
   VerifyState,
-} from "./internal/report";
-export type { ChipPlace } from "./internal/timeLayout";
-export type { EventMark, MarkKind, TimedBinding } from "./internal/timeline";
-export type { Rerun } from "./internal/rerun";
+} from "./internal/report/report";
+export type { ChipPlace } from "./internal/report/timeLayout";
+export type { EventMark, MarkKind, TimedBinding } from "./internal/report/timeline";
+export type { Rerun } from "./internal/report/rerun";
 export type { InstanceOrigin } from "../graph";
-export type { Connection } from "./internal/origins";
-export type { LiveMark, SessionCommand, SessionDevice, SessionLive, SessionReading } from "./internal/sessionLive";
+export type { Connection } from "./internal/report/origins";
+export type {
+  LiveMark,
+  SessionCommand,
+  SessionDevice,
+  SessionLive,
+  SessionReading,
+} from "./internal/interrupts/sessionLive";
 export type {
   ActionRequest,
   ArgPair,
@@ -36,9 +42,9 @@ export type {
   InterruptState,
   PendingApproval,
   Waiting,
-} from "./internal/interrupts";
-export type { BadgeKind, ControlResult, NodeNow, StateCheck } from "./internal/interruptWords";
-export type { ActiveScope, ScopeChoice, ScopeStatus, SeenState } from "./internal/interruptSelect";
+} from "./internal/interrupts/interrupts";
+export type { BadgeKind, ControlResult, NodeNow, StateCheck } from "./internal/interrupts/interruptWords";
+export type { ActiveScope, ScopeChoice, ScopeStatus, SeenState } from "./internal/interrupts/interruptSelect";
 export type {
   TwinCommand,
   TwinDivergence,
@@ -49,16 +55,16 @@ export type {
   TwinSummary,
   TwinTolerance,
   TwinVerdict,
-} from "./internal/twin";
-export type { TwinChart } from "./internal/twinChart";
-export type { TwinCoverage } from "./internal/twinSelect";
-export type { Watched } from "./internal/watchList";
-export type { SavedTrends, TrendSize } from "./internal/savedTrends";
-export type { Span } from "./internal/trend";
-export type { TrendSpan, WindowChoice } from "./internal/trendWindow";
-export type { Plot } from "./internal/trendPlot";
-export type { Readout } from "./internal/trendReadout";
-export type { OverlayEvent, PlannedFault } from "./internal/trendOverlay";
+} from "./internal/twin/twin";
+export type { TwinChart } from "./internal/twin/twinChart";
+export type { TwinCoverage } from "./internal/twin/twinSelect";
+export type { Watched } from "./internal/playback/watchList";
+export type { SavedTrends, TrendSize } from "./internal/playback/savedTrends";
+export type { Span } from "./internal/playback/trend";
+export type { TrendSpan, WindowChoice } from "./internal/playback/trendWindow";
+export type { Plot } from "./internal/playback/trendPlot";
+export type { Readout } from "./internal/playback/trendReadout";
+export type { OverlayEvent, PlannedFault } from "./internal/playback/trendOverlay";
 export type {
   AlarmStats,
   ComparabilityLimit,
@@ -77,7 +83,7 @@ export type {
   Presence,
   Scope,
   SystemCounts,
-} from "./internal/comparison";
-export type { ActionStory } from "./internal/actionStory";
-export type { PlanLane, PlanRow } from "./internal/comparePlan";
-export type { AlarmLine, KpiLine, SystemLine, Table } from "./internal/compareTables";
+} from "./internal/compare/comparison";
+export type { ActionStory } from "./internal/report/actionStory";
+export type { PlanLane, PlanRow } from "./internal/compare/comparePlan";
+export type { AlarmLine, KpiLine, SystemLine, Table } from "./internal/compare/compareTables";

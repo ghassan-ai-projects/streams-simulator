@@ -1,4 +1,4 @@
-export { noteLinesByEntity } from "./internal/noteLines";
+export { noteLinesByEntity } from "./internal/report/noteLines";
 export type {
   ActionRequest,
   ActiveScope,
@@ -41,7 +41,7 @@ export type {
   TwinVerdict,
   Waiting,
 } from "./contract";
-export { interruptMarks } from "./internal/interruptMarks";
+export { interruptMarks } from "./internal/interrupts/interruptMarks";
 export {
   activeScopes,
   chosenChoice,
@@ -50,8 +50,8 @@ export {
   scopeChoices,
   scopeStatus,
   withShownInterrupts,
-} from "./internal/interruptSelect";
-export { allDevices, scopeLabel } from "./internal/interruptScope";
+} from "./internal/interrupts/interruptSelect";
+export { allDevices, scopeLabel } from "./internal/interrupts/interruptScope";
 export {
   argsWords,
   arrivalWords,
@@ -62,8 +62,8 @@ export {
   pendingTitle,
   requestWords,
   waitingWords,
-} from "./internal/interruptWords";
-export { deviceOf, originOf, readingWords } from "./internal/sessionLive";
+} from "./internal/interrupts/interruptWords";
+export { deviceOf, originOf, readingWords } from "./internal/interrupts/sessionLive";
 export {
   commandOrigins,
   commandStatuses,
@@ -72,8 +72,8 @@ export {
   toleranceSources,
   twinJudgeReasons,
   twinVerdicts,
-} from "./internal/twin";
-export { chartFrame, chartOf } from "./internal/twinChart";
+} from "./internal/twin/twin";
+export { chartFrame, chartOf } from "./internal/twin/twinChart";
 export {
   coverageOf,
   divergenceLine,
@@ -83,7 +83,7 @@ export {
   truncationNote,
   twinOffer,
   unitOfMetric,
-} from "./internal/twinSelect";
+} from "./internal/twin/twinSelect";
 export {
   commandStatusWords,
   judgeReasonWords,
@@ -93,7 +93,7 @@ export {
   originWords,
   unboundEvidenceWords,
   verdictWords,
-} from "./internal/twinWords";
+} from "./internal/twin/twinWords";
 export { recordedPolicyWords } from "../launch";
 export {
   acceptanceDetail,
@@ -107,12 +107,12 @@ export {
   linkWords,
   reportWords,
   updateAgeWords,
-} from "./internal/sessionWords";
-export { bannerWarnings } from "./internal/banners";
-export { hallLiveOf, isRealBoard } from "./internal/live";
-export { observedRows } from "./internal/observedRows";
-export { trendFrame } from "./internal/trend";
-export { isWatched, toggled, watchLimit } from "./internal/watchList";
+} from "./internal/interrupts/sessionWords";
+export { bannerWarnings } from "./internal/report/banners";
+export { hallLiveOf, isRealBoard } from "./internal/playback/live";
+export { observedRows } from "./internal/playback/observedRows";
+export { trendFrame } from "./internal/playback/trend";
+export { isWatched, toggled, watchLimit } from "./internal/playback/watchList";
 export {
   defaultTrendSize,
   resizedTrend,
@@ -120,15 +120,15 @@ export {
   savedTrendsText,
   stillExists,
   trendSizes,
-} from "./internal/savedTrends";
-export { trendSpanOf, windowChoices, windowWords } from "./internal/trendWindow";
-export { nsAtX, plotFrame, plotsOf, xOf } from "./internal/trendPlot";
-export { readoutOf } from "./internal/trendReadout";
-export { probeKey } from "./internal/trendProbe";
-export { eventLine, overlayOf } from "./internal/trendOverlay";
-export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/origins";
-export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
-export { badgeLabels, badgeOf, immediateWords, replayLine, runSpan } from "./internal/report";
+} from "./internal/playback/savedTrends";
+export { trendSpanOf, windowChoices, windowWords } from "./internal/playback/trendWindow";
+export { nsAtX, plotFrame, plotsOf, xOf } from "./internal/playback/trendPlot";
+export { readoutOf } from "./internal/playback/trendReadout";
+export { probeKey } from "./internal/playback/trendProbe";
+export { eventLine, overlayOf } from "./internal/playback/trendOverlay";
+export { bindingLine, connectionWords, shownOrigins, withOrigin } from "./internal/report/origins";
+export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback/playback";
+export { badgeLabels, badgeOf, immediateWords, replayLine, runSpan } from "./internal/report/report";
 export {
   fileLine,
   integrityLine,
@@ -141,12 +141,12 @@ export {
   runIdentity,
   terminationWords,
   unfinishedTruthWords,
-} from "./internal/reportViews";
-export { rerunOf } from "./internal/rerun";
-export { storyOf, storyWindow } from "./internal/actionStory";
-export { planLanes } from "./internal/comparePlan";
-export { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "./internal/compareTables";
-export { referenceChoices, referenceRole, thisRunRole } from "./internal/compareChoices";
+} from "./internal/report/reportViews";
+export { rerunOf } from "./internal/report/rerun";
+export { storyOf, storyWindow } from "./internal/report/actionStory";
+export { planLanes } from "./internal/compare/comparePlan";
+export { alarmSystemTable, alarmTable, kpiTable, windowedWords } from "./internal/compare/compareTables";
+export { referenceChoices, referenceRole, thisRunRole } from "./internal/compare/compareChoices";
 export {
   endedGate,
   evidenceWords,
@@ -157,11 +157,11 @@ export {
   replayStatusWords,
   scoringWords,
   visibilityWords,
-} from "./internal/thisRun";
-export { firstEventNode } from "./internal/reviewAnchor";
-export { reviewView } from "./internal/reviewRows";
-export { alarmRow, modeWords } from "./internal/words";
-export { placeChips, timeTicks } from "./internal/timeLayout";
+} from "./internal/report/thisRun";
+export { firstEventNode } from "./internal/report/reviewAnchor";
+export { reviewView } from "./internal/playback/reviewRows";
+export { alarmRow, modeWords } from "./internal/report/words";
+export { placeChips, timeTicks } from "./internal/report/timeLayout";
 export {
   activeAt,
   effectorAt,
@@ -174,7 +174,7 @@ export {
   nextEvent,
   previousEvent,
   runClock,
-} from "./internal/timeline";
+} from "./internal/report/timeline";
 export type {
   ActionStory,
   AlarmLine,
