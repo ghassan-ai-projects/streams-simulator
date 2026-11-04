@@ -14,6 +14,11 @@ export function hallsOf(plant: Plant): readonly string[] {
   return halls.size > 1 ? [...halls].sort() : [];
 }
 
+export function hallToOpen(plant: Plant, id: string, current: string | null): string | null {
+  const destination = hallOf(id);
+  return destination !== null && hallsOf(plant).includes(destination) && destination !== current ? destination : null;
+}
+
 export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {
   const members = plant.instances.filter((instance) => hallOf(instance.id) === hall);
   return [...tally(members, (instance) => instance.kind)].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
