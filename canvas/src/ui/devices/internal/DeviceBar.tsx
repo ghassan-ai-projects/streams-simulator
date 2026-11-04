@@ -14,7 +14,7 @@ import type { NavigationStore } from "../../../app/shell";
 import { screen, shared, useStore } from "../../primitives";
 import { ConfirmButton } from "./ConfirmButton";
 import { DeviceTitle } from "./DeviceTitle";
-import styles from "./Devices.module.css";
+import { StatusLine } from "./StatusLine";
 import notes from "./Notes.module.css";
 import { useDeviceKeys } from "./useDeviceKeys";
 
@@ -33,13 +33,6 @@ const readyTones = {
   warn: notes.readyWarn,
   ok: notes.readyOk,
   "": notes.readyIdle,
-} as const;
-
-const tones = {
-  busy: styles.statusBusy,
-  warn: styles.statusWarn,
-  ok: styles.statusOk,
-  "": styles.statusIdle,
 } as const;
 
 function Reload({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
@@ -122,11 +115,7 @@ export function DeviceBar({ draft, devices, navigation }: BarProps) {
       <Cpu size={14} aria-hidden="true" />
       <DeviceTitle path={draft.path} tag="Editing" navigation={navigation} />
       <Reload draft={draft} devices={devices} />
-      {!asking && (
-        <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
-          {status.text}
-        </span>
-      )}
+      {!asking && <StatusLine status={status} />}
       {!asking && readiness.text !== "" && (
         <span role="status" className={readyTones[readiness.tone]} title={readiness.text}>
           {readiness.text}

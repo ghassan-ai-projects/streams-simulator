@@ -5,7 +5,7 @@ import type { NavigationStore } from "../../../app/shell";
 import { screen, shared } from "../../primitives";
 import { ConfirmButton } from "./ConfirmButton";
 import { DeviceTitle } from "./DeviceTitle";
-import styles from "./Devices.module.css";
+import { StatusLine } from "./StatusLine";
 
 interface BarProps {
   readonly draft: TwinDraft;
@@ -18,13 +18,6 @@ interface BarProps {
 type PartProps = Pick<BarProps, "draft" | "twin">;
 
 const statusId = "twin-status";
-
-const tones = {
-  busy: styles.statusBusy,
-  warn: styles.statusWarn,
-  ok: styles.statusOk,
-  "": styles.statusIdle,
-} as const;
 
 function Reload({ draft, twin }: PartProps) {
   if (!writeConflicted(draft)) return null;
@@ -104,9 +97,7 @@ export function TwinBar({ draft, device, twin, navigation, step }: BarProps) {
     <div className={screen.bar}>
       <Cpu size={14} aria-hidden="true" />
       <DeviceTitle path={device.path} tag={step === "check" ? "Check" : "Behaviour"} navigation={navigation} />
-      <span id={statusId} role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
-        {status.text}
-      </span>
+      <StatusLine id={statusId} status={status} />
       <Reload draft={draft} twin={twin} />
       <Replace draft={draft} twin={twin} />
       <OpenPlant draft={draft} navigation={navigation} />
