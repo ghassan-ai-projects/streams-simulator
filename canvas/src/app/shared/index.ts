@@ -1,4 +1,5 @@
 export { DraftStore } from "./draftStore";
+export { holdsOperation } from "./holdsOperation";
 export { Observable } from "./observable";
 export type { Store } from "./observable";
 export { createOperationIdentity } from "./operationIdentity";

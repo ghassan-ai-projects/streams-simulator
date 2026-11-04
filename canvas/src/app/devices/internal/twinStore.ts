@@ -1,7 +1,7 @@
 import { keepCurrentIssues, serialiseChoices, stemOf, twinDomainPath } from "../../../model/devices";
 import type { KindFile, TwinChoices } from "../../../model/devices";
 import type { DevicesGateway, TwinMade } from "../../ports";
-import { DraftStore, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity, holdsOperation } from "../../shared";
 import type { Operation } from "../../shared";
 import type { TwinSession } from "./api";
 import { loadCatalogue } from "./instrumentCatalogue";
@@ -213,8 +213,7 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   }
 
   private holds(operation: Operation, path: string): boolean {
-    const state = this.snapshot();
-    return operation.live() && state.phase !== "idle" && state.path === path;
+    return holdsOperation(operation, this.snapshot(), path);
   }
 
   private enqueue<T>(job: () => Promise<T>): Promise<T> {

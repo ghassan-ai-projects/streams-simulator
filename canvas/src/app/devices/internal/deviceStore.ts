@@ -12,7 +12,7 @@ import {
   twinNeeds,
 } from "../../../model/devices";
 import type { DeviceFailure, DevicesGateway, KindChecked, Outcome, WorkspaceGateway } from "../../ports";
-import { DraftStore, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity, holdsOperation } from "../../shared";
 import type { Operation, OperationIdentity } from "../../shared";
 import type { DeviceSession, TwinSession } from "./api";
 import type { DeviceState, Draft, Review } from "./deviceDraft";
@@ -125,8 +125,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 
   private holds(operation: Operation, path: string): boolean {
-    const state = this.snapshot();
-    return operation.live() && state.phase !== "idle" && state.path === path;
+    return holdsOperation(operation, this.snapshot(), path);
   }
 
   select(selection: Selection): void {

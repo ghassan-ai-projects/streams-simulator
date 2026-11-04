@@ -3,7 +3,7 @@ import { componentOf, domainOf, equipmentOf, parseComposition } from "../../../m
 import { addEquipment } from "../../../model/editor";
 import type { Presets } from "../../../model/plant";
 import { componentSpecs } from "../../plant";
-import { DraftStore, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity, holdsOperation } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
 import { failureWords } from "./saveReport";
@@ -73,8 +73,7 @@ export class EditorStore extends DraftStore<EditorState, Draft> {
   }
 
   private holds(operation: Operation, path: string): boolean {
-    const state = this.snapshot();
-    return operation.live() && state.phase !== "idle" && state.path === path;
+    return holdsOperation(operation, this.snapshot(), path);
   }
 
   close(): void {
