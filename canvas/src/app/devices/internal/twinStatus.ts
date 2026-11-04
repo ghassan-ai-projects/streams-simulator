@@ -3,14 +3,11 @@ import { counted } from "../../../model/workspace";
 import type { DeviceFailure } from "../../ports";
 import type { DeviceState } from "./deviceDraft";
 import { claimsOf } from "./claimRows";
-import type { SaveStatus } from "./saveStatus";
 import type { Built, TwinDraft } from "./twinDraft";
 import { partialOf } from "./twinScope";
 import { createBlock, isBuilding, isStale, verdictOf } from "./twinSelectors";
-
-function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
-  return { text, detail, tone };
-}
+import type { SaveStatus } from "../../shared";
+import { status } from "../../shared";
 
 function notSaved(failure: DeviceFailure): SaveStatus {
   if (failure.kind === "conflict") {

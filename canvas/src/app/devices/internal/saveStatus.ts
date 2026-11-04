@@ -3,16 +3,8 @@ import { counted } from "../../../model/workspace";
 import type { DeviceFailure, KindChecked } from "../../ports";
 import type { Draft } from "./deviceDraft";
 import { isDirty } from "./deviceSelectors";
-
-export interface SaveStatus {
-  readonly text: string;
-  readonly detail: string | null;
-  readonly tone: "busy" | "warn" | "ok" | "";
-}
-
-function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
-  return { text, detail, tone };
-}
+import type { SaveStatus } from "../../shared";
+import { status } from "../../shared";
 
 function writeFailed(failure: DeviceFailure): SaveStatus {
   if (failure.kind === "conflict") {
