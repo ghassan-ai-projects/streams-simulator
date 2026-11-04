@@ -1,8 +1,8 @@
 import { GitCompare } from "lucide-react";
 import { useState } from "react";
-import type { DiffSession } from "../../../../app/workspace";
-import type { Comparison } from "../../../../model/compare";
-import { shared } from "../../../primitives";
+import type { DiffSession } from "../../../app/workspace";
+import type { Comparison } from "../../../model/compare";
+import { shared } from "../../primitives";
 import { ModelDiffPanel } from "./ModelDiffPanel";
 import styles from "./ModelDiff.module.css";
 

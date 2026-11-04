@@ -1,14 +1,14 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { beforeEach, describe, expect, it } from "vitest";
-import { mountApp } from "../../../../test/appHarness";
-import { comparisonWire } from "../../../../test/compareFixture";
-import { stubFlowDom } from "../../../../test/dom";
-import { cannedFailure } from "../../../../test/fakeBridge";
-import { failure, success } from "../../../../test/outcome";
-import { diffWire } from "../../../../test/provenanceFixture";
-import { bridgeWith, reviewing } from "../../../../test/reviewActionsHarness";
-import { reviewHash } from "../../../../test/screenFixture";
+import { mountApp } from "../../../test/appHarness";
+import { comparisonWire } from "../../../test/compareFixture";
+import { stubFlowDom } from "../../../test/dom";
+import { cannedFailure } from "../../../test/fakeBridge";
+import { failure, success } from "../../../test/outcome";
+import { diffWire } from "../../../test/provenanceFixture";
+import { bridgeWith, reviewing } from "../../../test/reviewActionsHarness";
+import { reviewHash } from "../../../test/screenFixture";
 
 beforeEach(() => {
   stubFlowDom();

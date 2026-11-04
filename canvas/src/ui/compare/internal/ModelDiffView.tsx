@@ -1,5 +1,5 @@
-import type { ChangeRow, DiffView, KindGroup } from "../../../../model/workspace";
-import { records } from "../../../primitives";
+import type { ChangeRow, DiffView, KindGroup } from "../../../model/workspace";
+import { records } from "../../primitives";
 import styles from "./ModelDiff.module.css";
 
 function Change({ row }: { readonly row: ChangeRow }) {

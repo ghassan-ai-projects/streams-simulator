@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import type { DiffSession } from "../../../../app/workspace";
-import { fetchedFor } from "../../../../app/workspace";
-import { diffView } from "../../../../model/workspace";
-import { failureLine, useStore } from "../../../primitives";
+import type { DiffSession } from "../../../app/workspace";
+import { fetchedFor } from "../../../app/workspace";
+import { diffView } from "../../../model/workspace";
+import { failureLine, useStore } from "../../primitives";
 import { ModelDiffView } from "./ModelDiffView";
 import styles from "./ModelDiff.module.css";
 

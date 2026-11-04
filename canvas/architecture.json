@@ -29,6 +29,7 @@
         "app/workspace",
         "test",
         "ui/capture",
+        "ui/compare",
         "ui/plant",
         "ui/review",
         "ui/workspace"
@@ -134,6 +135,7 @@
       "callers": [
         "test",
         "ui/capture",
+        "ui/compare",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -192,6 +194,7 @@
         "model/twinReport",
         "model/workspace",
         "ui/capture",
+        "ui/compare",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -323,6 +326,7 @@
         "model/compare",
         "model/twinReport",
         "test",
+        "ui/compare",
         "ui/review",
         "ui/workspace"
       ]
@@ -335,7 +339,7 @@
       "folders": ["src/model/compare"],
       "mayImport": ["model/review", "model/shared"],
       "entrypoint": "src/model/compare/index.ts",
-      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review"]
+      "callers": ["adapters", "app/ports", "app/review", "test", "ui/compare"]
     },
     "model/twinReport": {
       "kind": "model",
@@ -355,7 +359,17 @@
       "folders": ["src/app/workspace"],
       "mayImport": ["app/ports", "app/shared", "model/workspace"],
       "entrypoint": "src/app/workspace/index.ts",
-      "callers": ["app/shell", "root", "test", "ui/capture", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": [
+        "app/shell",
+        "root",
+        "test",
+        "ui/capture",
+        "ui/compare",
+        "ui/plant",
+        "ui/review",
+        "ui/shell",
+        "ui/workspace"
+      ]
     },
     "app/plant": {
       "kind": "application",
@@ -403,7 +417,7 @@
         "model/workspace"
       ],
       "entrypoint": "src/app/review/index.ts",
-      "callers": ["app/shell", "root", "test", "ui/review", "ui/shell"]
+      "callers": ["app/shell", "root", "test", "ui/compare", "ui/review", "ui/shell"]
     },
     "app/shell": {
       "kind": "application",
@@ -529,18 +543,28 @@
         "app/review",
         "app/shell",
         "app/workspace",
-        "model/compare",
         "model/graph",
         "model/plant",
         "model/review",
         "model/shared",
         "model/twinReport",
         "model/workspace",
+        "ui/compare",
         "ui/graph",
         "ui/primitives"
       ],
       "entrypoint": "src/ui/review/index.ts",
       "callers": ["test", "ui/shell"]
+    },
+    "ui/compare": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "compare two runs, and diff a run's model against the plant",
+      "folders": ["src/ui/compare"],
+      "mayImport": ["app/review", "app/workspace", "model/compare", "model/review", "model/workspace", "ui/primitives"],
+      "entrypoint": "src/ui/compare/index.ts",
+      "callers": ["ui/review"]
     },
     "ui/shell": {
       "kind": "ui",

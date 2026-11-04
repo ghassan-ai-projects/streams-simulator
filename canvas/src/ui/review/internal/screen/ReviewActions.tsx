@@ -7,9 +7,8 @@ import type { ProvenanceSession, WorkspaceStore } from "../../../../app/workspac
 import type { Report } from "../../../../model/review";
 import { endedGate } from "../../../../model/review";
 import { shared, useStore } from "../../../primitives";
-import { CompareDialog } from "../compare/CompareDialog";
+import { CompareDialog, ModelDiffDialog } from "../../../compare";
 import { HandoverNote } from "./HandoverNote";
-import { ModelDiffDialog } from "../compare/ModelDiffDialog";
 
 export interface ActionsProps {
   readonly review: ReviewSession;

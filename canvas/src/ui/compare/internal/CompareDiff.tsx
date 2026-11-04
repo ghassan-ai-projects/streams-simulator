@@ -1,5 +1,5 @@
-import type { Comparison, PlanLane, PlanRow } from "../../../../model/compare";
-import { planLanes } from "../../../../model/compare";
+import type { Comparison, PlanLane, PlanRow } from "../../../model/compare";
+import { planLanes } from "../../../model/compare";
 import styles from "./Compare.module.css";
 
 function Row({ row }: { readonly row: PlanRow }) {
