@@ -1,7 +1,15 @@
 import { Cpu, RefreshCw, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { DeviceSession, Draft } from "../../../app/devices";
-import { canSave, isBusy, isDirty, rangeNeedsOf, saveStatusOf, twinReadiness } from "../../../app/devices";
+import {
+  canSave,
+  isBusy,
+  isDirty,
+  rangeNeedsOf,
+  saveStatusOf,
+  twinReadiness,
+  writeConflicted,
+} from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { screen, shared, useStore } from "../../primitives";
 import { ConfirmButton } from "./ConfirmButton";
@@ -35,7 +43,7 @@ const tones = {
 } as const;
 
 function Reload({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
-  if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
+  if (!writeConflicted(draft)) return null;
   return (
     <ConfirmButton
       words="Reload from disk"

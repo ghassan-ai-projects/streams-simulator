@@ -21,7 +21,7 @@ export { checkFacts } from "./internal/checkFacts";
 export { checkRows } from "./internal/checkRows";
 export { checkSummary } from "./internal/claimRows";
 export { createDeviceDesk } from "./internal/deviceDesk";
-export { canSave, interfaceIssues, isBusy, isDirty, twinNeedsOf } from "./internal/deviceSelectors";
+export { canSave, interfaceIssues, isBusy, isDirty, twinNeedsOf, writeConflicted } from "./internal/deviceSelectors";
 export { createDeviceSession } from "./internal/deviceStore";
 export { saveStatusOf } from "./internal/saveStatus";
 export { stepStatuses, twinReadiness } from "./internal/stepStatus";

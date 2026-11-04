@@ -1,7 +1,7 @@
 import { screen, shared } from "../../primitives";
 import { PenLine, RefreshCw, Save } from "lucide-react";
 import type { Draft, EditorSession } from "../../../app/editor";
-import { canSave, checked, isDirty, isSaving, saveStatusOf } from "../../../app/editor";
+import { canSave, checked, isDirty, isSaving, saveStatusOf, writeConflicted } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
 import { domainOf, equipmentOf, titleOf } from "../../../model/editor";
 import { ZoomBar } from "../../graph";
@@ -73,7 +73,7 @@ function ShowIssues({
 }
 
 function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
-  if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
+  if (!writeConflicted(draft)) return null;
   return (
     <button
       type="button"

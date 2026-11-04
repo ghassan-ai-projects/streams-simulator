@@ -1,6 +1,6 @@
 import { Cpu, Play, RefreshCw, Wrench } from "lucide-react";
 import type { Draft, Step, TwinDraft, TwinSession } from "../../../app/devices";
-import { builtOf, canCreate, createBlock, twinStatusOf, verdictOf } from "../../../app/devices";
+import { builtOf, canCreate, createBlock, twinStatusOf, verdictOf, writeConflicted } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { screen, shared } from "../../primitives";
 import { ConfirmButton } from "./ConfirmButton";
@@ -27,7 +27,7 @@ const tones = {
 } as const;
 
 function Reload({ draft, twin }: PartProps) {
-  if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
+  if (!writeConflicted(draft)) return null;
   return (
     <ConfirmButton
       words="Reload from disk"

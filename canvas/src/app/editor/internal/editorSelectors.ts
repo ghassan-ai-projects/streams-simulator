@@ -21,6 +21,10 @@ export function checked(draft: Draft): boolean {
   return save.kind === "idle" && known;
 }
 
+export function writeConflicted(state: Pick<Draft, "save">): boolean {
+  return state.save.kind === "write-failed" && state.save.failure.kind === "conflict";
+}
+
 export function canSave(state: EditorState): boolean {
   if (state.phase !== "ready") return false;
   const retry = state.save.kind === "compose-failed" || state.save.kind === "write-failed";

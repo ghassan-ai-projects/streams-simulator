@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { addMetric, blankKind, changeMetric, localIssue } from "../../../model/devices";
 import type { DeviceFailure } from "../../ports";
 import type { Draft } from "./deviceDraft";
+import { writeConflicted } from "./deviceSelectors";
 import { saveStatusOf } from "./saveStatus";
 
 const kind = blankKind("fan");
@@ -85,5 +86,13 @@ describe("save status", () => {
     expect(saveStatusOf({ ...draft, doc: edited }).text).toBe("Unsaved changes. Name everything to save.");
     const named = changeMetric(edited, "m1", { name: "duty" });
     expect(saveStatusOf({ ...draft, doc: named }).text).toBe("Unsaved changes");
+  });
+});
+
+describe("write conflict", () => {
+  it("is true only for a conflicting failed write", () => {
+    expect(writeConflicted({ save: { kind: "write-failed", failure: failure("conflict", "changed") } })).toBe(true);
+    expect(writeConflicted({ save: { kind: "write-failed", failure: failure("unavailable", "full") } })).toBe(false);
+    expect(writeConflicted({ save: { kind: "idle" } })).toBe(false);
   });
 });

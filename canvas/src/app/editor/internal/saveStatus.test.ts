@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "../../../model/editor";
 import type { Draft, SaveState } from "./editorDraft";
-import { canSave, checked, isDirty, isSaving } from "./editorSelectors";
+import { canSave, checked, isDirty, isSaving, writeConflicted } from "./editorSelectors";
 import { saveStatusOf } from "./saveStatus";
 
 const nothing: Composition = { id: "lab" };
@@ -115,5 +115,16 @@ describe("save selectors", () => {
       false,
       false,
     ]);
+  });
+});
+
+describe("write conflict", () => {
+  it("is true only for a conflicting failed write", () => {
+    const conflict = { kind: "conflict" as const, diagnostic: failure.diagnostic };
+    expect(writeConflicted({ save: { kind: "write-failed", failure: conflict } })).toBe(true);
+    expect(writeConflicted({ save: { kind: "write-failed", failure: { ...conflict, kind: "unavailable" } } })).toBe(
+      false,
+    );
+    expect(writeConflicted({ save: { kind: "saving" } })).toBe(false);
   });
 });
