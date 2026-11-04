@@ -31,6 +31,11 @@ Inside each layer the code is split into modules, `src/<layer>/<name>` (for exam
 A module exposes an `index.ts` and hides its implementation under `internal/`; other modules import the facade only. The
 public types of a module are re-exported from its `contract.ts`.
 
+A large module groups `internal/` into feature folders (`src/ui/review/internal/trends`, `src/model/review/internal/playback`).
+The folders of a module form no cycle over TypeScript imports, and a module's entry and any sheet shared across folders
+stay at the `internal/` root. A stylesheet named in the register stays where it is: the ratchet accepts cap and allowance
+moves only between modules. Folders are a reading aid and are not gated; a boundary that must hold is a module.
+
 `architecture.json` is the register of those modules and is enforced by `npm run architecture`:
 
 - each module's allow-list of imports and its callers (callers are derived by `scripts/sync-callers.ts`);
