@@ -5,12 +5,12 @@ import { hasUnsavedWork, stepStatuses } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
 import { stemOf } from "../../../model/devices";
 import { failureLine, screen, useStore } from "../../primitives";
-import { InterfaceStep } from "./InterfaceStep";
-import { PendingDeviceLeave } from "./LeaveDevice";
+import { InterfaceStep } from "./interface/InterfaceStep";
+import { PendingDeviceLeave } from "./common/LeaveDevice";
 import { StepTabs } from "./StepTabs";
-import { TwinStep } from "./TwinStep";
-import { StepFocusContext } from "./stepFocus";
-import { useStepNavigation } from "./useStepNavigation";
+import { TwinStep } from "./behaviour/TwinStep";
+import { StepFocusContext } from "./common/stepFocus";
+import { useStepNavigation } from "./common/useStepNavigation";
 
 interface ScreenProps {
   readonly devices: DeviceSession;
