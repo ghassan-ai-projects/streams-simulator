@@ -1,5 +1,5 @@
 import { groupBy } from "../../shared/collect";
-import { record } from "../../shared/json";
+import { record, unescaped } from "../../shared/json";
 import { counted } from "../../shared/words";
 import type { Composition } from "./composition";
 import { connectionsOf, equipmentOf } from "./composition";
@@ -74,10 +74,6 @@ export function issueTargets(doc: Composition, issues: readonly Issue[]): IssueT
 
 const weightPointer = /^\/profiles\/(\d+)\/fault_weights\/(.+)$/;
 const undeclared = /^profile "(.+)" weights undeclared fault "(.+)"$/;
-
-function unescaped(token: string): string {
-  return token.replaceAll("~1", "/").replaceAll("~0", "~");
-}
 
 export function profileWeightOf(issue: ListedIssue): { readonly profile: string; readonly fault: string } | null {
   const match = undeclared.exec(issue.message);

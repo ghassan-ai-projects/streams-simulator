@@ -17,3 +17,7 @@ export function text(value: unknown): string {
 export function number(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
+
+export function unescaped(token: string): string {
+  return token.replaceAll("~1", "/").replaceAll("~0", "~");
+}

@@ -1,4 +1,4 @@
-import { isRecord, list } from "../../shared/json";
+import { isRecord, list, unescaped } from "../../shared/json";
 import { plainIssue } from "./issueWords";
 import { choicesJson } from "./twinFile";
 import { nameChoices } from "./twinKeys";
@@ -23,10 +23,6 @@ const fieldWords: Readonly<Record<string, string>> = {
 };
 
 type Place = Pick<TwinIssue, "scope" | "kind" | "key" | "field" | "spot">;
-
-function unescaped(part: string): string {
-  return part.replaceAll("~1", "/").replaceAll("~0", "~");
-}
 
 function issueAt(place: Place, name: string, raw: RawIssue): TwinIssue {
   const keyword = raw.keyword ?? "";

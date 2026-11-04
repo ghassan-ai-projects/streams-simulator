@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRecord, list, number, record, text } from "./json";
+import { isRecord, list, number, record, text, unescaped } from "./json";
 
 describe("json narrowing", () => {
   it("accepts only plain objects as records", () => {
@@ -16,5 +16,12 @@ describe("json narrowing", () => {
     expect(text(1)).toBe("");
     expect(number(2.5)).toBe(2.5);
     expect([Number.NaN, Number.POSITIVE_INFINITY, "3", null].map(number)).toEqual([0, 0, 0, 0]);
+  });
+});
+
+describe("pointer tokens", () => {
+  it("decodes the escaped slash and tilde in that order", () => {
+    expect(unescaped("a~1b~0c")).toBe("a/b~c");
+    expect(unescaped("~01")).toBe("~1");
   });
 });
