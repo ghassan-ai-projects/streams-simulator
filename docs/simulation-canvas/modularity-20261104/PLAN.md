@@ -3,7 +3,7 @@
 - **Date:** 2026-11-04 · **Branch:** `canvas-modularity-audit`, from `main` at `c3906add`
 - **Scope:** `canvas/` only. No Go, contract, `test/architecture` or root `scripts/` change.
 - **Hard rule:** no behaviour change. DOM, accessible names, classes visible to e2e, CSS cascade, bridge calls, timing of effects and user-visible wording all stay as they are.
-- **Status:** R1, R4, R5 and R7 done, see [evidence.md](evidence.md). R2 and R3 wait for the owner (§3).
+- **Status:** done, including R2 and R3, which the owner approved on 2026-11-04. See [evidence.md](evidence.md).
 
 ## 1. Audit result
 
@@ -112,7 +112,7 @@ Then a rename commit: `app/review` `twinStore.ts` → `twinReportStore.ts`, and 
 
 `canvas/README.md` gains the feature-folder convention; add `evidence.md` here with gate results and oracle output per round.
 
-### R2. Module `ui/capture`, out of `ui/workspace` (needs the owner)
+### R2. Module `ui/capture`, out of `ui/workspace` (owner approved)
 
 - **Kind/layer:** ui, components. **Responsibility:** the capture-from-a-board screen. **Caller:** `ui/shell`.
 - **Files:** `Capture*.tsx`, `useCardFocus.ts`, `Capture.module.css`, `CaptureCard.module.css` and their tests.
@@ -120,7 +120,7 @@ Then a rename commit: `app/review` `twinStore.ts` → `twinReportStore.ts`, and 
 - `ui/workspace` keeps its allow-list minus anything it stops using, and its register text drops capture.
 - `App.tsx:6` becomes two adjacent imports, capture first, matching the facade's current load order.
 
-### R3. Modules out of `review` (needs the owner)
+### R3. Modules out of `review` (owner approved)
 
 **`model/compare`.** Kind: model. Responsibility: run comparison values, plan lanes, tables and choices. Callers: `app/ports`, `app/review`, `adapters`, `ui/compare`, `test`. Files: `comparison`, `comparePlan`, `compareTables`, `compareChoices`. May import: `model/review`, `model/shared`.
 
@@ -170,7 +170,7 @@ Two independent reviewers, both **approve with changes**, then both **approve** 
 
 ## 7. R4 file table
 
-Production files per folder; tests follow their source. `.css` means `.module.css`. (root) stays at the `internal/` root.
+As R4 left them; R2 and R3 then carved the `compare` folders and the `model/review` `twin` folder into modules. Production files per folder; tests follow their source. `.css` means `.module.css`. (root) stays at the `internal/` root.
 
 **`ui/review`**
 

@@ -4,16 +4,24 @@
 
 ## Rounds
 
-| Round            | Commits                                                                                 | Bundle against the previous round        |
-| ---------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
-| R1 duplicates    | `690d5dd7` `829f4554` `3c1c97b2` `6c3a7ddd` `b70a62b6` `1bf1d197` `0c6f6ff2` `9f39ba54` | CSS byte-identical; JS differs by design |
-| R4 folders       | `9323e87d` `e8fa0416` `a76eb0bd` `8e8696e2` `b8fd8d8f` `e801fddf`                       | JS and CSS byte-identical                |
-| R5 selectors     | `5e803aff` `a12c86d3` `dc4132f7` `982ceeeb` plus one unused-export fix                  | CSS byte-identical; JS differs by design |
-| Bridge cycle fix | see below                                                                               | JS and CSS byte-identical                |
+| Round                 | Commits                                                                                 | Bundle against the previous round               |
+| --------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| R1 duplicates         | `690d5dd7` `829f4554` `3c1c97b2` `6c3a7ddd` `b70a62b6` `1bf1d197` `0c6f6ff2` `9f39ba54` | CSS byte-identical; JS differs by design        |
+| R4 folders            | `9323e87d` `e8fa0416` `a76eb0bd` `8e8696e2` `b8fd8d8f` `e801fddf`                       | JS and CSS byte-identical                       |
+| R5 selectors          | `5e803aff` `a12c86d3` `dc4132f7` `982ceeeb` plus one unused-export fix                  | CSS byte-identical; JS differs by design        |
+| Bridge cycle fix      | see below                                                                               | JS and CSS byte-identical                       |
+| R2 `ui/capture`       | `72ec5f48`                                                                              | JS and CSS byte-identical                       |
+| R3 `model/compare`    | `1af1615f`                                                                              | CSS byte-identical; unminified statements match |
+| R3 `model/twinReport` | `7886365b`                                                                              | CSS byte-identical; unminified statements match |
+| R3 `ui/compare`       | `75f36a60`                                                                              | CSS byte-identical; unminified statements match |
 
 The final stylesheet is byte-identical to the baseline's, after normalising CSS-module hashes.
 
-No file under `canvas/scripts`, `canvas/architecture-fixtures`, `test/architecture` or root `scripts`, no Go source, and neither `architecture.json`, `ARCHITECTURE.md`, `eslint.config.js`, `vitest.config.ts` nor `.dependency-cruiser.cjs` differs from `origin/main`.
+R3 reorders modules, which reshuffles minified identifiers, so the minified JS differs without any change in meaning. For those commits both sides were built unminified and compared as multisets of top-level statements, ignoring module order, path comments and the bundler's `$N` rename suffixes: all 5,811 match, and a one-string negative control fails. This cannot see a statement rebound to a different function of the same base name; the type checker covers that.
+
+No file under `canvas/scripts`, `canvas/architecture-fixtures`, `test/architecture` or root `scripts`, no Go source, and none of `eslint.config.js`, `vitest.config.ts` or `.dependency-cruiser.cjs` differs from `origin/main`.
+
+Register changes, all approved by the owner on 2026-11-04 and named in `Owner-approved-gate-change:` commit lines: new modules `ui/capture`, `ui/compare`, `model/compare`, `model/twinReport`; `ui/shell` gains `ui/capture`; `app/ports`, `app/review` and `adapters` gain `model/compare` and `model/twinReport`; `ui/review` gains `ui/compare` and `model/twinReport`. `ui/review` held `model/compare` only between two commits. The `model/review` facade fell from 234 to 167 lines, its contract from 83 to 55.
 
 ## Gates
 
