@@ -19,6 +19,9 @@ import type { DeviceState, Draft, Review } from "./deviceDraft";
 import { unreadable } from "./deviceFailures";
 import { canSave, isBusy, isSaving } from "./deviceSelectors";
 import { createTwinSession } from "./twinStore";
+import type { TwinGateway } from "./twinStore";
+
+type DeviceGateway = Pick<DevicesGateway, "readFile" | "checkContent" | "writeFile" | "check"> & TwinGateway;
 
 type Watch = WorkspaceGateway["watch"];
 
@@ -79,7 +82,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   readonly twin: TwinSession;
 
   constructor(
-    private readonly gateway: DevicesGateway,
+    private readonly gateway: DeviceGateway,
     private readonly operations: OperationIdentity,
     private readonly watch: Watch,
   ) {
@@ -255,6 +258,6 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 }
 
-export function createDeviceSession(gateway: DevicesGateway, watch: Watch = noWatch): DeviceSession {
+export function createDeviceSession(gateway: DeviceGateway, watch: Watch = noWatch): DeviceSession {
   return new DeviceStore(gateway, createOperationIdentity(), watch);
 }

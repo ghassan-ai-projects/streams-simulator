@@ -21,6 +21,11 @@ import {
 import { isBuilding, isChoicesDirty, problemsOf } from "./twinSelectors";
 import { suggestFor, unreadableHeld } from "./twinSuggest";
 
+export type TwinGateway = Pick<
+  DevicesGateway,
+  "readFile" | "listing" | "suggest" | "checkContent" | "instruments" | "twin" | "writeFile" | "validateDomain" | "lint"
+>;
+
 class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession {
   private readonly operations = createOperationIdentity();
   private etag = "";
@@ -29,7 +34,7 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   private creating = false;
 
   constructor(
-    private readonly gateway: DevicesGateway,
+    private readonly gateway: TwinGateway,
     private readonly lead: () => KindFile | null,
   ) {
     super({ phase: "idle" });
@@ -284,6 +289,6 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   }
 }
 
-export function createTwinSession(gateway: DevicesGateway, lead: () => KindFile | null): TwinSession {
+export function createTwinSession(gateway: TwinGateway, lead: () => KindFile | null): TwinSession {
   return new TwinStore(gateway, lead);
 }

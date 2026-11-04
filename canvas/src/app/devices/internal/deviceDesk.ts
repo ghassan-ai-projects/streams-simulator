@@ -14,7 +14,10 @@ import type { DeviceFailure, DevicesGateway, Outcome } from "../../ports";
 import { failure, success } from "../../ports";
 import type { CaptureSession, DeviceDesk, DeviceRow } from "./api";
 import { createCaptureSession } from "./captureStore";
+import type { CaptureGateway } from "./captureStore";
 import { refusalWords } from "./deviceFailures";
+
+type DeskGateway = Pick<DevicesGateway, "checkContent" | "writeFile" | "readFile"> & CaptureGateway;
 
 function exists(name: string): DeviceFailure {
   return {
@@ -31,7 +34,7 @@ function plain(kind: KindFile, refused: DeviceFailure): DeviceFailure {
 class Desk implements DeviceDesk {
   private session: CaptureSession | null = null;
 
-  constructor(private readonly gateway: DevicesGateway) {}
+  constructor(private readonly gateway: DeskGateway) {}
 
   async rows(entries: readonly KindEntry[], domains: readonly string[]): Promise<readonly DeviceRow[]> {
     const rows = await Promise.all(entries.map((entry) => this.row(entry, domains)));
@@ -73,6 +76,6 @@ class Desk implements DeviceDesk {
   }
 }
 
-export function createDeviceDesk(gateway: DevicesGateway): DeviceDesk {
+export function createDeviceDesk(gateway: DeskGateway): DeviceDesk {
   return new Desk(gateway);
 }
