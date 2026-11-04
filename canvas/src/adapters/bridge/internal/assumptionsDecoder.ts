@@ -9,16 +9,12 @@ import type {
   NotModeled,
 } from "../../../model/workspace";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
-import { choice, requiredTexts, rows } from "./decodeKit";
-
-function numberOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
+import { choice, finiteOrNull, requiredTexts, rows } from "./decodeKit";
 
 type Range = NonNullable<AssumedDynamics["clamp"]>;
 
 function rangeOf(value: unknown): Range | null {
-  const [min, max] = [numberOrNull(record(value).min), numberOrNull(record(value).max)];
+  const [min, max] = [finiteOrNull(record(value).min), finiteOrNull(record(value).max)];
   return min === null || max === null ? null : { min, max };
 }
 
@@ -33,7 +29,7 @@ function readingOf(row: Record<string, unknown>): AssumedReading | null {
     range: rangeOf(row.range),
     resolution: number(row.resolution),
     noise: { model: text(noise.model), sigma: number(noise.sigma) },
-    cadence: { mode: text(cadence.mode), periodS: numberOrNull(cadence.period_s) },
+    cadence: { mode: text(cadence.mode), periodS: finiteOrNull(cadence.period_s) },
     instrument: text(record(row.instrument).ref),
     basis: text(row.basis),
     recordedIn: text(row.recorded_in),
@@ -75,8 +71,8 @@ function dynamicsOf(row: Record<string, unknown>): AssumedDynamics | null {
   return {
     target,
     form: text(row.form),
-    gain: numberOrNull(row.gain),
-    timeConstantS: numberOrNull(row.time_constant_s),
+    gain: finiteOrNull(row.gain),
+    timeConstantS: finiteOrNull(row.time_constant_s),
     clamp: rangeOf(row.clamp),
   };
 }

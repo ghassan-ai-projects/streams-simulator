@@ -48,3 +48,7 @@ export function requiredTexts<K extends string>(
   const found = optionalTexts(row, keys);
   return found !== null && keys.every((key) => found[key] !== "") ? found : null;
 }
+
+export function finiteOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}

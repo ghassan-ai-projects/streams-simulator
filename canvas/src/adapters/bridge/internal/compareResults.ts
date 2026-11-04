@@ -9,15 +9,12 @@ import type {
   SystemCounts,
 } from "../../../model/review";
 import { isRecord, record } from "../../../model/shared/json";
+import { finiteOrNull } from "./decodeKit";
 
 const presences: readonly Presence[] = ["both", "only_in_a", "only_in_b"];
 
-function finite(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 function length(value: unknown): number | null | undefined {
-  return value === null ? null : (finite(value) ?? undefined);
+  return value === null ? null : (finiteOrNull(value) ?? undefined);
 }
 
 function scopeOf(value: unknown): Scope | null {
@@ -30,10 +27,10 @@ function scopeOf(value: unknown): Scope | null {
 function statsOf(value: unknown): KpiStats | null | undefined {
   if (value === null) return null;
   const stats = record(value);
-  const mean = finite(stats.mean);
-  const min = finite(stats.min);
-  const max = finite(stats.max);
-  const samples = finite(stats.samples);
+  const mean = finiteOrNull(stats.mean);
+  const min = finiteOrNull(stats.min);
+  const max = finiteOrNull(stats.max);
+  const samples = finiteOrNull(stats.samples);
   if (mean === null || min === null || max === null || samples === null) return undefined;
   return { mean, min, max, samples };
 }
@@ -42,7 +39,7 @@ function deltaMean(value: unknown, nullable: boolean): number | null | undefined
   if (value === undefined) return null;
   const mean = record(value).mean;
   if (mean === null && nullable) return null;
-  return finite(mean) ?? undefined;
+  return finiteOrNull(mean) ?? undefined;
 }
 
 export function kpiRow(value: unknown): ComparedKpi | null {
@@ -60,14 +57,14 @@ export function kpiRow(value: unknown): ComparedKpi | null {
 function alarmStats(value: unknown): AlarmStats | null | undefined {
   if (value === null) return null;
   const stats = record(value);
-  const [activations, activeS] = [finite(stats.activations), finite(stats.active_s)];
+  const [activations, activeS] = [finiteOrNull(stats.activations), finiteOrNull(stats.active_s)];
   if (activations === null || activeS === null || typeof stats.priority !== "string") return undefined;
   return { priority: stats.priority, activations, activeS };
 }
 
 function alarmDelta(value: unknown): ComparedAlarm["delta"] | undefined {
   if (value === undefined) return null;
-  const [activations, activeS] = [finite(record(value).activations), finite(record(value).active_s)];
+  const [activations, activeS] = [finiteOrNull(record(value).activations), finiteOrNull(record(value).active_s)];
   return activations === null || activeS === null ? undefined : { activations, activeS };
 }
 
@@ -83,7 +80,7 @@ export function alarmRow(value: unknown): ComparedAlarm | null {
 function counts(value: unknown): SystemCounts | null | undefined {
   if (value === undefined || value === null) return value === null ? null : undefined;
   if (!isRecord(value)) return undefined;
-  const numbers = Object.entries(value).filter((entry): entry is [string, number] => finite(entry[1]) !== null);
+  const numbers = Object.entries(value).filter((entry): entry is [string, number] => finiteOrNull(entry[1]) !== null);
   return Object.fromEntries(numbers);
 }
 

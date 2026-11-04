@@ -7,6 +7,7 @@ import { parseComparisonPayload } from "./compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, list, record, text } from "../../../model/shared/json";
 import { parametersOf, presetsOf } from "./parameterDecoder";
+import { finiteOrNull } from "./decodeKit";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;
@@ -229,16 +230,12 @@ export function composition(value: unknown): Record<string, unknown> | null {
 
 export function composeSummary(value: unknown): ComposeSummary | null {
   if (!isRecord(value)) return null;
-  const channels = finiteNumber(value.channels);
-  const faults = finiteNumber(value.faults);
-  const effectors = finiteNumber(value.effectors);
+  const channels = finiteOrNull(value.channels);
+  const faults = finiteOrNull(value.faults);
+  const effectors = finiteOrNull(value.effectors);
   return channels === null || faults === null || effectors === null
     ? null
     : { channels, faults, effectors, digest: text(value.digest) };
-}
-
-function finiteNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export function report(value: unknown): Report | null {

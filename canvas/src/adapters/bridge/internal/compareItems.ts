@@ -8,12 +8,9 @@ import type {
 } from "../../../model/review";
 import { isRecord, record, text } from "../../../model/shared/json";
 import { outcomeText } from "./reportDecoder";
+import { finiteOrNull } from "./decodeKit";
 
 type Item<T> = (value: unknown) => T | null;
-
-function instant(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
 
 function strings(value: unknown): Readonly<Record<string, string>> {
   const shown = Object.entries(record(value)).flatMap(([name, each]): [string, string][] => {
@@ -26,41 +23,41 @@ function strings(value: unknown): Readonly<Record<string, string>> {
 
 export const faultItem: Item<ComparedFault> = (value) => {
   const item = record(value);
-  const onsetNs = instant(item.onset_ns);
+  const onsetNs = finiteOrNull(item.onset_ns);
   if (typeof item.entity_id !== "string" || typeof item.fault !== "string" || onsetNs === null) return null;
   return {
     entity: item.entity_id,
     fault: item.fault,
     onsetNs,
-    clearedNs: instant(item.cleared_ns),
+    clearedNs: finiteOrNull(item.cleared_ns),
     clearedBy: text(item.cleared_by),
   };
 };
 
 export const perturbationItem: Item<ComparedPerturbation> = (value) => {
   const item = record(value);
-  const atNs = instant(item.at_ns);
+  const atNs = finiteOrNull(item.at_ns);
   if (typeof item.action !== "string" || atNs === null) return null;
   return {
     action: item.action,
     kind: text(item.perturbation) || text(item.perturb_id),
     atNs,
-    fromNs: instant(item.from_ns) ?? 0,
-    untilNs: instant(item.until_ns) ?? 0,
+    fromNs: finiteOrNull(item.from_ns) ?? 0,
+    untilNs: finiteOrNull(item.until_ns) ?? 0,
     params: strings(item.params),
   };
 };
 
 export const environmentItem: Item<ComparedEnvironment> = (value) => {
   const item = record(value);
-  const atNs = instant(item.at_ns);
+  const atNs = finiteOrNull(item.at_ns);
   if (typeof item.target !== "string" || typeof item.fault !== "string" || atNs === null) return null;
   return { atNs, target: item.target, fault: item.fault };
 };
 
 export const callItem: Item<ComparedCall> = (value) => {
   const item = record(value);
-  const atNs = instant(item.at_ns);
+  const atNs = finiteOrNull(item.at_ns);
   if (typeof item.effector !== "string" || atNs === null) return null;
   const outcome = isRecord(item.outcome) ? outcomeText(item.outcome) : "";
   return { atNs, entity: text(item.entity_id), effector: item.effector, args: strings(item.args), outcome };

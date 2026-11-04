@@ -1,5 +1,6 @@
 import type { JobStatus } from "../../../app/ports";
 import { isRecord, text } from "../../../model/shared/json";
+import { finiteOrNull } from "./decodeKit";
 
 type Fault = JobStatus["faults"][number];
 type PlannedCall = JobStatus["plannedCalls"][number];
@@ -7,19 +8,15 @@ type Perturbation = JobStatus["perturbations"][number];
 type Params = Perturbation["params"];
 type ParamValue = Params[string];
 
-function finite(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 function untilOf(value: unknown): { readonly untilS?: number } | null {
   if (value === undefined) return {};
-  const until = finite(value);
+  const until = finiteOrNull(value);
   return until === null ? null : { untilS: until };
 }
 
 function clearedOf(value: unknown): { readonly clearedAtS?: number } | null {
   if (value === undefined) return {};
-  const cleared = finite(value);
+  const cleared = finiteOrNull(value);
   return cleared === null ? null : { clearedAtS: cleared };
 }
 
@@ -31,7 +28,7 @@ function liveOf(value: Record<string, unknown>): { readonly immediate?: true; re
 
 function fault(value: unknown): Fault | null {
   if (!isRecord(value)) return null;
-  const atS = finite(value.at_s);
+  const atS = finiteOrNull(value.at_s);
   const until = untilOf(value.until_s);
   const cleared = clearedOf(value.cleared_at_s);
   const live = liveOf(value);
@@ -43,7 +40,7 @@ function fault(value: unknown): Fault | null {
 
 function plannedCall(value: unknown): PlannedCall | null {
   if (!isRecord(value)) return null;
-  const atS = finite(value.at_s);
+  const atS = finiteOrNull(value.at_s);
   const entity = text(value.entity_id);
   const effector = text(value.effector);
   const args = argsOf(value.args);
@@ -76,7 +73,7 @@ function params(value: unknown): Params | null {
 
 function perturbation(value: unknown): Perturbation | null {
   if (!isRecord(value)) return null;
-  const atS = finite(value.at_s);
+  const atS = finiteOrNull(value.at_s);
   const until = untilOf(value.until_s);
   const decoded = params(value.params);
   const kind = text(value.kind);

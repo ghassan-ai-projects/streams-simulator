@@ -4,6 +4,7 @@ import { launchFailure } from "./failures";
 import { faultArgs, jobFaults, jobPerturbations, jobPlannedCalls, perturbationArgs } from "./jobPlan";
 import type { Transport } from "./http";
 import { action } from "./http";
+import { finiteOrNull } from "./decodeKit";
 
 type JobGateway = Pick<
   LaunchGateway,
@@ -24,10 +25,6 @@ type JobState = JobStatus["state"];
 
 const states: readonly JobState[] = ["running", "paused", "stopping", "completed", "stopped", "failed"];
 
-function finite(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 function optionalText(value: unknown): string | null {
   if (value === undefined) return "";
   return typeof value === "string" ? value : null;
@@ -35,7 +32,7 @@ function optionalText(value: unknown): string | null {
 
 function optionalNumber(value: unknown): number | null | undefined {
   if (value === undefined) return null;
-  return finite(value) ?? undefined;
+  return finiteOrNull(value) ?? undefined;
 }
 
 function optionalFlag(value: unknown): boolean | null {
@@ -45,7 +42,7 @@ function optionalFlag(value: unknown): boolean | null {
 
 function jobCall(value: unknown): JobCall | null {
   if (!isRecord(value) || typeof value.accepted !== "boolean") return null;
-  const atS = finite(value.at_s);
+  const atS = finiteOrNull(value.at_s);
   const reason = optionalText(value.reason);
   const eta = optionalNumber(value.effect_eta_ns);
   const immediate = optionalFlag(value.immediate);
@@ -84,9 +81,9 @@ interface Span {
 }
 
 function spanOf(value: Record<string, unknown>): Span | null {
-  const startNs = finite(value.start_ns);
-  const reachedNs = finite(value.reached_ns);
-  const requestedEndNs = finite(value.requested_end_ns);
+  const startNs = finiteOrNull(value.start_ns);
+  const reachedNs = finiteOrNull(value.reached_ns);
+  const requestedEndNs = finiteOrNull(value.requested_end_ns);
   if (startNs === null || reachedNs === null || requestedEndNs === null) return null;
   return { startNs, reachedNs, requestedEndNs };
 }
@@ -98,8 +95,8 @@ interface Pace {
 }
 
 function paceOf(value: Record<string, unknown>): Pace | null {
-  const seed = finite(value.seed);
-  const rate = finite(value.rate);
+  const seed = finiteOrNull(value.seed);
+  const rate = finiteOrNull(value.rate);
   if (seed === null || rate === null || rate < 0 || typeof value.explore !== "boolean") return null;
   return { seed, rate, explore: value.explore };
 }

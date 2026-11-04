@@ -1,9 +1,6 @@
 import type { ParameterSpec, PresetOption } from "../../../model/plant";
 import { isRecord, list, record, text } from "../../../model/shared/json";
-
-function bound(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
+import { finiteOrNull } from "./decodeKit";
 
 function defaultOf(value: unknown): number | string | null {
   return typeof value === "number" || typeof value === "string" ? value : null;
@@ -18,8 +15,8 @@ function parameterOf(raw: unknown): ParameterSpec | null {
     title: text(row.title) || text(row.name),
     unit: text(row.unit),
     type,
-    min: bound(row.min),
-    max: bound(row.max),
+    min: finiteOrNull(row.min),
+    max: finiteOrNull(row.max),
     values: list(row.values).map(text),
     default: defaultOf(row.default),
   };

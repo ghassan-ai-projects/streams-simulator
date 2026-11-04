@@ -1,10 +1,7 @@
 import type { DomainChecked, LibraryInstrument, LintReport, TwinMade } from "../../../app/ports";
 import { isRecord, list, number, record, text } from "../../../model/shared/json";
 import { workspace } from "./decoders";
-
-function bound(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
+import { finiteOrNull } from "./decodeKit";
 
 function matchOf(value: unknown): LibraryInstrument["match"] {
   return value === "exact" || value === "convertible" ? value : "";
@@ -31,8 +28,8 @@ export function instrumentRefs(value: unknown): readonly LibraryInstrument[] | n
       ref: `${text(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
       title: text(entry.title) || text(entry.id),
       unit: text(entry.unit),
-      min: bound(record(entry.range).min),
-      max: bound(record(entry.range).max),
+      min: finiteOrNull(record(entry.range).min),
+      max: finiteOrNull(record(entry.range).max),
       match: matchOf(entry.match),
       fit: fitOf(entry.fit),
     }));
