@@ -84,7 +84,7 @@ func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 	return map[string]any{"spec": compiled.Spec, "digest": compiled.Digest}, nil
 }
 
-var domainCommands = map[string]handler{"compose": cmdCompose, "assumptions": cmdAssumptions, "lineage": cmdLineage, "diff": cmdDiff}
+var domainCommands = map[string]handler{"compose": cmdCompose, "assumptions": cmdAssumptions, "lineage": cmdLineage, "diff": cmdDiff, "population": cmdPopulation}
 
 func domainCommand(args []string) (handler, bool) {
 	if len(args) == 0 {

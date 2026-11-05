@@ -75,7 +75,8 @@ var (
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "twin", Flag: "--twin", Shape: ShapePath, Class: ClassTwin}}}
 	cliLineage = Action{Name: "domain.lineage", Kind: KindCLI, Command: []string{"domain", "lineage"}, Library: true, Folders: true,
 		CLIArgs: []CLIArg{{Key: "domain", Flag: "--domain", Shape: ShapeText}}}
-	cliDiff = Action{Name: "domain.diff", Kind: KindCLI, Command: []string{"domain", "diff"},
+	cliPopulation = Action{Name: "domain.population", Kind: KindCLI, Command: []string{"domain", "population"}, Input: inputKey, StdinFlag: "--stdin"}
+	cliDiff       = Action{Name: "domain.diff", Kind: KindCLI, Command: []string{"domain", "diff"},
 		CLIArgs: []CLIArg{{Key: "a", Shape: ShapePlant, Required: true}, {Key: "b", Shape: ShapePlant, Required: true}, {Key: "format", Flag: "--format", Shape: ShapeText}}}
 	cliVerify = Action{Name: "run.verify", Kind: KindCLI, Command: []string{"verify"}, Catalog: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}

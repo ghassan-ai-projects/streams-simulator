@@ -39,3 +39,14 @@ func TestRenderInstanceIDFillsTheIndexAndUnknownValues(t *testing.T) {
 		t.Fatalf("id = %q", got)
 	}
 }
+
+func TestPopulationOfKeepsEachInstanceSetInDeclaredOrder(t *testing.T) {
+	t.Parallel()
+	got := PopulationOf(populationFixture()).Sets
+	if len(got) != 3 || got[0].Kind != "tank" || got[1].Kind != "pond" || got[2].Kind != "pump" {
+		t.Fatalf("sets = %+v", got)
+	}
+	if !slices.Equal(got[1].IDs, []string{"site-a/pond-1", "site-a/pond-2"}) || !slices.Equal(got[2].IDs, []string{"pump-1"}) {
+		t.Fatalf("sets = %+v", got)
+	}
+}

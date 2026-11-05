@@ -10,6 +10,25 @@ import (
 
 const unnamedTemplateValue = "a"
 
+type InstanceSetPopulation struct {
+	Kind string   `json:"kind"`
+	IDs  []string `json:"ids"`
+}
+
+type Population struct {
+	Domain string                  `json:"domain"`
+	Sets   []InstanceSetPopulation `json:"sets"`
+}
+
+func PopulationOf(c *Compiled) Population {
+	sets := make([]InstanceSetPopulation, len(c.Spec.Instances))
+	for i := range c.Spec.Instances {
+		set := &c.Spec.Instances[i]
+		sets[i] = InstanceSetPopulation{Kind: set.Kind, IDs: instanceSetIDs(set, set.Count.Default)}
+	}
+	return Population{Domain: c.Spec.ID, Sets: sets}
+}
+
 func PopulationIDs(c *Compiled, firstSetCount int) []string {
 	var ids []string
 	counted := firstTemplatedSet(c)

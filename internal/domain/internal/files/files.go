@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"cmp"
 	"fmt"
+	"io"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -15,12 +16,40 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
+const (
+	maxStreamBytes = 8 << 20
+	streamSource   = "standard input"
+)
+
 func Load(path string) (*domain.Compiled, error) {
 	raw, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("domain: read %s: %w", path, err)
 	}
 	return domain.Parse(raw, path)
+}
+
+func PopulationOfFile(path string) (domain.Population, error) {
+	compiled, err := Load(path)
+	if err != nil {
+		return domain.Population{}, err
+	}
+	return domain.PopulationOf(compiled), nil
+}
+
+func PopulationOfStream(reader io.Reader) (domain.Population, error) {
+	raw, err := io.ReadAll(io.LimitReader(reader, maxStreamBytes+1))
+	if err != nil {
+		return domain.Population{}, fmt.Errorf("domain: read standard input: %w", err)
+	}
+	if len(raw) > maxStreamBytes {
+		return domain.Population{}, fmt.Errorf("domain: standard input holds more than %d bytes", maxStreamBytes)
+	}
+	compiled, err := domain.Parse(raw, streamSource)
+	if err != nil {
+		return domain.Population{}, err
+	}
+	return domain.PopulationOf(compiled), nil
 }
 
 func LoadAll(dir string) ([]*domain.Compiled, error) {

@@ -19,3 +19,15 @@ func TestDomainDiffPassesARunFolderAndAWorkspaceDomainToTheBinaryAndNothingElse(
 		t.Fatalf("argv = %v, want %v", h.argv[0], want)
 	}
 }
+
+func TestDomainPopulationSendsTheDocumentOnStandardInputAndNoPath(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	h.command.Stdout = []byte(`{"sets":[]}`)
+	if _, err := h.bridge.RunAction(context.Background(), "domain.population", map[string]any{"content": "{}"}); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"domain", "population", "--stdin"}; !slices.Equal(h.argv[0], want) {
+		t.Fatalf("argv = %v, want %v", h.argv[0], want)
+	}
+}

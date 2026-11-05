@@ -233,6 +233,14 @@ A folder that is not given is not read; one that is given and missing fails with
 
 `domain assumptions` and `domain lineage` are canvas bridge actions, read-only, answering with the CLI's document: `domain.assumptions` takes `{path, twin?}` (the workspace domain file and its `twins/` choices file; the workspace `kinds/` folder and component folders are passed) and `domain.lineage` takes `{domain?}` (every workspace folder that exists).
 
+### `domain population`
+
+Lists the instance ids a domain declares, one list per instance set in declared order, using each set's default count. It is the rule a run uses for its initial entities. `domain.population` is the canvas bridge action; it takes `{content}`, the domain document, on standard input.
+
+```text
+streamsim domain population (<file.domain.json> | --stdin)
+```
+
 ### `domain diff`
 
 Says what differs between two domains, so a change to a model is visible before anything is run on it: the model's quantities, the instances and relations the change reaches, and whether the model changed under an unchanged version. Each side is a domain file or a run folder (the `domain_spec` recorded in `run.json`; no other file of the run is opened, so a sealed stream is never read). One deterministic document ([`domain-diff-v0.1`](../../contracts/domain-diff-v0.1.schema.json)), validated against that contract before it is printed; no wall time.

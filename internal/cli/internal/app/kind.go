@@ -10,6 +10,8 @@ import (
 
 const kindUsage = "usage: streamsim kind validate [--twin] (<file.kind.json>... | --stdin) | kind twin [<file.kind.json>...] (--choices <file> | --suggest) | kind capture (<file> | --stdin) [--kinds-dir <dir>]"
 
+const populationUsage = "usage: streamsim domain population (<file.domain.json> | --stdin)"
+
 func cmdKind(s *session, args []string) (any, error) {
 	switch {
 	case len(args) > 0 && args[0] == "validate":
@@ -32,6 +34,29 @@ func validateDomainFile(path string, kinds listFlag) (any, error) {
 		return nil, err
 	}
 	return domainValidation{Summary: domain.Summarize(c), Valid: true, ImplementsChecked: checked}, nil
+}
+
+func cmdPopulation(s *session, args []string) (any, error) {
+	fs := newFlagSet("domain population", s.stderr)
+	stdin := fs.Bool("stdin", false, "read the domain from standard input")
+	if err := parseFlags(fs, args); err != nil {
+		return nil, err
+	}
+	if *stdin != (fs.NArg() == 0) || fs.NArg() > 1 {
+		return nil, usagef(populationUsage)
+	}
+	population, err := readPopulation(s, *stdin, fs.Arg(0))
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	return population, nil
+}
+
+func readPopulation(s *session, stdin bool, path string) (domain.Population, error) {
+	if stdin {
+		return domain.PopulationOfStream(s.input())
+	}
+	return domain.PopulationOfFile(path)
 }
 
 type domainValidation struct {
