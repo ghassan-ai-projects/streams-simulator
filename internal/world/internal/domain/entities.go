@@ -4,19 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	"strconv"
-	"strings"
 )
-
-func renderID(tmpl string, n int, params map[string]any) string {
-	out := strings.ReplaceAll(tmpl, "{n}", strconv.Itoa(n))
-	for {
-		start, end := strings.Index(out, "{"), strings.Index(out, "}")
-		if start < 0 || end < 0 || end < start {
-			return out
-		}
-		out = out[:start] + entityTemplateValue(params, out[start+1:end]) + out[end+1:]
-	}
-}
 
 func (w *World) addEntity(id string, set int, atNS int64) error {
 	if _, exists := w.entities[id]; exists {
@@ -61,18 +49,6 @@ func (w *World) schedule(kind eventKind, entity, channel string, atNS int64, pay
 		channel:  channel,
 		payload:  payload,
 	})
-}
-
-func entityTemplateValue(params map[string]any, name string) string {
-	if params != nil {
-		if value, ok := params[name]; ok {
-			if text, ok := value.(string); ok {
-				return text
-			}
-			return fmt.Sprint(value)
-		}
-	}
-	return "a"
 }
 
 func (w *World) newEntity(id string, set int, at int64) *Entity {

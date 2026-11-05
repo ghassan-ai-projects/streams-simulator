@@ -1,5 +1,7 @@
 package domain
 
+import "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+
 func (w *World) birthAutonomous(set int, atNS int64) {
 	churn := w.Spec.Spec.Instances[set].Churn
 	if churn == nil {
@@ -31,10 +33,10 @@ func (w *World) retire(entityID, reason string, atNS int64) {
 func (w *World) reserveBirthID(set int) string {
 	template := w.Spec.Spec.Instances[set].IDTemplate
 	w.nextIndex[set]++
-	id := renderID(template, w.nextIndex[set], nil)
+	id := domain.RenderInstanceID(template, w.nextIndex[set])
 	for id == "" || w.entities[id] != nil {
 		w.nextIndex[set]++
-		id = renderID(template, w.nextIndex[set], nil)
+		id = domain.RenderInstanceID(template, w.nextIndex[set])
 	}
 	return id
 }

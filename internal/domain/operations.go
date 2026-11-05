@@ -59,6 +59,14 @@ func InstanceRenders(set model.InstanceSet, id string) bool {
 	return layer.InstanceRenders(set, id)
 }
 
+func PopulationIDs(c *Compiled, firstSetCount int) []string {
+	return layer.PopulationIDs(c, firstSetCount)
+}
+
+func RenderInstanceID(template string, index int) string {
+	return layer.RenderInstanceID(template, index)
+}
+
 func Summarize(c *Compiled) Summary {
 	return layer.Summarize(c)
 }
