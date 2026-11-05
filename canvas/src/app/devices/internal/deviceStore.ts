@@ -12,13 +12,16 @@ import {
   twinNeeds,
 } from "../../../model/devices";
 import type { DeviceFailure, DevicesGateway, KindChecked, Outcome, WorkspaceGateway } from "../../ports";
-import { DraftStore, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity, holdsOperation } from "../../shared";
 import type { Operation, OperationIdentity } from "../../shared";
 import type { DeviceSession, TwinSession } from "./api";
 import type { DeviceState, Draft, Review } from "./deviceDraft";
 import { unreadable } from "./deviceFailures";
 import { canSave, isBusy, isSaving } from "./deviceSelectors";
 import { createTwinSession } from "./twinStore";
+import type { TwinGateway } from "./twinStore";
+
+type DeviceGateway = Pick<DevicesGateway, "readFile" | "checkContent" | "writeFile" | "check"> & TwinGateway;
 
 type Watch = WorkspaceGateway["watch"];
 
@@ -79,7 +82,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   readonly twin: TwinSession;
 
   constructor(
-    private readonly gateway: DevicesGateway,
+    private readonly gateway: DeviceGateway,
     private readonly operations: OperationIdentity,
     private readonly watch: Watch,
   ) {
@@ -125,8 +128,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 
   private holds(operation: Operation, path: string): boolean {
-    const state = this.snapshot();
-    return operation.live() && state.phase !== "idle" && state.path === path;
+    return holdsOperation(operation, this.snapshot(), path);
   }
 
   select(selection: Selection): void {
@@ -256,6 +258,6 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 }
 
-export function createDeviceSession(gateway: DevicesGateway, watch: Watch = noWatch): DeviceSession {
+export function createDeviceSession(gateway: DeviceGateway, watch: Watch = noWatch): DeviceSession {
   return new DeviceStore(gateway, createOperationIdentity(), watch);
 }

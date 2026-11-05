@@ -5,7 +5,7 @@ import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker, PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
 import type { ProvenanceSession, WorkspaceStore } from "../../../app/workspace";
-import { hallOf, hallsOf } from "../../../model/graph";
+import { hallToOpen } from "../../../model/graph";
 import { plantTitle } from "../../../model/plant";
 import type { RunRow } from "../../../model/workspace";
 import type { Workspace } from "../../../model/workspace";
@@ -105,8 +105,8 @@ function PlantInspector({ state, hall, navigation, plants, runs, connected }: Ri
       onSelect={(id) => {
         if (!state.plant.instances.some((instance) => instance.id === id)) return;
         plants.select(id);
-        const destination = hallOf(id);
-        if (destination !== null && hallsOf(state.plant).includes(destination) && destination !== hall) {
+        const destination = hallToOpen(state.plant, id, hall);
+        if (destination !== null) {
           navigation.go({ screen: "plant", domain: state.path, hall: destination });
         }
       }}

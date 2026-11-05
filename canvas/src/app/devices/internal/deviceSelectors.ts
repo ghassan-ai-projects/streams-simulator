@@ -1,10 +1,15 @@
 import { draftProblems, serialiseKind } from "../../../model/devices";
 import type { FieldIssue } from "../../../model/devices";
 import type { DeviceState, Draft } from "./deviceDraft";
+import type { TwinDraft } from "./twinDraft";
 
 export function isDirty(state: DeviceState): boolean {
   if (state.phase !== "ready" || state.doc === state.saved) return false;
   return serialiseKind(state.doc) !== serialiseKind(state.saved);
+}
+
+export function writeConflicted(draft: Pick<Draft | TwinDraft, "save">): boolean {
+  return draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict";
 }
 
 export function isSaving(state: DeviceState): boolean {

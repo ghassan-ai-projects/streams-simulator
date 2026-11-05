@@ -9,13 +9,13 @@ function queriesOf(members: readonly Member[]): ReadonlyMap<string, InstrumentQu
   return new Map(asked.map((metric) => [catalogueKey(metric), instrumentQuery(metric)] as const));
 }
 
-async function listFor(gateway: DevicesGateway, key: string, query: InstrumentQuery) {
+async function listFor(gateway: Pick<DevicesGateway, "instruments">, key: string, query: InstrumentQuery) {
   const listed = await gateway.instruments(query);
   return [key, listed.ok ? listed.value.map(instrumentOf) : null] as const;
 }
 
 export async function loadCatalogue(
-  gateway: DevicesGateway,
+  gateway: Pick<DevicesGateway, "instruments">,
   members: readonly Member[],
   loaded: Catalogue,
 ): Promise<Catalogue> {

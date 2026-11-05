@@ -1,0 +1,277 @@
+import type { ComposeSummary, DomainDocument, FileContent } from "../../../../app/ports";
+import type { Workspace } from "../../../../model/workspace";
+import type { ExamplePlant, LibraryEntry, Presets } from "../../../../model/plant";
+import type { ComponentSpec, PortSpec } from "../../../../model/plant";
+import type { Replay, Report } from "../../../../model/review";
+import type { Comparison } from "../../../../model/compare";
+import { parseComparisonPayload } from "../review/compareDecoder";
+import { parseReportPayload, parseReplayPayload } from "../review/reportDecoder";
+import { isRecord, list, record, text } from "../../../../model/shared/json";
+import { parametersOf, presetsOf } from "./parameterDecoder";
+import { finiteOrNull } from "../transport/decodeKit";
+
+export function paired(value: unknown): boolean | null {
+  return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;
+}
+
+export function fileContent(value: unknown): FileContent | null {
+  if (
+    !isRecord(value) ||
+    typeof value.path !== "string" ||
+    typeof value.content !== "string" ||
+    typeof value.etag !== "string"
+  ) {
+    return null;
+  }
+  return { path: value.path, content: value.content, etag: value.etag };
+}
+
+export function written(value: unknown): { readonly path: string; readonly etag: string } | null {
+  if (!isRecord(value) || typeof value.path !== "string" || typeof value.etag !== "string") return null;
+  return { path: value.path, etag: value.etag };
+}
+
+export function workspace(value: unknown): Workspace | null {
+  if (!isRecord(value) || typeof value.name !== "string") return null;
+  const domains = definitions(value.domains);
+  const compositions = definitions(value.compositions);
+  const scenarios = definitions(value.scenarios);
+  const kinds = optionalRows(value.kinds, kindEntry);
+  const components = optionalRows(value.components, componentEntry);
+  const runs = rows(value.runs, runEntry);
+  if (domains === null || compositions === null || scenarios === null || runs === null) return null;
+  if (kinds === null || components === null) return null;
+  return { name: value.name, domains, compositions, scenarios, kinds, components, runs };
+}
+
+function definitions(value: unknown): Workspace["domains"] | null {
+  return rows(value, definition);
+}
+
+function optionalRows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+  return value === undefined ? [] : rows(value, decode);
+}
+
+function kindEntry(entry: Record<string, unknown>): Workspace["kinds"][number] | null {
+  if (text(entry.path) === "") return null;
+  return { path: text(entry.path), kind: text(entry.kind), title: text(entry.title) };
+}
+
+function componentEntry(entry: Record<string, unknown>): Workspace["components"][number] | null {
+  if (text(entry.path) === "") return null;
+  return { path: text(entry.path), id: text(entry.id), title: text(entry.title), class: text(entry.class) };
+}
+
+export function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+  if (!Array.isArray(value)) return null;
+  const decoded: T[] = [];
+  for (const raw of value) {
+    const row = isRecord(raw) ? decode(raw) : null;
+    if (row === null) return null;
+    decoded.push(row);
+  }
+  return decoded;
+}
+
+function definition(entry: Record<string, unknown>): Workspace["domains"][number] | null {
+  if (text(entry.path) === "") return null;
+  return {
+    path: text(entry.path),
+    id: text(entry.id),
+    title: text(entry.title),
+    instances: typeof entry.instances === "number" ? entry.instances : 0,
+  };
+}
+
+function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | null {
+  if (text(entry.world_id) === "") return null;
+  return {
+    worldId: text(entry.world_id),
+    ended: entry.ended === true,
+    complete: entry.complete === true,
+    running: entry.running === true,
+    incompleteReason: text(entry.incomplete_reason),
+    explore: entry.explore === true,
+    seed: typeof entry.seed === "number" ? entry.seed : null,
+    plant: text(entry.plant),
+    durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
+    recordedAt: text(entry.recorded_at),
+    faults: typeof entry.faults === "number" ? entry.faults : 0,
+    ...(text(entry.name) === "" ? {} : { name: text(entry.name) }),
+    ...intentOf(entry),
+    ...connectedOf(entry),
+  };
+}
+
+function intentOf(entry: Record<string, unknown>): {
+  readonly requestedS?: number;
+  readonly terminationReason?: string;
+} {
+  return {
+    ...(typeof entry.requested_duration_ns === "number"
+      ? { requestedS: Math.round(entry.requested_duration_ns / 1e9) }
+      : {}),
+    ...(typeof entry.termination_reason === "string" ? { terminationReason: entry.termination_reason } : {}),
+  };
+}
+
+function connectedOf(entry: Record<string, unknown>): {
+  readonly connected?: "running" | "saved";
+  readonly simulated?: readonly string[];
+} {
+  if (entry.connected !== true) return {};
+  const planned = isRecord(entry.plan) ? list(entry.plan.instances).map(record) : [];
+  const simulated = planned
+    .filter((instance) => instance.origin === "simulated")
+    .map((instance) => text(instance.instance));
+  return { connected: entry.running === true ? "running" : "saved", simulated };
+}
+
+export function library(value: unknown): readonly LibraryEntry[] | null {
+  if (!isRecord(value) || !Array.isArray(value.components)) return null;
+  return value.components
+    .map(record)
+    .filter((entry) => entry.kind === "equipment" && text(entry.id) !== "")
+    .map((entry) => ({
+      component: text(entry.id),
+      ref: `${text(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
+      title: text(entry.title) || text(entry.id),
+      words: [text(entry.title), text(entry.id), text(entry.class), ...strings(entry.tags)].join(" ").toLowerCase(),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+export function presets(value: unknown): Presets | null {
+  if (!isRecord(value) || !isRecord(value.document)) return null;
+  const document = value.document;
+  const options = presetsOf(document);
+  return { options, preferred: text(document.default_preset), description: text(document.description) };
+}
+
+export function examples(value: unknown): readonly ExamplePlant[] | null {
+  if (!isRecord(value) || !Array.isArray(value.examples)) return null;
+  return value.examples
+    .map(record)
+    .filter((entry) => text(entry.id) !== "")
+    .map((entry) => ({
+      id: text(entry.id),
+      title: text(entry.title) || text(entry.id),
+      description: text(entry.description),
+    }));
+}
+
+export function component(value: unknown): ComponentSpec | null {
+  if (!isRecord(value) || !isRecord(value.entry) || !isRecord(value.document)) return null;
+  const entry = value.entry;
+  const document = value.document;
+  const tags = strings(entry.tags);
+  const title = nonblank(entry.title) ?? nonblank(document.title);
+  const description = nonblank(document.description);
+  return {
+    ports: parsePorts(document),
+    category: category(text(entry.class), tags),
+    ...(title === undefined ? {} : { title }),
+    ...(description === undefined ? {} : { description }),
+    ...sizesOf(document),
+  };
+}
+
+function sizesOf(document: Record<string, unknown>) {
+  const parameters = parametersOf(document);
+  const presets = presetsOf(document);
+  return {
+    ...(parameters.length === 0 ? {} : { parameters }),
+    ...(presets.length === 0 ? {} : { presets, defaultPreset: text(document.default_preset) }),
+  };
+}
+
+function parsePorts(document: Record<string, unknown>): readonly PortSpec[] {
+  if (!Array.isArray(document.ports)) return [];
+  return document.ports.map((raw) => {
+    const port = record(raw);
+    const channel = nonblank(port.state);
+    return {
+      name: text(port.name),
+      type: text(port.type),
+      direction: port.direction === "provides" ? "out" : "in",
+      ...(channel === undefined ? {} : { channel }),
+    };
+  });
+}
+
+function category(componentClass: string, tags: readonly string[]): ComponentSpec["category"] {
+  const byClass = [
+    ["electrical/", "elec"],
+    ["process/", "prod"],
+    ["environment/", "env"],
+  ] as const;
+  const classCategory = byClass.find(([prefix]) => componentClass.startsWith(prefix));
+  if (classCategory !== undefined) return classCategory[1];
+  const byTag = [
+    ["compressed-air", "air"],
+    ["hvac", "cool"],
+    ["fluids", "cool"],
+    ["heat", "cool"],
+    ["drives", "prod"],
+    ["material-handling", "prod"],
+  ] as const;
+  return byTag.find(([tag]) => tags.includes(tag))?.[1] ?? "env";
+}
+
+export function composition(value: unknown): Record<string, unknown> | null {
+  if (!isRecord(value) || !isRecord(value.composition)) return null;
+  const doc = value.composition;
+  if (doc.schema_version !== "0.1" || !["id", "version", "title", "stresses"].every((key) => text(doc[key]))) {
+    return null;
+  }
+  if (!isRecord(doc.axes) || !Array.isArray(doc.profiles) || !isRecord(doc.ground_truth)) return null;
+  if (doc.equipment !== undefined && !Array.isArray(doc.equipment)) return null;
+  return value.composition;
+}
+
+export function composeSummary(value: unknown): ComposeSummary | null {
+  if (!isRecord(value)) return null;
+  const channels = finiteOrNull(value.channels);
+  const faults = finiteOrNull(value.faults);
+  const effectors = finiteOrNull(value.effectors);
+  return channels === null || faults === null || effectors === null
+    ? null
+    : { channels, faults, effectors, digest: text(value.digest) };
+}
+
+export function report(value: unknown): Report | null {
+  return parseReportPayload(value);
+}
+
+export function comparison(value: unknown): Comparison | null {
+  return parseComparisonPayload(value);
+}
+
+export function markdown(value: unknown): string | null {
+  if (!isRecord(value) || value.format !== "markdown") return null;
+  return typeof value.markdown === "string" && value.markdown !== "" ? value.markdown : null;
+}
+
+export function replay(value: unknown): Replay | null {
+  return parseReplayPayload(value);
+}
+
+export function runDomain(value: unknown): DomainDocument | null {
+  if (!isRecord(value) || typeof value.content !== "string") return null;
+  try {
+    const artifact: unknown = JSON.parse(value.content);
+    if (!isRecord(artifact) || !isRecord(artifact.domain_spec)) return null;
+    return artifact.domain_spec as DomainDocument;
+  } catch {
+    return null;
+  }
+}
+
+function strings(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.map(text) : [];
+}
+
+function nonblank(value: unknown): string | undefined {
+  const content = text(value);
+  return content.trim() === "" ? undefined : content;
+}

@@ -9,6 +9,8 @@ import { reviewed, withDecision } from "./captureState";
 import type { CaptureState, Card, Decision, SavedFile } from "./captureState";
 import { conflictWords } from "./deviceFailures";
 
+export type CaptureGateway = Pick<DevicesGateway, "captureKinds" | "readFile" | "writeFile">;
+
 function decisionOf(outcome: Outcome<string, DeviceFailure>): Decision {
   return outcome.ok ? { kind: "saved", path: outcome.value } : { kind: "failed", failure: outcome.failure };
 }
@@ -18,7 +20,7 @@ class CaptureStore extends Observable<CaptureState> implements CaptureSession {
   private last: CaptureSource | null = null;
   private returning = false;
 
-  constructor(private readonly gateway: DevicesGateway) {
+  constructor(private readonly gateway: CaptureGateway) {
     super({ phase: "idle" });
   }
 
@@ -104,6 +106,6 @@ class CaptureStore extends Observable<CaptureState> implements CaptureSession {
   }
 }
 
-export function createCaptureSession(gateway: DevicesGateway): CaptureSession {
+export function createCaptureSession(gateway: CaptureGateway): CaptureSession {
   return new CaptureStore(gateway);
 }

@@ -28,6 +28,8 @@
         "app/review",
         "app/workspace",
         "test",
+        "ui/capture",
+        "ui/compare",
         "ui/plant",
         "ui/review",
         "ui/workspace"
@@ -41,7 +43,7 @@
       "folders": ["src/model/devices"],
       "mayImport": ["model/shared"],
       "entrypoint": "src/model/devices/index.ts",
-      "callers": ["app/devices", "test", "ui/devices", "ui/workspace"]
+      "callers": ["app/devices", "test", "ui/capture", "ui/devices", "ui/workspace"]
     },
     "app/devices": {
       "kind": "application",
@@ -51,7 +53,7 @@
       "folders": ["src/app/devices"],
       "mayImport": ["app/ports", "app/shared", "model/devices", "model/workspace"],
       "entrypoint": "src/app/devices/index.ts",
-      "callers": ["root", "test", "ui/devices", "ui/shell", "ui/workspace"]
+      "callers": ["root", "test", "ui/capture", "ui/devices", "ui/shell", "ui/workspace"]
     },
     "ui/devices": {
       "kind": "ui",
@@ -88,7 +90,15 @@
       "lifetime": "singleton",
       "responsibility": "dependency interfaces only; no workflow",
       "folders": ["src/app/ports"],
-      "mayImport": ["model/editor", "model/launch", "model/plant", "model/review", "model/workspace"],
+      "mayImport": [
+        "model/compare",
+        "model/editor",
+        "model/launch",
+        "model/plant",
+        "model/review",
+        "model/twinReport",
+        "model/workspace"
+      ],
       "entrypoint": "src/app/ports/index.ts",
       "callers": [
         "adapters",
@@ -124,6 +134,8 @@
       "entrypoint": "src/ui/primitives/index.ts",
       "callers": [
         "test",
+        "ui/capture",
+        "ui/compare",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -173,12 +185,16 @@
         "app/session",
         "app/shell",
         "app/workspace",
+        "model/compare",
         "model/devices",
         "model/graph",
         "model/launch",
         "model/plant",
         "model/review",
+        "model/twinReport",
         "model/workspace",
+        "ui/capture",
+        "ui/compare",
         "ui/devices",
         "ui/editor",
         "ui/graph",
@@ -223,12 +239,14 @@
       "entrypoint": null,
       "callers": [
         "adapters",
+        "model/compare",
         "model/devices",
         "model/editor",
         "model/graph",
         "model/launch",
         "model/plant",
         "model/review",
+        "model/twinReport",
         "model/workspace",
         "test",
         "ui/editor",
@@ -301,7 +319,37 @@
       "folders": ["src/model/review"],
       "mayImport": ["model/graph", "model/launch", "model/plant", "model/shared"],
       "entrypoint": "src/model/review/index.ts",
-      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review", "ui/workspace"]
+      "callers": [
+        "adapters",
+        "app/ports",
+        "app/review",
+        "model/compare",
+        "model/twinReport",
+        "test",
+        "ui/compare",
+        "ui/review",
+        "ui/workspace"
+      ]
+    },
+    "model/compare": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "run comparison values, plan lanes, tables and choices",
+      "folders": ["src/model/compare"],
+      "mayImport": ["model/review", "model/shared"],
+      "entrypoint": "src/model/compare/index.ts",
+      "callers": ["adapters", "app/ports", "app/review", "test", "ui/compare"]
+    },
+    "model/twinReport": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "the twin-versus-board report: values, chart and words",
+      "folders": ["src/model/twinReport"],
+      "mayImport": ["model/review", "model/shared"],
+      "entrypoint": "src/model/twinReport/index.ts",
+      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review"]
     },
     "app/workspace": {
       "kind": "application",
@@ -311,7 +359,17 @@
       "folders": ["src/app/workspace"],
       "mayImport": ["app/ports", "app/shared", "model/workspace"],
       "entrypoint": "src/app/workspace/index.ts",
-      "callers": ["app/shell", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": [
+        "app/shell",
+        "root",
+        "test",
+        "ui/capture",
+        "ui/compare",
+        "ui/plant",
+        "ui/review",
+        "ui/shell",
+        "ui/workspace"
+      ]
     },
     "app/plant": {
       "kind": "application",
@@ -349,9 +407,17 @@
       "lifetime": "singleton",
       "responsibility": "report and verification loading, observer playback and review selection",
       "folders": ["src/app/review"],
-      "mayImport": ["app/plant", "app/ports", "app/shared", "model/review", "model/workspace"],
+      "mayImport": [
+        "app/plant",
+        "app/ports",
+        "app/shared",
+        "model/compare",
+        "model/review",
+        "model/twinReport",
+        "model/workspace"
+      ],
       "entrypoint": "src/app/review/index.ts",
-      "callers": ["app/shell", "root", "test", "ui/review", "ui/shell"]
+      "callers": ["app/shell", "root", "test", "ui/compare", "ui/review", "ui/shell"]
     },
     "app/shell": {
       "kind": "application",
@@ -370,13 +436,23 @@
         "model/shell"
       ],
       "entrypoint": "src/app/shell/index.ts",
-      "callers": ["root", "test", "ui/devices", "ui/editor", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": [
+        "root",
+        "test",
+        "ui/capture",
+        "ui/devices",
+        "ui/editor",
+        "ui/plant",
+        "ui/review",
+        "ui/shell",
+        "ui/workspace"
+      ]
     },
     "ui/workspace": {
       "kind": "ui",
       "layer": "ui",
       "lifetime": "components",
-      "responsibility": "workspace catalogue screen and the capture-from-a-board screen",
+      "responsibility": "workspace catalogue screen",
       "folders": ["src/ui/workspace"],
       "mayImport": [
         "app/devices",
@@ -391,6 +467,16 @@
         "ui/primitives"
       ],
       "entrypoint": "src/ui/workspace/index.ts",
+      "callers": ["test", "ui/shell"]
+    },
+    "ui/capture": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "the capture-from-a-board screen",
+      "folders": ["src/ui/capture"],
+      "mayImport": ["app/devices", "app/shell", "app/workspace", "model/devices", "model/workspace", "ui/primitives"],
+      "entrypoint": "src/ui/capture/index.ts",
       "callers": ["test", "ui/shell"]
     },
     "ui/plant": {
@@ -461,12 +547,24 @@
         "model/plant",
         "model/review",
         "model/shared",
+        "model/twinReport",
         "model/workspace",
+        "ui/compare",
         "ui/graph",
         "ui/primitives"
       ],
       "entrypoint": "src/ui/review/index.ts",
       "callers": ["test", "ui/shell"]
+    },
+    "ui/compare": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "compare two runs, and diff a run's model against the plant",
+      "folders": ["src/ui/compare"],
+      "mayImport": ["app/review", "app/workspace", "model/compare", "model/review", "model/workspace", "ui/primitives"],
+      "entrypoint": "src/ui/compare/index.ts",
+      "callers": ["ui/review"]
     },
     "ui/shell": {
       "kind": "ui",
@@ -486,6 +584,7 @@
         "app/workspace",
         "model/launch",
         "model/shell",
+        "ui/capture",
         "ui/devices",
         "ui/editor",
         "ui/plant",
@@ -543,7 +642,15 @@
       "lifetime": "singleton",
       "responsibility": "bridge and browser edges: transport, protocol encoding, boundary decoding, browser location, preferences, theme and time",
       "folders": ["src/adapters"],
-      "mayImport": ["app/ports", "model/plant", "model/review", "model/shared", "model/workspace"],
+      "mayImport": [
+        "app/ports",
+        "model/compare",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/twinReport",
+        "model/workspace"
+      ],
       "entrypoint": null,
       "callers": ["root", "test"]
     }

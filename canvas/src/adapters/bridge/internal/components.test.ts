@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { component, examples, library, presets } from "./decoders";
+import { component, examples, library, presets } from "./documents/decoders";
 
 describe("library payload", () => {
   const wire = {

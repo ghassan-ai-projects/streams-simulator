@@ -12,7 +12,10 @@ function nameOf(member: Member): string {
   return member.kind.kind || stemOf(member.path);
 }
 
-async function heldOf(gateway: DevicesGateway, members: readonly Member[]): Promise<readonly Held[]> {
+async function heldOf(
+  gateway: Pick<DevicesGateway, "checkContent">,
+  members: readonly Member[],
+): Promise<readonly Held[]> {
   const checks = await Promise.all(members.map((member) => gateway.checkContent(serialiseKind(member.kind), true)));
   return members.flatMap((member, index) => {
     const checked = checks[index];
@@ -23,7 +26,10 @@ async function heldOf(gateway: DevicesGateway, members: readonly Member[]): Prom
   });
 }
 
-export async function suggestFor(gateway: DevicesGateway, members: readonly Member[]): Promise<Suggestion> {
+export async function suggestFor(
+  gateway: Pick<DevicesGateway, "checkContent" | "suggest">,
+  members: readonly Member[],
+): Promise<Suggestion> {
   const outcome = await gateway.suggest(members.map((member) => stemOf(member.path)));
   const refused = !outcome.ok && outcome.failure.kind === "refused";
   return { outcome, held: refused ? await heldOf(gateway, members) : [] };

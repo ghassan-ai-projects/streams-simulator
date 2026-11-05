@@ -8,7 +8,7 @@ export { sameValue } from "./internal/sameValue";
 export { planMarks } from "./internal/planMarks";
 export { markNoteLines, noteLineCount, widestNotes } from "./internal/noteLines";
 export { areaCounts } from "./internal/areas";
-export { hallCount, hallMembers, hallOf, hallsOf } from "./internal/halls";
+export { hallCount, hallMembers, hallOf, hallsOf, hallToOpen } from "./internal/halls";
 export { groupCounts, headerHeight, idExtra, noteHeight, plantView } from "./internal/plantView";
 export { attentionOf, channelWords, pinWords, showReading, statusWords, worstOf } from "./internal/readout";
 export {

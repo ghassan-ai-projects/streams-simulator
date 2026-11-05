@@ -1,7 +1,7 @@
 import { keepCurrentIssues, serialiseChoices, stemOf, twinDomainPath } from "../../../model/devices";
 import type { KindFile, TwinChoices } from "../../../model/devices";
 import type { DevicesGateway, TwinMade } from "../../ports";
-import { DraftStore, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity, holdsOperation } from "../../shared";
 import type { Operation } from "../../shared";
 import type { TwinSession } from "./api";
 import { loadCatalogue } from "./instrumentCatalogue";
@@ -21,6 +21,11 @@ import {
 import { isBuilding, isChoicesDirty, problemsOf } from "./twinSelectors";
 import { suggestFor, unreadableHeld } from "./twinSuggest";
 
+export type TwinGateway = Pick<
+  DevicesGateway,
+  "readFile" | "listing" | "suggest" | "checkContent" | "instruments" | "twin" | "writeFile" | "validateDomain" | "lint"
+>;
+
 class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession {
   private readonly operations = createOperationIdentity();
   private etag = "";
@@ -29,7 +34,7 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   private creating = false;
 
   constructor(
-    private readonly gateway: DevicesGateway,
+    private readonly gateway: TwinGateway,
     private readonly lead: () => KindFile | null,
   ) {
     super({ phase: "idle" });
@@ -213,8 +218,7 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   }
 
   private holds(operation: Operation, path: string): boolean {
-    const state = this.snapshot();
-    return operation.live() && state.phase !== "idle" && state.path === path;
+    return holdsOperation(operation, this.snapshot(), path);
   }
 
   private enqueue<T>(job: () => Promise<T>): Promise<T> {
@@ -285,6 +289,6 @@ class TwinStore extends DraftStore<TwinState, TwinDraft> implements TwinSession 
   }
 }
 
-export function createTwinSession(gateway: DevicesGateway, lead: () => KindFile | null): TwinSession {
+export function createTwinSession(gateway: TwinGateway, lead: () => KindFile | null): TwinSession {
   return new TwinStore(gateway, lead);
 }

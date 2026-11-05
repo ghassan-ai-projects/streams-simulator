@@ -1,4 +1,4 @@
-import type { TwinReport } from "../model/review";
+import type { TwinReport } from "../model/twinReport";
 import { reportWire } from "./runFixture";
 
 const digest = `sha256:${"a".repeat(64)}`;

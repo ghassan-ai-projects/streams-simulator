@@ -1,4 +1,4 @@
-import type { Comparison } from "../model/review";
+import type { Comparison } from "../model/compare";
 
 const fault = (onset: number, cleared: number | null = null) => ({
   entity_id: "CT-1",

@@ -2,16 +2,8 @@ import { issuesWords } from "../../../model/editor";
 import type { Draft } from "./editorDraft";
 import { checked, emptyPlant, isDirty } from "./editorSelectors";
 import type { EditorFailure } from "../../ports";
-
-export interface SaveStatus {
-  readonly text: string;
-  readonly detail: string | null;
-  readonly tone: "busy" | "warn" | "ok" | "";
-}
-
-function status(text: string, tone: SaveStatus["tone"], detail: string | null = null): SaveStatus {
-  return { text, detail, tone };
-}
+import type { SaveStatus } from "../../shared";
+import { status } from "../../shared";
 
 function composeFailed(draft: Draft, failure: EditorFailure): SaveStatus {
   const listed = draft.issues?.listed.length ?? 0;

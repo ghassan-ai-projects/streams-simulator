@@ -1,4 +1,4 @@
-import type { Comparison } from "../../../model/review";
+import type { Comparison } from "../../../model/compare";
 import type { DocumentFailure, ReviewGateway } from "../../ports";
 import type { Store } from "../../shared";
 import { Observable, createOperationIdentity } from "../../shared";

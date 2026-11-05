@@ -40,7 +40,10 @@ interface LoadFailure {
   readonly held: readonly Held[];
 }
 
-export async function readMember(gateway: DevicesGateway, path: string): Promise<Outcome<Member, DeviceFailure>> {
+export async function readMember(
+  gateway: Pick<DevicesGateway, "readFile">,
+  path: string,
+): Promise<Outcome<Member, DeviceFailure>> {
   const file = await gateway.readFile(path);
   if (!file.ok) return failure(file.failure);
   const kind = parseKind(file.value.content);
@@ -48,7 +51,7 @@ export async function readMember(gateway: DevicesGateway, path: string): Promise
 }
 
 async function readOthers(
-  gateway: DevicesGateway,
+  gateway: Pick<DevicesGateway, "readFile">,
   known: readonly KindEntry[],
   primary: Member,
   stored: TwinChoices | null,
@@ -68,7 +71,11 @@ function settledChoices(
   return reconcileChoices(keyChoices(base, members), members, fresh);
 }
 
-async function domainEtagOf(gateway: DevicesGateway, domains: readonly string[], id: string): Promise<string> {
+async function domainEtagOf(
+  gateway: Pick<DevicesGateway, "readFile">,
+  domains: readonly string[],
+  id: string,
+): Promise<string> {
   const path = twinDomainPath(id);
   if (!domains.includes(path)) return "";
   const file = await gateway.readFile(path);
@@ -92,7 +99,7 @@ function baseOf(stored: TwinChoices | null, suggestion: Suggestion): Outcome<Twi
 }
 
 export async function loadTwin(
-  gateway: DevicesGateway,
+  gateway: Pick<DevicesGateway, "readFile" | "listing" | "suggest" | "checkContent" | "instruments">,
   path: string,
   primary: KindFile,
 ): Promise<Outcome<Loaded, LoadFailure>> {

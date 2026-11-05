@@ -1,16 +1,16 @@
 import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure } from "../../../app/ports";
 import type { Replay } from "../../../model/review";
-import { connectGateway } from "./connect";
-import { catalogGateway } from "./planCatalog";
-import { jobGateway } from "./jobs";
-import { controlSession } from "./control";
-import { devicesGateway } from "./devices";
-import { followRun } from "./follow";
-import { lintAction } from "./lintAction";
-import { provenanceGateway } from "./provenanceGateway";
-import { requestTwinReport } from "./twinReportGateway";
-import type { FailureMapper, Transport, WireProblem } from "./http";
-import { action, getFile, post, putFile, request } from "./http";
+import { connectGateway } from "./launch/connect";
+import { catalogGateway } from "./launch/planCatalog";
+import { jobGateway } from "./launch/jobs";
+import { controlSession } from "./review/control";
+import { devicesGateway } from "./devices/devices";
+import { followRun } from "./review/follow";
+import { lintAction } from "./devices/lintAction";
+import { provenanceGateway } from "./provenance/provenanceGateway";
+import { requestTwinReport } from "./review/twinReportGateway";
+import type { FailureMapper, Transport, WireProblem } from "./transport/http";
+import { action, getFile, post, putFile, request } from "./transport/http";
 import {
   composeSummary,
   component,
@@ -27,7 +27,7 @@ import {
   runDomain,
   written,
   workspace,
-} from "./decoders";
+} from "./documents/decoders";
 import {
   documentFailure,
   editorFailure,
@@ -35,7 +35,7 @@ import {
   reviewFailure,
   sessionFailure,
   workspaceFailure,
-} from "./failures";
+} from "./transport/failures";
 
 export function bridgeAdapter(transport: Transport): BridgeAdapters {
   return {

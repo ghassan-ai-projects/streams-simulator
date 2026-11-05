@@ -1,12 +1,7 @@
-import type {
-  ControlFailureKind,
-  ControlReply,
-  ControlRequest,
-  JournalEntry,
-  TwinReport,
-  TwinRequest,
-} from "../../model/review";
-import type { Comparison, Report, Replay } from "../../model/review";
+import type { ControlFailureKind, ControlReply, ControlRequest, JournalEntry } from "../../model/review";
+import type { TwinReport, TwinRequest } from "../../model/twinReport";
+import type { Report, Replay } from "../../model/review";
+import type { Comparison } from "../../model/compare";
 import type { Diagnostic, DomainDocument, Outcome } from "./shared";
 
 export type ReviewFailure =

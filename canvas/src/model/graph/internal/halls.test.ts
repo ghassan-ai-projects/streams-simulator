@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { campus } from "../../../test/plantFixture";
 import { parsePlant } from "../../plant";
-import { hallMembers, hallOf, hallsOf } from "./halls";
+import { hallMembers, hallOf, hallsOf, hallToOpen } from "./halls";
 import { plantView } from "./plantView";
 
 describe("halls", () => {
+  it("opens another hall only when the plant has that hall", () => {
+    const plant = parsePlant(campus(3));
+    expect(hallToOpen(plant, "h02/M-1", "h01")).toBe("h02");
+    expect(hallToOpen(plant, "h02/M-1", null)).toBe("h02");
+    expect(hallToOpen(plant, "h02/M-1", "h02")).toBeNull();
+    expect(hallToOpen(plant, "h09/M-1", "h01")).toBeNull();
+    expect(hallToOpen(plant, "CAL-1", "h01")).toBeNull();
+  });
+
   it("reads a hall from the id's prefix", () => {
     expect(hallOf("h02/M-1")).toBe("h02");
     expect(hallOf("CAL-1")).toBeNull();
