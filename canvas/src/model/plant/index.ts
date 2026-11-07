@@ -6,6 +6,7 @@ export { plantTitle } from "./internal/title";
 export {
   areaOf,
   channelOf,
+  declaresTemplates,
   effectorNamesOf,
   argUnitOf,
   effectorOf,
@@ -38,6 +39,7 @@ export type {
   ExamplePlant,
   Family,
   Instance,
+  InstancePopulation,
   LibraryEntry,
   Link,
   ParameterSpec,

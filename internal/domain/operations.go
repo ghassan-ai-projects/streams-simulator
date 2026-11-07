@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"io"
+
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -57,6 +59,22 @@ func Render(c *Compiled) ([]byte, error) {
 
 func InstanceRenders(set model.InstanceSet, id string) bool {
 	return layer.InstanceRenders(set, id)
+}
+
+func PopulationIDs(c *Compiled, firstSetCount int) []string {
+	return layer.PopulationIDs(c, firstSetCount)
+}
+
+func PopulationOfFile(path string) (Population, error) {
+	return files.PopulationOfFile(path)
+}
+
+func PopulationOfStream(reader io.Reader) (Population, error) {
+	return files.PopulationOfStream(reader)
+}
+
+func RenderInstanceID(template string, index int) string {
+	return layer.RenderInstanceID(template, index)
 }
 
 func Summarize(c *Compiled) Summary {

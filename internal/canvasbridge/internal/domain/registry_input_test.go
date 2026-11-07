@@ -8,13 +8,14 @@ import (
 	"testing"
 )
 
-func TestOnlyKindCheckAndKindCaptureCarryTheirContentOnStandardInput(t *testing.T) {
+func TestOnlyDeclaredActionsCarryTheirContentOnStandardInput(t *testing.T) {
 	t.Parallel()
 	// session.check and session.start take the session plan on standard input: it is never written to the workspace.
-	readers := map[string]bool{"kind.check": true, "kind.capture": true, "session.check": true, "session.start": true}
+	// domain.population reads a domain document only to answer with its instance ids, and a recorded run's has no workspace path.
+	readers := map[string]bool{"kind.check": true, "kind.capture": true, "domain.population": true, "session.check": true, "session.start": true}
 	for _, action := range Actions() {
 		if (action.Input != "") != readers[action.Name] {
-			t.Errorf("action %s has input %q: only kind.check, kind.capture and the session plan read standard input", action.Name, action.Input)
+			t.Errorf("action %s has input %q: only kind.check, kind.capture, domain.population and the session plan read standard input", action.Name, action.Input)
 		}
 	}
 	check, err := Lookup("kind.check")

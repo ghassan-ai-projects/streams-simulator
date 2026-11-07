@@ -15,6 +15,8 @@ type Entry = layer.Entry
 
 type Summary = layer.Summary
 
+type Population = layer.Population
+
 type CoverageReport = layer.CoverageReport
 
 var ErrUnknownDomain = layer.ErrUnknownDomain
