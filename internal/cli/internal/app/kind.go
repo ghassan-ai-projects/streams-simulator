@@ -45,18 +45,17 @@ func cmdPopulation(s *session, args []string) (any, error) {
 	if *stdin != (fs.NArg() == 0) || fs.NArg() > 1 {
 		return nil, usagef(populationUsage)
 	}
-	population, err := readPopulation(s, *stdin, fs.Arg(0))
+	if *stdin {
+		return populationDocument(domain.PopulationOfStream(s.input()))
+	}
+	return populationDocument(domain.PopulationOfFile(fs.Arg(0)))
+}
+
+func populationDocument(population domain.Population, err error) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return population, nil
-}
-
-func readPopulation(s *session, stdin bool, path string) (domain.Population, error) {
-	if stdin {
-		return domain.PopulationOfStream(s.input())
-	}
-	return domain.PopulationOfFile(path)
 }
 
 type domainValidation struct {
