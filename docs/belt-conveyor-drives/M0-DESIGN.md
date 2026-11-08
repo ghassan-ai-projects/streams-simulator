@@ -1,6 +1,6 @@
 # M0 design: the conveyor as data
 
-Status: as built in M0 round 1 (2026-11-08). It refines [PLAN.md](PLAN.md) section 3 with the owner decisions of
+Status: as built in M0 rounds 1 and 2 (2026-11-08). It refines [PLAN.md](PLAN.md) section 3 with the owner decisions of
 section 9.6 (O1-O14), a calibration run on an independent Python mirror of these equations (one-second Euler steps), and
 what the component format allows (no state may depend on itself through the inputs of its kind, even through a lag).
 Where this page and PLAN.md section 3 differ, this page wins; each difference is listed in section 7.
@@ -116,12 +116,13 @@ derived from them, steady initial values and the `share` fallback included:
 | relay_ok, inverter_ok | trip θ > 1.1025, latched, reset by `reset_trip` | 0/1 |
 | winding | lag(T_amb + enabled · (24 + heat_b + 15 · g) + 56 · load², τ_w) | °C |
 | overtemp_ok | trip winding > 150 °C for 10 s, latched, reset by `reset_trip` | 0/1 |
-| aging, life_used | curve(winding): 2^((T + 10 − 130)/10), nodes every 5 K; ∫ aging / 3600; KPI | 1, h |
-| gear_used | ∫ curve(load): load⁶ / 3600; KPI | h |
+| aging, life_used | curve(winding): 2^((T + 10 − 130)/10), nodes every 5 K; ∫ aging / 3600 from 10 000 h in service; KPI | 1, h |
+| gear_used | ∫ curve(load): load⁶ / 3600 from 10 000 h in service; KPI | h |
 | lube | 0; fault `lube_loss` (ramp 1/h) | 0..1 |
 | bearing_damage d | dd/dt = k_d · lube · load³ / 3600, clamped 0..1 | 0..1 |
 | heat_b, vib_b | curve(d): 75 · d³ K; 9.6 · d⁴ mm/s | K, mm/s |
-| vibration | 1.2 · enabled + 0.3 · load + vib_b · enabled | mm/s |
+| wiggle | 0.25 · sin(2π t / 24 h) from the world start, the same on every drive | mm/s |
+| vibration | 1.2 · enabled + 0.3 · load + (vib_b + wiggle) · enabled | mm/s |
 | g | 0; fault `gear_oil_loss` (ramp 0.5/h) | 0..1 |
 | free_ok | trip g > 0.95, latched; `reset_trip` cannot clear it while g stays above (seizure) | 0/1 |
 | vfd_ok | 1; fault `vfd_fault` (step −1) | 0/1 |
@@ -129,8 +130,14 @@ derived from them, steady initial values and the `share` fallback included:
 | enabled | run_cmd · available (port `enabled_out`, run status YS) | 0/1 |
 | drag | 0.03 · F_rated · (2 − enabled) + 0.05 · F_rated · d² + 0.27 · F_rated · g + (1 − free_ok) · seized_drag | N |
 
-Instruments per drive: current clamp (current, 0-15 A), RTD (winding, 0-200 °C), accelerometer (vibration,
-0-20 mm/s), run status (enabled). Belt: tachometer (tail pulley). Feeder: mass flow meter (feed).
+Instruments per drive: current clamp (current, 0-15 A), RTD (winding, 0-200 °C), vibration sensor (vibration,
+0-45 mm/s), run status (enabled). Belt: tachometer (tail pulley). Feeder: mass flow meter (feed).
+
+`streamsim/vibration-sensor@1` is an IO-Link vibration transmitter in the style of an ifm VVB001: v-RMS 0-45 mm/s,
+one reading a minute, σ 0.02 mm/s, resolution 0.01 mm/s. Faults: `dropout`, `loose_mount` (gain 0.7) and `frozen`
+(repeats its last value with quality good: the S5 story). The wiggle makes a frozen reading drift away from the true
+one (by 0.1 mm/s within about two hours), so the fault is observable; a peer comparison cancels it.
+`streamsim/accelerometer@1` is unchanged.
 
 Effectors (each with ack ok, 300 ± 50 ms):
 
@@ -156,7 +163,7 @@ Python mirror, noiseless:
 | S2 sudden trip of D-3 at full feed | survivors carry it; the downstream stop strands the belt | inverter cascade at about +119 s |
 | S3 gear oil loss, severity 1 | seizure at +1.9 h, stall 2 s later | (not run) |
 
-The composed plant (`streamsim run`, three drives, noiseless state history) agrees: both regimes start steady and
+Round 1's smoke runs of the composed plant (`streamsim run`, noiseless state history) agreed: both regimes start steady and
 lint clean; in A a `vfd_fault` on D-3 leaves the survivors at load 0.98 and a later downstream stop strands the belt
 10 s after it stops; in B the survivors' inverters trip about 120 s after D-3; three drives restart a stopped loaded
 belt in about 20 s, two stall it 2 s after `start_belt`.
@@ -166,20 +173,44 @@ numbers in the tests come from the oracles of section 6, not from this table (O1
 
 Library contract (each part composed alone): lint, steady start, replay, effectors, observability and the
 trivial-baseline audit pass. Audit best balanced accuracy: `chute_buildup` 0.78, `tail_slip` 0.80, `lube_loss` 0.86,
-`gear_oil_loss` 0.87 (non-trivial); `vfd_fault` 0.997 (trivial, as a hard trip should be).
+`gear_oil_loss` 0.87 (non-trivial); `vfd_fault` 0.997 (trivial, as a hard trip should be). The drive with
+`margin: weak`, alone, also starts steady, lints clean, keeps its faults observable and passes the audit (`lube_loss`
+0.86, `gear_oil_loss` 0.84); `reset_trip` is refused at its nominal θ_r 0.938 (> 0.9), so its effector check is not run.
+
+What the oracle tests compute (round 2, noiseless, the composed plants):
+
+| Check | Plant A | Plant B |
+|---|---|---|
+| Survivors after D-3's `vfd_fault` | load 0.9844, I² 0.9728 settles below 1.1025: no trip in 50 min; winding 82.39 → 113.26 °C | load 1.4610, I² 1.9956, θ0 0.9384: inverters trip 119.1 s after D-3 (closed form, survivors see the share 1 s late), 121 s in the model |
+| Relay alone (`inverter_tau_s` 3600) | - | 169.7 s closed form, 171 s in the model |
+| Breakaway margin, loaded belt | +648 N with three drives, −759 N with two | +63 N with three, −1017 N with two |
+| Stop permissive | loaded, three drives: refused; empty, three: allowed; empty, two: refused | same |
+| Feed step to 70 % | m 1250 → 875 kg, worst deviation from the closed form 4.9 kg (one step of feed lag) | - |
+| Dry bearing, severity 0.8 | damage 0.0035 / 0.0140 / 0.0561 at 0.25 / 0.5 / 1 h, within 0.1 % of the closed form | - |
+| Gearbox without oil, severity 4 | seizure at 1770 s; with 1830 N seized drag the belt is 1117 N short and stalls 3 s later; with 0 N two drives carry 2048 N of 2760 N and keep running | - |
+| 2-drive belt at 30 % feed | 632.7 N each; one survivor carries 1293.1 N (2.04 ×) | - |
 
 ## 6. Tests and scenario files
 
-- Oracle tests (independent recurrences in Go, closed forms where they exist): material on the belt after a feed
-  step; share and capacity against n; θ trip time; winding step response; aging integral; bearing damage at constant
-  load; the restart table (3 drives start a loaded belt, 2 do not, 2 start an empty one) in both regimes; stop_ok truth
-  table; a 2-drive belt (O7).
-- Every lever changes survivor load (silent_no_effect): `set_feed`, `start_drive`/`stop_drive`, `stop_belt`,
-  `start_belt`.
+- Plants: `examples/compositions/belt-conveyor-drives-a.composition.json` (`margin: strong`, `breakaway_n_per_kg`
+  1.424) and `-b` (`margin: weak`, 1.152): F-1, B-1, D-1..D-3 and every port of section 1; shipped as built-in examples
+  (embedded copies in `internal/component/internal/files/examples/`) and composed to
+  `examples/belt-conveyor-drives-{a,b}.domain.json`; both lint clean and are in the lint list.
+- Oracle tests in `test/contract/belt_conveyor_*_test.go`, each expected number computed in the test from the design's
+  constants and closed forms: compose byte for byte; both plants start steady; material after a feed step;
+  share against n; inverter and relay trip times in B and no trip in A; winding step response; bearing damage; the
+  restart table in both plants (3 drives start a loaded belt, 2 cannot: stall within `boost_s` + 1 s, stranded 10 s
+  after the third drive is lost on the stopped belt; 2 start an empty one); a seizure with and without seized drag
+  (O10); the stop permissive truth table; a 2-drive belt composed inside the test (O7); a frozen vibration reading
+  drifting from the truth; the weak drive's library checks.
+- Every lever changes survivor load or what the belt carries (silent_no_effect), each against an uncalled world:
+  `set_feed`, `stop_drive`, `stop_belt`, `start_belt`.
+- Tests that simulate an hour or more (survivors in A for 50 min, the dry bearing, the seizure, the frozen sensor, the
+  weak drive's library checks) skip under `-short`.
 - Scenario files per story and regime (O12): a do-nothing run and a hand-written reference-policy run; seed tables
   (onset, severity) as data; live session plans written and validated, first run in M2. Regime B is the composition
   with `margin: weak` on the drives and `breakaway_n_per_kg: 1.152` on the belt.
-- S0's diurnal feed: the feeder's `shift_pattern` fault injected at the start of the run, in the regime A plant.
+- S0's diurnal feed: the feeder's `shift_pattern` fault injected at the start of the run, in plant A.
 - Long do-nothing runs (hours of plant time) skip under `-short` and run in `make test-long`.
 
 ## 7. Differences from PLAN.md section 3
@@ -202,9 +233,6 @@ trivial-baseline audit pass. Audit best balanced accuracy: `chute_buildup` 0.78,
 | M14 | Alone, the drive's `stop_ok` fallback is 1; the connected loaded plant gives 0 | The library proves every effector on the part alone |
 | M15 | `delivered` starts at 100 000 t | A totalizer; from 0 it moves 25 t in ten minutes and fails the steady-start check |
 | M16 | `chute_buildup` ramps at 0.005/h and `tail_slip` at 0.002/h | Slow enough not to be caught by a one-line detector in 8 h, fast enough to be observable within 24 h |
-
-Open: the accelerometer's silent `frozen` fault (S5) is not in the library. A frozen reading of a steady signal never
-departs from the truth oracle's clean reading, so every equipment that uses the accelerometer (conveyor, motor drive,
-air compressor, packaging line, production line, conveyor drive) fails "every fault observable within 24 h". It needs
-a decision: an oracle that scores a frozen channel by its missing noise (a Go change), or S5 frozen on a signal that
-moves.
+| M17 | The drive's vibration has a daily wiggle and its own instrument, `vibration-sensor@1`, which carries the silent `frozen` fault; the accelerometer does not | A frozen reading of a steady signal is never observable to the truth oracle, and the accelerometer serves five other parts with steady vibration |
+| M18 | `life_used` and `gear_used` start at 10 000 h in service | From 0, a weak drive's counters move more than the steady-start check allows in ten minutes |
+| M19 | The 2-drive belt (O7) is composed inside its test, not shipped | Two shipped plants are enough; the variant only proves the sharing |

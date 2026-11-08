@@ -13,8 +13,10 @@ import (
 func TestEveryShippedExamplePlantComposesAndMatchesTheRepositoryExample(t *testing.T) {
 	t.Parallel()
 	shipped := map[string]string{
-		"chiller-pilot":     testsupport.PilotComposition(),
-		"factory-utilities": testsupport.FactoryComposition(),
+		"belt-conveyor-drives-a": testsupport.BeltConveyorComposition("a"),
+		"belt-conveyor-drives-b": testsupport.BeltConveyorComposition("b"),
+		"chiller-pilot":          testsupport.PilotComposition(),
+		"factory-utilities":      testsupport.FactoryComposition(),
 	}
 	examples, err := component.Examples()
 	if err != nil || len(examples) != len(shipped) {

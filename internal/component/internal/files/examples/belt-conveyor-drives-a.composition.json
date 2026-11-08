@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.1",
+  "id": "belt-conveyor-drives-a",
+  "version": "0.1.0",
+  "title": "Belt conveyor, three drives with margin",
+  "description": "A 60 m bulk belt fed at 150 t/h and pulled by three equal drives (synthetic numbers). The drives have margin: two can carry the running belt when one trips, but only three can restart it loaded.",
+  "stresses": "load shared across drives on one belt: a failing drive moves load onto its peers, and a stop at the wrong moment strands a loaded belt",
+  "axes": {"absence": "signal", "actuation": "interlocked", "cadence": ["periodic", "report_by_exception"], "cardinality": "small", "consequence": ["downtime", "safety"],
+    "correlation": ["coupled", "cascading"], "fidelity": ["F0", "F1"], "lateness": "none", "rate": "medium", "seasonality": ["diurnal"],
+    "time_reference": "wall", "value_shape": ["scalar", "boolean"]},
+  "site": {"name": "Bulk terminal", "timezone": "Europe/Berlin"},
+  "areas": [{"name": "Terminal"}, {"name": "Transfer belt", "parent": "Terminal"}, {"name": "Drive station", "parent": "Transfer belt"}],
+  "equipment": [
+    {"use": "streamsim/bulk-feeder@1", "names": ["F-1"], "area": "Transfer belt"},
+    {"use": "streamsim/belt-conveyor@1", "parameters": {"breakaway_n_per_kg": 1.424}, "names": ["B-1"], "area": "Transfer belt"},
+    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "strong"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station"}
+  ],
+  "connections": [
+    {"from": "F-1.feed_out", "to": "B-1.feed_in"},
+    {"from": "B-1.moving_out", "to": "F-1.moving_in"},
+    {"from": "B-1.share_out", "to": "D-1.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-1.stop_ok_in"},
+    {"from": "D-1.enabled_out", "to": "B-1.drives_in"}, {"from": "D-1.drag_out", "to": "B-1.drag_in"}, {"from": "D-1.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-1.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-1.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-1.ready_cap_out", "to": "B-1.ready_cap_in"},
+    {"from": "B-1.share_out", "to": "D-2.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-2.stop_ok_in"},
+    {"from": "D-2.enabled_out", "to": "B-1.drives_in"}, {"from": "D-2.drag_out", "to": "B-1.drag_in"}, {"from": "D-2.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-2.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-2.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-2.ready_cap_out", "to": "B-1.ready_cap_in"},
+    {"from": "B-1.share_out", "to": "D-3.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-3.stop_ok_in"},
+    {"from": "D-3.enabled_out", "to": "B-1.drives_in"}, {"from": "D-3.drag_out", "to": "B-1.drag_in"}, {"from": "D-3.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-3.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-3.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-3.ready_cap_out", "to": "B-1.ready_cap_in"}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 86400, "description": "A day of the belt at full feed, one fault per scenario."},
+    {"name": "sensor_pathology", "duration_s": 86400, "fault_weights": {"conveyor_drive__vibration__frozen": 1.0, "conveyor_drive__winding__offset": 1.0, "belt_conveyor__tail_speed__offset": 1.0},
+      "description": "An instrument lies while the belt and its drives are healthy: a frozen vibration reading, an offset winding or tail pulley reading."},
+    {"name": "correlated_cascade", "duration_s": 86400, "fault_weights": {"conveyor_drive__vfd_fault": 1.0, "conveyor_drive__gear_oil_loss": 1.0},
+      "description": "A drive trip leaves the belt running on two drives at about full load; a later stop of the next machine strands the loaded belt, because two drives cannot break it loose."}
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0}
+}

@@ -163,6 +163,14 @@ func FactoryComposition() string {
 	return filepath.Join(RepositoryRoot(), "examples", "compositions", "factory-utilities.composition.json")
 }
 
+func BeltConveyorDomain(regime string) string {
+	return filepath.Join(RepositoryRoot(), "examples", "belt-conveyor-drives-"+regime+".domain.json")
+}
+
+func BeltConveyorComposition(regime string) string {
+	return filepath.Join(RepositoryRoot(), "examples", "compositions", "belt-conveyor-drives-"+regime+".composition.json")
+}
+
 func WorkspaceFolder(root, folder string) string { return filepath.Join(root, folder) }
 
 func WorkspaceFile(folder, name string) string { return folder + "/" + name }

@@ -17,7 +17,8 @@ func shippedDomains(t *testing.T) []string {
 	if err != nil || len(paths) == 0 {
 		t.Fatalf("shipped domains %v: %v", paths, err)
 	}
-	return append(paths, testsupport.Example(), filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"), testsupport.ThermalBoardDomain())
+	return append(paths, testsupport.Example(), filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"), testsupport.ThermalBoardDomain(),
+		testsupport.BeltConveyorDomain("a"), testsupport.BeltConveyorDomain("b"))
 }
 
 func TestTheArduinoThermalTwinLintsCleanAtRest(t *testing.T) {

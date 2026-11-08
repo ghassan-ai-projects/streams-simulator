@@ -11,7 +11,7 @@ The library holds equipment (a chiller, a pump, an air-handling unit), instrumen
 ```bash
 go run ./cmd/streamsim component list                  # equipment and instruments (--unit, --min, --max narrow it)
 go run ./cmd/streamsim component show streamsim/chiller
-go run ./cmd/streamsim component examples              # ready-made plants: chiller-pilot, factory-utilities
+go run ./cmd/streamsim component examples              # ready-made plants: chiller-pilot, factory-utilities, belt-conveyor-drives-a and -b
 go run ./cmd/streamsim component new my-plant --title "My plant" --example chiller-pilot > my-plant.composition.json
 go run ./cmd/streamsim domain compose my-plant.composition.json --out domains/my-plant.domain.json
 go run ./cmd/streamsim domain lint domains/my-plant.domain.json
