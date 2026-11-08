@@ -121,7 +121,7 @@
         "affects": [
           {
             "state": "supply",
-            "delta": 0.5,
+            "delta": 1.0,
             "multiplicative": true
           }
         ],

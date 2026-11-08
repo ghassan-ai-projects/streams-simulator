@@ -34,7 +34,7 @@ type beltRegime struct {
 }
 
 var beltRegimes = []beltRegime{
-	{name: "a", breakaway: 1.424, rated: 920, boost: 1.5, wear: 0.52},
+	{name: "a", breakaway: 1.424, rated: 920, boost: 1.5, wear: 0.55},
 	{name: "b", breakaway: 1.152, rated: 607, boost: 1.75, wear: 0.135},
 }
 
@@ -85,7 +85,12 @@ type beltWorld struct {
 
 func newBeltWorld(t *testing.T, spec *domain.Compiled) *beltWorld {
 	t.Helper()
-	w, err := world.New(spec, 5, "belt", model.DefaultStartTimeNS, world.Options{Noiseless: true, EmitDisabled: true})
+	return newSeededBeltWorld(t, spec, 5)
+}
+
+func newSeededBeltWorld(t *testing.T, spec *domain.Compiled, seed uint64) *beltWorld {
+	t.Helper()
+	w, err := world.New(spec, seed, "belt", model.DefaultStartTimeNS, world.Options{Noiseless: true, EmitDisabled: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,13 +120,8 @@ func (b *beltWorld) inject(entity, fault string, severity float64) {
 
 func (b *beltWorld) invoke(effector, entity string, args map[string]any) bool {
 	b.t.Helper()
-	kind, _, _ := strings.Cut(effector, "__")
-	all := map[string]any{map[string]string{"bulk_feeder": "feeder_id", "belt_conveyor": "belt_id", "conveyor_drive": "drive_id"}[kind]: entity}
-	for name, value := range args {
-		all[name] = value
-	}
 	b.commands++
-	result, err := b.w.InvokeEffector(effector, entity, fmt.Sprintf("c-%d", b.commands), all, beltNS(b.nowS))
+	result, err := b.w.InvokeEffector(effector, entity, fmt.Sprintf("c-%d", b.commands), effectorArgs(effector, entity, args), beltNS(b.nowS))
 	if err != nil {
 		b.t.Fatal(err)
 	}

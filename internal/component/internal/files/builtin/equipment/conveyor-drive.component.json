@@ -945,7 +945,7 @@
         "dt_ms": 1000,
         "f1": {
           "form": "integrator",
-          "gain": 0.0001444444,
+          "gain": 0.0001527778,
           "inputs": [
             {
               "state": "wear",
@@ -1500,7 +1500,7 @@
         "affects": [
           {
             "state": "g",
-            "delta": 1
+            "delta": 2
           }
         ],
         "observability": {
@@ -1514,7 +1514,7 @@
         "onset": {
           "magnitude": 1.0,
           "shape": "ramp",
-          "rate_per_hour": 0.5
+          "rate_per_hour": 0.25
         }
       },
       {
@@ -1814,7 +1814,7 @@
           "dynamics/boost_cap/f1/inputs/enabled/coef": 1380,
           "dynamics/ready_cap/f1/inputs/available/coef": 1380,
           "dynamics/rated/f1/inputs/enabled/coef": 920,
-          "dynamics/bearing_damage/f1/gain": 0.0001444444,
+          "dynamics/bearing_damage/f1/gain": 0.0001527778,
           "state/share/initial": 594.5446,
           "state/load/initial": 0.6462444,
           "state/i2_curve/initial": 0.4891243,

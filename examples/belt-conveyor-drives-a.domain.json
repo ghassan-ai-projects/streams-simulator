@@ -95,7 +95,7 @@
         },
         {
           "id": "bulk_feeder__feed_surge",
-          "affects": [{"state": "supply", "delta": 0.5, "multiplicative": true}],
+          "affects": [{"state": "supply", "delta": 1, "multiplicative": true}],
           "is_negative_class": true,
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "bulk_feeder.feed"},
@@ -1356,7 +1356,7 @@
           "f1": {
             "form": "integrator",
             "clamp": {"min": 0, "max": 1},
-            "gain": 0.0001444444,
+            "gain": 0.0001527778,
             "inputs": [{"state": "wear", "coef": 1}]
           }
         },
@@ -1751,13 +1751,13 @@
         },
         {
           "id": "conveyor_drive__gear_oil_loss",
-          "affects": [{"state": "g", "delta": 1}],
+          "affects": [{"state": "g", "delta": 2}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.winding"},
             "first_observable_snr": 3,
             "unavoidable_snr": 10
           },
-          "onset": {"magnitude": 1, "rate_per_hour": 0.5, "shape": "ramp"}
+          "onset": {"magnitude": 1, "rate_per_hour": 0.25, "shape": "ramp"}
         },
         {
           "id": "conveyor_drive__vfd_fault",
@@ -1980,7 +1980,7 @@
       "area": "Transfer belt",
       "provenance": {
         "component": "streamsim/bulk-feeder",
-        "digest": "sha256:9c2fc4fb94ed577d180df7278f73a2a6d3010c64b4931ce963f66fca7bf4be76",
+        "digest": "sha256:c0d91f56e40c38534af6e5bc06807ed8e614c5bbb507791ee52c458c0a4d3166",
         "instrument_digests": {
           "streamsim/mass-flow-meter@1": "sha256:07c0020fecb67db271563988412d002427648b8d65a9253c9072e04803380a23"
         },
@@ -2007,7 +2007,7 @@
       "area": "Drive station",
       "provenance": {
         "component": "streamsim/conveyor-drive",
-        "digest": "sha256:6f237a8822194bd1a962eaffa379c46eb9c356ac8633ff3dd846debe6dd86fe8",
+        "digest": "sha256:b8477bd17d603fd05dc83199e903102bc028797678b54250e8ab141bc776463e",
         "instrument_digests": {
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
