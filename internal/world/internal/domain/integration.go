@@ -22,6 +22,7 @@ type stateValue struct {
 	protection *protectionState
 	controller *controllerState
 	alarm      *alarmState
+	tripMarks  []int64
 }
 
 func (w *World) naturalOf(ent *Entity, stateName string, s *stateValue, t int64) float64 {

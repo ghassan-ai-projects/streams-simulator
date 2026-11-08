@@ -82,6 +82,10 @@ func (w *World) KPITruth() *model.KPITruth {
 	return w.world.KPITruth()
 }
 
+func (w *World) OutcomeFacts(atNS int64) *model.OutcomeFacts {
+	return w.world.OutcomeFacts(atNS)
+}
+
 func (w *World) StateValue(entity, state string, t int64) float64 {
 	return w.world.StateValue(entity, state, t)
 }
