@@ -10,7 +10,10 @@ import (
 )
 
 func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*Run, error) {
-	cfg := replayConfig(art, spec, adapterSpec, sinkTarget)
+	return startReplay(ctx, art, replayConfig(art, spec, adapterSpec, sinkTarget))
+}
+
+func startReplay(ctx context.Context, art *model.RunArtifact, cfg Config) (*Run, error) {
 	replay, err := New(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
@@ -25,8 +28,14 @@ func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Comp
 }
 
 func replayCommands(ctx context.Context, replay *Run, commands []model.Command) error {
+	return replayEach(ctx, replay, commands, executeCommand)
+}
+
+type commandStep func(context.Context, *Run, *model.Command, refusalPolicy) error
+
+func replayEach(ctx context.Context, replay *Run, commands []model.Command, execute commandStep) error {
 	for _, command := range commands {
-		if err := executeCommand(ctx, replay, &command, keepEveryRefusal); err != nil {
+		if err := execute(ctx, replay, &command, keepEveryRefusal); err != nil {
 			return fmt.Errorf("run: replay command %d (%s): %w", command.Seq, command.Op, err)
 		}
 	}

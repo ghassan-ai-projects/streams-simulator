@@ -23,6 +23,10 @@ func (w *World) conditionHolds(entityID string, c *model.Condition, atNS int64) 
 	return compare(c.Operator, w.stateAt(entityID, c.State, atNS), threshold)
 }
 
+func (w *World) ConditionHolds(entityID string, c model.Condition, atNS int64) bool {
+	return w.conditionHolds(entityID, &c, atNS)
+}
+
 func compare(operator string, v, threshold float64) bool {
 	switch operator {
 	case "lt":

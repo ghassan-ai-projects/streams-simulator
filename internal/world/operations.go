@@ -82,6 +82,10 @@ func (w *World) KPITruth() *model.KPITruth {
 	return w.world.KPITruth()
 }
 
+func (w *World) ConditionHolds(entityID string, c model.Condition, atNS int64) bool {
+	return w.world.ConditionHolds(entityID, c, atNS)
+}
+
 func (w *World) OutcomeFacts(atNS int64) *model.OutcomeFacts {
 	return w.world.OutcomeFacts(atNS)
 }

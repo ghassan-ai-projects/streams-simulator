@@ -56,6 +56,8 @@ type Config struct {
 	retainJournal bool
 
 	silent bool
+
+	recordOutcome bool
 }
 
 const DefaultQuiescenceTimeout = quiesce.DefaultTimeout
