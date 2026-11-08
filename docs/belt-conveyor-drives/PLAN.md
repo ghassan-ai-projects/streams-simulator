@@ -1,6 +1,7 @@
 # Plan: multi-drive belt conveyor, one drive degrading, the others overloaded
 
-Status: plan only (2026-11-07). No code, no runs. Inputs: [README.md](README.md) (problem, coordinator review),
+Status: plan only (2026-11-07); scope confirmed 2026-11-08 (section 7: streams-simulator and agentic-stream, tamoz
+only if needed, the Retrofit Designer later). No code, no runs. Inputs: [README.md](README.md) (problem, coordinator review),
 `research/conveyor-mechanics.md` (CM), `research/degradation-and-prognostics.md` (DP), `repos/streams-simulator.md` (RS),
 `repos/agentic-stream.md` (RA), `repos/tamoz.md` (RT), the three AGENTS.md files and the fan experiment
 (`docs/physical-devices/fan-experiment/`). Claims the plan leans on were re-read in code (section 9.3). Every deviation
@@ -395,6 +396,11 @@ and `make phase-gate`; agentic-stream `go test ./cmd/agentic-stream -run Experim
 | **M3 Prediction and the planned isolation: S1-A/B, S3, S4** | `belt-m3-predict` | agentic-stream (A2 full, A4 data, A5 if needed), streamsim (U6), tamoz (T1, T2 recommended) | phases section 5; R2 steps with scripted approver; surge discount | 3 seeds each: S1 pass criteria; S3 belt empty before seizure; S4 zero false actions. Decision on A5 recorded | FR+ |
 | **M4 Hard cases and evidence** | `belt-m4-evidence` | all three | S5 (stuck), S5b with A3, S6 with master/follower kinds, U8, U9, B1-B3, T3, T6; 10-seed acceptance campaign (background); human-approved playbook rule for the S2 reaction | Acceptance: every scenario's pass rule over 10 seeds; A/B/C report (rules only, Tamoz, both) against baselines | FR+ |
 | **M5 Production path (later)** | `belt-m5-production` | all three | T4, T5, A7, A8, U7 torque bias, U10, U12; customer deployment kit (per-customer folder outside every repo, one isolated deployment) | owner-defined; real fan rung P6 re-run with the owner at the bench before the final merge | FR+ and P6 |
+
+Scope (owner decision, 2026-11-08): M0-M5 change streams-simulator and agentic-stream; tamoz changes only where a
+milestone needs it (T1-T6 are each confirmed when their milestone starts). The Retrofit Designer
+(`agent-research-lab/plant-retrofit-designer/`) is out of scope here and is the next big milestone; nothing in these
+milestones is built for it, and no repository gains designer-specific code.
 
 Smallest demonstrable slice: M0 alone already demonstrates the customer's story in the canvas (do-nothing vs the
 hand-written reference policy, side by side with `report compare`), with no cross-repo change.

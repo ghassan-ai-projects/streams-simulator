@@ -3,6 +3,10 @@
 Status: deep-dive and planning only (2026-11-07). No code, no runs. Branch `belt-conveyor-drives` in streams-simulator,
 agentic-stream and tamoz, cut from `origin/main`.
 
+Scope (owner decision, 2026-11-08): this work changes streams-simulator and agentic-stream, and tamoz only if a
+milestone needs it. The Retrofit Designer (`agent-research-lab/plant-retrofit-designer/`), which grew out of this use
+case, is not built now; it is the next big milestone after this one.
+
 ## The customer problem (as told by the co-founders, best guesses marked)
 
 A real industrial customer runs a belt conveyor about 60 m long driven by several motors (say three) that share the
