@@ -468,6 +468,15 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   the thermal `fan_stall` and `led_stuck_off`, decided from the domain's effects, not from names) is refused with the pointer `/disturbances/N/...`; a negative severity or an `at_s` or
   `duration_s` beyond 30 days (the longest run) breaks the plan's schema.
 
+- `horizon_s` (optional, more than 0 and at most 2592000) — the session ends itself that many seconds after the world
+  starts: the world steps to the last slice end at or before the horizon, the node sends its `NDEATH`, the run folder is
+  complete and the document reports `stopped: false`. In a session paced by the wall clock the world starts when the session
+  starts, while disturbances count from the host's attach, so a host that attaches late shortens the time after them. It gives every run of a plan the
+  same window, so a run can be compared with its own replay without the consumer's calls. Every disturbance must start
+  before the horizon (`disturbance_after_horizon`) and, with `duration_s`, be cleared by it (`clear_after_horizon`); a plan
+  with a `gateway_socket` takes no horizon (`horizon_with_gateway`): a session with real boards runs until it is stopped.
+  Absent, the session runs until it is stopped.
+
 - `pace` (optional, only `"wall"`) — paces the session to the wall clock. The world starts at the wall time the session
   starts (floored to the millisecond; for a mixed session, when the relay opens) instead of 2026-01-01, and that start is
   recorded in `run.json` (`world_config.start_time_ns`), so `replay` and `verify` reproduce the run exactly as an unpaced one.
@@ -537,7 +546,8 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   written per barrier (no gateway) or per 250 ms relay tick, and one at every link change; `marks` lists what changed since
   the previous snapshot.
 - An interrupt (`SIGINT`, `SIGTERM`) is the operator's Stop: the run ends and `--out` holds an ordinary run folder that
-  `replay` and `verify` accept. The document is `{out, stopped, relay?}`. The canvas runs this command for its Connected
+  `replay` and `verify` accept. A plan with `horizon_s` also ends the session itself at its horizon. The document is
+  `{out, stopped, relay?}`; `stopped` is true only when an interrupt ended the session. The canvas runs this command for its Connected
   session and stops it the same way.
 
 ### `plantwire replay-trace`

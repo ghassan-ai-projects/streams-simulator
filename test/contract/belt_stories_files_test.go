@@ -73,7 +73,9 @@ func (e storyEvent) command(commandID string) model.ScenarioCommand {
 
 func (s beltStory) sessionPlan(row map[string]any) *model.SessionPlan {
 	seed := uint64(row["seed"].(float64))
-	plan := &model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: s.domain(), Seed: &seed, HostSocket: placeholderHost, Pace: s.Pace}
+	horizon := s.HorizonS
+	plan := &model.SessionPlan{SchemaVersion: model.SessionPlanSchemaVersion, Domain: s.domain(), Seed: &seed, HostSocket: placeholderHost, HorizonS: &horizon,
+		Pace: s.Pace}
 	for _, event := range s.events(row, false) {
 		if event.kind == eventInject {
 			plan.Disturbances = append(plan.Disturbances, model.Disturbance{AtS: event.atS, Instance: event.instance, Fault: event.name,

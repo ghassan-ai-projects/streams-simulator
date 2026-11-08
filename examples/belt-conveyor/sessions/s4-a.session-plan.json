@@ -10,5 +10,6 @@
       "fault": "bulk_feeder__feed_surge",
       "severity": 0.48
     }
-  ]
+  ],
+  "horizon_s": 21600
 }

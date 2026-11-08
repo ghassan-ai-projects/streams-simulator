@@ -1270,7 +1270,7 @@
     },
     "plantwire_connect": {
       "type": "object",
-      "description": "plantwire connect: the connected session ran until it was stopped; out is an ordinary run folder.",
+      "description": "plantwire connect: the connected session ran until it was stopped or reached its plan's horizon_s; out is an ordinary run folder.",
       "required": ["out", "stopped"],
       "additionalProperties": false,
       "properties": {

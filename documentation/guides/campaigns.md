@@ -44,7 +44,7 @@ streamsim plantwire connect --plan <dir>/run-0001.session-plan.json \
 
 - `--out` must be a new folder for every session; a folder holding any run file is refused.
 - The plan's `host_socket` must be an absolute path of at most 103 characters in a directory only you can enter. The committed `/tmp/streamsim-host.sock` is a placeholder.
-- A session never ends by itself: interrupt `connect` (SIGINT) when world time reaches `duration_s`. Closing the host first leaves an incomplete run.
+- A campaign's session plans carry no `horizon_s`, so a session does not end by itself: interrupt `connect` (SIGINT) when world time reaches `duration_s`. Closing the host first leaves an incomplete run.
 - Pace the host with a `--delay-ms` or a session writes a very large run folder; a 48 h run takes about 585 MB at `--slice-s 60`. Plan disk use for the whole campaign (160 runs at that size is on the order of 90 GB).
 
 ## Labels and scoring

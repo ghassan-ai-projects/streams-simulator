@@ -21,5 +21,6 @@
       "fault": "belt_conveyor__downstream_stop",
       "duration_s": 1800
     }
-  ]
+  ],
+  "horizon_s": 57600
 }

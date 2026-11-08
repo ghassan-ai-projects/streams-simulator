@@ -12,8 +12,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-const openEndedNS int64 = 100 * 365 * 24 * 3600 * 1_000_000_000
-
 func Connect(ctx context.Context, options ConnectOptions) (ConnectResult, error) {
 	if options.Out == "" || options.SliceNS <= 0 {
 		return ConnectResult{}, fmt.Errorf("%w: a connected session needs a run folder and a slice", ErrBadOptions)
@@ -178,7 +176,7 @@ func (p *connectPlan) relayOptions(o ConnectOptions, port *ControlPort) RelayOpt
 
 func (p *connectPlan) nodeOptions(o ConnectOptions, session string) Options {
 	options := Options{Environment: domain.EnvironmentSimulated, ProtocolMax: domain.Version, SessionID: session, SliceNS: o.SliceNS,
-		UntilNS: p.startNS() + openEndedNS, Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound, Interfaces: p.faces}
+		UntilNS: domain.SessionEndNS(p.session, p.startNS()), Policies: p.plan.Policies.Digests(), KindsDirs: o.KindsDirs, Bound: p.plan.Bound, Interfaces: p.faces}
 	if p.pacer != nil {
 		options.Pace = p.pacer
 	}

@@ -20,7 +20,7 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
   `streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples`.
 - `sessions/<story>.session-plan.json`: seed row 1 as a live session plan (`session-plan-v0.1`), S2 and S3 paced by the
   wall clock. The `host_socket` `/tmp/streamsim-host.sock` is a placeholder and there are no `policies`: set both to
-  the host's own. A session never ends by itself: stop it at the story's `horizon_s`.
+  the host's own. Each plan carries the story's `horizon_s`, so the session ends itself there (`stopped: false`).
 
 The scenario and session files are generated from `stories.json` by `test/contract/belt_stories_files_test.go`, which
 fails when a committed file differs; after editing the table, regenerate them with

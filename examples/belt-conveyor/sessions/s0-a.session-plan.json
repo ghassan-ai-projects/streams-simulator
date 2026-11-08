@@ -9,5 +9,6 @@
       "instance": "F-1",
       "fault": "bulk_feeder__shift_pattern"
     }
-  ]
+  ],
+  "horizon_s": 86400
 }

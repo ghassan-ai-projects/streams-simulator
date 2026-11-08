@@ -11,5 +11,6 @@
       "severity": 0.88
     }
   ],
+  "horizon_s": 16200,
   "pace": "wall"
 }
