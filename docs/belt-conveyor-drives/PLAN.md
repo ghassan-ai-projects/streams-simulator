@@ -273,12 +273,12 @@ column: the first milestone that needs it. "Must" = needed for the first demonst
 | U4 | Trivial-baseline audit covers detection only, not policies | `audit` domain, domain contract (`ground_truth.baseline_policies`) | closed record: `{name, when: condition on a kind's channel or state, for_s, then: [{effector, target: matched or named instance, args, delay_s}]}`; one condition, a fixed call list, no boolean composition; each policy is a noiseless world run; result sealed beside U2 | Non-negotiable 9 applied to the thing this use case grades (reactions) | M | U2, U3 | must not grow into a rule language: owner decision D-B; oracle: a hand-written command log equals the policy run | M1 must (B0, B4); B1-B3 later |
 | U5 | Plant-wire sessions run until stopped; campaigns need a fixed horizon | `plantwire` app, session-plan contract | `horizon_s`: the session ends itself, U2 uses it | needed to compare a run with its reference over the same window | S | - | contract bump; fan plans unaffected (field optional) | M1 must |
 | U6 | `Grade` refuses more than one label | `grading` app | grade a multi-label run as one `RunScore` (already returned by `GradeRun`) plus the run-level outcome section | S5 has two labels; outcome scoring is run-level anyway | S | U3 | none | M2 must |
-| U7 | No division: torque bias, droop | `model` enum, `domain` validation, `world` `algebraic.go`, schema, TECHNICAL_DESIGN equation | F1 form `ratio`: product of numerator inputs over product of denominator inputs, `floor` > 0 for the denominator (value = numerator/floor below it); algebraic; no `dt_ms` | closed named form like `curve`/`product`, not an expression | M | - | needs design note + independent oracle (non-negotiable 2); division-by-zero rule stated | later (M5) |
+| U7 | No division: torque bias, droop | `model` enum, `domain` validation, `world` `algebraic.go`, schema, TECHNICAL_DESIGN equation | F1 form `ratio`: product of numerator inputs over product of denominator inputs, `floor` > 0 for the denominator (value = numerator/floor below it); algebraic; no `dt_ms` | closed named form like `curve`/`product`, not an expression | M | - | needs design note + independent oracle (non-negotiable 2); division-by-zero rule stated | M3, before prediction (owner decision 2026-11-08: real belts share unevenly) |
 | U8 | Suite/campaign cannot draw severity, multi-fault scenarios hand-listed | `suite` domain | `severity_range` per fault weight; campaign phases already allow several faults | replaces the committed seed tables | S-M | - | determinism: draw order fixed | M4 |
 | U9 | Consumer verdict has no predicted failure time | `consumer-verdict` contract, `score` judgment | optional `predicted_failure_at` per detection; PHM α-λ, relative accuracy, prognostic horizon (section 6.2) | RUL accuracy is what the customer buys; needs it graded | S-M | U2 | contract bump | M4 |
-| U10 | "How early must one act" | `truth` | latest time a named remedial call (e.g. `set_feed` to x) still avoids a boundary: bisection over noiseless worlds (~12 runs) | gives a real deadline instead of `deadline_s` text | M | U2, U4 | runtime cost bounded by horizon/step | later |
+| U10 | "How early must one act" | `truth` | latest time a named remedial call (e.g. `set_feed` to x) still avoids a boundary: bisection over noiseless worlds (~12 runs) | gives a real deadline instead of `deadline_s` text | M | U2, U4 | runtime cost bounded by horizon/step | dropped (2026-11-08): each scenario has a fixed deadline |
 | U11 | Variable-speed transport delay | `world` new form | plug-flow over belt distance | removes [DEV-2] approximation | M | - | new form + oracle | later, if Q8 says long belt |
-| U12 | Plant-wire sessions take no perturbations (injection probe, drops) | `plantwire`, session plan | `perturbations` like the director's | delivery faults over the real wire path | M | - | ledger must record them | later |
+| U12 | Plant-wire sessions take no perturbations (injection probe, drops) | `plantwire`, session plan | `perturbations` like the director's | delivery faults over the real wire path | M | - | ledger must record them | not in this plan (2026-11-08): no scenario needs it; before a real plant |
 
 No change needed: plant wire protocol (`not_before_ns` exists unset), `peer_residual` detector, KPI truth, `boundaries`,
 effector `requires`/`lease`, instrument faults (`stuck`, `dropout`, `drift`), canvas (draws and runs the plant; no belt
@@ -295,8 +295,8 @@ widget, states and charts suffice).
 | A4g | Generic `after`/`not_before` on intents | `contractsv1`, `policy`, `actions` | only if A4 proves too slow (each step one episode) | - | L | - | contract change on both sides of the proto | later, only if needed |
 | A5 | Time-to-threshold feature | `operators` (new kind `extrapolate`), spec schema | `(limit − level)/slope` over a declared window, published with a validity flag; feeds transitions and Tamoz | CEL can compute it in a transition but cannot publish it as a fact | M | A2 | engine state/restore/replay tests; new operator kind is a design change (AGENTS) | M3 if S1 lead fails without it, else M4 |
 | A6 | A streamsim consumer verdict for a plant-wire run, with the device as subject | `internal/testsupport/campaign` (test support, exists) | diagnosis-code -> device map from the scenario fixture; detections from accepted decisions; actions from commands | grading already authoritative on actions; detections need the subject | S | A2 | test-only; no production path | M2 must |
-| A7 | Route target chosen by a selector (one `planned_stop` intent, not three) | `device` catalog | preset may name a bound target | removes triplication | S | - | catalog digest | later |
-| A8 | Safe stop over plant wire not implemented | `plantwire` | per `plant-wire-adapter.md:287` | - | M | - | contract on both sides | before a real plant |
+| A7 | Route target chosen by a selector (one `planned_stop` intent, not three) | `device` catalog | preset may name a bound target | removes triplication | S | - | catalog digest | dropped (2026-11-08): saves only repeated catalog entries |
+| A8 | Safe stop over plant wire not implemented | `plantwire` | per `plant-wire-adapter.md:287` | - | M | - | contract on both sides | already built: the plant wire contract has `safe_stop` (checked 2026-11-08) |
 | A9 | Operator `where` filter is compiled and validated but never evaluated (verified by grep: only `cel.go:58`, `spec.go:94`) [DEV-7] | `spec`/`operators` | report to owner: implement over an `event` variable or remove | a spec field that silently does nothing | S-M | - | - | report now, fix outside this plan |
 
 Unchanged and reused: risk routes (R0/R1 automatic, R2 approval, R3/R4 denied), interlock, owner epoch, leases,
@@ -309,8 +309,8 @@ read-back verification from the device's own readings, rule promotion with human
 | T1 | Conveyor domain fixture (synthetic): diagnosis codes `bearing`, `gearbox_seizing`, `vfd_trip`, `feed_surge`, `sensor_stuck`, `idler_drag`; intents, risk classes, fixture responses, a benchmark family | `test/fixtures/domains/conveyor.json` (ADR-058) | pump-station as template | M | M3 (runtime needs none: intents and prompt arrive from agentic-stream) |
 | T2 | W1: frame does not define output protocol and allowed intents | `tamoz-agent-kernel` episode frame | as the fan owner item | S | recommend before M3 (more intents) |
 | T3 | W2/W4: redispatch overlap, failure reason lost | worker + dispatcher (owner chooses side) | as the fan owner item | S-M | before M4 campaigns |
-| T4 | Production approval relay (Telegram) for R2 stops | `tamoz-stream` ports, `tamoz-telegram` | relay exists, adapters missing | M | M5 |
-| T5 | Proactive alert ("D-3 predicted to fail in ~2 h; plan; approve?") | subscriber handler on a decision/phase event + comms route | the R2 approval request is the alert for the first slices | S-M | M5 |
+| T4 | Production approval relay (Telegram) for R2 stops | `tamoz-stream` ports, `tamoz-telegram` | relay exists, adapters missing | M | already built: `tamoz-telegram` (owner, 2026-11-08) |
+| T5 | Proactive alert ("D-3 predicted to fail in ~2 h; plan; approve?") | subscriber handler on a decision/phase event + comms route | the R2 approval request is the alert for the first slices | S-M | already covered (owner, 2026-11-08): the R2 approval request is the alert |
 | T6 | Real-model A/B/C on the conveyor scenarios vs the baselines | `script/*_eval` style runner reading streamsim scores | 10 seeds per variant, background | M | M4 |
 | T7 | `forecast.run` is on the tool allowlist but agentic-stream's EvidenceTools proto has no forecast (verified by grep) | both | leave out of the prompt; no forecast tool claimed | - | note |
 
@@ -393,14 +393,16 @@ and `make phase-gate`; agentic-stream `go test ./cmd/agentic-stream -run Experim
 | **M0 Scenarios as data** | `belt-conveyor-drives` (streamsim) | streamsim only | U1, U1t; composition + presets A/B; session plans for S0-S5 × seed tables; a scripted "reference policy" command log per scenario (what a good controller does, hand-written) | Owner agrees section 2. Oracle tests green. Do-nothing runs reproduce the story table (S2-B cascade at 238 ± 15 s; S3 stall < 5 s; S4 no trip; S1 trip window 6-9 h after onset in 10/10 seeds). Every lever changes survivor load (silent_no_effect). The reference policy avoids stranding in every positive scenario. `domain lint` clean; canvas opens and runs the plant. `make ci-check` | FR |
 | **M1 Truth and grading** | `belt-m1-truth` | streamsim | U2, U3, U4 (B0, B4), U5; contracts and fixtures; report rendering | Outcome reference sealed in plant-wire runs and scripted runs; grading the reference-policy log beats B0 and B4 on S1-S3 and ties B0 on S0/S4; B0 fails every positive scenario (scenario validity); replay determinism test for the new files; `make phase-gate` | FR |
 | **M2 First closed loop: S2-B** (reaction only) | `belt-m2-loop` | streamsim (kind files, plans), agentic-stream (A1, A2 minimal, A6), tamoz none | spec with `line_overload` phase, `reduce_feed: limp_b` R1; Tamoz executor; `pace: wall` | 3/3 seeds: feed ≤ 30 % within 120 s of the trip, no cascade, not stranded; graded by `streamsim score` with A6's verdict; `verify-run` pass; zero quarantines | FR+ |
-| **M3 Prediction and the planned isolation: S1-A/B, S3, S4** | `belt-m3-predict` | agentic-stream (A2 full, A4 data, A5 if needed), streamsim (U6), tamoz (T1, T2 recommended) | phases section 5; R2 steps with scripted approver; surge discount | 3 seeds each: S1 pass criteria; S3 belt empty before seizure; S4 zero false actions. Decision on A5 recorded | FR+ |
+| **M3 Prediction and the planned isolation: S1-A/B, S3, S4** | `belt-m3-predict` | agentic-stream (A2 full, A4 data, A5 if needed), streamsim (U6, U7 unequal sharing), tamoz (T1, T2 recommended) | phases section 5; R2 steps with scripted approver; surge discount | 3 seeds each: S1 pass criteria; S3 belt empty before seizure; S4 zero false actions. Decision on A5 recorded | FR+ |
 | **M4 Hard cases and evidence** | `belt-m4-evidence` | all three | S5 (stuck), S5b with A3, S6 with master/follower kinds, U8, U9, B1-B3, T3, T6; 10-seed acceptance campaign (background); human-approved playbook rule for the S2 reaction | Acceptance: every scenario's pass rule over 10 seeds; A/B/C report (rules only, Tamoz, both) against baselines | FR+ |
-| **M5 Production path (later)** | `belt-m5-production` | all three | T4, T5, A7, A8, U7 torque bias, U10, U12; customer deployment kit (per-customer folder outside every repo, one isolated deployment) | owner-defined; real fan rung P6 re-run with the owner at the bench before the final merge | FR+ and P6 |
+| **M5 (dropped, 2026-11-08)** | - | - | Its production pieces exist (T4, T5, A8); U7 moved to M3; U10 and A7 dropped; U12 not in this plan | - | - |
 
-Scope (owner decision, 2026-11-08): M0-M5 change streams-simulator and agentic-stream; tamoz changes only where a
-milestone needs it (T1-T6 are each confirmed when their milestone starts). The Retrofit Designer
-(`agent-research-lab/plant-retrofit-designer/`) is out of scope here and is the next big milestone; nothing in these
-milestones is built for it, and no repository gains designer-specific code.
+Scope (owner decision, 2026-11-08): the whole plan is built before the Retrofit Designer
+(`agent-research-lab/plant-retrofit-designer/`), which is the next big milestone: M0-M4 with all seven scenarios
+(S0-S6), plus U7 (unequal load sharing) in M3. M5 is dropped: its production pieces already exist (Telegram approvals,
+plant-wire safe stop), U10 and A7 are not needed, and U12 waits until a real plant. Changes go to streams-simulator and
+agentic-stream; tamoz only where a milestone needs it (T1-T3, T6 confirmed when their milestone starts). Nothing is
+built for the designer, and no repository gains designer-specific code.
 
 Smallest demonstrable slice: M0 alone already demonstrates the customer's story in the canvas (do-nothing vs the
 hand-written reference policy, side by side with `report compare`), with no cross-repo change.
@@ -433,9 +435,9 @@ hand-written reference policy, side by side with `report compare`), with no cros
 - L5 Sudden trips (S2, S6) cannot be predicted; graded on reaction and harm only.
 - L6 RUL truth is the do-nothing failure time; once the consumer acts it is no longer the real failure time.
 - L7 One line, one entity; no fleet of conveyors, no fleet caps on rules.
-- L8 No plant-wire safe stop, no delivery perturbations over the plant wire, no production approval relay before M5.
+- L8 No delivery perturbations over the plant wire (U12, not in this plan).
 - L9 Time scales of degradation are not calibrated on conveyor drives (no public dataset; DP 8).
-- L10 Torque bias not modeled until U7; physics says it buys little for bearing faults (bearing heat is friction).
+- L10 Torque bias not modeled before U7 (M3); physics says it buys little for bearing faults (bearing heat is friction).
 
 ### 8.3 Customer questions, ranked by how much each answer changes the plan
 

@@ -3,9 +3,10 @@
 Status: deep-dive and planning only (2026-11-07). No code, no runs. Branch `belt-conveyor-drives` in streams-simulator,
 agentic-stream and tamoz, cut from `origin/main`.
 
-Scope (owner decision, 2026-11-08): this work changes streams-simulator and agentic-stream, and tamoz only if a
-milestone needs it. The Retrofit Designer (`agent-research-lab/plant-retrofit-designer/`), which grew out of this use
-case, is not built now; it is the next big milestone after this one.
+Scope (owner decision, 2026-11-08): the whole plan (M0-M4, all seven scenarios, plus unequal load sharing) is built
+before the Retrofit Designer (`agent-research-lab/plant-retrofit-designer/`), which grew out of this use case and is the
+next big milestone. It changes streams-simulator and agentic-stream, and tamoz only if a milestone needs it. M5 is
+dropped; see PLAN.md section 7.
 
 ## The customer problem (as told by the co-founders, best guesses marked)
 
