@@ -51,6 +51,11 @@ const units: Readonly<Record<string, string>> = {
   "t/h": "t/h",
   "mg/L": "mg/L",
   "N.m": "N·m",
+  N: "N",
+  "N/kg": "N/kg",
+  kg: "kg",
+  "m/s": "m/s",
+  t: "t",
   "currency/h": "currency/h",
   "currency/kWh": "currency/kWh",
 };
