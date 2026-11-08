@@ -190,11 +190,21 @@
       {
         "name": "life_used",
         "unit": "h",
-        "initial": 0
+        "initial": 10000
       },
       {
         "name": "gear_used",
         "unit": "h",
+        "initial": 10000
+      },
+      {
+        "name": "wiggle",
+        "unit": "mm/s",
+        "initial": 0
+      },
+      {
+        "name": "vib_extra",
+        "unit": "mm/s",
         "initial": 0
       },
       {
@@ -1269,13 +1279,45 @@
         }
       },
       {
+        "target": "wiggle",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 0.25,
+              "period_s": 86400,
+              "phase_rad": 0
+            }
+          ]
+        }
+      },
+      {
+        "target": "vib_extra",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "vib_b",
+              "coef": 1
+            },
+            {
+              "state": "wiggle",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
         "target": "vib_on",
         "tier": "F1",
         "f1": {
           "form": "product",
           "inputs": [
             {
-              "state": "vib_b",
+              "state": "vib_extra",
               "coef": 1
             },
             {
@@ -1683,10 +1725,10 @@
       "unit_family": "vibration_velocity",
       "range": {
         "min": 0,
-        "max": 20
+        "max": 45
       },
       "tag": "VT",
-      "default_instrument": "streamsim/accelerometer@1"
+      "default_instrument": "streamsim/vibration-sensor@1"
     },
     {
       "name": "run_status",
