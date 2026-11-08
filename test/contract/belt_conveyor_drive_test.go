@@ -115,7 +115,7 @@ func TestADryBearingWearsWithTheCubeOfItsLoad(t *testing.T) {
 	b.inject("D-3", "conveyor_drive__lube_loss", severity)
 	for _, hours := range []float64{0.25, 0.5, 1} {
 		b.advance(60 + hours*3600)
-		want := regime.wear * math.Pow(load, 3) * severity * hours * hours / 2
+		want := regime.wear * load * load * load * severity * hours * hours / 2
 		got := b.state("D-3", "bearing_damage")
 		t.Logf("%.2f h: damage %.5f, closed form %.5f", hours, got, want)
 		if math.Abs(got-want) > 0.01*want {

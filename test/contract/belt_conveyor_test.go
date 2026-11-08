@@ -201,7 +201,10 @@ func TestTheWeakDriveAloneStartsSteadyLintsCleanAndKeepsAHardFault(t *testing.T)
 	plant := catalogPlant{catalogCase: catalogCase{ref: ref, doc: loadLibrary(t).files[ref]}, spec: composed.Domain, entities: []string{"U-1"}}
 	for _, check := range catalogChecks {
 		if check.name != "effectors" {
-			t.Run(check.name, func(t *testing.T) { check.run(t, plant) })
+			t.Run(check.name, func(t *testing.T) {
+				t.Parallel()
+				check.run(t, plant)
+			})
 		}
 	}
 }

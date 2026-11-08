@@ -116,7 +116,7 @@ func TestTheCommittedStoryFilesAreWhatTheStoryTableGenerates(t *testing.T) {
 	t.Parallel()
 	for _, file := range storyFiles(t) {
 		if os.Getenv("UPDATE_GOLDEN") != "" {
-			if err := os.WriteFile(file.path, file.content, 0o644); err != nil {
+			if err := os.WriteFile(file.path, file.content, 0o600); err != nil {
 				t.Fatal(err)
 			}
 		}
