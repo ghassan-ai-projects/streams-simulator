@@ -390,7 +390,7 @@ and `make phase-gate`; agentic-stream `go test ./cmd/agentic-stream -run Experim
 
 | M | Branch | Repos | Content | Exit criteria | Fan |
 |---|---|---|---|---|---|
-| **M0 Scenarios as data** | `belt-conveyor-drives` (streamsim) | streamsim only | U1, U1t; composition + presets A/B; session plans for S0-S5 × seed tables; a scripted "reference policy" command log per scenario (what a good controller does, hand-written) | Owner agrees section 2. Oracle tests green. Do-nothing runs reproduce the story table (S2-B cascade at 238 ± 15 s; S3 stall < 5 s; S4 no trip; S1 trip window 6-9 h after onset in 10/10 seeds). Every lever changes survivor load (silent_no_effect). The reference policy avoids stranding in every positive scenario. `domain lint` clean; canvas opens and runs the plant. `make ci-check` | FR |
+| **M0 Scenarios as data** | `belt-m0-scenarios` from `belt-conveyor-drives` (streamsim) | streamsim only | U1, U1t; composition + presets A/B; session plans for S0-S5 × seed tables; a scripted "reference policy" command log per scenario (what a good controller does, hand-written); from section 9.6: inverter overload trip (O6), drive count 2-6 (O7), starting boost (O8), seized drag as a preset (O10), downstream run permit (O11), scenario files for runs and validated session plans (O12) | Section 2 agreed (O1). Oracle tests green. Do-nothing runs reproduce the story table, with times from the model's own equations (O14) (S2-B cascade at the oracle's time ± 15 s; S3 stall < 5 s; S4 no trip; S1 trip window 6-9 h after onset in 10/10 seeds). Every lever changes survivor load (silent_no_effect). The reference policy avoids stranding in every positive scenario. `domain lint` clean; canvas opens and runs the plant; a 2-drive belt passes its test (O7). `make ci-check` | FR |
 | **M1 Truth and grading** | `belt-m1-truth` | streamsim | U2, U3, U4 (B0, B4), U5; contracts and fixtures; report rendering | Outcome reference sealed in plant-wire runs and scripted runs; grading the reference-policy log beats B0 and B4 on S1-S3 and ties B0 on S0/S4; B0 fails every positive scenario (scenario validity); replay determinism test for the new files; `make phase-gate` | FR |
 | **M2 First closed loop: S2-B** (reaction only) | `belt-m2-loop` | streamsim (kind files, plans), agentic-stream (A1, A2 minimal, A6), tamoz none | spec with `line_overload` phase, `reduce_feed: limp_b` R1; Tamoz executor; `pace: wall` | 3/3 seeds: feed ≤ 30 % within 120 s of the trip, no cascade, not stranded; graded by `streamsim score` with A6's verdict; `verify-run` pass; zero quarantines | FR+ |
 | **M3 Prediction and the planned isolation: S1-A/B, S3, S4** | `belt-m3-predict` | agentic-stream (A2 full, A4 data, A5 if needed), streamsim (U6, U7 unequal sharing), tamoz (T1, T2 recommended) | phases section 5; R2 steps with scripted approver; surge discount | 3 seeds each: S1 pass criteria; S3 belt empty before seizure; S4 zero false actions. Decision on A5 recorded | FR+ |
@@ -533,7 +533,7 @@ seized demand 3530 N, limp load 0.79x at 55 % feed. All hold.
 - A9 (agentic-stream `where` filter never evaluated) and DEV-8 (one stale input denies every R2 action on the line) are
   real findings outside this use case's scope; report them to the owner separately.
 
-### 9.5 For the owner to decide before M0
+### 9.5 For the owner to decide before M0 (answered 2026-11-08: section 9.6)
 
 1. Agree the scenario set, horizons and pass numbers of section 2 (or change them): the success bar.
 2. Both margin regimes as presets of one plant (recommended), and the synthetic numbers of section 1.1 in the repo.
@@ -541,3 +541,25 @@ seized demand 3530 N, limp load 0.79x at 55 % feed. All hold.
 4. Torque-follower equal sharing as the default model until Q2 is answered (D2).
 5. Before M1 (not M0): policy baselines as closed records in `audit` (D6/U4) and the outcome reference as a new sealed
    run-level file and contract (D5/U2).
+
+### 9.6 Owner decisions (2026-11-08)
+
+Items 1-4 of section 9.5 are agreed; item 5 is decided before M1. The answers below override earlier sections where
+they differ.
+
+| # | Topic | Decision |
+|---|---|---|
+| O1 | Scenarios | All seven stories S0-S6 are agreed as stories and horizons. Pass numbers and seed counts are placeholders, revisited when M1 starts |
+| O2 | Plant presets | Regimes A and B are presets of one plant; the synthetic numbers of section 1.1 live in the repo, labelled synthetic |
+| O3 | Drive component | New `conveyor-drive` component (D1); `motor-drive@1` is not changed |
+| O4 | Load sharing | Equal sharing (torque follower) is the default (D2); unequal sharing (U7) comes in M3 |
+| O5 | Branches | One branch per milestone: M0 on `belt-m0-scenarios` cut from `belt-conveyor-drives`, each next one from the previous tip; merge to `main` only at the end |
+| O6 | Inverter overload | The drive gets an inverter overload trip beside the motor relay: overload level and allowed time are preset values (heavy duty about 150 % for 60 s). Whichever protection trips first sets the survivors' clock. In M0 |
+| O7 | Drive count | The number of drives is a setting from 2 to 6 (the 1/n curve covers 0-6). The stories use 3; a test proves a 2-drive belt. In M0 |
+| O8 | Starting boost | The torque limit used to break a loaded belt loose (1.75x in regime B) holds only for a short boost time (a preset value, a few seconds), then the normal limit applies. Three drives still start a loaded belt; two still cannot. In M0 |
+| O9 | Belt slowdown (L2) | Not in this plan: an overload still stops the belt after 3 s. Speed under a torque limit is built at the start of the Retrofit Designer milestone, the first thing that needs it |
+| O10 | Seized drag | The drag of a seized drive is a preset value; 0 models a drive that disengages when it fails (one-way clutch). The S3 story uses the full drag. In M0 |
+| O11 | Downstream stop | The belt gets a run permit from the next machine (a state). A session or scenario plan stops the belt by switching the permit off with a step fault at a set time, like any other fault; plans never send commands |
+| O12 | Running in M0 | M0 runs every story as scenario files (`scenario-v0.1`): a do-nothing run and a hand-written reference-policy run. Live session plans are written and validated in M0 and run in tests from M2 |
+| O13 | Owner review | No owner review between milestones: each milestone checks itself through its tests and gates. After M4, one full end-to-end test of all seven stories across the three repositories, and everything it finds is fixed |
+| O14 | Expected numbers | Exit numbers come from the model's own equations, computed independently in the oracle tests, not from the table in section 1.1, which M0 corrects (238 s -> about 270 s with the current curve; 649 s and +509 s likewise), and again after O6. The 6-9 h bearing failure window stays, labelled an unpublished assumption |
