@@ -1,0 +1,210 @@
+# M0 design: the conveyor as data
+
+Status: as built in M0 round 1 (2026-11-08). It refines [PLAN.md](PLAN.md) section 3 with the owner decisions of
+section 9.6 (O1-O14), a calibration run on an independent Python mirror of these equations (one-second Euler steps), and
+what the component format allows (no state may depend on itself through the inputs of its kind, even through a lag).
+Where this page and PLAN.md section 3 differ, this page wins; each difference is listed in section 7.
+
+## 1. Parts
+
+| Library id | Instance(s) | Role |
+|---|---|---|
+| `streamsim/bulk-feeder@1` | F-1 | Feed setpoint (`set_feed`), feed lag; feeds only while the belt runs; shift pattern and surge (negative class), chute build-up |
+| `streamsim/belt-conveyor@1` | B-1 | Material on the belt, required force, load sharing, capacity, stall, run permit from downstream, restart margin, stranded boundary, tonnes delivered, stop permissive; `start_belt`, `stop_belt` |
+| `streamsim/conveyor-drive@1` | D-1..D-n, n 2 to 6 (O7) | Motor, gearbox, pulley and inverter on the shared belt: load, current, motor relay and inverter overload (O6), winding temperature, aging, bearing and gear failures, seizure; `start_drive`, `stop_drive`, `reset_trip` |
+
+`streamsim/conveyor@1` and `streamsim/motor-drive@1` are not changed (O3, D10). The parts use `parameters`, not
+presets: library presets are reserved for small/medium/large.
+
+New vocabulary: unit family `force` (base `N`; `kN`); port types `bulk_flow` (mass_flow), `pulley_force` (force),
+`drag_force` (force), `force_capacity` (force), `run_state` (state).
+
+Ports (consumer side `sample_s` 1 s where a loop closes; every integrated step is 1 s, so the sample is on the step grid):
+
+| From | To | Type | Meaning |
+|---|---|---|---|
+| F-1 `feed_out` | B-1 `feed_in` | bulk_flow | feed onto the belt, kg/s |
+| B-1 `moving_out` | F-1 `moving_in` (sampled) | run_state | belt commanded and turning: cmd · (v > 0.1 m/s) |
+| B-1 `share_out` | each D `share_in` | pulley_force | force each running drive delivers, N |
+| B-1 `stop_ok_out` | each D `stop_ok_in` | run_state | stopping one more drive is safe (section 3) |
+| each D `enabled_out` | B-1 `drives_in` (sampled) | run_state | drive running and healthy (sum = n) |
+| each D `drag_out` | B-1 `drag_in` (sampled) | drag_force | drive's own drag on the belt (sum) |
+| each D `run_cap_out` | B-1 `run_cap_in` (sampled) | force_capacity | enabled · k_run · F_rated (sum) |
+| each D `boost_cap_out` | B-1 `boost_cap_in` (sampled) | force_capacity | enabled · k_boost · F_rated (sum) |
+| each D `ready_cap_out` | B-1 `ready_cap_in` (sampled) | force_capacity | available · k_boost · F_rated (sum): what a restart could use |
+| each D `rated_out` | B-1 `rated_in` (sampled) | force_capacity | enabled · F_rated (sum) |
+
+A consuming state keeps its own F0 baseline for the part composed alone: the value a 3-drive regime A plant delivers
+at nominal (feed 41.6667 kg/s, n 3, drag 82.8 N, capacities 4140 N, rated 2760 N, share 594.5446 N, moving 1), except
+the drive's `stop_ok`, which is 1 alone (the loaded plant gives 0) so that `stop_drive` can be proven on its own.
+
+## 2. Feeder (F-1)
+
+| State | Equation | Unit |
+|---|---|---|
+| feed_set | 100, assigned by `set_feed` (0-100) | % |
+| supply | 1; carries the feeder's faults | ratio |
+| moving | port `moving_in`; alone 1 | 0/1 |
+| feed_target | 0.416667 · feed_set · moving · supply | kg/s |
+| feed | lag(feed_target, τ 3 s) | kg/s |
+
+Q_nom 41.6667 kg/s (150 t/h). Measurement point `feed` (FT, mass flow meter, 0-80 kg/s).
+
+| Fault | Class | Form |
+|---|---|---|
+| `shift_pattern` | negative | supply × (1 − 0.3) for the first 12 h of each 24 h (intermittent): the S0 nominal-day swing |
+| `feed_surge` | negative | supply × (1 + 0.5) for 300 s (pulse) |
+| `chute_buildup` | fault | supply × (1 − 0.3 · min(0.005 · h, 1)) (ramp) |
+
+## 3. Belt (B-1)
+
+Constants: L 60 m, v_set 2 m/s, F_empty 1000 N, k_m 0.494 N/kg, a0 1630 N, a1 parameter `breakaway_n_per_kg`
+(A 1.424 default, B 1.152 N/kg), boost time parameter `boost_s` (2 s).
+
+| State | Equation | Unit |
+|---|---|---|
+| m | store: dm/dt = feed − flow `discharge` (m · v / L) | kg |
+| out | m · v / L | kg/s |
+| delivered | ∫ out dt / 1000, a totalizer from 100 000 t; KPI | t |
+| f_run | F_empty + k_m · m + v · feed | N |
+| f_break | a0 + a1 · m | N |
+| slow | curve(v): 1 at 0, 0 at ≥ 0.2 m/s | 0..1 |
+| f_req | f_run + slow · (f_break − f_run) | N |
+| demand | f_req + drag | N |
+| cap | run_cap + slow · (boost_cap − run_cap) (O8: the boost holds only while breaking loose) | N |
+| short | demand − cap | N |
+| go | run_cmd · permit | 0/1 |
+| short_cmd | short · go: a shortfall while the belt is asked to run | N |
+| stall_ok | trip: short_cmd > 0 for `boost_s`, latched, tripped 0, reset by `start_belt` (counter `start_count`) | 0/1 |
+| excess | curve(short): max(0, short) | N |
+| inv_n | curve(n): 0, 1, 1/2 … 1/6 at n = 0..6 | - |
+| cmd | go · stall_ok | 0/1 |
+| share | (demand − excess) · inv_n · cmd | N |
+| has_drive | curve(n): 0 at 0, 1 at ≥ 1 | 0/1 |
+| v_target | v_set · go · stall_ok · has_drive | m/s |
+| v | regime on short_cmd (threshold 0.5 N): drives can pull → lag(v_target, τ 4 s); cannot → lag(0, τ 2 s) | m/s |
+| turning | curve(v): 0 at ≤ 0.1, 1 at ≥ 0.11 | 0/1 |
+| moving | cmd · turning (port `moving_out`) | 0/1 |
+| permit | 1; fault `downstream_stop` (negative class, step −1) switches it off (O11) | 0/1 |
+| restart_margin | ready_cap − f_break − drag | N |
+| stranded | trip: stopped · loaded · trapped > 0.5 for 10 s, unlatched; stopped = v < 0.1, loaded = m > 375 kg (0.3 · m_ss), trapped = restart_margin < 0 (curve indicators); boundary, major | 0/1 |
+| stop_ok | ind(boost_cap · after(n) − f_break − drag ≥ 0) · ind(rated · after(n) − demand ≥ 0), after(n) = curve(n): (n−1)/n | 0/1 |
+| tail_speed | v · 60 / (π · 0.5 m) · tail_grip: tail pulley speed for the tachometer (ST, 0-100 rpm) | rpm |
+| tail_grip | 1; fault `tail_slip` (ramp, −0.3 at 0.002/h): only the tail pulley reading falls | ratio |
+
+m_ss = Q_nom · L / v_set = 1250 kg. At regime A nominal: share 594.54 N, restart margin +647 N, stop_ok 0 (two
+drives could not restart the loaded belt).
+
+## 4. Drive (D-k)
+
+Constants: k_run 1.5, I_rated 4.4 A, τ_r 1000 s, τ_inv parameter `inverter_tau_s` (700 s: heavy duty 150 % for
+60 s from rated load), trip at θ > 1.1025 (1.05²), T_amb 35 °C, τ_w 900 s, seized drag parameter `seized_drag_n`
+(1830 N, O10; 0 = a drive that disengages). Enum parameter `margin` writes F_rated, k_boost, k_d and every value
+derived from them, steady initial values and the `share` fallback included:
+
+| margin | F_rated | k_boost | k_d | load at nominal | winding at nominal |
+|---|---|---|---|---|---|
+| `strong` (default, regime A) | 920 N | 1.5 | 0.52 | 0.646 | 82.4 °C |
+| `weak` (regime B) | 607 N | 1.75 | 0.135 | 0.964 | 111.0 °C |
+
+| State | Equation | Unit |
+|---|---|---|
+| load | share · enabled / F_rated | - |
+| i2 | curve(load): 0.1225 + 0.8775 · load² (0.05 steps, 0-3), times enabled | - |
+| current | curve(load): I_rated · √(0.1225 + 0.8775 · load²), times enabled | A |
+| θ_r, θ_inv | lag(i2, τ_r), lag(i2, τ_inv) | - |
+| relay_ok, inverter_ok | trip θ > 1.1025, latched, reset by `reset_trip` | 0/1 |
+| winding | lag(T_amb + enabled · (24 + heat_b + 15 · g) + 56 · load², τ_w) | °C |
+| overtemp_ok | trip winding > 150 °C for 10 s, latched, reset by `reset_trip` | 0/1 |
+| aging, life_used | curve(winding): 2^((T + 10 − 130)/10), nodes every 5 K; ∫ aging / 3600; KPI | 1, h |
+| gear_used | ∫ curve(load): load⁶ / 3600; KPI | h |
+| lube | 0; fault `lube_loss` (ramp 1/h) | 0..1 |
+| bearing_damage d | dd/dt = k_d · lube · load³ / 3600, clamped 0..1 | 0..1 |
+| heat_b, vib_b | curve(d): 75 · d³ K; 9.6 · d⁴ mm/s | K, mm/s |
+| vibration | 1.2 · enabled + 0.3 · load + vib_b · enabled | mm/s |
+| g | 0; fault `gear_oil_loss` (ramp 0.5/h) | 0..1 |
+| free_ok | trip g > 0.95, latched; `reset_trip` cannot clear it while g stays above (seizure) | 0/1 |
+| vfd_ok | 1; fault `vfd_fault` (step −1) | 0/1 |
+| available | relay_ok · inverter_ok · overtemp_ok · vfd_ok · free_ok | 0/1 |
+| enabled | run_cmd · available (port `enabled_out`, run status YS) | 0/1 |
+| drag | 0.03 · F_rated · (2 − enabled) + 0.05 · F_rated · d² + 0.27 · F_rated · g + (1 − free_ok) · seized_drag | N |
+
+Instruments per drive: current clamp (current, 0-15 A), RTD (winding, 0-200 °C), accelerometer (vibration,
+0-20 mm/s), run status (enabled). Belt: tachometer (tail pulley). Feeder: mass flow meter (feed).
+
+Effectors (each with ack ok, 300 ± 50 ms):
+
+| Effector | Part | Args | Requires | Effect |
+|---|---|---|---|---|
+| `set_feed` | feeder | `feeder_id`, `percent` 0-100 | - | assign feed_set |
+| `start_belt` | belt | `belt_id` | run_cmd < 0.5 | run_cmd +1, start_count +1 (re-arms the stall trip) |
+| `stop_belt` | belt | `belt_id` | run_cmd ≥ 0.5 | run_cmd −1 |
+| `start_drive` | drive | `drive_id` | run_cmd < 0.5 | run_cmd +1 |
+| `stop_drive` | drive | `drive_id` | run_cmd ≥ 0.5, stop_ok ≥ 0.5 | run_cmd −1 |
+| `reset_trip` | drive | `drive_id` | θ_r < 0.9, winding < 120 °C | reset_count +1 |
+
+After a stall, a restart is `stop_belt` then `start_belt`.
+
+## 5. What the calibration gives
+
+Python mirror, noiseless:
+
+| Story | Regime A | Regime B |
+|---|---|---|
+| S1 do nothing: D-3 overtemperature trip after onset, severity 0.8 / 1.0 / 1.25 | 9.4 / 7.7 / 6.3 h (k_d 0.50; 0.52 centres it on 6-9 h) | 8.9 / 7.3 / 6.0 h |
+| S1 after the trip | survivors at about 1.0x, no trip; the downstream stop strands the loaded belt | survivors' inverters trip about 100 s later (cascade), belt stranded |
+| S2 sudden trip of D-3 at full feed | survivors carry it; the downstream stop strands the belt | inverter cascade at about +119 s |
+| S3 gear oil loss, severity 1 | seizure at +1.9 h, stall 2 s later | (not run) |
+
+The composed plant (`streamsim run`, three drives, noiseless state history) agrees: both regimes start steady and
+lint clean; in A a `vfd_fault` on D-3 leaves the survivors at load 0.98 and a later downstream stop strands the belt
+10 s after it stops; in B the survivors' inverters trip about 120 s after D-3; three drives restart a stopped loaded
+belt in about 20 s, two stall it 2 s after `start_belt`.
+
+The inverter, not the motor relay, sets the clock in B: about 120 s against the relay's 170 s (O6). The expected
+numbers in the tests come from the oracles of section 6, not from this table (O14).
+
+Library contract (each part composed alone): lint, steady start, replay, effectors, observability and the
+trivial-baseline audit pass. Audit best balanced accuracy: `chute_buildup` 0.78, `tail_slip` 0.80, `lube_loss` 0.86,
+`gear_oil_loss` 0.87 (non-trivial); `vfd_fault` 0.997 (trivial, as a hard trip should be).
+
+## 6. Tests and scenario files
+
+- Oracle tests (independent recurrences in Go, closed forms where they exist): material on the belt after a feed
+  step; share and capacity against n; θ trip time; winding step response; aging integral; bearing damage at constant
+  load; the restart table (3 drives start a loaded belt, 2 do not, 2 start an empty one) in both regimes; stop_ok truth
+  table; a 2-drive belt (O7).
+- Every lever changes survivor load (silent_no_effect): `set_feed`, `start_drive`/`stop_drive`, `stop_belt`,
+  `start_belt`.
+- Scenario files per story and regime (O12): a do-nothing run and a hand-written reference-policy run; seed tables
+  (onset, severity) as data; live session plans written and validated, first run in M2. Regime B is the composition
+  with `margin: weak` on the drives and `breakaway_n_per_kg: 1.152` on the belt.
+- S0's diurnal feed: the feeder's `shift_pattern` fault injected at the start of the run, in the regime A plant.
+- Long do-nothing runs (hours of plant time) skip under `-short` and run in `make test-long`.
+
+## 7. Differences from PLAN.md section 3
+
+| # | Change | Why |
+|---|---|---|
+| M1 | Regime A F_rated 920 N (was 880) | With each drive's own drag (3 % of rating) and a damaged bearing's drag, 880 N put A's survivors over the relay threshold: A would not be the "survivors cope" regime |
+| M2 | Bearing drag at full damage 5 % of rating (was open) | The failure sketch's range is 2-10 %; 10 % tipped A's survivors |
+| M3 | Inverter overload as a second lagged I² trip (O6) | Same form as the motor relay; τ 700 s fits "150 % for 60 s from rated load" |
+| M4 | Boost only while the belt is slower than 0.2 m/s; stall after `boost_s` (O8) | Breaking loose takes under a second; the boost time is the hold time of the stall trip |
+| M5 | Drive force capped at the belt's capacity; drives stop pushing once the belt stalls or the permit is off | Without it a stalled or interlocked belt loaded the drives at breakaway force and tripped their inverters |
+| M6 | A downstream stop is not a stall | The stall trip watches short · go |
+| M7 | k_d per regime | Load³ wear made B fail three times faster than A; the story's 6-9 h window is a property of the story, not of the regime |
+| M8 | Belt speed is a regime lag selected by the shortfall (τ 4 s while the drives can pull, decay τ 2 s while they cannot); no `free` indicator; one τ for start and stop (was 7 s up, 2 s down) | v may not depend on itself through the inputs of its kind, even through a lag; the regime selector is not an input |
+| M9 | Material on the belt is a store drained by a flow of conductance 1/L scaled by v | An integrator of feed − m · v / L reads m through its inputs: a refused cycle |
+| M10 | Regimes A/B are the drive's enum parameter `margin` and the belt's parameter `breakaway_n_per_kg`, not presets; `inverter_tau_s` and `seized_drag_n` are parameters (O6, O10) | Library presets must be small/medium/large |
+| M11 | `set_running` split into `start_drive` and `stop_drive`; the belt and drive start and stop as ±1 steps guarded by `requires` | A `requires` applies to every call of an effector, and an effect cannot assign a literal |
+| M12 | The feeder stops on the belt's command, not only its speed (`moving` = cmd · (v > 0.1)) | With speed alone a downstream stop piled about 490 kg more on the belt during the stop and three healthy drives could no longer restart it |
+| M13 | S0's swing is the feeder's negative-class `shift_pattern` fault (70 % for 12 h of each 24 h), not a `swing_pct` parameter and a third composition | A fault needs no extra composition and is also the benign control the audit compares `chute_buildup` with |
+| M14 | Alone, the drive's `stop_ok` fallback is 1; the connected loaded plant gives 0 | The library proves every effector on the part alone |
+| M15 | `delivered` starts at 100 000 t | A totalizer; from 0 it moves 25 t in ten minutes and fails the steady-start check |
+| M16 | `chute_buildup` ramps at 0.005/h and `tail_slip` at 0.002/h | Slow enough not to be caught by a one-line detector in 8 h, fast enough to be observable within 24 h |
+
+Open: the accelerometer's silent `frozen` fault (S5) is not in the library. A frozen reading of a steady signal never
+departs from the truth oracle's clean reading, so every equipment that uses the accelerometer (conveyor, motor drive,
+air compressor, packaging line, production line, conveyor drive) fails "every fault observable within 24 h". It needs
+a decision: an oracle that scores a frozen channel by its missing noise (a Go change), or S5 frozen on a signal that
+moves.

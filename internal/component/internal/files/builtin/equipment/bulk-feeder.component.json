@@ -1,0 +1,243 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/bulk-feeder",
+  "version": 1,
+  "title": "Bulk feeder",
+  "description": "Feeds bulk material onto a belt at a set share of 150 t/h, only while the belt moves. Supply surges and shift patterns are not faults; chute build-up slowly starves the feed.",
+  "class": "material_handling/feeder/bulk_feeder",
+  "tags": [
+    "material-handling",
+    "bulk"
+  ],
+  "icon": "feeder",
+  "kind": {
+    "state": [
+      {
+        "name": "feed_set",
+        "unit": "%",
+        "initial": 100,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "supply",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "moving",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "feed_target",
+        "unit": "kg/s",
+        "initial": 41.6667
+      },
+      {
+        "name": "feed",
+        "unit": "kg/s",
+        "initial": 41.6667,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "moving",
+        "tier": "F0",
+        "f0": {
+          "baseline": 1,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "feed_target",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "feed_set",
+              "coef": 0.416667
+            },
+            {
+              "state": "moving",
+              "coef": 1
+            },
+            {
+              "state": "supply",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "feed",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 3,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "feed_target",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "shift_pattern",
+        "description": "The nominal day: supply at 70 % for half of each 24 h, the S0 swing.",
+        "affects": [
+          {
+            "state": "supply",
+            "delta": -0.3,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "feed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "intermittent",
+          "rate_per_hour": 0.041666666666666664,
+          "duty_cycle": 0.5
+        }
+      },
+      {
+        "id": "feed_surge",
+        "affects": [
+          {
+            "state": "supply",
+            "delta": 0.5,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "feed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 300
+        }
+      },
+      {
+        "id": "chute_buildup",
+        "affects": [
+          {
+            "state": "supply",
+            "delta": -0.3,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "feed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.005
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_feed",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "feeder_id",
+            "percent"
+          ],
+          "properties": {
+            "feeder_id": {
+              "type": "string"
+            },
+            "percent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "feed_set",
+              "assign_from_arg": "percent"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "feed",
+      "state": "feed",
+      "unit_family": "mass_flow",
+      "range": {
+        "min": 0,
+        "max": 80
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mass-flow-meter@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "feed_out",
+      "type": "bulk_flow",
+      "direction": "provides",
+      "state": "feed"
+    },
+    {
+      "name": "moving_in",
+      "type": "run_state",
+      "direction": "consumes",
+      "state": "moving",
+      "sample_s": 1
+    }
+  ]
+}

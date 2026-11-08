@@ -220,6 +220,17 @@
           "scale": 1000
         }
       }
+    },
+    "force": {
+      "base": "N",
+      "units": {
+        "N": {
+          "scale": 1
+        },
+        "kN": {
+          "scale": 1000
+        }
+      }
     }
   },
   "port_types": {
@@ -279,6 +290,21 @@
     },
     "load_torque": {
       "unit_family": "torque"
+    },
+    "bulk_flow": {
+      "unit_family": "mass_flow"
+    },
+    "pulley_force": {
+      "unit_family": "force"
+    },
+    "drag_force": {
+      "unit_family": "force"
+    },
+    "force_capacity": {
+      "unit_family": "force"
+    },
+    "run_state": {
+      "unit_family": "state"
     }
   },
   "tag_letters": {
