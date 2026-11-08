@@ -243,8 +243,12 @@ What the long tier found (every seed row):
 - S0, S4: no protective trip, no stall, never stranded. Every reference policy: never stranded, no survivor
   protective trip; S1 and S5 stop D-3 by command 4 h 8 min after onset, before its do-nothing trip; S3 leaves the
   belt empty and stopped when D-3 seizes.
-- The long tier simulates about 1530 plant hours (91 800 minutes) in 8.5 min of wall time on this machine
-  (40 CPU minutes, the variants in parallel); it skips under `-short`.
+- The long tier simulates about 1110 plant hours (66 454 minutes) in about 3.4 min of wall time on this 10-core
+  machine (32 CPU minutes); it skips under `-short`. Each seed row and policy is its own parallel run, the costliest
+  stories start first, a do-nothing run stops 120 s after the belt is stranded (its story is told by then), and S0's
+  ten rows, which differ only in a seed a noiseless world without commands does not use, share one run. The floor is
+  the world's own step cost (about 1 ms per plant second for the five instances, most of it recomputing algebraic
+  states).
 
 ## 7. Differences from PLAN.md section 3
 

@@ -1,7 +1,11 @@
 package contract
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
+	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -23,6 +27,28 @@ type storyCheck struct {
 	t     *testing.T
 	story beltStory
 	row   map[string]any
+	runs  *storyRuns
+}
+
+// storyRuns shares runs between seed rows: a noiseless world draws from its seed only for effector acknowledgements,
+// so rows without commands to the plant whose disturbances are equal (S0's) have one outcome.
+type storyRuns struct {
+	outcomes  sync.Map
+	simulated atomic.Int64
+}
+
+type sharedRun struct {
+	once    sync.Once
+	outcome storyOutcome
+}
+
+func (c storyCheck) key(policy string) string {
+	scenario := c.story.scenario(c.row, policy)
+	key, _ := json.Marshal(scenario.Commands)
+	if policy == policyReference {
+		return fmt.Sprintf("%s/%s/%d/%s", c.story.ID, policy, scenario.Seed, key)
+	}
+	return c.story.ID + "/" + policy + "/" + string(key)
 }
 
 func (c storyCheck) field(name string) float64 { return rowNumbers(c.row, name)[0] }
@@ -44,7 +70,13 @@ func (c storyCheck) run(policy string) storyOutcome {
 	if c.story.Story == "S2" {
 		anchor = c.field("trip_s")
 	}
-	return runStory(c.t, c.story, c.row, policy, c.resolution(), anchor)
+	value, _ := c.runs.outcomes.LoadOrStore(c.key(policy), &sharedRun{})
+	shared := value.(*sharedRun)
+	shared.once.Do(func() {
+		shared.outcome = runStory(c.t, c.story, c.row, policy, c.resolution(), anchor, policy == policyNone)
+		c.runs.simulated.Add(int64(shared.outcome.simulatedS))
+	})
+	return shared.outcome
 }
 
 func (c storyCheck) quiet(o storyOutcome, policy string) {
@@ -90,10 +122,17 @@ func (c storyCheck) cascades(o storyOutcome, after float64) float64 {
 	return cascade
 }
 
-func (c storyCheck) slowBearing() {
+func (c storyCheck) slowBearing(policy string) {
 	c.t.Helper()
-	idle, reference := c.run(policyNone), c.run(policyReference)
-	onset := c.field("onset_s")
+	if policy == policyReference {
+		reference := c.run(policyReference)
+		c.saved(reference)
+		if stopped, trip := reference.at("D-3.run_cmd"), c.d3Trip(); stopped >= trip {
+			c.errorf("reference: D-3 stopped by command at %.0f s, not before its do-nothing trip at %.0f s", stopped, trip)
+		}
+		return
+	}
+	idle, onset := c.run(policyNone), c.field("onset_s")
 	trip, what := idle.firstOf([]string{"D-3"}, storyProtections)
 	c.t.Logf("%s seed %.0f: severity %.2f, D-3 %s %.2f h after onset", c.story.ID, c.row["seed"], c.field("severity"), what, (trip-onset)/3600)
 	if trip < onset+6*3600 || trip > onset+9*3600 {
@@ -105,15 +144,20 @@ func (c storyCheck) slowBearing() {
 		cascade := c.cascades(idle, trip)
 		c.t.Logf("%s seed %.0f: survivors' inverters trip %.0f s after D-3", c.story.ID, c.row["seed"], cascade-trip)
 	}
-	c.saved(reference)
-	if stopped := reference.at("D-3.run_cmd"); stopped >= trip {
-		c.errorf("reference: D-3 stopped by command at %.0f s, not before its do-nothing trip at %.0f s", stopped, trip)
-	}
 }
 
-func (c storyCheck) suddenTrip() {
+func (c storyCheck) d3Trip() float64 {
+	trip, _ := c.run(policyNone).firstOf([]string{"D-3"}, storyProtections)
+	return trip
+}
+
+func (c storyCheck) suddenTrip(policy string) {
 	c.t.Helper()
-	idle, reference := c.run(policyNone), c.run(policyReference)
+	if policy == policyReference {
+		c.saved(c.run(policyReference))
+		return
+	}
+	idle := c.run(policyNone)
 	if c.story.Plant == "a" {
 		c.strandsAtTheDownstreamStop(idle)
 	} else {
@@ -127,12 +171,19 @@ func (c storyCheck) suddenTrip() {
 			c.errorf("do nothing: cascade at %.0f s, closed form %.1f s", got, want)
 		}
 	}
-	c.saved(reference)
 }
 
-func (c storyCheck) seizure() {
+func (c storyCheck) seizure(policy string) {
 	c.t.Helper()
-	idle, reference := c.run(policyNone), c.run(policyReference)
+	if policy == policyReference {
+		reference := c.run(policyReference)
+		c.saved(reference)
+		if reference.seizedMassKg > 0.15*steadyMassKg || math.IsInf(reference.at("D-3.free_ok"), 1) {
+			c.errorf("reference: %.0f kg on the belt when D-3 seized at %.0f s, want at most 15 %% of %.0f kg", reference.seizedMassKg, reference.at("D-3.free_ok"), steadyMassKg)
+		}
+		return
+	}
+	idle := c.run(policyNone)
 	want := c.field("onset_s") + seizeLevel/(gearRiseEachHour*c.field("severity"))*3600
 	seized, stall := idle.at("D-3.free_ok"), idle.at("B-1.stall_ok")
 	c.t.Logf("%s seed %.0f: seizure %.2f h after onset (closed form %.2f h), stall %.0f s later, %.0f kg on the belt", c.story.ID, c.row["seed"],
@@ -143,22 +194,40 @@ func (c storyCheck) seizure() {
 	if stranded := idle.at("B-1.stranded"); stranded > stall+strandWithinS {
 		c.errorf("do nothing: the stalled loaded belt was stranded at %.0f s", stranded)
 	}
-	c.saved(reference)
-	if reference.seizedMassKg > 0.15*steadyMassKg || math.IsInf(reference.at("D-3.free_ok"), 1) {
-		c.errorf("reference: %.0f kg on the belt when D-3 seized at %.0f s, want at most 15 %% of %.0f kg", reference.seizedMassKg, reference.at("D-3.free_ok"), steadyMassKg)
+}
+
+func (c storyCheck) tell(policy string) {
+	switch c.story.Story {
+	case "S0", "S4":
+		c.quiet(c.run(policy), policy)
+	case "S1", "S5":
+		c.slowBearing(policy)
+	case "S2":
+		c.suddenTrip(policy)
+	case "S3":
+		c.seizure(policy)
 	}
 }
 
-func (c storyCheck) tell() {
-	switch c.story.Story {
-	case "S0", "S4":
-		c.quiet(c.run(policyNone), policyNone)
-	case "S1", "S5":
-		c.slowBearing()
-	case "S2":
-		c.suddenTrip()
-	case "S3":
-		c.seizure()
+// byCost puts the stories that simulate the most plant time first, so the longest runs start first.
+func byCost(stories []beltStory) []beltStory {
+	slices.SortStableFunc(stories, func(a, b beltStory) int {
+		return compareFloat(b.HorizonS*float64(len(b.policies())), a.HorizonS*float64(len(a.policies())))
+	})
+	return stories
+}
+
+// runShared runs once, before the rows, every do-nothing run that several rows share.
+func runShared(t *testing.T, story beltStory, runs *storyRuns) {
+	t.Helper()
+	seen := map[string]bool{}
+	for _, row := range story.Rows {
+		c := storyCheck{t: t, story: story, row: row, runs: runs}
+		if key := c.key(policyNone); seen[key] {
+			c.run(policyNone)
+		} else {
+			seen[key] = true
+		}
 	}
 }
 
@@ -167,17 +236,22 @@ func TestEverySeedRowOfEveryStoryTellsItsStory(t *testing.T) {
 	if testing.Short() {
 		t.Skip("simulates every story for every seed row, with and without its reference policy")
 	}
-	testsupport.SkipUnderRace(t, "about 1100 noiseless plant hours")
-	started, plantS := time.Now(), atomic.Int64{}
+	testsupport.SkipUnderRace(t, "about 1000 noiseless plant hours")
+	started, runs := time.Now(), &storyRuns{}
 	t.Cleanup(func() {
-		t.Logf("long tier: %.0f plant minutes in %s wall time", float64(plantS.Load())/60, time.Since(started).Round(time.Second))
+		t.Logf("long tier: %.0f plant minutes in %s wall time", float64(runs.simulated.Load())/60, time.Since(started).Round(time.Second))
 	})
-	for _, story := range loadStories(t).Stories {
+	for _, story := range byCost(loadStories(t).Stories) {
 		t.Run(story.ID, func(t *testing.T) {
 			t.Parallel()
-			for _, row := range story.Rows {
-				storyCheck{t: t, story: story, row: row}.tell()
-				plantS.Add(int64(story.HorizonS) * int64(len(story.policies())))
+			runShared(t, story, runs)
+			for i, row := range story.Rows {
+				for _, policy := range story.policies() {
+					t.Run(fmt.Sprintf("row-%d/%s", i+1, policy), func(t *testing.T) {
+						t.Parallel()
+						storyCheck{t: t, story: story, row: row, runs: runs}.tell(policy)
+					})
+				}
 			}
 		})
 	}
