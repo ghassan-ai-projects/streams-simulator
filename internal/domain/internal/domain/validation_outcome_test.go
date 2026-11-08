@@ -75,6 +75,7 @@ func TestTheOutcomeWeightsHaveClosedShapes(t *testing.T) {
 		{"a trip without its weight", func(d map[string]any) { delete(objectAt(d, weights("trips", 0)...), "per_trip") }, at + "/trips/0/per_trip", ""},
 		{"a weight that is no number", func(d map[string]any) { put(d, "high", weights("kpis", 0, "per_unit")...) }, at + "/kpis/0/per_unit", ""},
 		{"an unknown term", func(d map[string]any) { put(d, []any{}, weights("restarts")...) }, at + "/restarts", ""},
+		{"a negative tie", func(d map[string]any) { put(d, -0.1, weights("tie")...) }, at + "/tie", ""},
 	})
 }
 

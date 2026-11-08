@@ -7,6 +7,8 @@ import (
 
 type Options = app.Options
 
+type OutcomeOptions = app.OutcomeOptions
+
 var ErrRunUnblinded = layer.ErrRunUnblinded
 
 var ErrNotOneLabel = layer.ErrNotOneLabel

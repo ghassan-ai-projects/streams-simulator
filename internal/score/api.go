@@ -14,6 +14,8 @@ type JudgmentMetrics = layer.JudgmentMetrics
 
 var ErrNoLabel = layer.ErrNoLabel
 
+var ErrOutcomeRuns = layer.ErrOutcomeRuns
+
 type Evidence = layer.Evidence
 
 type RunScore = layer.RunScore

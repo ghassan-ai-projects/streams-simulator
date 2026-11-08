@@ -50,7 +50,8 @@
       "calls": [
         {"effector": "bulk_feeder__set_feed", "per_call": 0.25}, {"effector": "conveyor_drive__stop_drive", "per_call": 0.25},
         {"effector": "belt_conveyor__stop_belt", "per_call": 0.25}
-      ]
+      ],
+      "tie": 0.1
     },
     "baseline_policies": [
       {"name": "b4", "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5},

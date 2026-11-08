@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim outcome`: a run graded on its consequences (conveyor milestone M1).** The command replays a run folder's
+  artifact as it ran, with every effector call removed (`do_nothing`) and under each of the domain's `baseline_policies`,
+  records per entity the trips, boundary violations and KPI changes exactly at the step where they happen, prices each run
+  with `outcome_weights` (new optional `tie`, 0.1 on both conveyor plants) and says whether the run `beats`, `ties` or
+  `loses` against each baseline; `valid` says doing nothing is not clean. Computed at scoring time, never sealed (O15); no
+  verdict or label is read. A domain without weights gets the facts only. New `outcome` document in cli-output v0.1 and the
+  `outcome_failed` code.
 - **Outcome data in a domain and a session horizon (conveyor milestone M1, round 1).** domain-spec v0.2 `ground_truth` takes
   two optional members: `outcome_weights` (cost per boundary violation and hour, per trip of a trip state, per unit of a
   KPI's change, per unneeded call) and `baseline_policies` (one condition on one state of a kind, an optional hold, then calls

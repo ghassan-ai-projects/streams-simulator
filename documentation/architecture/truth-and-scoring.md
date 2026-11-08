@@ -34,6 +34,19 @@ The consumer verdict and ground-truth record are validated against the versioned
 
 The score is meaningful only with the exact run artifact, ledger, truth label, simulator version, domain/adapter digests, and consumer inputs that produced it. A score copied without those inputs is not an auditable benchmark result.
 
+## Outcomes
+
+`streamsim outcome` grades a run on its consequences: trips, boundary violations, KPI changes and unneeded calls, each
+priced by the domain's `ground_truth.outcome_weights`, against doing nothing and against the domain's fixed
+`baseline_policies`. The outcome reference is computed at scoring time, not sealed (owner decision O15): the run's own
+artifact is replayed with every effector call removed, and again with each baseline policy played instead. That reference
+is a pure function of inputs fixed before the run (domain, seed, planned faults), the consumer cannot influence it, and it
+never exists while the consumer runs, so one path serves scripted, plant wire and director runs. The world records the
+outcome exactly, at the step where a trip or boundary changes, only when an outcome replay asks for it; ordinary runs are
+unchanged. The run is replayed first and refused if it does not reproduce or is stamped unblinded, as `score` refuses.
+Implemented in [`internal/run/`](../../internal/run/) (`ReplayOutcome`), [`internal/score/`](../../internal/score/)
+(cost and verdicts) and [`internal/grading/`](../../internal/grading/) (`GradeOutcome`).
+
 ## Hardware devices have no truth
 
 Sealed truth and scoring apply to simulated devices. A real board announced through a gateway has no generative truth: its readings are what it reported, and a `DRESULT` is self-reported and may be wrong. The simulator does not score a consumer against a board's self-reports. A physical effect counts only when an independent instrument observes it, and the host's own check of a reading the board itself reported is recorded evidence, not independent proof. The twin report compares a twin with a board's readings; it measures the twin, not a consumer. See [physical devices: truth boundary](physical-devices.md#truth-boundary).

@@ -774,6 +774,56 @@ With exactly one label the document is that label's scorecard, as always. With s
 streamsim score --run <run.json> [--label <label.json | labels.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
+### `outcome`
+
+Grades a run on its consequences rather than on its detections. The outcome is computed when it is asked for, from the run
+artifact alone: nothing is sealed or stored while the run happens, and no `verdict.json` or label is read. The command first
+replays the run and refuses one that does not reproduce (`replay_mismatch`) or that is stamped unblinded (an `--explore`
+run, or one whose truth was revealed while it was open; `outcome_failed`), as `score` does. It then replays the artifact's
+command log three ways with the run's own world settings: `as_run` (unchanged), `do_nothing` (every `effector.invoke`
+removed) and, for each of the domain's `ground_truth.baseline_policies` in declared order, `policy:<name>` (every
+`effector.invoke` removed and the policy played: it samples its condition on every instance of its kind once a second from
+the world start, fires on each instance's rising edge held for `for_s`, and issues its calls in order `delay_s` after the
+firing; a fault injected at an instant is seen at the next sample). Each run's `facts` are taken at the run's last world
+time: per entity the trips (first time and entries), the violated boundaries (violations, first time, duration) and each KPI
+state's start and end, and the effector calls the replayed run made, accepted or refused.
+
+With the domain's `ground_truth.outcome_weights`, each run gets a `cost` J, the sum of its `terms`: per boundary violation
+and per hour of violation, per trip entry, per unit of a KPI's own change (end minus start; a negative weight rewards more)
+and, only when doing nothing is clean (no boundary violated, no trip), per accepted call. `verdicts` compares the run with
+each baseline: `delta` is J of the run minus J of the baseline, and the run `beats` it (delta below minus `tie`), `ties`
+it (within `tie`) or `loses`. `valid` is true when doing nothing is not clean, so the story tests something. A domain
+without outcome weights prints the facts only: no `tie`, `cost` or `verdicts`. A run folder that is missing fails with
+`file_not_found`, a domain the run names that neither the artifact embeds nor `--domains-dir` holds with
+`domain_not_found`.
+
+Abridged from the S2-A reference run of `examples/belt-conveyor` (one run, one entity and its terms shown):
+
+```json
+{"run_id": "r-1k3abl2bopgcc", "domain": "belt-conveyor-drives-a", "valid": true, "tie": 0.1,
+ "runs": [{"mode": "do_nothing",
+           "facts": {"horizon_ns": 1767236400000000000,
+                     "entities": [{"entity_id": "B-1", "kind": "belt_conveyor",
+                                   "trips": [{"state": "stall_ok", "first_ns": 1767229490000000000, "count": 1},
+                                             {"state": "stranded", "first_ns": 1767227710000000000, "count": 1}],
+                                   "boundaries": [{"name": "stranded", "severity": "major", "violations": 1,
+                                                   "first_ns": 1767227710000000000, "duration_s": 8690}],
+                                   "kpis": [{"state": "delivered", "start": 100000, "end": 100087.18946594305}]}],
+                     "calls": []},
+           "cost": {"j": 3.9191, "terms": [
+             {"term": "boundary_violations", "kind": "belt_conveyor", "name": "stranded", "entity_id": "B-1", "quantity": 1, "cost": 4},
+             {"term": "kpis", "kind": "belt_conveyor", "name": "delivered", "entity_id": "B-1", "quantity": 87.1895, "cost": -0.5813},
+             {"term": "trips", "kind": "belt_conveyor", "name": "stall_ok", "entity_id": "B-1", "quantity": 1, "cost": 0.5}]}}],
+ "verdicts": [{"baseline": "do_nothing", "delta": -5.4596, "verdict": "beats"},
+              {"baseline": "policy:b4", "delta": -5.5165, "verdict": "beats"}]}
+```
+
+Each outcome replay costs about one silent world run (about 25 s for a 16 hour conveyor story), plus the reproduction check.
+
+```text
+streamsim outcome --run <run-dir> [--domains-dir <path>] [--adapters-dir <path>]
+```
+
 ### `report`
 
 - Summarises a run folder (the directory `run --out` publishes) as one document: run identity and inputs, the digests the run recorded, whether the files in the folder still agree with them (`verification`: a check, not a replay; `verify` is the proof), delivery counts and drop reasons, the faults (each as an interval: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` and `cleared_by`, which is `command`, `pulse_end` or `responder`, both null while the fault is active at the end of the run), the perturbations, environment faults and effector calls from the command log with the world's real outcomes, the consumer from `verdict.json` (its `config_digest` only when the verdict recorded one), and the scorecard when `verdict.json` and `label.json` are both present (scored from the specs the artifact embeds, so no `--domains-dir` is needed).

@@ -45,6 +45,7 @@ var commands = map[string]command{
 	"refconsumer": {run: cmdRefconsumer},
 	"suite":       {run: cmdSuite},
 	"score":       {run: cmdScore},
+	"outcome":     {run: cmdOutcome},
 	"report":      {run: cmdReport},
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
@@ -175,8 +176,8 @@ Commands:
   suite --domain --profile              Generate an audited graded suite
   suite campaign --spec --out           Generate a campaign of one-fault runs and their session plans
   score --run --label                   Offline scorecard from artifacts
-  report <run-dir>                      Summarize a run folder (--format json|markdown,
-                                        --out <file>, --replay)
+  outcome --run <run-dir>               Consequences of a run against doing nothing and the baseline policies
+  report <run-dir>                      Summarize a run folder (--format json|markdown, --out <file>, --replay)
   report compare --a --b                Compare two ended runs (reference a)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)

@@ -5,6 +5,7 @@ type OutcomeWeights struct {
 	Trips      []TripWeight     `json:"trips,omitempty"`
 	KPIs       []KPIWeight      `json:"kpis,omitempty"`
 	Calls      []CallWeight     `json:"calls,omitempty"`
+	Tie        float64          `json:"tie,omitempty"`
 }
 
 type BoundaryWeight struct {

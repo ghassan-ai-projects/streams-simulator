@@ -83,7 +83,7 @@ func TestBothConveyorPlantsCarryTheirOutcomeWeightsAndPolicyB4(t *testing.T) {
 			t.Fatalf("%s: baseline policies = %+v", regime, b4)
 		}
 		w := truth.OutcomeWeights
-		if w == nil || len(w.Boundaries) != 1 || w.Boundaries[0].PerViolation != 4 || len(w.Trips) != 5 || len(w.KPIs) != 3 || len(w.Calls) != 3 {
+		if w == nil || len(w.Boundaries) != 1 || w.Boundaries[0].PerViolation != 4 || len(w.Trips) != 5 || len(w.KPIs) != 3 || len(w.Calls) != 3 || w.Tie != 0.1 {
 			t.Fatalf("%s: outcome weights = %+v", regime, w)
 		}
 	}

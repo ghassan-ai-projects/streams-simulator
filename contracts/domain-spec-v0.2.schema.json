@@ -383,7 +383,8 @@
             "boundaries": {"type": "array", "items": {"$ref": "#/$defs/boundary_weight"}},
             "trips": {"type": "array", "items": {"$ref": "#/$defs/trip_weight"}},
             "kpis": {"type": "array", "items": {"$ref": "#/$defs/kpi_weight"}},
-            "calls": {"type": "array", "items": {"$ref": "#/$defs/call_weight"}}
+            "calls": {"type": "array", "items": {"$ref": "#/$defs/call_weight"}},
+            "tie": {"type": "number", "minimum": 0, "default": 0, "description": "Two costs closer than this are a tie: a run beats a baseline only when its cost is lower by more than tie."}
           }
         },
         "baseline_policies": {

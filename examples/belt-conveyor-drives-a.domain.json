@@ -2267,6 +2267,7 @@
         {"kind": "conveyor_drive", "state": "gear_used", "per_unit": 0.00032},
         {"kind": "belt_conveyor", "state": "delivered", "per_unit": -0.006666666666666667}
       ],
+      "tie": 0.1,
       "trips": [
         {"kind": "conveyor_drive", "state": "relay_ok", "per_trip": 0.5},
         {"kind": "conveyor_drive", "state": "inverter_ok", "per_trip": 0.5},
