@@ -59,6 +59,10 @@ Command the plant at supervisory level: an effector assigns a setpoint state, an
 
 A disturbance shorter than a step (a voltage sag) is a fault with `onset.shape: "pulse"` and `duration_s`. Trips see it on the event clock, and an `event_driven` channel records its start and end. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 19, which also lists every random substream and when it draws.
 
+### Outcome cost and baseline policies
+
+`ground_truth.outcome_weights` prices what happened in a run, in the domain's own unit: `boundaries` (`{kind, name, per_violation, per_hour}`), `trips` (`{kind, state, per_trip}` for a trip state), `kpis` (`{kind, state, per_unit}` for one of the kind's `kpis`; a negative weight rewards more) and `calls` (`{effector, per_call}`, an unneeded call). `ground_truth.baseline_policies` are fixed policies a run is compared with: `{name, when: {kind, state, operator, threshold}, for_s, then: [{effector, target, args, delay_s}]}`, where `target` is `matched` (the instance whose condition fired) or a declared instance name, and `args` leaves out the call's entity argument (a required string argument named `*_id`), which is the target. Every kind, boundary, state, KPI, effector, instance and argument named is checked when the domain loads; nothing scores with them yet. The conveyor plants `examples/belt-conveyor-drives-{a,b}` carry both.
+
 ## Validate locally
 
 ```bash

@@ -35,5 +35,26 @@
     {"name": "correlated_cascade", "duration_s": 86400, "fault_weights": {"conveyor_drive__vfd_fault": 1.0, "conveyor_drive__gear_oil_loss": 1.0},
       "description": "A drive trip overloads the two survivors; their inverters trip about two minutes later, the belt stalls and is stranded loaded."}
   ],
-  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0}
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0,
+    "outcome_weights": {
+      "boundaries": [{"kind": "belt_conveyor", "name": "stranded", "per_violation": 4}],
+      "trips": [
+        {"kind": "conveyor_drive", "state": "relay_ok", "per_trip": 0.5}, {"kind": "conveyor_drive", "state": "inverter_ok", "per_trip": 0.5},
+        {"kind": "conveyor_drive", "state": "overtemp_ok", "per_trip": 0.5}, {"kind": "conveyor_drive", "state": "free_ok", "per_trip": 0.5},
+        {"kind": "belt_conveyor", "state": "stall_ok", "per_trip": 0.5}
+      ],
+      "kpis": [
+        {"kind": "conveyor_drive", "state": "life_used", "per_unit": 0.0008}, {"kind": "conveyor_drive", "state": "gear_used", "per_unit": 0.00032},
+        {"kind": "belt_conveyor", "state": "delivered", "per_unit": -0.006666666666666667}
+      ],
+      "calls": [
+        {"effector": "bulk_feeder__set_feed", "per_call": 0.25}, {"effector": "conveyor_drive__stop_drive", "per_call": 0.25},
+        {"effector": "belt_conveyor__stop_belt", "per_call": 0.25}
+      ]
+    },
+    "baseline_policies": [
+      {"name": "b4", "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5},
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 67}}]}
+    ]
+  }
 }

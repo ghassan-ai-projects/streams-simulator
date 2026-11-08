@@ -9,7 +9,8 @@ import (
 )
 
 const basePlant = `{"schema_version":"0.1","id":"base","version":"1.0.0","title":"Base","description":"old",
-"stresses":"a base plant that the new one starts from","axes":{},"ground_truth":{},
+"stresses":"a base plant that the new one starts from","axes":{},"ground_truth":{"negative_class_fraction":0.4,
+"outcome_weights":{"calls":[{"effector":"p__stop","per_call":1}]},"baseline_policies":[{"name":"b","when":{},"then":[]}]},
 "equipment":[{"use":"lib/pump@1","names":["P-1"]}],"connections":[],
 "profiles":[{"name":"nominal","duration_s":60,"fault_weights":{"p__f":1}},{"name":"x","not_applicable":"this family is fiction in the base plant"}]}`
 
@@ -23,6 +24,9 @@ func TestAnEmptyPlantKeepsItsFrameAndDropsWhatNamedTheOldEquipment(t *testing.T)
 	nominal, _ := profiles[0].(map[string]any)
 	if doc["id"] != "fresh" || doc["equipment"] != nil || doc["description"] != nil || len(profiles) != 3 || nominal["fault_weights"] != nil {
 		t.Fatalf("empty plant = %v", doc)
+	}
+	if truth, _ := doc["ground_truth"].(map[string]any); len(truth) != 1 || truth["negative_class_fraction"] == nil {
+		t.Fatalf("empty plant ground truth = %v, want its outcome weights and baseline policies left out", truth)
 	}
 	copied, err := NewComposition([]byte(basePlant), NewPlant{ID: "copy", Title: "Copy"}, "base")
 	if err != nil || copied["equipment"] == nil || copied["description"] != "old" {

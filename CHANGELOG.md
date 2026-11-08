@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Outcome data in a domain and a session horizon (conveyor milestone M1, round 1).** domain-spec v0.2 `ground_truth` takes
+  two optional members: `outcome_weights` (cost per boundary violation and hour, per trip of a trip state, per unit of a
+  KPI's change, per unneeded call) and `baseline_policies` (one condition on one state of a kind, an optional hold, then calls
+  to `matched` or a named instance). Every name in them is checked against the domain when it loads. Both conveyor plants
+  carry the weights and the policy `b4` (feed to 67 % when a drive is unavailable). session-plan v0.1 takes an optional
+  `horizon_s` for a session of simulated boards: the session ends itself there (`stopped: false`), and the story session
+  plans carry their story's horizon. Nothing scores with the outcome data yet. Design: `docs/belt-conveyor-drives/M1-DESIGN.md`.
 - **Multi-drive belt conveyor (conveyor milestone M0).** Three library parts: `streamsim/bulk-feeder`, `streamsim/belt-conveyor`
   (drives share its pull; material on the belt, breakaway force, stall, a run permit from downstream, restart margin and a
   `stranded` boundary) and `streamsim/conveyor-drive` (motor relay and inverter overload, winding heat and aging, bearing and

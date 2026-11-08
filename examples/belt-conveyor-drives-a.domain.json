@@ -2244,7 +2244,39 @@
       "description": "A drive trip leaves the belt running on two drives at about full load; a later stop of the next machine strands the loaded belt, because two drives cannot break it loose."
     }
   ],
-  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0},
+  "ground_truth": {
+    "baseline_policies": [
+      {
+        "name": "b4",
+        "then": [{"target": "F-1", "args": {"percent": 67}, "effector": "bulk_feeder__set_feed"}],
+        "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5}
+      }
+    ],
+    "min_per_label": 10,
+    "min_scenarios": 100,
+    "negative_class_fraction": 0.35,
+    "outcome_weights": {
+      "boundaries": [{"name": "stranded", "kind": "belt_conveyor", "per_violation": 4}],
+      "calls": [
+        {"effector": "bulk_feeder__set_feed", "per_call": 0.25},
+        {"effector": "conveyor_drive__stop_drive", "per_call": 0.25},
+        {"effector": "belt_conveyor__stop_belt", "per_call": 0.25}
+      ],
+      "kpis": [
+        {"kind": "conveyor_drive", "state": "life_used", "per_unit": 0.0008},
+        {"kind": "conveyor_drive", "state": "gear_used", "per_unit": 0.00032},
+        {"kind": "belt_conveyor", "state": "delivered", "per_unit": -0.006666666666666667}
+      ],
+      "trips": [
+        {"kind": "conveyor_drive", "state": "relay_ok", "per_trip": 0.5},
+        {"kind": "conveyor_drive", "state": "inverter_ok", "per_trip": 0.5},
+        {"kind": "conveyor_drive", "state": "overtemp_ok", "per_trip": 0.5},
+        {"kind": "conveyor_drive", "state": "free_ok", "per_trip": 0.5},
+        {"kind": "belt_conveyor", "state": "stall_ok", "per_trip": 0.5}
+      ]
+    },
+    "pre_degraded_fraction": 0
+  },
   "site": {
     "name": "Bulk terminal",
     "areas": [

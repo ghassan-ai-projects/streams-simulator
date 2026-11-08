@@ -374,7 +374,23 @@
           "description": "Scenarios whose fault predates t0, with no healthy baseline. Counters run-to-failure bias and exercises cold-start previous-state handling."
         },
         "min_scenarios": {"type": "integer", "minimum": 100, "default": 100},
-        "min_per_label": {"type": "integer", "minimum": 10, "default": 10}
+        "min_per_label": {"type": "integer", "minimum": 10, "default": 10},
+        "outcome_weights": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The cost J of a run's outcome, in the domain's own unit: the sum of every term below over the run's entities. Every kind, boundary, state and effector named must be the domain's own. Optional: a domain without it has no outcome cost.",
+          "properties": {
+            "boundaries": {"type": "array", "items": {"$ref": "#/$defs/boundary_weight"}},
+            "trips": {"type": "array", "items": {"$ref": "#/$defs/trip_weight"}},
+            "kpis": {"type": "array", "items": {"$ref": "#/$defs/kpi_weight"}},
+            "calls": {"type": "array", "items": {"$ref": "#/$defs/call_weight"}}
+          }
+        },
+        "baseline_policies": {
+          "type": "array",
+          "description": "Fixed policies a run is compared with at scoring time: each replays the run without its effector calls and with the policy's own. Closed records: one condition on one state of a kind, an optional hold time, then a fixed list of calls. No boolean composition, no expressions, no chaining.",
+          "items": {"$ref": "#/$defs/baseline_policy"}
+        }
       }
     }
   },
@@ -658,6 +674,92 @@
           "then": {"properties": {"tier": {"enum": ["F1"]}}}
         }
       ]
+    },
+    "boundary_weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "anyOf": [{"required": ["per_violation"]}, {"required": ["per_hour"]}],
+      "x-expected": "a kind, one of its boundaries, and per_violation, per_hour or both",
+      "description": "Cost of the violations of one boundary of a kind: per violation and per hour of violation.",
+      "properties": {
+        "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "per_violation": {"type": "number"},
+        "per_hour": {"type": "number"}
+      }
+    },
+    "trip_weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "state", "per_trip"],
+      "description": "Cost of each trip of one trip state of a kind.",
+      "properties": {
+        "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "per_trip": {"type": "number"}
+      }
+    },
+    "kpi_weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "state", "per_unit"],
+      "description": "Cost per unit of a KPI state's change over the run (end minus start), as run minus do nothing; a negative weight rewards more.",
+      "properties": {
+        "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "per_unit": {"type": "number"}
+      }
+    },
+    "call_weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effector", "per_call"],
+      "description": "Cost of each accepted call of an effector in a run whose do-nothing outcome is clean (no boundary violation, no trip): an unneeded action.",
+      "properties": {
+        "effector": {"type": "string", "minLength": 1},
+        "per_call": {"type": "number"}
+      }
+    },
+    "baseline_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "when", "then"],
+      "description": "Fires on each instance's rising edge of when, held for for_s, and then issues its calls in order, each delay_s after the firing. A call refused by its effector's requires is recorded as refused.",
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state", "operator", "threshold"],
+          "properties": {
+            "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+            "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "operator": {"enum": ["lt", "lte", "gt", "gte"]},
+            "threshold": {"type": "number"}
+          }
+        },
+        "for_s": {"type": "number", "minimum": 0, "default": 0},
+        "then": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["effector", "target"],
+            "properties": {
+              "effector": {"type": "string", "minLength": 1},
+              "target": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$",
+                "description": "matched: the instance whose condition fired; otherwise a declared instance name."
+              },
+              "args": {"type": "object", "description": "The call's arguments without its entity argument (a required string argument named *_id), which is the target."},
+              "delay_s": {"type": "number", "minimum": 0, "default": 0}
+            }
+          }
+        }
+      }
     },
     "condition": {
       "type": "object",
