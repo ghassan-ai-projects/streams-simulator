@@ -29,19 +29,17 @@ func conveyorArtifact(t *testing.T) *model.RunArtifact {
 	if err != nil {
 		t.Fatal(err)
 	}
-	steps := []func() error{
-		func() error { _, err := r.Advance(t.Context(), at(60), false); return err },
-		func() error { _, err := r.InjectFault("D-3", "conveyor_drive__vfd_fault", at(60), nil); return err },
-		func() error {
-			_, err := r.InvokeEffector("conveyor_drive__stop_drive", "D-1", "c-1", map[string]any{"drive_id": "D-1"}, at(60))
-			return err
-		},
-		func() error { _, err := r.Advance(t.Context(), at(300), false); return err },
+	if _, err := r.Advance(t.Context(), at(60), false); err != nil {
+		t.Fatal(err)
 	}
-	for _, step := range steps {
-		if err := step(); err != nil {
-			t.Fatal(err)
-		}
+	if _, err := r.InjectFault("D-3", "conveyor_drive__vfd_fault", at(60), nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.InvokeEffector("conveyor_drive__stop_drive", "D-1", "c-1", map[string]any{"drive_id": "D-1"}, at(60)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(t.Context(), at(300), false); err != nil {
+		t.Fatal(err)
 	}
 	art, err := r.End("")
 	if err != nil {
