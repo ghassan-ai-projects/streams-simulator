@@ -1,0 +1,154 @@
+{
+  "schema_version": "0.1",
+  "id": "s5-a-reference",
+  "description": "S5: A frozen vibration reading hides the slow bearing failure on D-3, seed row 1 (reference).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 1177676952,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767228085000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__vibration__frozen",
+        "onset_ns": 1767228085000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767230766000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__lube_loss",
+        "onset_ns": 1767230766000000000,
+        "params": {
+          "severity": 1.16
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767245166000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "feeder_id": "F-1",
+          "percent": 54
+        },
+        "at_ns": 1767245166000000000,
+        "command_id": "s5-a-3",
+        "effector": "bulk_feeder__set_feed",
+        "entity_id": "F-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767245466000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "feeder_id": "F-1",
+          "percent": 0
+        },
+        "at_ns": 1767245466000000000,
+        "command_id": "s5-a-4",
+        "effector": "bulk_feeder__set_feed",
+        "entity_id": "F-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767245646000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "drive_id": "D-3"
+        },
+        "at_ns": 1767245646000000000,
+        "command_id": "s5-a-5",
+        "effector": "conveyor_drive__stop_drive",
+        "entity_id": "D-3"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767245656000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "feeder_id": "F-1",
+          "percent": 54
+        },
+        "at_ns": 1767245656000000000,
+        "command_id": "s5-a-6",
+        "effector": "bulk_feeder__set_feed",
+        "entity_id": "F-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767269529000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "B-1",
+        "fault": "belt_conveyor__downstream_stop",
+        "onset_ns": 1767269529000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767271329000000000
+      }
+    },
+    {
+      "op": "fault.clear",
+      "args": {
+        "at_ns": 1767271329000000000,
+        "fault_id": "f-2"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767283200000000000
+      }
+    }
+  ]
+}

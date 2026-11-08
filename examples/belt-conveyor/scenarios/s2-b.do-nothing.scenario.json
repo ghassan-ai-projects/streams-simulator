@@ -1,0 +1,62 @@
+{
+  "schema_version": "0.1",
+  "id": "s2-b-do-nothing",
+  "description": "S2: Sudden inverter trip of D-3 at full feed, drives without margin, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-b",
+  "adapter": "native-jsonl",
+  "seed": 144108226,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767226690000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__vfd_fault",
+        "onset_ns": 1767226690000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767229056000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "B-1",
+        "fault": "belt_conveyor__downstream_stop",
+        "onset_ns": 1767229056000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767230856000000000
+      }
+    },
+    {
+      "op": "fault.clear",
+      "args": {
+        "at_ns": 1767230856000000000,
+        "fault_id": "f-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767236400000000000
+      }
+    }
+  ]
+}

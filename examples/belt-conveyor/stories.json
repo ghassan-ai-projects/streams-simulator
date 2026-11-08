@@ -1,0 +1,250 @@
+{
+  "schema": "belt-conveyor-stories",
+  "version": 1,
+  "description": "The M0 stories of the multi-drive belt conveyor as data: per variant the plant, horizon, disturbances, ten seed rows and a hand-written reference policy. Times are seconds after the world start; a disturbance's at names a row field (an array field repeats it), a policy call's anchor names a row field.",
+  "safe_limp_feed_pct": {"a": 54, "b": 18},
+  "stories": [
+    {
+      "id": "s0-a",
+      "story": "S0",
+      "plant": "a",
+      "title": "Nominal day: the feed follows the shift pattern",
+      "negative_class": true,
+      "horizon_s": 86400,
+      "disturbances": [
+        {"instance": "F-1", "fault": "bulk_feeder__shift_pattern", "at_s": 0}
+      ],
+      "policy": [],
+      "rows": [
+        {"seed": 2119795751},
+        {"seed": 703054139},
+        {"seed": 967594051},
+        {"seed": 2137092682},
+        {"seed": 479082201},
+        {"seed": 1922421208},
+        {"seed": 640385892},
+        {"seed": 828295203},
+        {"seed": 1190487198},
+        {"seed": 31658864}
+      ]
+    },
+    {
+      "id": "s1-a",
+      "story": "S1",
+      "plant": "a",
+      "title": "Slow bearing failure on D-3, drives with margin",
+      "horizon_s": 57600,
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__lube_loss", "at": "onset_s", "severity": "severity"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}},
+        {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
+      ],
+      "rows": [
+        {"seed": 1438843744, "onset_s": 4763, "severity": 1.24, "stop_s": 39693},
+        {"seed": 2038317252, "onset_s": 4093, "severity": 0.85, "stop_s": 41654},
+        {"seed": 1694492289, "onset_s": 5409, "severity": 1.01, "stop_s": 40350},
+        {"seed": 1753040350, "onset_s": 6053, "severity": 1.11, "stop_s": 48400},
+        {"seed": 1214693338, "onset_s": 4096, "severity": 0.95, "stop_s": 42187},
+        {"seed": 2044450990, "onset_s": 4441, "severity": 1.23, "stop_s": 40294},
+        {"seed": 858830237, "onset_s": 5964, "severity": 1.25, "stop_s": 47137},
+        {"seed": 207269846, "onset_s": 7103, "severity": 1.17, "stop_s": 45430},
+        {"seed": 166792292, "onset_s": 5658, "severity": 1.16, "stop_s": 47801},
+        {"seed": 183899333, "onset_s": 5288, "severity": 1.16, "stop_s": 45217}
+      ]
+    },
+    {
+      "id": "s1-b",
+      "story": "S1",
+      "plant": "b",
+      "title": "Slow bearing failure on D-3, drives without margin",
+      "horizon_s": 57600,
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__lube_loss", "at": "onset_s", "severity": "severity"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}},
+        {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}}
+      ],
+      "rows": [
+        {"seed": 769124933, "onset_s": 6069, "severity": 0.82, "stop_s": 44737},
+        {"seed": 1978963967, "onset_s": 6214, "severity": 0.8, "stop_s": 49085},
+        {"seed": 221980177, "onset_s": 3929, "severity": 0.91, "stop_s": 41742},
+        {"seed": 2055867722, "onset_s": 2946, "severity": 0.8, "stop_s": 43802},
+        {"seed": 1724132388, "onset_s": 4770, "severity": 0.84, "stop_s": 40351},
+        {"seed": 711577152, "onset_s": 3470, "severity": 1.24, "stop_s": 42423},
+        {"seed": 988422870, "onset_s": 3792, "severity": 0.97, "stop_s": 38026},
+        {"seed": 457782991, "onset_s": 3120, "severity": 1.24, "stop_s": 43411},
+        {"seed": 2035782535, "onset_s": 6257, "severity": 0.94, "stop_s": 43697},
+        {"seed": 197054348, "onset_s": 4937, "severity": 0.92, "stop_s": 42063}
+      ]
+    },
+    {
+      "id": "s2-a",
+      "story": "S2",
+      "plant": "a",
+      "title": "Sudden inverter trip of D-3 at full feed, drives with margin",
+      "horizon_s": 10800,
+      "pace": "wall",
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__vfd_fault", "at": "trip_s"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "trip_s", "after_s": 30, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
+      ],
+      "rows": [
+        {"seed": 629091277, "trip_s": 1435, "stop_s": 2088},
+        {"seed": 1410430529, "trip_s": 1577, "stop_s": 3344},
+        {"seed": 1599830411, "trip_s": 1881, "stop_s": 3670},
+        {"seed": 39853926, "trip_s": 1016, "stop_s": 2805},
+        {"seed": 158239284, "trip_s": 1885, "stop_s": 3188},
+        {"seed": 50512354, "trip_s": 2209, "stop_s": 3238},
+        {"seed": 440497308, "trip_s": 1188, "stop_s": 2374},
+        {"seed": 1733061711, "trip_s": 968, "stop_s": 3351},
+        {"seed": 432595988, "trip_s": 1025, "stop_s": 1710},
+        {"seed": 1329011173, "trip_s": 1727, "stop_s": 3635}
+      ]
+    },
+    {
+      "id": "s2-b",
+      "story": "S2",
+      "plant": "b",
+      "title": "Sudden inverter trip of D-3 at full feed, drives without margin",
+      "horizon_s": 10800,
+      "pace": "wall",
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__vfd_fault", "at": "trip_s"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "trip_s", "after_s": 10, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "trip_s", "after_s": 250, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}}
+      ],
+      "rows": [
+        {"seed": 144108226, "trip_s": 1090, "stop_s": 3456},
+        {"seed": 1816007955, "trip_s": 1725, "stop_s": 2752},
+        {"seed": 1936376588, "trip_s": 1172, "stop_s": 1984},
+        {"seed": 811417398, "trip_s": 732, "stop_s": 1964},
+        {"seed": 618771195, "trip_s": 634, "stop_s": 2717},
+        {"seed": 1144211770, "trip_s": 642, "stop_s": 1706},
+        {"seed": 206147742, "trip_s": 1450, "stop_s": 2158},
+        {"seed": 855823424, "trip_s": 656, "stop_s": 2345},
+        {"seed": 1541618820, "trip_s": 1397, "stop_s": 2950},
+        {"seed": 1113894088, "trip_s": 793, "stop_s": 2624}
+      ]
+    },
+    {
+      "id": "s3-a",
+      "story": "S3",
+      "plant": "a",
+      "title": "Gearbox oil loss and seizure of D-3",
+      "horizon_s": 16200,
+      "pace": "wall",
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__gear_oil_loss", "at": "onset_s", "severity": "severity"}
+      ],
+      "policy": [
+        {"anchor": "onset_s", "after_s": 3600, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "onset_s", "after_s": 3780, "effector": "belt_conveyor__stop_belt", "instance": "B-1", "args": {}}
+      ],
+      "rows": [
+        {"seed": 643449587, "onset_s": 1984, "severity": 0.88},
+        {"seed": 787620194, "onset_s": 2873, "severity": 1.07},
+        {"seed": 1510496262, "onset_s": 4995, "severity": 0.88},
+        {"seed": 1488205786, "onset_s": 4344, "severity": 1.06},
+        {"seed": 1461112063, "onset_s": 3396, "severity": 1.18},
+        {"seed": 1822941509, "onset_s": 5150, "severity": 0.99},
+        {"seed": 1400594357, "onset_s": 1802, "severity": 1.1},
+        {"seed": 1630292528, "onset_s": 2562, "severity": 1.01},
+        {"seed": 998975583, "onset_s": 4155, "severity": 1.06},
+        {"seed": 1376483022, "onset_s": 5295, "severity": 0.97}
+      ]
+    },
+    {
+      "id": "s4-a",
+      "story": "S4",
+      "plant": "a",
+      "title": "Feed surges on a healthy belt, drives with margin",
+      "negative_class": true,
+      "horizon_s": 21600,
+      "disturbances": [
+        {"instance": "F-1", "fault": "bulk_feeder__feed_surge", "at": "pulse_s", "severity": "pulse_severity"}
+      ],
+      "policy": [],
+      "rows": [
+        {"seed": 2024342292, "pulse_s": [9146], "pulse_severity": [0.48]},
+        {"seed": 1611938678, "pulse_s": [3186], "pulse_severity": [0.37]},
+        {"seed": 535435757, "pulse_s": [2849, 15548, 19030], "pulse_severity": [0.52, 0.46, 0.45]},
+        {"seed": 874362602, "pulse_s": [1840, 4241], "pulse_severity": [0.34, 0.5]},
+        {"seed": 1621098121, "pulse_s": [12885, 16857], "pulse_severity": [0.42, 0.52]},
+        {"seed": 184632390, "pulse_s": [7535, 9897], "pulse_severity": [0.59, 0.35]},
+        {"seed": 755774935, "pulse_s": [12307], "pulse_severity": [0.34]},
+        {"seed": 883269744, "pulse_s": [13186], "pulse_severity": [0.51]},
+        {"seed": 1683713220, "pulse_s": [7373, 14837], "pulse_severity": [0.55, 0.46]},
+        {"seed": 642402466, "pulse_s": [15553], "pulse_severity": [0.57]}
+      ]
+    },
+    {
+      "id": "s4-b",
+      "story": "S4",
+      "plant": "b",
+      "title": "Feed surges on a healthy belt, drives without margin",
+      "negative_class": true,
+      "horizon_s": 21600,
+      "disturbances": [
+        {"instance": "F-1", "fault": "bulk_feeder__feed_surge", "at": "pulse_s", "severity": "pulse_severity"}
+      ],
+      "policy": [],
+      "rows": [
+        {"seed": 337587933, "pulse_s": [4799, 6225, 15597], "pulse_severity": [0.46, 0.42, 0.37]},
+        {"seed": 1676206682, "pulse_s": [11441, 14652], "pulse_severity": [0.5, 0.52]},
+        {"seed": 1345503303, "pulse_s": [6511, 10567, 13162], "pulse_severity": [0.44, 0.31, 0.6]},
+        {"seed": 397695884, "pulse_s": [10433, 12419], "pulse_severity": [0.32, 0.48]},
+        {"seed": 905094007, "pulse_s": [11179, 18654], "pulse_severity": [0.44, 0.33]},
+        {"seed": 801705521, "pulse_s": [8311], "pulse_severity": [0.44]},
+        {"seed": 2096630881, "pulse_s": [12445], "pulse_severity": [0.53]},
+        {"seed": 2072621929, "pulse_s": [6932, 10001], "pulse_severity": [0.47, 0.41]},
+        {"seed": 428180713, "pulse_s": [2509, 8760, 11731], "pulse_severity": [0.49, 0.58, 0.39]},
+        {"seed": 490425277, "pulse_s": [7826, 10805], "pulse_severity": [0.32, 0.52]}
+      ]
+    },
+    {
+      "id": "s5-a",
+      "story": "S5",
+      "plant": "a",
+      "title": "A frozen vibration reading hides the slow bearing failure on D-3",
+      "horizon_s": 57600,
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__vibration__frozen", "at": "frozen_s"},
+        {"instance": "D-3", "fault": "conveyor_drive__lube_loss", "at": "onset_s", "severity": "severity"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}},
+        {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
+      ],
+      "rows": [
+        {"seed": 1177676952, "onset_s": 5166, "severity": 1.16, "stop_s": 43929, "frozen_s": 2485},
+        {"seed": 397896178, "onset_s": 4053, "severity": 0.81, "stop_s": 40792, "frozen_s": 952},
+        {"seed": 579258288, "onset_s": 6868, "severity": 1.15, "stop_s": 47085, "frozen_s": 4645},
+        {"seed": 1359152074, "onset_s": 3984, "severity": 1.11, "stop_s": 46097, "frozen_s": 1465},
+        {"seed": 729982534, "onset_s": 4018, "severity": 0.9, "stop_s": 43776, "frozen_s": 1012},
+        {"seed": 309293695, "onset_s": 4218, "severity": 0.98, "stop_s": 41427, "frozen_s": 2257},
+        {"seed": 1381282680, "onset_s": 3786, "severity": 0.98, "stop_s": 38589, "frozen_s": 1504},
+        {"seed": 200808986, "onset_s": 6991, "severity": 0.92, "stop_s": 44975, "frozen_s": 4274},
+        {"seed": 42031786, "onset_s": 3605, "severity": 0.99, "stop_s": 46544, "frozen_s": 246},
+        {"seed": 485130158, "onset_s": 4851, "severity": 0.99, "stop_s": 43601, "frozen_s": 1765}
+      ]
+    }
+  ]
+}

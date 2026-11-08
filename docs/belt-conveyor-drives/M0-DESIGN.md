@@ -1,6 +1,6 @@
 # M0 design: the conveyor as data
 
-Status: as built in M0 rounds 1 and 2 (2026-11-08). It refines [PLAN.md](PLAN.md) section 3 with the owner decisions of
+Status: as built in M0 rounds 1 to 3 (2026-11-08). It refines [PLAN.md](PLAN.md) section 3 with the owner decisions of
 section 9.6 (O1-O14), a calibration run on an independent Python mirror of these equations (one-second Euler steps), and
 what the component format allows (no state may depend on itself through the inputs of its kind, even through a lag).
 Where this page and PLAN.md section 3 differ, this page wins; each difference is listed in section 7.
@@ -53,7 +53,7 @@ Q_nom 41.6667 kg/s (150 t/h). Measurement point `feed` (FT, mass flow meter, 0-8
 | Fault | Class | Form |
 |---|---|---|
 | `shift_pattern` | negative | supply × (1 − 0.3) for the first 12 h of each 24 h (intermittent): the S0 nominal-day swing |
-| `feed_surge` | negative | supply × (1 + 0.5) for 300 s (pulse) |
+| `feed_surge` | negative | supply × (1 + severity) for 300 s (pulse): severity 0.3-0.6 is a 1.3-1.6x surge |
 | `chute_buildup` | fault | supply × (1 − 0.3 · min(0.005 · h, 1)) (ramp) |
 
 ## 3. Belt (B-1)
@@ -104,7 +104,7 @@ derived from them, steady initial values and the `share` fallback included:
 
 | margin | F_rated | k_boost | k_d | load at nominal | winding at nominal |
 |---|---|---|---|---|---|
-| `strong` (default, regime A) | 920 N | 1.5 | 0.52 | 0.646 | 82.4 °C |
+| `strong` (default, regime A) | 920 N | 1.5 | 0.55 | 0.646 | 82.4 °C |
 | `weak` (regime B) | 607 N | 1.75 | 0.135 | 0.964 | 111.0 °C |
 
 | State | Equation | Unit |
@@ -123,7 +123,7 @@ derived from them, steady initial values and the `share` fallback included:
 | heat_b, vib_b | curve(d): 75 · d³ K; 9.6 · d⁴ mm/s | K, mm/s |
 | wiggle | 0.25 · sin(2π t / 24 h) from the world start, the same on every drive | mm/s |
 | vibration | 1.2 · enabled + 0.3 · load + (vib_b + wiggle) · enabled | mm/s |
-| g | 0; fault `gear_oil_loss` (ramp 0.5/h) | 0..1 |
+| g | 0; fault `gear_oil_loss`: 2 · severity · min(0.25 · h, 1), held at most 1, so g rises at 0.5 · severity per hour and every severity seizes | 0..1 |
 | free_ok | trip g > 0.95, latched; `reset_trip` cannot clear it while g stays above (seizure) | 0/1 |
 | vfd_ok | 1; fault `vfd_fault` (step −1) | 0/1 |
 | available | relay_ok · inverter_ok · overtemp_ok · vfd_ok · free_ok | 0/1 |
@@ -207,11 +207,44 @@ What the oracle tests compute (round 2, noiseless, the composed plants):
   `set_feed`, `stop_drive`, `stop_belt`, `start_belt`.
 - Tests that simulate an hour or more (survivors in A for 50 min, the dry bearing, the seizure, the frozen sensor, the
   weak drive's library checks) skip under `-short`.
-- Scenario files per story and regime (O12): a do-nothing run and a hand-written reference-policy run; seed tables
-  (onset, severity) as data; live session plans written and validated, first run in M2. Regime B is the composition
-  with `margin: weak` on the drives and `breakaway_n_per_kg: 1.152` on the belt.
-- S0's diurnal feed: the feeder's `shift_pattern` fault injected at the start of the run, in plant A.
-- Long do-nothing runs (hours of plant time) skip under `-short` and run in `make test-long`.
+- Stories (O12): `examples/belt-conveyor/stories.json` holds S0-A, S1-A/B, S2-A/B, S3-A, S4-A/B and S5-A (S6 is M4):
+  plant, horizon, disturbances, ten seed rows drawn once from a fixed generator, and the hand-written reference policy
+  (README in that folder). Generated from it and checked byte for byte: `scenarios/<story>.do-nothing|reference.scenario.json`
+  (seed row 1, `scenario-v0.1`, noisy, `native-jsonl`) and `sessions/<story>.session-plan.json` (seed row 1, wall pace
+  for S2 and S3, placeholder host socket, no policies; checked by the plant wire's own plan check).
+- Story checks in `test/contract/belt_stories_*_test.go`: the table and the files (CI tier, including one committed
+  scenario run through `run.RunScenario` up to a minute after its first command; the whole file in the long tier),
+  and every seed row of every story with and without its policy on noiseless worlds executing the generated commands
+  (long tier).
+
+| Story | Horizon | Draws (PLAN.md section 2.3 unless noted) | Reference policy |
+|---|---|---|---|
+| S0-A | 24 h | `shift_pattern` from 0 | none |
+| S1-A, S1-B | 16 h | lube loss at U[0.5, 2] h, severity U[0.8, 1.25]; downstream stop at onset + U[9.5, 12] h for 30 min | onset + 4 h: feed to the safe limp feed; + 5 min: feed 0; + 3 min: `stop_drive` D-3; + 10 s: feed back to limp |
+| S2-A, S2-B | 3 h | `vfd_fault` at U[10, 40] min; downstream stop at trip + U[10, 40] min for 30 min | A: trip + 30 s: limp feed. B: trip + 10 s: feed 0; trip + 250 s: limp feed |
+| S3-A | 4.5 h | gear oil loss at U[0.5, 1.5] h, severity U[0.8, 1.25] | onset + 1 h: feed 0; + 3 min: `stop_belt` |
+| S4-A, S4-B | 6 h | 1-3 `feed_surge` pulses at U[0.5, 5.5] h, at least 20 min apart, severity U[0.3, 0.6] | none |
+| S5-A | 16 h | S1-A with onset U[1, 2] h (so the freeze starts after 0), plus `vibration__frozen` on D-3 from onset − U[0.5, 1] h | as S1-A |
+
+Safe limp feed (two drives restart the belt they leave loaded, and stay at or under rating): A 57.3 % and 104 % →
+54 %; B 29.3 % and 20.1 % → 18 % (rating binds in B, not the restart).
+
+What the long tier found (every seed row):
+- S1 do nothing: D-3 trips on overtemperature 6.96-8.17 h after onset in S1-A, 7.14-8.86 h in S1-B, 6.99-8.54 h in
+  S5-A. Severities above 1 bunch at about 7.0 h in A: the grease deficit `lube` is held at 1, so a severity above 1
+  only reaches it sooner. A: survivors carry on and the belt is
+  stranded at the downstream stop. B: survivors' inverters trip 100-110 s after D-3 (hotter than in S2, D-3's bearing
+  drag having loaded them), then stranded.
+- S2-B do nothing: cascade 121 s after the trip in every row (closed form 119.1 s; section 5). Feed 0 saves the
+  survivors if it comes within 104 s of the trip (S2-B's reference reacts at 10 s); B4 (feed 67 % one second after
+  the trip) still trips them at 201 s.
+- S3 do nothing: seizure at the closed-form time (1.61-2.16 h after onset), stall 3 s later with 1250 kg on the belt.
+- S4-B: one 300 s pulse up to 1.67x does not trip plant B; the drawn severities stay at or below 0.6.
+- S0, S4: no protective trip, no stall, never stranded. Every reference policy: never stranded, no survivor
+  protective trip; S1 and S5 stop D-3 by command 4 h 8 min after onset, before its do-nothing trip; S3 leaves the
+  belt empty and stopped when D-3 seizes.
+- The long tier simulates about 1530 plant hours (91 800 minutes) in 8.5 min of wall time on this machine
+  (40 CPU minutes, the variants in parallel); it skips under `-short`.
 
 ## 7. Differences from PLAN.md section 3
 
@@ -236,3 +269,6 @@ What the oracle tests compute (round 2, noiseless, the composed plants):
 | M17 | The drive's vibration has a daily wiggle and its own instrument, `vibration-sensor@1`, which carries the silent `frozen` fault; the accelerometer does not | A frozen reading of a steady signal is never observable to the truth oracle, and the accelerometer serves five other parts with steady vibration |
 | M18 | `life_used` and `gear_used` start at 10 000 h in service | From 0, a weak drive's counters move more than the steady-start check allows in ten minutes |
 | M19 | The 2-drive belt (O7) is composed inside its test, not shipped | Two shipped plants are enough; the variant only proves the sharing |
+| M20 | Regime A k_d 0.55 (was 0.52) | In the Go model 0.52 put severity 0.8 at 9.09 h, outside S1's 6-9 h window; 0.55 gives 8.6 h at 0.8 and 7.0 h at 1.25 (k_d is the calibration M7 provides for this window) |
+| M21 | `gear_oil_loss` severity sets the speed of the oil loss, not its final level (g = 2 · severity · 0.25/h, held at 1) | With g = severity · min(0.5 · h, 1) a severity below 0.95 never seized, so a third of S3's U[0.8, 1.25] rows had no story; severity 1 still seizes at 1.9 h |
+| M22 | `feed_surge` adds severity × the feed (was 0.5 × severity) | S4's severities U[0.3, 0.6] then are the 1.3-1.6x surges of PLAN.md section 2.3 |

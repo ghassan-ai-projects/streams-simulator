@@ -171,6 +171,10 @@ func BeltConveyorComposition(regime string) string {
 	return filepath.Join(RepositoryRoot(), "examples", "compositions", "belt-conveyor-drives-"+regime+".composition.json")
 }
 
+func BeltConveyorStoriesDir() string {
+	return filepath.Join(RepositoryRoot(), "examples", "belt-conveyor")
+}
+
 func WorkspaceFolder(root, folder string) string { return filepath.Join(root, folder) }
 
 func WorkspaceFile(folder, name string) string { return folder + "/" + name }

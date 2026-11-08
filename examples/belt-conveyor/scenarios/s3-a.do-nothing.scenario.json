@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "id": "s3-a-do-nothing",
+  "description": "S3: Gearbox oil loss and seizure of D-3, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 643449587,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767227584000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__gear_oil_loss",
+        "onset_ns": 1767227584000000000,
+        "params": {
+          "severity": 0.88
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767241800000000000
+      }
+    }
+  ]
+}

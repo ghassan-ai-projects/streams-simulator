@@ -57,14 +57,14 @@ Derived checks the defaults give (arithmetic, kept as a data test in M0):
 
 | Quantity | Regime A | Regime B |
 |---|---|---|
-| Drive load L, 3 drives, full feed | 0.64 | 0.93 |
-| L with one drive out, full feed | 0.97 | 1.40 |
-| Survivor I²t trip after loss (from hot) | never (I² 0.93 < 1.10) | 238 s = τ_r·ln((1.96−0.87)/(1.96−1.10)) |
-| Survivor hot spot / aging rate after loss | 121 °C / 0.55 (7.6x normal 0.072) | trips first (overtemp would take ~18 min) |
-| Highest feed keeping 2 drives able to restart (m ≤ (2·k_lim·F_rated − a0)/a1) | 57 % (709 kg) | 34 % (430 kg) |
-| Highest feed keeping 2 drives ≤ 1.0x (F_empty + 700·f ≤ 2·F_rated) | > 100 % | 30 % |
-| **Safe limp feed** | **55 %** | **30 %** |
-| Seized D-3: demand 3530 N vs capacity of 2 survivors | 2640 N: stall in 3 s | 2125 N: stall in 3 s |
+| Drive load L, 3 drives, full feed | 0.646 (model, M0) | 0.964 (model, M0) |
+| L with one drive out, full feed | 0.984 (model, M0) | 1.461 (model, M0) |
+| Survivor trip after loss (from hot) | never: I² 0.973 < 1.1025 (model, M0) | inverter (τ 700 s) first: 119 s = 1 s + τ_inv·ln((1.996−0.938)/(1.996−1.1025)) closed form, 121 s in the model; the relay alone would take 170 s (model, M0) |
+| Survivor hot spot / aging rate after loss | 123 °C / 0.63 (8.5x normal 0.074) (model, M0) | trips first (overtemp would take about 13 min) (model, M0) |
+| Highest feed keeping 2 drives able to restart (m ≤ (2·k_lim·F_rated − a0 − drag)/a1) | 57.3 % (716 kg) (model, M0) | 29.3 % (366 kg) (model, M0) |
+| Highest feed keeping 2 drives ≤ 1.0x (F_empty + 700.8·f + drag ≤ 2·F_rated) | 104 % (model, M0) | 20.1 % (model, M0) |
+| **Safe limp feed** | **54 %** (model, M0) | **18 %** (model, M0) |
+| Seized D-3: demand vs capacity of 2 survivors | 3877 N vs 2760 N: stall 3 s after seizure (model, M0) | 3759 N vs 1821 N: stall (model, M0) |
 
 ---
 
@@ -107,8 +107,9 @@ throughput-reducing actions; J_run ≤ J_B0 + 0.1 h.
 - Story: t_on ∈ U[0.5, 2] h: D-3 lube loss starts (ramp fault on `lube_deficit`, severity U[0.8, 1.25]). Damage grows
   with load (∝ L³). Vibration rises first (convex in damage), then D-3 bearing heat lifts its winding temperature against
   its peers at equal current (torque follower) [DEV-5]. Do nothing: D-3 overtemperature trip at t_on + 6-9 h.
-  A: survivors run at 0.97x for the 24 h limp period, aging 7.6x; the downstream stop at trip + U[1, 6] h strands the
-  loaded belt. B: survivors trip on I²t 4 min after D-3 (cascade), belt stops loaded, stranded.
+  A: survivors run at 0.98x for the 24 h limp period, aging 8.5x (model, M0); the downstream stop at trip + U[1, 6] h
+  strands the loaded belt (M0 draws it at t_on + U[9.5, 12] h, after the latest trip). B: survivors trip on the inverter
+  100-110 s after D-3 (cascade) (model, M0), belt stops loaded, stranded.
 - Truth: `first_observable` (vibration SNR, existing solver), D-3 trip time t_f, survivor trips, stranding time, life
   and gear-wear used per drive, tonnes delivered, all from the outcome reference.
 - Must lose: B0, B1 (late: vibration zone C comes < 2 h before t_f), B2 (fires on feed swings), B4 (strands: 67 % feed
@@ -119,11 +120,11 @@ throughput-reducing actions; J_run ≤ J_B0 + 0.1 h.
 
 **S2 Sudden trip of D-3 under full load (no precursor), regimes A and B.**
 - Story: VFD fault (step on `vfd_ok`) at t_trip ∈ U[10, 40] min, full feed. A: survivors 0.97x; downstream stop at
-  t_trip + U[10, 40] min. B: survivors on I²t, cascade at t_trip + 238 s (±10 s with feed noise). Horizon t_trip + 2 h.
+  t_trip + U[10, 40] min. B: survivors' inverters trip, cascade at t_trip + 121 s (closed form 119 s) (model, M0). Horizon t_trip + 2 h.
 - Truth: t_trip; cascade time (B); stranding time; per-drive damage.
-- Must lose: B0; B4 (A: 2/3 feed strands at the downstream stop; B: 2/3 feed gives 1.21x, cascade at +509 s).
-- Pass: lead time is not graded (unpredictable). Reaction: feed ≤ safe limp feed within 120 s (B; the I²t window minus
-  the 30 s belt transport) or before the downstream stop (A); no cascade; not stranded; no futile restart attempt;
+- Must lose: B0; B4 (A: 2/3 feed strands at the downstream stop; B: 2/3 feed one second after the trip still trips the survivors at +201 s (model, M0)).
+- Pass: lead time is not graded (unpredictable). Reaction: feed ≤ safe limp feed within 120 s (B; feed 0 saves the
+  survivors up to 104 s after the trip (model, M0)) or before the downstream stop (A); no cascade; not stranded; no futile restart attempt;
   J ≤ J_B4 − 1 h. ≥ 9/10 seeds.
 
 **S3 Seized gearbox on D-3 (short precursor, then drag).**
@@ -140,7 +141,7 @@ throughput-reducing actions; J_run ≤ J_B0 + 0.1 h.
 **S4 Feed surge (negative class), regimes A and B.**
 - Story: healthy plant; 1-3 feed pulses of 1.3-1.6x for 180-420 s (existing negative-class `surge` shape on the feeder).
   All currents and temperatures rise together, ~30 s after the feed signal. Chosen so that even the worst pulse does not
-  trip B (1.6x for 420 s: I²t time 649 s > 420 s). Horizon 6 h.
+  trip B (one 300 s pulse of up to 1.67x does not trip B (model, M0); the feeder's pulse lasts 300 s). Horizon 6 h.
 - Truth: `is_negative_class`; no failure in the outcome reference.
 - Must lose: B2 (alarms and cuts feed every pulse).
 - Pass: 0 detections labeled drive degradation; 0 actions that reduce throughput; ≤ 1 R0 watch per pulse; J within

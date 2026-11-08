@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "domain": "belt-conveyor-drives-b",
+  "seed": 337587933,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "disturbances": [
+    {
+      "at_s": 4799,
+      "instance": "F-1",
+      "fault": "bulk_feeder__feed_surge",
+      "severity": 0.46
+    },
+    {
+      "at_s": 6225,
+      "instance": "F-1",
+      "fault": "bulk_feeder__feed_surge",
+      "severity": 0.42
+    },
+    {
+      "at_s": 15597,
+      "instance": "F-1",
+      "fault": "bulk_feeder__feed_surge",
+      "severity": 0.37
+    }
+  ]
+}
