@@ -20,6 +20,7 @@ type storyOutcome struct {
 	seizedMassKg float64
 	anchor       map[string]float64
 	simulatedS   float64
+	facts        *model.OutcomeFacts
 }
 
 func (o storyOutcome) at(key string) float64 {
@@ -45,13 +46,8 @@ type storyRun struct {
 	*beltWorld
 	resolutionS float64
 	anchorS     float64
-	cut         bool
-	cutS        float64
 	outcome     storyOutcome
 }
-
-// strandCutS is how long a do-nothing run goes on after the belt is stranded: its story is told by then.
-const strandCutS = 120.0
 
 func number(value any) float64 {
 	switch v := value.(type) {
@@ -75,20 +71,17 @@ func nanoseconds(value any) int64 {
 
 func secondsOf(ns any) float64 { return float64(nanoseconds(ns)-model.DefaultStartTimeNS) / 1e9 }
 
-// runStory executes a story scenario's commands on a noiseless world, watching the plant every resolutionS seconds;
-// with cutAfterStrand it stops strandCutS seconds after the belt is stranded.
-func runStory(t *testing.T, story beltStory, row map[string]any, policy string, resolutionS, anchorS float64, cutAfterStrand bool) storyOutcome {
+// runStory executes a story scenario's commands on a noiseless world to its horizon, watching the plant every
+// resolutionS seconds, and records its outcome.
+func runStory(t *testing.T, story beltStory, row map[string]any, policy string, resolutionS, anchorS float64) storyOutcome {
 	t.Helper()
 	scenario := story.scenario(row, policy)
 	r := &storyRun{beltWorld: newSeededBeltWorld(t, beltPlant(t, story.Plant), scenario.Seed), resolutionS: resolutionS, anchorS: anchorS,
-		cut: cutAfterStrand, cutS: math.Inf(1), outcome: storyOutcome{first: map[string]float64{}, anchor: map[string]float64{}}}
+		outcome: storyOutcome{first: map[string]float64{}, anchor: map[string]float64{}}}
 	for _, command := range scenario.Commands {
-		if r.nowS >= r.cutS {
-			break
-		}
 		r.execute(command)
 	}
-	r.outcome.simulatedS = r.nowS
+	r.outcome.simulatedS, r.outcome.facts = r.nowS, worldOutcome(r.w)
 	return r.outcome
 }
 
@@ -115,7 +108,7 @@ func (r *storyRun) execute(command model.ScenarioCommand) {
 }
 
 func (r *storyRun) watchUntil(untilS float64) {
-	for r.nowS < math.Min(untilS, r.cutS) {
+	for r.nowS < untilS {
 		next := math.Min(untilS, r.nowS+r.resolutionS)
 		if r.nowS < r.anchorS && next > r.anchorS {
 			next = r.anchorS
@@ -134,9 +127,6 @@ func (r *storyRun) observe() {
 	r.mark("D-3", "run_cmd", 0)
 	r.mark("B-1", "stall_ok", 0)
 	r.mark("B-1", "stranded", 1)
-	if stranded, seen := r.outcome.first["B-1.stranded"]; seen && r.cut {
-		r.cutS = stranded + strandCutS
-	}
 	if _, seized := r.outcome.first["D-3.free_ok"]; seized && r.outcome.seizedMassKg == 0 {
 		r.outcome.seizedMassKg = r.state("B-1", "m")
 	}

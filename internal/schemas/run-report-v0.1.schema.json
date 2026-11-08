@@ -222,6 +222,17 @@
         "scorecard": {"type": "object"}
       }
     },
+    "outcome_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Present when the run ended and its domain declares ground_truth.outcome_weights: the run graded on its consequences, as streamsim outcome grades it (the run replayed as it ran, with nobody acting and under each baseline policy). Computed when the report is built, never stored in the folder.",
+      "properties": {
+        "status": {"enum": ["scored", "not_scored", "failed"]},
+        "reason": {"type": "string", "minLength": 1},
+        "result": {"type": "object", "description": "The outcome document of streamsim outcome (cli-output-v0.1 outcome)."}
+      }
+    },
     "open_questions": {
       "type": "array",
       "description": "What a reader cannot conclude from this run, asked by rules of the binary in a fixed order. Every entry is a stable code and a sentence.",

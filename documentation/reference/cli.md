@@ -839,7 +839,7 @@ streamsim outcome --run <run-dir> [--domains-dir <path>] [--adapters-dir <path>]
 - Design: [RUN_REPORT.md](../../docs/design/RUN_REPORT.md); contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
 
 ```text
-streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay] [--domains-dir <dir>] [--adapters-dir <dir>]
+streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay] [--outcome] [--domains-dir <dir>] [--adapters-dir <dir>]
 streamsim report compare --a <run-dir> --b <run-dir> [--format json|markdown] [--out <file>]
 ```
 
@@ -856,6 +856,13 @@ Without `--out`, the JSON report is the command's one stdout document. With `--o
 
 - `replay` is always present: `{status, detail?}` with `status` `not_checked` (the default: the report reads files and does not replay), `reproduces`, `does_not_reproduce` (with the reason in `detail`) or `incomplete` (a run that ended incomplete cannot be verified as complete); a replay that cannot run, or a run that has not ended, stays `not_checked` with the reason in `detail`.
 - `open_questions` lists what a reader cannot conclude from the run, asked by rules of the binary in a fixed order, each as `{code, message}`: `evidence_foreign` (a file of the folder belongs to another run), `evaluate_unsealed` (an Evaluate run that has not ended: truth sealed, not comparable), `run_not_ended` (an Explore run still open), `run_incomplete`, `stopped_early` (its sentence gives the stop and the requested end as simulated clock times, `hh:mm:ss`), `files_differ`, `replay_not_checked`, `replay_does_not_reproduce`, `no_observations`, `torn_tail`, `no_kpi_results`, `no_outside_scoring` (no verdict was scored, or the run is an unscored investigation).
+- `outcome_score` (only with `--outcome`, and then only when the run ended and its domain declares
+  `ground_truth.outcome_weights`; without the flag no report carries it and none replays the run for it):
+  `{status, reason?, result?}` with `status` `scored`, `not_scored` (an unblinded or Explore run) or `failed` (the run does
+  not replay, for example), and `result` the document `streamsim outcome` prints for the folder. Asking for it replays the
+  run four times (about 100 s for a 16 hour conveyor story). The Markdown report then adds an "Outcome score" section:
+  status, `valid`, one row per run (cost J, trips, boundary violations, calls) and one per baseline (delta, verdict).
+  `--outcome` does not apply to `report compare`.
 - The Markdown report reads as a handover: Purpose, What ran, Outcome and integrity (execution outcome, recording integrity, replay and outside scoring as separate rows), Evidence coverage, Results (the scope of the KPI truth and `Objective: Not assessed`, since the run declares no objective), Plan, the fault, perturbation, environment and effector tables, Open questions, then the digests and verification detail.
 - Per-entity coverage is not part of the report.
 

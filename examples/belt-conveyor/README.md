@@ -22,6 +22,18 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
   wall clock. The `host_socket` `/tmp/streamsim-host.sock` is a placeholder and there are no `policies`: set both to
   the host's own. Each plan carries the story's `horizon_s`, so the session ends itself there (`stopped: false`).
 
+To grade a story run on its consequences, run its scenario into a folder and score that folder:
+
+```bash
+streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --sink file --out /tmp/s2-a
+streamsim outcome --run /tmp/s2-a --domains-dir examples
+```
+
+`outcome` replays the run as it ran, with every effector call removed (`do_nothing`) and under the plant's baseline policy
+`b4` (feed to 67 % when a drive is unavailable), prices each with the plant's `outcome_weights` (equivalent production
+hours) and says whether the run beats, ties or loses against each. `streamsim report /tmp/s2-a --outcome` carries the same result in
+its `outcome_score` section (a report without `--outcome` does not compute it). A live session that ended at its `horizon_s` is graded the same way from its run folder.
+
 The scenario and session files are generated from `stories.json` by `test/contract/belt_stories_files_test.go`, which
 fails when a committed file differs; after editing the table, regenerate them with
 `UPDATE_GOLDEN=1 go test ./test/contract -run TestTheCommittedStoryFilesAreWhatTheStoryTableGenerates`.

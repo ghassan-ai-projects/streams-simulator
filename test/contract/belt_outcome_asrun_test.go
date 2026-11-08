@@ -27,6 +27,10 @@ func directOutcome(t *testing.T, scenario *model.Scenario) *model.OutcomeFacts {
 	for _, command := range scenario.Commands {
 		applyDirectly(t, w, command)
 	}
+	return worldOutcome(w)
+}
+
+func worldOutcome(w *world.World) *model.OutcomeFacts {
 	facts := w.OutcomeFacts(w.Clock())
 	facts.Calls = []model.OutcomeCall{}
 	for _, call := range w.EffectorCalls() {

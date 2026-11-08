@@ -90,7 +90,7 @@ func newBeltWorld(t *testing.T, spec *domain.Compiled) *beltWorld {
 
 func newSeededBeltWorld(t *testing.T, spec *domain.Compiled, seed uint64) *beltWorld {
 	t.Helper()
-	w, err := world.New(spec, seed, "belt", model.DefaultStartTimeNS, world.Options{Noiseless: true, EmitDisabled: true})
+	w, err := world.New(spec, seed, "belt", model.DefaultStartTimeNS, world.Options{Noiseless: true, EmitDisabled: true, RecordOutcome: true})
 	if err != nil {
 		t.Fatal(err)
 	}

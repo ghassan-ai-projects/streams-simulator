@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
@@ -63,6 +64,25 @@ func TestGradeOutcomeScoresTheRunAgainstDoingNothingAndEveryPolicyInOrder(t *tes
 	}
 	if !graded.Valid || len(graded.Verdicts) != 2 || graded.Verdicts[0].Verdict != model.VerdictBeats || graded.Domain != "belt-conveyor-drives-b" {
 		t.Fatalf("graded %+v, want a valid story the early feed cut beats", graded.OutcomeScore)
+	}
+}
+
+func TestGradingAnOutcomeTwiceGivesTheSameDocumentByteForByte(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	weakPlantRun(t, dir)
+	var documents [2][]byte
+	for i := range documents {
+		graded, err := GradeOutcome(t.Context(), outcomeOptions(dir))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if documents[i], err = json.Marshal(graded); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !bytes.Equal(documents[0], documents[1]) {
+		t.Fatalf("two gradings differ:\n%s\n%s", documents[0], documents[1])
 	}
 }
 

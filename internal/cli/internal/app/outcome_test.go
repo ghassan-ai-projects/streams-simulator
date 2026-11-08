@@ -44,6 +44,20 @@ func TestOutcomeScoresARunAgainstDoingNothingAndEachBaselinePolicy(t *testing.T)
 	}
 }
 
+func TestReportCarriesTheOutcomeScoreOnlyWhenAskedFor(t *testing.T) {
+	t.Parallel()
+	dir := shortPlantBRun(t)
+	plain := invoke(t, "report", dir).mustSucceed(t).json(t)
+	asked := invoke(t, "report", dir, "--outcome").mustSucceed(t).json(t)
+	scored, _ := asked["outcome_score"].(map[string]any)
+	if plain["outcome_score"] != nil || scored["status"] != "scored" || scored["result"] == nil {
+		t.Fatalf("outcome score %v by default and %v when asked, want none and a scored result", plain["outcome_score"], asked["outcome_score"])
+	}
+	if got := invoke(t, "report", "compare", "--a", dir, "--b", dir, "--outcome").failure(t); got["code"] != "usage_invalid" {
+		t.Fatalf("compare with --outcome = %v, want usage_invalid", got)
+	}
+}
+
 func TestOutcomeOfADomainWithoutWeightsReportsFactsOnly(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "outcome", "--run", runPondDocument(t), "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()).

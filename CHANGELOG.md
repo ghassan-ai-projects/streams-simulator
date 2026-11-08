@@ -10,7 +10,11 @@ This project has not established a formal release stream yet. Until it does, cha
   with `outcome_weights` (new optional `tie`, 0.1 on both conveyor plants) and says whether the run `beats`, `ties` or
   `loses` against each baseline; `valid` says doing nothing is not clean. Computed at scoring time, never sealed (O15); no
   verdict or label is read. A domain without weights gets the facts only. New `outcome` document in cli-output v0.1 and the
-  `outcome_failed` code.
+  `outcome_failed` code. `streamsim report --outcome` carries the same result in a new optional `outcome_score` member (run-report
+  v0.1) and an "Outcome score" Markdown section when the run's domain declares outcome weights; without the flag a report
+  is unchanged and replays nothing. Exit evidence: on every seed row of every conveyor story the reference policy beats doing nothing (S1-S3, S5),
+  and doing nothing is clean only on S0 and S4; through the binary the reference beats B4 on every positive story, and B4
+  never fires on S0 and S4. The story long tier's do-nothing runs now run to their horizon.
 - **Outcome data in a domain and a session horizon (conveyor milestone M1, round 1).** domain-spec v0.2 `ground_truth` takes
   two optional members: `outcome_weights` (cost per boundary violation and hour, per trip of a trip state, per unit of a
   KPI's change, per unneeded call) and `baseline_policies` (one condition on one state of a kind, an optional hold, then calls

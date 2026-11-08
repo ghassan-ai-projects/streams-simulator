@@ -73,7 +73,7 @@ func (c storyCheck) run(policy string) storyOutcome {
 	value, _ := c.runs.outcomes.LoadOrStore(c.key(policy), &sharedRun{})
 	shared := value.(*sharedRun)
 	shared.once.Do(func() {
-		shared.outcome = runStory(c.t, c.story, c.row, policy, c.resolution(), anchor, policy == policyNone)
+		shared.outcome = runStory(c.t, c.story, c.row, policy, c.resolution(), anchor)
 		c.runs.simulated.Add(int64(shared.outcome.simulatedS))
 	})
 	return shared.outcome
@@ -207,6 +207,7 @@ func (c storyCheck) tell(policy string) {
 	case "S3":
 		c.seizure(policy)
 	}
+	c.scoreOutcome(policy)
 }
 
 // byCost puts the stories that simulate the most plant time first, so the longest runs start first.

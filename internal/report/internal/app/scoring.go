@@ -41,6 +41,28 @@ func grade(ctx context.Context, artifact string) (*domain.Scoring, error) {
 	return &domain.Scoring{Status: domain.Scored, Scorecard: raw}, nil
 }
 
+func withOutcome(ctx context.Context, dir string, built *domain.Report) (*domain.Report, error) {
+	artifact, err := loadArtifact(dir)
+	if err != nil {
+		return nil, err
+	}
+	if built.TruthUnavailable == "" && domain.DeclaresOutcome(artifact) {
+		built.OutcomeScore = outcomeScoreOf(ctx, dir)
+	}
+	return built, nil
+}
+
+func outcomeScoreOf(ctx context.Context, dir string) *domain.OutcomeScoring {
+	graded, err := grading.GradeOutcome(ctx, grading.OutcomeOptions{RunDir: dir})
+	switch {
+	case errors.Is(err, grading.ErrRunUnblinded):
+		return &domain.OutcomeScoring{Status: domain.NotScored, Reason: err.Error()}
+	case err != nil:
+		return &domain.OutcomeScoring{Status: domain.Failed, Reason: insideFolder(err, dir)}
+	}
+	return &domain.OutcomeScoring{Status: domain.Scored, Result: graded}
+}
+
 func insideFolder(err error, dir string) string {
 	return withoutFolder(err.Error(), dir)
 }
