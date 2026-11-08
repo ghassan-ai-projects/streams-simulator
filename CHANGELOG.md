@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Multi-drive belt conveyor (conveyor milestone M0).** Three library parts: `streamsim/bulk-feeder`, `streamsim/belt-conveyor`
+  (drives share its pull; material on the belt, breakaway force, stall, a run permit from downstream, restart margin and a
+  `stranded` boundary) and `streamsim/conveyor-drive` (motor relay and inverter overload, winding heat and aging, bearing and
+  gear failures, seizure; `margin` strong or weak), the IO-Link `streamsim/vibration-sensor` with a `frozen` fault, the `force`
+  unit family and five port types. Example plants `belt-conveyor-drives-a` (strong) and `-b` (weak), and the stories S0-S5 as
+  data in `examples/belt-conveyor/` (ten seed rows each, do-nothing and reference-policy scenario files, live session plans),
+  checked against closed forms in `test/contract`. Design: `docs/belt-conveyor-drives/M0-DESIGN.md`.
+
 - **Plant wire contract 1.5.0: liveness is judged by heartbeats on every node.** A simulated node declared the host lost after
   three consecutive missed barriers, but a host may hold an `HSYNC` for as long as its reasoning lasts, so a live, busy host
   was lost after 3 x `--barrier-cap-ms`. Now the host keeps sending its `STATE` heartbeat while it holds an answer (the
