@@ -259,3 +259,22 @@ smallest margin (0.16 h), as on S2-A. The 40 long-tier runs of S6 (3 h each) tak
 Open point (world, not fixed here): each drive-to-drive link costs the world's lazy coupling about as much as the rest of
 the plant, so an S6 plant steps about 2.6 times slower than plant A (3.5 s against 1.3 s per plant hour; `@2` alone 1.7 s);
 its 24 h domain lint takes about 87 s against 33 s.
+
+## 8. Live evidence, arm B (GLM 5.3 Flash, first three seed rows)
+
+Four rounds on the barrier-paced twin through Tamoz, 2026-11-09 (agentic-stream `belt-m4-evidence`, evidence kept
+outside the repository):
+
+| Story | Round 1 | Round 2 | Round 3 | Round 4 |
+|---|---|---|---|---|
+| S2-B | 3/3 (198 quarantines each) | 3/3, 0 quarantines | - | - |
+| S3-A | 2/3 | 1/3 (feed level missing: the objective named a plant) | rows 1, 3 pass | - |
+| S1-A | 0/3 (`unknown` and a watch only) | 0/3 (Tamoz timeout, rejection, watch only) | 0/3 (steps refused as `action_without_diagnosis`; rows 2, 3 isolated D-3 but never restored the feed) | 3/3 |
+
+Round 4 on S1-A: every row plays the whole plan (limp, belt empty, isolate D-3, limp), no trip, no boundary violation,
+J - B0 -3.11, -2.40, -3.20; best baseline B3 by -1.27, -0.60, -1.53; detection 0.38-0.87 h after onset with the label
+correct; 4 model calls and about 15 k tokens per run. What changed: O34 (act before the cause is known), O35 (a watch
+wakes reasoning; failed reasoning is retried), O36 (`drive_degrading`), the per-plant limp feed in the device catalog.
+
+Finding: the model alone does not take a cause-free step under an unknown cause; the loop around it must name the
+symptom and keep asking when evidence changes.
