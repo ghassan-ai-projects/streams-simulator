@@ -270,3 +270,15 @@ func TestDomainAssumptionsRefuseAMissingDomainAWrongClassOfTwinAndAnUnknownKey(t
 		t.Errorf("a flag as a domain id: %v, want ErrBadArguments", err)
 	}
 }
+
+func TestInstallingKindFilesIsAMutatingCommandOnTheWorkspaceKindsHome(t *testing.T) {
+	t.Parallel()
+	action, err := Lookup("component.install_kinds")
+	if err != nil || action.Kind != KindCLI || !reflect.DeepEqual(action.Command, []string{"component", "install-kinds"}) || !action.Mutating ||
+		!action.Kinds || !action.KindsHome || action.Etag || action.Library {
+		t.Fatalf("component.install_kinds = %+v, %v", action, err)
+	}
+	if _, err := action.Argv(map[string]any{}); !errors.Is(err, ErrBadArguments) {
+		t.Fatalf("no example = %v", err)
+	}
+}

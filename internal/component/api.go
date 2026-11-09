@@ -21,6 +21,12 @@ type Fit = layer.Fit
 
 type ExampleSummary = layer.ExampleSummary
 
+type ExamplePlant = layer.ExamplePlant
+
+type KindFile = layer.KindFile
+
+type KindFilesInstalled = layer.KindFilesInstalled
+
 type NewPlant = layer.NewPlant
 
 type DomainAssumptions = layer.Assumptions

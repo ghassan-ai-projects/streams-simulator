@@ -59,6 +59,9 @@
       "$ref": "#/$defs/component_new"
     },
     {
+      "$ref": "#/$defs/component_install_kinds"
+    },
+    {
       "$ref": "#/$defs/adapter_list"
     },
     {
@@ -1575,11 +1578,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "example"
+        "example",
+        "kind_files"
       ],
       "properties": {
         "example": {
           "type": "object"
+        },
+        "kind_files": {
+          "$ref": "#/$defs/example_kind_files"
         }
       }
     },
@@ -1592,6 +1599,59 @@
       "properties": {
         "composition": {
           "type": "object"
+        },
+        "kind_files": {
+          "$ref": "#/$defs/example_kind_files"
+        }
+      }
+    },
+    "example_kind_files": {
+      "description": "The kind files and boards an example plant's entries implement (implements, board_type), sorted by file name; empty when it implements none.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "document"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[^/]+\\.(kind|board)\\.json$"
+          },
+          "document": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "component_install_kinds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "example",
+        "written",
+        "unchanged"
+      ],
+      "properties": {
+        "example": {
+          "type": "string",
+          "minLength": 1
+        },
+        "written": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "unchanged": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

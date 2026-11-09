@@ -16,6 +16,11 @@ export interface FileContent {
   readonly etag: string;
 }
 
+export interface InstalledKinds {
+  readonly written: readonly string[];
+  readonly unchanged: readonly string[];
+}
+
 export interface ComposeSummary {
   readonly channels: number;
   readonly faults: number;

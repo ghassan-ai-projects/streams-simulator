@@ -214,7 +214,7 @@ func TestTheBuiltInExamplesListAndAreFoundByID(t *testing.T) {
 		t.Fatalf("ListExamples = %+v, %v", listed, err)
 	}
 	found, err := FindExample("chiller-pilot")
-	if err != nil || !strings.Contains(string(found), `"chiller-pilot"`) {
+	if err != nil || !strings.Contains(string(found.Composition), `"chiller-pilot"`) || len(found.KindFiles) != 0 {
 		t.Fatalf("FindExample = %.80s, %v", found, err)
 	}
 	if _, err := FindExample("nothing"); !errors.Is(err, domain.ErrUnknownExample) {

@@ -157,7 +157,7 @@ Commands:
                                         or a journal (--kinds-dir compares with kind files); writes nothing
   component list [--unit u [--min n --max n]]|show <ref>|validate
                                         The component library: equipment, instruments, vocabulary
-  component examples|example <id>       Ready-to-run example plants shipped with the library
+  component examples|example <id>|install-kinds <id> --kinds-dir <d>  Example plants and their kind files
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
                                         (built in; --components-dir adds customer
                                         directories, repeatable; STREAMSIM_COMPONENTS_DIRS)

@@ -2,12 +2,11 @@ package files
 
 import (
 	"embed"
-	"encoding/json"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
 )
 
-//go:embed examples/*.composition.json
+//go:embed examples/*.composition.json examples/kinds/*.kind.json examples/kinds/*.board.json
 var builtInExamples embed.FS
 
 var builtInExampleTree = embeddedTree{files: builtInExamples, root: "."}
@@ -17,22 +16,26 @@ func ListExamples() ([]domain.ExampleSummary, error) {
 	return examples.List(), err
 }
 
-func FindExample(id string) (json.RawMessage, error) {
+func FindExample(id string) (domain.ExamplePlant, error) {
 	return findExample(builtInExampleTree, id)
 }
 
-func findExample(source tree, id string) (json.RawMessage, error) {
+func findExample(source tree, id string) (domain.ExamplePlant, error) {
 	examples, err := loadExamples(source)
 	if err != nil {
-		return nil, err
+		return domain.ExamplePlant{}, err
 	}
 	return examples.Find(id)
 }
 
 func loadExamples(source tree) (domain.Examples, error) {
-	files, err := readGroup(source, ".", "examples", ".composition.json")
+	compositions, err := readGroup(source, ".", "examples", ".composition.json")
 	if err != nil {
 		return domain.Examples{}, err
 	}
-	return domain.LoadExamples(files)
+	kindFiles, err := readGroup(source, "examples", "kinds", ".json")
+	if err != nil {
+		return domain.Examples{}, err
+	}
+	return domain.LoadExamples(compositions, kindFiles)
 }

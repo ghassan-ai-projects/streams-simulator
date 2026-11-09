@@ -154,6 +154,43 @@ describe("plant maker", () => {
     expect(await maker.examples()).toEqual([]);
   });
 
+  it("puts an example's kind files in the workspace before writing a copy of it, and never for a file or an empty frame", async () => {
+    const fake = bridge();
+    const maker = new PlantMaker(fake.plant);
+    const installs = () => fake.calls.filter((call) => call.name === "component.install_kinds");
+    await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy");
+    await maker.create({ kind: "example", id: "pilot" }, "lab-three", "Lab three", "empty");
+    expect(installs()).toEqual([]);
+    expect(await maker.tryExample({ id: "belt", title: "Belt", description: "" }, "belt")).toMatchObject({ ok: true });
+    expect(installs()).toEqual([{ name: "component.install_kinds", args: { example: "belt" } }]);
+    const names = fake.calls.map((call) => call.name);
+    expect(names.indexOf("component.install_kinds")).toBeLessThan(names.lastIndexOf("domain.compose"));
+  });
+
+  it("writes nothing when the workspace already has a different kind file, and says which", async () => {
+    const fake = bridge();
+    const differs =
+      "The workspace already has a bulk_feeder.kind.json that differs from the one example belt implements.";
+    fake.actions.set(
+      "component.install_kinds",
+      failed({
+        ...cannedFailure("kind_failed", 422, "component: not written"),
+        issues: [{ pointer: "/bulk_feeder.kind.json", message: differs, keyword: "kind_file_differs" }],
+      }),
+    );
+    const maker = new PlantMaker(fake.plant);
+    expect(await maker.tryExample({ id: "belt", title: "Belt", description: "" }, "belt")).toMatchObject({
+      ok: false,
+      failure: { kind: "compose-refused", diagnostic: { displayCode: "kind_failed", message: differs } },
+    });
+    expect(await maker.create({ kind: "example", id: "belt" }, "belt-2", "Belt 2", "copy")).toMatchObject({
+      ok: false,
+      failure: { diagnostic: { message: differs } },
+    });
+    expect(fake.writes).toEqual([]);
+    expect(fake.calls.filter((call) => call.name === "domain.compose")).toEqual([]);
+  });
+
   it("keeps a created copy when composing it fails, because the editor opens the composition and composes on save", async () => {
     const fake = bridge();
     fake.actions.set("domain.compose", failed(cannedFailure("composition_invalid", 422, "bad")));

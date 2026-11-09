@@ -52,6 +52,8 @@ var (
 		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}, {Key: "title", Flag: "--title", Shape: ShapeText, Required: true},
 			{Key: "from", Flag: "--from", Shape: ShapePath, Class: ClassComposition}, {Key: "example", Flag: "--example", Shape: ShapeText},
 			{Key: "empty", Flag: "--empty", Shape: ShapeFlag}}}
+	cliInstallKinds = Action{Name: "component.install_kinds", Kind: KindCLI, Command: []string{"component", "install-kinds"}, Kinds: true, KindsHome: true,
+		Mutating: true, CLIArgs: []CLIArg{{Key: "example", Shape: ShapeText, Required: true}}}
 	cliComponentValidate = Action{Name: "component.validate", Kind: KindCLI, Command: []string{"component", "validate"}, Library: true}
 	cliKindValidate      = Action{Name: "kind.validate", Kind: KindCLI, Command: []string{"kind", "validate"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}

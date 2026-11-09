@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **An example plant brings its kind files.** The belt conveyor examples implement plant wire kind files, so a copy made
+  in the canvas could not compose (`implements_missing`). The component module now embeds the kind files and board
+  mappings next to the example compositions (byte-equal to `examples/belt-conveyor/kinds/`, checked by a test) and chooses
+  an example's from its entries' `implements` and `board_type`. `component example` and `component new --example` carry
+  them in a new `kind_files` member (cli-output v0.1), and the new `component install-kinds <example> --kinds-dir <dir>`
+  writes them, leaving an identical file as it is and refusing a different one (`kind_failed`, `kind_file_differs`)
+  without writing anything. The canvas bridge action `component.install_kinds` runs it on the workspace `kinds/` folder
+  when the canvas copies an example, before the copy is written and composed.
 - **Kind files for the conveyor and a feeder that reads its setpoint back (conveyor milestone M2, rows 1 and 2).**
   composition-v0.1 takes `implements` and `board_type` on an equipment entry (`board_type` needs `implements`); `domain
   compose` copies both onto the composed kind and checks them against `--kinds-dir`. The bulk feeder gains the point

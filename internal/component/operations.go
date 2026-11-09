@@ -1,8 +1,6 @@
 package component
 
 import (
-	"encoding/json"
-
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/files"
 )
@@ -98,8 +96,12 @@ func Examples() ([]ExampleSummary, error) {
 	return files.ListExamples()
 }
 
-func Example(id string) (json.RawMessage, error) {
+func Example(id string) (ExamplePlant, error) {
 	return files.FindExample(id)
+}
+
+func InstallExampleKinds(id, kindsDir string) (KindFilesInstalled, error) {
+	return files.InstallExampleKinds(id, kindsDir)
 }
 
 func NewComposition(base []byte, plant NewPlant, source string) (map[string]any, error) {
