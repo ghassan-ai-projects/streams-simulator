@@ -75,3 +75,26 @@ one `bulk_feeder__set_feed` after a delay; saved means no protection trip of D-1
 
 The survivors' inverters trip 121 s after the loss with nobody acting, so a limp command has about 98 s; M2's reaction
 bound is set from 98 s with a margin.
+
+## 6. Done (2026-11-09)
+
+| Repo | Commits |
+|---|---|
+| streams-simulator (`belt-m2-loop`) | 93b659c2 compositions implement kind files; 528918c1 conveyor kind files, feeder read-back, measured deadlines; cce82f9c examples carry their kind files (O19); 445648c0, 1daa6a04 lint and coverage |
+| agentic-stream (`belt-m2-loop`) | b49d8e54 per-device readings (A1); c2f3c0a1 negative zero; a349bf46 boot fencing per entity and event type (O20); 7060f75b conveyor closed loop and the A6 verdict writer |
+
+Evidence: the streamsim-driven test over three seeds (distinct seeds and traces): the feed setpoint reads 18 % 10 s after
+D-3's trip (bound 98 s), verified by read-back; no survivor trip; never stranded; `streamsim outcome` beats doing
+nothing by 5.49 and B4 by 4.49; `streamsim score` detects D-3 with the right label (latency 8 s); `verify-run` passes;
+zero quarantines. Gates: streamsim `make phase-gate` (Enola and the behaviour pin included), agentic-stream
+`make ci-check`, the fan experiment tests against the real simulator, the device tests.
+
+Not done or open:
+- The fan P4 rung (FR+) needs the owner: a live model, a human hold and approve, about 40 minutes.
+- `streamsim score` does not credit an action on another entity than the fault's (the F-1 feed command for a D-3
+  fault lands in `unexpected.actions`), and it expects the verdict's `issued_at` after the world's call time, which a
+  plant-wire consumer cannot meet; fixed in M3.
+- agentic-stream: a canonical-marshal failure while applying a record stops the tenant pipeline instead of going to
+  `apply_failures`.
+- Canvas: copying an example while a run is live leaves the director without the new kind files until it restarts.
+- streamsim's run id derives from the domain alone, so it does not tell seeds apart.
