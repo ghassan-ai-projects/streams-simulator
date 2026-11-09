@@ -65,3 +65,38 @@ PLAN.md section 7: every story's pass rule over 10 seeds; the A arm's report aga
 explain any story a baseline passes; `verify-run` and zero quarantines on every run; `make phase-gate` in streamsim,
 `make ci-check` in agentic-stream and tamoz's own gate; the fan guards. Left for the owner: the live approval of the
 playbook proposal, arms B and C (T6), and the FR+ fan rung. Then the full end-to-end test of all seven stories (O13).
+
+## 6. As built
+
+Rows 1 and 2 (2026-11-09):
+
+- B1-B3 are closed `baseline_policies` on both plants beside B4. B2's threshold is 1.1 times the drive current at full
+  feed on three drives, from the model in closed form: 3.0768 A on plant A and 4.2614 A on plant B, written as 3.385 A
+  and 4.688 A (a contract test checks both against the closed form and the steady world).
+- `streamsim outcome` gains `easy`: valid, and some baseline policy ties or beats the run. Doing nothing never makes a
+  story easy.
+- What each baseline does on each story's first row, through the binary (`test/acceptance`), as the delta of the run's
+  cost J against it (equivalent production hours; negative: the run beats the baseline; `-`: the baseline never calls):
+
+  | Story | B1 vibration | B2 current | B3 safe limp | B4 drive lost | easy |
+  |---|---|---|---|---|---|
+  | S0-A | - | - | -9.63 | - | no (not valid) |
+  | S1-A | -4.14 | -5.67 | -2.92 | -5.67 | no |
+  | S1-B | +2.12 (B1 wins) | -3.07 | -4.63 | -3.07 | yes |
+  | S2-A | - | -5.51 | -0.19 | -5.52 | no |
+  | S2-B | - | -5.85 | -0.24 | -5.85 | no |
+  | S3-A | - | - | -4.59 | -3.35 | no |
+  | S4-A | - | -1.89 | -3.02 | - | no (not valid) |
+  | S4-B | - | -2.30 | -5.24 | - | no (not valid) |
+  | S5-A | -4.05 | -4.88 | -2.98 | -4.89 | no |
+
+  Departures from PLAN.md section 2.3: B1 is not late on S1-B (it alarms 47 min before D-3 would trip, empties the belt
+  and stops D-3 in time, and beats the reference policy, which limps at 18 % from 4 h after the onset: S1-B is easy by
+  cost; its pass rule's 2 h lead is not part of J); B1 fires on S5-A, because a policy watches the vibration state, not
+  the frozen reading; B2 does not fire on S0 (the feed never passes about 1.33x) nor on S3-A (the currents pass 1.1x only
+  in the seconds before the seizure); B3 beats nothing but costs least on S2 (0.2 h behind the reference).
+- `streamsim outcome` on a 16 h story replays six runs plus the reproduction check: 321 s with `GOMAXPROCS=4` on a
+  loaded machine (S1-B).
+- A label is keyed by entity and fault (O25): with several labels on one entity a detection is judged with the label its
+  `label` names and a call with the labels that expect it; what names none is judged with each. One label per entity
+  scores bit for bit as before (digest-pinned run-score documents).

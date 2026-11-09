@@ -1,9 +1,11 @@
 package acceptance
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -43,28 +45,78 @@ func policyCalls(graded map[string]any, mode string) int {
 	return -1
 }
 
-func TestEveryStoryRunIsGradedAgainstDoingNothingAndB4(t *testing.T) {
+// baselineDid is what a baseline policy did on a story's first seed row: whether it made a call, and the story's own
+// run (the reference policy, or nobody acting on a negative story) against it.
+type baselineDid struct {
+	fires   bool
+	verdict string
+}
+
+const (
+	beats = "beats"
+	ties  = "ties"
+)
+
+var (
+	quiet = baselineDid{false, ties}
+	fires = baselineDid{true, beats}
+)
+
+// storyBaselines states what B1-B4 (PLAN.md section 2.2, O27) do on each story's first row. B1 (vibration) fires only
+// where a bearing fails (S5-A too: a policy watches the vibration state, not the frozen reading), and stops the feed
+// for good; B2 (current) on a lost drive and the surges above about 1.3x, but
+// not on S3, whose currents pass 1.1x only in the seconds before the seizure; B3 (the safe limp feed from the start)
+// fires everywhere and costs throughput; B4 on a lost drive. On S1-B B1 costs less than the reference policy, which
+// limps at 18 % from 4 h after the onset, while B1 runs at full feed until its alarm 47 min before D-3 would trip, then
+// empties the belt and stops D-3 in time: S1-B is easy by cost. Every other story beats every baseline.
+var storyBaselines = map[string][4]baselineDid{
+	"s0-a": {quiet, quiet, fires, quiet},
+	"s1-a": {fires, fires, fires, fires},
+	"s1-b": {{true, "loses"}, fires, fires, fires},
+	"s2-a": {{false, beats}, fires, fires, fires},
+	"s2-b": {{false, beats}, fires, fires, fires},
+	"s3-a": {{false, beats}, {false, beats}, fires, fires},
+	"s4-a": {quiet, fires, fires, quiet},
+	"s4-b": {quiet, fires, fires, quiet},
+	"s5-a": {fires, fires, fires, fires},
+}
+
+func baselinesDid(graded map[string]any) [4]baselineDid {
+	var did [4]baselineDid
+	for i := range did {
+		mode := fmt.Sprintf("policy:b%d", i+1)
+		verdict, _ := verdictAgainst(graded, mode)["verdict"].(string)
+		did[i] = baselineDid{policyCalls(graded, mode) > 0, verdict}
+	}
+	return did
+}
+
+func TestEveryStoryRunIsGradedAgainstDoingNothingAndEachBaseline(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("every conveyor story's first seed row run and graded through the binary")
 	}
 	b := newBinary(t)
 	plantInputs := []string{"--domains-dir", filepath.Join(b.root, "examples"), "--adapters-dir", testsupport.AdaptersDir()}
-	for _, story := range []string{"s0-a", "s1-a", "s1-b", "s2-a", "s2-b", "s3-a", "s4-a", "s4-b", "s5-a"} {
+	for story, want := range storyBaselines {
 		t.Run(story, func(t *testing.T) {
 			t.Parallel()
 			scenario, positive := storyScenario(story)
 			dir := t.TempDir()
 			kinds := filepath.Join(b.root, "examples", "belt-conveyor", "kinds")
 			b.run(append([]string{"run", "--scenario", scenario, "--sink", "file", "--out", dir, "--kinds-dir", kinds}, plantInputs...)...).mustSucceed(t)
-			graded := b.run(append([]string{"outcome", "--run", dir}, plantInputs...)...).mustSucceed(t).document(t)
-			nothing, b4 := verdictAgainst(graded, "do_nothing"), verdictAgainst(graded, "policy:b4")
-			t.Logf("%s: valid %v; against do_nothing %v, against b4 %v; b4 calls %d", story, graded["valid"], nothing, b4, policyCalls(graded, "policy:b4"))
-			switch {
-			case positive && (graded["valid"] != true || nothing["verdict"] != "beats" || b4["verdict"] != "beats"):
-				t.Errorf("%s: the reference policy should beat doing nothing and b4 on a valid story", story)
-			case !positive && (graded["valid"] != false || nothing["verdict"] != "ties" || b4["verdict"] != "ties" || policyCalls(graded, "policy:b4") != 0):
-				t.Errorf("%s: a negative story should leave doing nothing clean, b4 should never fire, and all should tie", story)
+			started := time.Now()
+			graded := b.runWithin(30*time.Minute, append([]string{"outcome", "--run", dir}, plantInputs...)...).mustSucceed(t).document(t)
+			t.Logf("%s: outcome took %s", story, time.Since(started).Round(time.Second))
+			nothing, did := verdictAgainst(graded, "do_nothing"), baselinesDid(graded)
+			t.Logf("%s: valid %v, easy %v; against do_nothing %v; b1-b4 (fires, verdict) %v; verdicts %v", story, graded["valid"], graded["easy"],
+				nothing["verdict"], did, graded["verdicts"])
+			if graded["valid"] != positive || graded["easy"] != (story == "s1-b") || (positive && nothing["verdict"] != beats) || (!positive && nothing["verdict"] != ties) {
+				t.Errorf("%s: valid %v, easy %v, %s doing nothing; want a story that is valid exactly when positive, easy only on s1-b, beating doing nothing on a positive story and tying it on a negative one",
+					story, graded["valid"], graded["easy"], nothing["verdict"])
+			}
+			if did != want {
+				t.Errorf("%s: baselines b1-b4 did %v, want %v", story, did, want)
 			}
 		})
 	}
