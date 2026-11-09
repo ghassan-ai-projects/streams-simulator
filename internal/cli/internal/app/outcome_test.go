@@ -14,7 +14,7 @@ const shortPlantBScenario = `{"schema_version":"0.1","id":"short-b","domain":"be
 {"op":"clock.advance","args":{"to_ns":1767225660000000000}},
 {"op":"fault.inject","args":{"entity_id":"D-3","fault":"conveyor_drive__vfd_fault","onset_ns":1767225660000000000,"params":null}},
 {"op":"clock.advance","args":{"to_ns":1767225670000000000}},
-{"op":"effector.invoke","args":{"effector":"bulk_feeder__set_feed","entity_id":"F-1","command_id":"c-1","args":{"feeder_id":"F-1","percent":0},"at_ns":1767225670000000000}},
+{"op":"effector.invoke","args":{"effector":"bulk_feeder__set_feed","entity_id":"F-1","command_id":"c-1","args":{"percent":0},"at_ns":1767225670000000000}},
 {"op":"clock.advance","args":{"to_ns":1767226200000000000}}]}`
 
 func examplesDir() string { return filepath.Join(testsupport.RepositoryRoot(), "examples") }

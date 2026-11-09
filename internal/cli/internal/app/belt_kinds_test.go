@@ -32,7 +32,7 @@ func TestDomainComposeOfTheConveyorFindsItsKindFilesAndBoardMappingInTheKindsDir
 	}
 }
 
-func TestAConnectCheckOfAConveyorSessionPlanChecksTheFeederThroughItsBoardMapping(t *testing.T) {
+func TestAConnectCheckOfAConveyorSessionPlanChecksEveryKindThroughItsBoardMapping(t *testing.T) {
 	t.Parallel()
 	args := []string{"plantwire", "connect", "--plan", beltSessionPlan(), "--check", "--domains-dir", filepath.Join(testsupport.RepositoryRoot(), "examples"),
 		"--adapters-dir", testsupport.AdaptersDir()}
@@ -43,8 +43,8 @@ func TestAConnectCheckOfAConveyorSessionPlanChecksTheFeederThroughItsBoardMappin
 		fields, _ := entry.(map[string]any)
 		boards[fields["kind"]] = fields["board_type"]
 	}
-	if len(checked) != 3 || boards["bulk_feeder"] != "feeder-controller" || boards["belt_conveyor"] != nil || boards["conveyor_drive"] != nil {
-		t.Fatalf("implements_checked = %v, want the feeder through feeder-controller and the belt and drives directly", checked)
+	if len(checked) != 3 || boards["bulk_feeder"] != "feeder-controller" || boards["belt_conveyor"] != "belt-controller" || boards["conveyor_drive"] != "drive-controller" {
+		t.Fatalf("implements_checked = %v, want every kind through its board mapping", checked)
 	}
 	if failure := invoke(t, args...).failure(t); failure["code"] != "domain_invalid" || firstIssue(failure)["keyword"] != "implements_missing" {
 		t.Fatalf("check without --kinds-dir = %v, want the missing kind files refused", failure)

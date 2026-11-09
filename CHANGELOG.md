@@ -4,6 +4,23 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Every conveyor command is read back (conveyor milestone M3, row 2, O21).** The conveyor commands carry no id argument
+  any more (the call or the plant wire device addresses the instance): `set_feed` takes `percent`, `start_drive` and
+  `start_belt` take `run_command` 1, `stop_drive` and `stop_belt` `run_command` 0 (each assigns the run command; the plant's
+  `requires` permits are unchanged, so the world is too), `reset_trip` nothing. Drive and belt gain the point `run_command`
+  with the new instrument `streamsim/command-readback` (the on or off a controller was told, read from its register as a
+  number: noise-free, 0.1 resolution, periodic 2 s), so their run command is a writable metric. Their kind files are now
+  semantic (`current`, `winding`, `vibration`, `run_status`, `run_command`; `start_drive`, `stop_drive`, `reset_trip`;
+  `tail_speed`, `run_command`; `start_belt`, `stop_belt`) and reach the raw names through the new board mappings
+  `drive-controller` and `belt-controller`; the feeder's `feeder-controller` mapping loses its fixed `F-1`.
+- **Scoring credits remedies on other entities and matches actions by command id (conveyor milestone M3, row 1, O24).**
+  A verdict action matches the world's call by command id, effector and entity; its `issued_at` may precede the call. A
+  fault may declare `expected_actions` (`{kind, effector}`, domain-spec v0.2; on a composition entry keyed by the
+  component's fault id, composition v0.1), which a label resolves to instances (ground-truth v0.1): a matching call is the
+  right action, and with several labels it is graded with its fault instead of as unexpected. `grading.Grade` (one label
+  only) is gone; the report grades `labels.json` too. The conveyor's drive faults expect the feed cut, the drive stop and,
+  for gear oil loss, the belt stop.
+
 - **An example plant brings its kind files.** The belt conveyor examples implement plant wire kind files, so a copy made
   in the canvas could not compose (`implements_missing`). The component module now embeds the kind files and board
   mappings next to the example compositions (byte-equal to `examples/belt-conveyor/kinds/`, checked by a test) and chooses

@@ -195,8 +195,8 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"feeder_id": {"type": "string"}, "percent": {"maximum": 100, "minimum": 0, "type": "number"}},
-            "required": ["feeder_id", "percent"],
+            "properties": {"percent": {"maximum": 100, "minimum": 0, "type": "number"}},
+            "required": ["percent"],
             "type": "object"
           },
           "effect": {
@@ -663,6 +663,19 @@
           "resolution": 0.1,
           "tag": "ST",
           "value_type": "number"
+        },
+        {
+          "name": "belt_conveyor.run_command",
+          "unit": "on",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "noise": {"model": "none", "sigma": 0},
+          "observes": "run_cmd",
+          "range": {"min": 0, "max": 1},
+          "resolution": 0.1,
+          "tag": "YS",
+          "value_type": "number"
         }
       ],
       "faults": [
@@ -726,6 +739,16 @@
           },
           "observation": {"form": "dropout", "channel": "belt_conveyor.tail_speed"},
           "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "belt_conveyor__run_command__dropout",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "belt_conveyor.run_command"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "observation": {"form": "dropout", "channel": "belt_conveyor.run_command"},
+          "onset": {"magnitude": 1, "shape": "step"}
         }
       ],
       "effectors": [
@@ -734,13 +757,13 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"belt_id": {"type": "string"}},
-            "required": ["belt_id"],
+            "properties": {"run_command": {"maximum": 1, "minimum": 1, "type": "number"}},
+            "required": ["run_command"],
             "type": "object"
           },
           "effect": {
             "dead_time_s": 0,
-            "state_deltas": [{"state": "run_cmd", "delta": 1}, {"state": "start_count", "delta": 1}],
+            "state_deltas": [{"state": "run_cmd", "assign_from_arg": "run_command"}, {"state": "start_count", "delta": 1}],
             "time_constant_s": 0
           },
           "idempotency_window_s": 3600,
@@ -752,17 +775,22 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"belt_id": {"type": "string"}},
-            "required": ["belt_id"],
+            "properties": {"run_command": {"maximum": 0, "minimum": 0, "type": "number"}},
+            "required": ["run_command"],
             "type": "object"
           },
-          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "run_cmd", "delta": -1}], "time_constant_s": 0},
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "run_cmd", "assign_from_arg": "run_command"}],
+            "time_constant_s": 0
+          },
           "idempotency_window_s": 3600,
           "requires": [{"state": "run_cmd", "operator": "gte", "threshold": 0.5}],
           "risk_class": "medium"
         }
       ],
       "boundaries": [{"name": "stranded", "state": "stranded", "severity": "major"}],
+      "board_type": "belt-controller",
       "kpis": ["delivered"]
     },
     {
@@ -1763,6 +1791,19 @@
           "resolution": 1,
           "tag": "YS",
           "value_type": "boolean"
+        },
+        {
+          "name": "conveyor_drive.run_command",
+          "unit": "on",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "noise": {"model": "none", "sigma": 0},
+          "observes": "run_cmd",
+          "range": {"min": 0, "max": 1},
+          "resolution": 0.1,
+          "tag": "YS",
+          "value_type": "number"
         }
       ],
       "faults": [
@@ -1955,6 +1996,16 @@
           },
           "observation": {"form": "dropout", "channel": "conveyor_drive.run_status"},
           "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "conveyor_drive__run_command__dropout",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.run_command"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "observation": {"form": "dropout", "channel": "conveyor_drive.run_command"},
+          "onset": {"magnitude": 1, "shape": "step"}
         }
       ],
       "effectors": [
@@ -1963,11 +2014,15 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"drive_id": {"type": "string"}},
-            "required": ["drive_id"],
+            "properties": {"run_command": {"maximum": 1, "minimum": 1, "type": "number"}},
+            "required": ["run_command"],
             "type": "object"
           },
-          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "run_cmd", "delta": 1}], "time_constant_s": 0},
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "run_cmd", "assign_from_arg": "run_command"}],
+            "time_constant_s": 0
+          },
           "idempotency_window_s": 3600,
           "requires": [{"state": "run_cmd", "operator": "lt", "threshold": 0.5}],
           "risk_class": "medium"
@@ -1977,11 +2032,15 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"drive_id": {"type": "string"}},
-            "required": ["drive_id"],
+            "properties": {"run_command": {"maximum": 0, "minimum": 0, "type": "number"}},
+            "required": ["run_command"],
             "type": "object"
           },
-          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "run_cmd", "delta": -1}], "time_constant_s": 0},
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "run_cmd", "assign_from_arg": "run_command"}],
+            "time_constant_s": 0
+          },
           "idempotency_window_s": 3600,
           "requires": [
             {"state": "run_cmd", "operator": "gte", "threshold": 0.5},
@@ -1992,12 +2051,7 @@
         {
           "name": "conveyor_drive__reset_trip",
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
-          "args_schema": {
-            "additionalProperties": false,
-            "properties": {"drive_id": {"type": "string"}},
-            "required": ["drive_id"],
-            "type": "object"
-          },
+          "args_schema": {"additionalProperties": false, "properties": {}, "type": "object"},
           "effect": {"dead_time_s": 0, "state_deltas": [{"state": "reset_count", "delta": 1}], "time_constant_s": 0},
           "idempotency_window_s": 3600,
           "requires": [
@@ -2007,6 +2061,7 @@
           "risk_class": "low"
         }
       ],
+      "board_type": "drive-controller",
       "kpis": ["life_used", "gear_used"]
     }
   ],
@@ -2017,7 +2072,7 @@
       "area": "Transfer belt",
       "provenance": {
         "component": "streamsim/bulk-feeder",
-        "digest": "sha256:92adfd1a612adcbce1fe1cdde41bd686d6fe8409dcf2c8bd1f646c883a7f8a8c",
+        "digest": "sha256:5e6a74a8c906d1ceae4c56c6fa64ab957f04a86929a0124e3b007157530507f1",
         "instrument_digests": {
           "streamsim/mass-flow-meter@1": "sha256:07c0020fecb67db271563988412d002427648b8d65a9253c9072e04803380a23",
           "streamsim/setpoint-readback@1": "sha256:01a78527a825a966fbcb6fdaca68086d1450e65bc682d676cb40297d3a261a1b"
@@ -2032,9 +2087,12 @@
       "area": "Transfer belt",
       "provenance": {
         "component": "streamsim/belt-conveyor",
-        "digest": "sha256:9371f4c59d0ad62c30974c78a808fa3cbb88fd73034086908fd92863cbf4800d",
-        "instrument_digests": {"streamsim/tachometer@1": "sha256:96a64496dab4223b41848854d6eeb364839091ec46eb156da98c79aeab200594"},
-        "instruments": {"tail_speed": "streamsim/tachometer@1"},
+        "digest": "sha256:ecbc80ef2ad2e920b5c34e66249c1d75e180364ec6313320f24c7afbaaadf8b8",
+        "instrument_digests": {
+          "streamsim/command-readback@1": "sha256:de82eebdeb4411ded318837a783dd47cfac30f78e79516b98ca97945edf340f4",
+          "streamsim/tachometer@1": "sha256:96a64496dab4223b41848854d6eeb364839091ec46eb156da98c79aeab200594"
+        },
+        "instruments": {"run_command": "streamsim/command-readback@1", "tail_speed": "streamsim/tachometer@1"},
         "parameters": {"boost_s": 2, "breakaway_n_per_kg": 1.152},
         "version": 1
       }
@@ -2045,8 +2103,9 @@
       "area": "Drive station",
       "provenance": {
         "component": "streamsim/conveyor-drive",
-        "digest": "sha256:b8477bd17d603fd05dc83199e903102bc028797678b54250e8ab141bc776463e",
+        "digest": "sha256:c6dff5b0f4aa3de6d2d2618de13c4b03ad65b132d1737057fd1877eb415cde01",
         "instrument_digests": {
+          "streamsim/command-readback@1": "sha256:de82eebdeb4411ded318837a783dd47cfac30f78e79516b98ca97945edf340f4",
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
           "streamsim/run-status@1": "sha256:f7f883909ecb976be9bc4244840ed801ad650c589cef9fe030e18c54ebbf9fe2",
@@ -2054,6 +2113,7 @@
         },
         "instruments": {
           "current": "streamsim/current-clamp@1",
+          "run_command": "streamsim/command-readback@1",
           "run_status": "streamsim/run-status@1",
           "vibration": "streamsim/vibration-sensor@1",
           "winding": "streamsim/rtd@1"

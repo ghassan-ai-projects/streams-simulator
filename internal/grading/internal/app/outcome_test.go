@@ -39,7 +39,7 @@ func weakPlantRun(t *testing.T, dir string) {
 	if _, err := r.InjectFault("D-3", "conveyor_drive__vfd_fault", at(60), nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.InvokeEffector("bulk_feeder__set_feed", "F-1", "c-1", map[string]any{"feeder_id": "F-1", "percent": 0.0}, at(70)); err != nil {
+	if _, err := r.InvokeEffector("bulk_feeder__set_feed", "F-1", "c-1", map[string]any{"percent": 0.0}, at(70)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.Advance(t.Context(), at(600), false); err != nil {

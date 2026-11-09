@@ -63,7 +63,7 @@ func withFeedCalls(scenario *model.Scenario, atNS ...int64) *model.Scenario {
 			return c.Op == model.OpClockAdvance && nanoseconds(c.Args["to_ns"]) > at
 		})
 		call := model.ScenarioCommand{Op: model.OpEffectorInvoke, Args: map[string]any{"effector": "bulk_feeder__set_feed", "entity_id": "F-1",
-			"command_id": "hand-" + string(rune('a'+i)), "args": map[string]any{"feeder_id": "F-1", "percent": 67.0}, "at_ns": at}}
+			"command_id": "hand-" + string(rune('a'+i)), "args": map[string]any{"percent": 67.0}, "at_ns": at}}
 		written.Commands = slices.Insert(written.Commands, index, model.ScenarioCommand{Op: model.OpClockAdvance, Args: map[string]any{"to_ns": at}}, call)
 	}
 	return &written

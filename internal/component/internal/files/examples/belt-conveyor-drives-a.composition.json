@@ -12,8 +12,8 @@
   "areas": [{"name": "Terminal"}, {"name": "Transfer belt", "parent": "Terminal"}, {"name": "Drive station", "parent": "Transfer belt"}],
   "equipment": [
     {"use": "streamsim/bulk-feeder@1", "names": ["F-1"], "area": "Transfer belt", "implements": "bulk_feeder", "board_type": "feeder-controller"},
-    {"use": "streamsim/belt-conveyor@1", "parameters": {"breakaway_n_per_kg": 1.424}, "names": ["B-1"], "area": "Transfer belt", "implements": "belt_conveyor"},
-    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "strong"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station", "implements": "conveyor_drive",
+    {"use": "streamsim/belt-conveyor@1", "parameters": {"breakaway_n_per_kg": 1.424}, "names": ["B-1"], "area": "Transfer belt", "implements": "belt_conveyor", "board_type": "belt-controller"},
+    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "strong"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station", "implements": "conveyor_drive", "board_type": "drive-controller",
       "expected_actions": {
         "lube_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}],
         "gear_oil_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}, {"kind": "belt_conveyor", "effector": "stop_belt"}],

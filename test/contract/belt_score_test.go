@@ -46,7 +46,7 @@ func limpFeedRun(t *testing.T, dir string) string {
 	if _, err := r.InjectFault("D-3", "conveyor_drive__vfd_fault", beltNS(60), nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.InvokeEffector("bulk_feeder__set_feed", "F-1", wireKey, map[string]any{"feeder_id": "F-1", "percent": 18.0}, beltNS(70)); err != nil {
+	if _, err := r.InvokeEffector("bulk_feeder__set_feed", "F-1", wireKey, map[string]any{"percent": 18.0}, beltNS(70)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.Advance(t.Context(), beltNS(300), false); err != nil {

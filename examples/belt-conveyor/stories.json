@@ -41,7 +41,7 @@
       "policy": [
         {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}},
         {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
-        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
         {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
       ],
       "rows": [
@@ -70,7 +70,7 @@
       "policy": [
         {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}},
         {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
-        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
         {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}}
       ],
       "rows": [
@@ -153,7 +153,7 @@
       ],
       "policy": [
         {"anchor": "onset_s", "after_s": 3600, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
-        {"anchor": "onset_s", "after_s": 3780, "effector": "belt_conveyor__stop_belt", "instance": "B-1", "args": {}}
+        {"anchor": "onset_s", "after_s": 3780, "effector": "belt_conveyor__stop_belt", "instance": "B-1", "args": {"run_command": 0}}
       ],
       "rows": [
         {"seed": 643449587, "onset_s": 1984, "severity": 0.88},
@@ -230,7 +230,7 @@
       "policy": [
         {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}},
         {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
-        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
         {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
       ],
       "rows": [

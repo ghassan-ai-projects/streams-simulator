@@ -34,7 +34,6 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "feeder_id": "F-1",
           "percent": 54
         },
         "at_ns": 1767227065000000000,

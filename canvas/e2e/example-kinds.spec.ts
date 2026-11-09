@@ -17,9 +17,11 @@ test("trying the belt conveyor brings its kind files into the workspace, so it c
   const panel = page.getByRole("complementary", { name: `Run ${title}` });
   await expect(panel.getByRole("button", { name: "Start the run" })).toBeVisible();
   expect(readdirSync(join(lab.workspace, "kinds")).sort()).toEqual([
+    "belt-controller.board.json",
     "belt_conveyor.kind.json",
     "bulk_feeder.kind.json",
     "conveyor_drive.kind.json",
+    "drive-controller.board.json",
     "feeder-controller.board.json",
   ]);
   await panel.getByLabel("Seed", { exact: true }).fill("3");

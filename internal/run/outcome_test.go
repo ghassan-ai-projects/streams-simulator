@@ -35,7 +35,7 @@ func conveyorArtifact(t *testing.T) *model.RunArtifact {
 	if _, err := r.InjectFault("D-3", "conveyor_drive__vfd_fault", at(60), nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.InvokeEffector("conveyor_drive__stop_drive", "D-1", "c-1", map[string]any{"drive_id": "D-1"}, at(60)); err != nil {
+	if _, err := r.InvokeEffector("conveyor_drive__stop_drive", "D-1", "c-1", map[string]any{"run_command": 0.0}, at(60)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.Advance(t.Context(), at(300), false); err != nil {

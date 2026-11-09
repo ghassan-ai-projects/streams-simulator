@@ -185,13 +185,9 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "feeder_id",
             "percent"
           ],
           "properties": {
-            "feeder_id": {
-              "type": "string"
-            },
             "percent": {
               "type": "number",
               "minimum": 0,

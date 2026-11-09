@@ -36,7 +36,6 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "feeder_id": "F-1",
           "percent": 54
         },
         "at_ns": 1767244763000000000,
@@ -55,7 +54,6 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "feeder_id": "F-1",
           "percent": 0
         },
         "at_ns": 1767245063000000000,
@@ -74,7 +72,7 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "drive_id": "D-3"
+          "run_command": 0
         },
         "at_ns": 1767245243000000000,
         "command_id": "s1-a-4",
@@ -92,7 +90,6 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "feeder_id": "F-1",
           "percent": 54
         },
         "at_ns": 1767245253000000000,

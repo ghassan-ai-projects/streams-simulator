@@ -36,7 +36,6 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "feeder_id": "F-1",
           "percent": 0
         },
         "at_ns": 1767231184000000000,
@@ -55,7 +54,7 @@
       "op": "effector.invoke",
       "args": {
         "args": {
-          "belt_id": "B-1"
+          "run_command": 0
         },
         "at_ns": 1767231364000000000,
         "command_id": "s3-a-3",

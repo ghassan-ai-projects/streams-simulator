@@ -18,7 +18,7 @@ func TestInstallingAnExamplesKindFilesWritesThemOnceAndThenFindsThemUnchanged(t 
 	t.Parallel()
 	kinds := filepath.Join(t.TempDir(), "kinds")
 	first, err := InstallExampleKinds("belt-conveyor-drives-a", kinds)
-	want := []string{"belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "feeder-controller.board.json"}
+	want := []string{"belt-controller.board.json", "belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "drive-controller.board.json", "feeder-controller.board.json"}
 	if err != nil || !slices.Equal(first.Written, want) || len(first.Unchanged) != 0 {
 		t.Fatalf("first install = %+v, %v", first, err)
 	}

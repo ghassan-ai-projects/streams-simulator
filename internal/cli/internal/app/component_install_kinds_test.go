@@ -9,7 +9,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-var beltKindFiles = []string{"belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "feeder-controller.board.json"}
+var beltKindFiles = []string{"belt-controller.board.json", "belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "drive-controller.board.json",
+	"feeder-controller.board.json"}
 
 func kindFileNamesOf(t *testing.T, doc map[string]any) []string {
 	t.Helper()

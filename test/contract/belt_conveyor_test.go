@@ -121,7 +121,7 @@ func (b *beltWorld) inject(entity, fault string, severity float64) {
 func (b *beltWorld) invoke(effector, entity string, args map[string]any) bool {
 	b.t.Helper()
 	b.commands++
-	result, err := b.w.InvokeEffector(effector, entity, fmt.Sprintf("c-%d", b.commands), effectorArgs(effector, entity, args), beltNS(b.nowS))
+	result, err := b.w.InvokeEffector(effector, entity, fmt.Sprintf("c-%d", b.commands), effectorArgs(effector, args), beltNS(b.nowS))
 	if err != nil {
 		b.t.Fatal(err)
 	}

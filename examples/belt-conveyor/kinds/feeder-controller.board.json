@@ -5,7 +5,7 @@
       "commands": {
         "set_feed": {
           "raw": "bulk_feeder__set_feed",
-          "args": {"feeder_id": {"value": "F-1"}, "percent": {"from": "feed_setpoint"}}
+          "args": {"percent": {"from": "feed_setpoint"}}
         }
       },
       "metrics": {

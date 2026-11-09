@@ -3,6 +3,7 @@ package contract
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -159,12 +160,15 @@ func compareFloat(a, b float64) int {
 	return 0
 }
 
-func effectorArgs(effector, entity string, args map[string]any) map[string]any {
-	kind, _, _ := strings.Cut(effector, "__")
-	all := map[string]any{map[string]string{"bulk_feeder": "feeder_id", "belt_conveyor": "belt_id", "conveyor_drive": "drive_id"}[kind]: entity}
-	for name, value := range args {
-		all[name] = value
+// effectorArgs gives a start or stop of a drive or the belt its run command, 1 or 0, unless the call names it.
+func effectorArgs(effector string, args map[string]any) map[string]any {
+	_, command, _ := strings.Cut(effector, "__")
+	verb, _, _ := strings.Cut(command, "_")
+	all := map[string]any{}
+	if run, commanded := map[string]float64{"start": 1, "stop": 0}[verb]; commanded {
+		all["run_command"] = run
 	}
+	maps.Copy(all, args)
 	return all
 }
 

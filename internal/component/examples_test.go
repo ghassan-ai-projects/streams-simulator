@@ -61,7 +61,7 @@ func TestANewPlantStartsFromAShippedExample(t *testing.T) {
 
 func TestTheShippedExamplesCarryTheRepositoryKindFilesTheirPlantsImplement(t *testing.T) {
 	t.Parallel()
-	belt := []string{"belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "feeder-controller.board.json"}
+	belt := []string{"belt-controller.board.json", "belt_conveyor.kind.json", "bulk_feeder.kind.json", "conveyor_drive.kind.json", "drive-controller.board.json", "feeder-controller.board.json"}
 	shipped := map[string][]string{"belt-conveyor-drives-a": belt, "belt-conveyor-drives-b": belt, "chiller-pilot": {}, "factory-utilities": {}}
 	for id, want := range shipped {
 		found, err := component.Example(id)
@@ -86,7 +86,7 @@ func TestInstallingAnExamplesKindFilesPutsThemInTheKindsFolder(t *testing.T) {
 	t.Parallel()
 	kinds := filepath.Join(t.TempDir(), "kinds")
 	installed, err := component.InstallExampleKinds("belt-conveyor-drives-a", kinds)
-	if err != nil || len(installed.Written) != 4 || installed.Example != "belt-conveyor-drives-a" {
+	if err != nil || len(installed.Written) != 6 || installed.Example != "belt-conveyor-drives-a" {
 		t.Fatalf("InstallExampleKinds = %+v, %v", installed, err)
 	}
 	if _, err := os.Stat(filepath.Join(kinds, "feeder-controller.board.json")); err != nil {

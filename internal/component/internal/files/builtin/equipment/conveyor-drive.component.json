@@ -1568,11 +1568,13 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "drive_id"
+            "run_command"
           ],
           "properties": {
-            "drive_id": {
-              "type": "string"
+            "run_command": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 1
             }
           }
         },
@@ -1582,7 +1584,7 @@
           "state_deltas": [
             {
               "state": "run_cmd",
-              "delta": 1
+              "assign_from_arg": "run_command"
             }
           ]
         }
@@ -1620,11 +1622,13 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "drive_id"
+            "run_command"
           ],
           "properties": {
-            "drive_id": {
-              "type": "string"
+            "run_command": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0
             }
           }
         },
@@ -1634,7 +1638,7 @@
           "state_deltas": [
             {
               "state": "run_cmd",
-              "delta": -1
+              "assign_from_arg": "run_command"
             }
           ]
         }
@@ -1670,14 +1674,7 @@
         "args_schema": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "drive_id"
-          ],
-          "properties": {
-            "drive_id": {
-              "type": "string"
-            }
-          }
+          "properties": {}
         },
         "effect": {
           "dead_time_s": 0,
@@ -1740,6 +1737,17 @@
       },
       "tag": "YS",
       "default_instrument": "streamsim/run-status@1"
+    },
+    {
+      "name": "run_command",
+      "state": "run_cmd",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/command-readback@1"
     }
   ],
   "ports": [

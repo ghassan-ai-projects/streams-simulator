@@ -59,3 +59,30 @@ As in M2: each repository's AGENTS.md, generic code only, no gate loosening, lon
 - Contract test `test/contract/belt_score_test.go`: plant B, D-3's inverter trips at 60 s, a host decides a feed cut at
   65 s that the world applies at 70 s under the DCMD key; the label expects `bulk_feeder__set_feed` on F-1, and
   `GradeRun` gives action fidelity, the right action, D-3 detected with the right label and nothing unexpected.
+
+## 5. As built, row 2 (O21, streamsim and agentic-stream)
+
+- No conveyor command carries an id argument: the call (or the plant wire device) addresses the instance. Nothing generic
+  needs one: the only `_id` rules are a baseline policy refusing an entity argument its target supplies
+  (`validation_policies`, kept with a test-made `feeder_id`) and the reference consumer's and test support's guesses.
+- `start_drive`/`start_belt` take `run_command` (number, minimum = maximum = 1), `stop_drive`/`stop_belt` take
+  `run_command` 0, and each assigns `run_cmd` from it (`assign_from_arg`). The `requires` permits are unchanged, and under
+  them the assignment equals the former ±1 delta, so the world is unchanged (stories and outcomes green); a value of the
+  other verb is an invalid invocation. `reset_trip` takes no argument.
+- Read-back: drive and belt gain the point `run_command` on `run_cmd` with a new instrument
+  `streamsim/command-readback` (state family, unit `on`, 0..1, number, resolution 0.1, periodic 2 s, no noise, `dropout`).
+  The setpoint read-back is a `%` of the fraction family and cannot take a 0/1 state; the run-status contact reports what
+  the drive does (`enabled`, report by exception) and a boolean cannot be verified within a resolution (a host's
+  tolerance is the metric's resolution, 1 for a boolean). `run_status` stays as it was.
+- Kind files: `conveyor_drive` (`current`, `winding`, `vibration`, `run_status`, `run_command` writable; `start_drive`,
+  `stop_drive`, `reset_trip`) and `belt_conveyor` (`tail_speed`, `run_command` writable; `start_belt`, `stop_belt`) are
+  semantic files mapped to the raw qualified names by `drive-controller.board.json` and `belt-controller.board.json`; the
+  compositions name the boards; `feeder-controller` loses its fixed `F-1`. The component module's embedded example kinds
+  carry six files.
+- Regenerated: compositions and embedded copies, composed domains, kind files and embedded copies, story scenario files
+  (sessions hold no commands and did not move). `stories.json` stop calls carry `run_command` 0.
+- Tests: a 180 s plant-B session against the reference host: every kind is born equal to its file; `set_feed`, belt stop
+  and start, and D-3 stop and start (once the belt ran empty) are each verified by read-back, and D-3's stop on the loaded
+  belt is refused by the plant permit (`permissive_not_met`); a world test refuses a run command of the other verb.
+- agentic-stream: kind copies updated, the site's drive readings name `current`, the fake node births `current` and
+  `tail_speed`.

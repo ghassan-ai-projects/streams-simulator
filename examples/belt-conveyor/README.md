@@ -23,10 +23,18 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
   - `bulk_feeder.kind.json`: the feeder as a host sees it, `feed` (kg/s) and `feed_setpoint` (%, writable) and the command
     `set_feed` with the argument `feed_setpoint`, so a host confirms a feed command by reading the setpoint back.
   - `feeder-controller.board.json`: the board mapping from that kind file to the composed feeder's raw names
-    (`bulk_feeder.feed`, `bulk_feeder.feed_setpoint`, `bulk_feeder__set_feed` with `feeder_id` fixed to `F-1` and `percent`
-    from `feed_setpoint`).
-  - `belt_conveyor.kind.json`, `conveyor_drive.kind.json`: captured from a session birth with `streamsim kind capture`;
-    plants A and B announce the same three kind digests.
+    (`bulk_feeder.feed`, `bulk_feeder.feed_setpoint`, `bulk_feeder__set_feed` with `percent` from `feed_setpoint`). No
+    conveyor command carries an id argument: the call (or the plant wire device) addresses the instance.
+  - `conveyor_drive.kind.json`: a drive as a host sees it, `current` (A), `winding` (degC), `vibration` (mm/s),
+    `run_status` (boolean, what the drive does) and `run_command` (writable, what it was last told: 1 or 0, read back from
+    the controller's command register by the instrument `streamsim/command-readback`); the commands `start_drive`
+    (`run_command` 1), `stop_drive` (`run_command` 0; the plant still refuses a stop its permit forbids) and `reset_trip`
+    (no argument). `drive-controller.board.json` maps it to the composed raw names (`conveyor_drive.current`, ...,
+    `conveyor_drive__start_drive`).
+  - `belt_conveyor.kind.json`: the belt, `tail_speed` (rpm) and `run_command` (writable), with `start_belt`
+    (`run_command` 1) and `stop_belt` (`run_command` 0); `belt-controller.board.json` maps it to the raw names.
+  - A host confirms every feed, start and stop by reading its argument back on the metric of the same name; plants A and
+    B announce the same three kind digests.
 - `scenarios/<story>.do-nothing.scenario.json` and `<story>.reference.scenario.json`: seed row 1 as `scenario-v0.1`
   runs (S0 and S4 have no policy, so no reference file). Run one with
   `streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --kinds-dir examples/belt-conveyor/kinds`.

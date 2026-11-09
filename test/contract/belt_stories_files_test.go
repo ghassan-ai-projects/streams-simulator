@@ -68,7 +68,7 @@ func (e storyEvent) command(commandID string) model.ScenarioCommand {
 		return model.ScenarioCommand{Op: model.OpFaultClear, Args: map[string]any{"fault_id": world.FaultID(e.ordinal), "at_ns": storyNS(e.atS)}}
 	}
 	return model.ScenarioCommand{Op: model.OpEffectorInvoke, Args: map[string]any{"effector": e.name, "entity_id": e.instance,
-		"command_id": commandID, "args": effectorArgs(e.name, e.instance, e.args), "at_ns": storyNS(e.atS)}}
+		"command_id": commandID, "args": effectorArgs(e.name, e.args), "at_ns": storyNS(e.atS)}}
 }
 
 func (s beltStory) sessionPlan(row map[string]any) *model.SessionPlan {
