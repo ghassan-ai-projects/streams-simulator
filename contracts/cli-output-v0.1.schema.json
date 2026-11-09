@@ -758,13 +758,14 @@
     },
     "outcome": {
       "type": "object",
-      "description": "What outcome prints: the run replayed as it ran, with every effector call removed (do_nothing) and under each baseline policy of its domain, each with its outcome facts; with the domain's outcome_weights, each run's cost J and its terms, and a verdict of the run against each baseline. valid is true when doing nothing is not clean (a boundary was violated or a trip tripped), so the story tests something.",
+      "description": "What outcome prints: the run replayed as it ran, with every effector call removed (do_nothing) and under each baseline policy of its domain, each with its outcome facts; with the domain's outcome_weights, each run's cost J and its terms, and a verdict of the run against each baseline. valid is true when doing nothing is not clean (a boundary was violated or a trip tripped), so the story tests something. easy is true when the story is valid and the run does not beat some baseline policy (it ties or loses to it): a trivial fixed rule does as well, so the story does not tell a controller from that rule.",
       "additionalProperties": false,
-      "required": ["run_id", "domain", "valid", "runs"],
+      "required": ["run_id", "domain", "valid", "easy", "runs"],
       "properties": {
         "run_id": {"type": "string"},
         "domain": {"type": "string"},
         "valid": {"type": "boolean"},
+        "easy": {"type": "boolean"},
         "tie": {"type": "number", "minimum": 0},
         "runs": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/outcome_run"}},
         "verdicts": {"type": "array", "minItems": 1, "items": {

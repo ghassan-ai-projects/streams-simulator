@@ -20,6 +20,7 @@ type OutcomeReport struct {
 
 type OutcomeScore struct {
 	Valid    bool             `json:"valid"`
+	Easy     bool             `json:"easy"`
 	Tie      *float64         `json:"tie,omitempty"`
 	Runs     []OutcomeRun     `json:"runs"`
 	Verdicts []OutcomeVerdict `json:"verdicts,omitempty"`

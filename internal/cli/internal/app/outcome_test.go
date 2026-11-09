@@ -42,6 +42,9 @@ func TestOutcomeScoresARunAgainstDoingNothingAndEachBaselinePolicy(t *testing.T)
 	if first["baseline"] != "do_nothing" || first["verdict"] != "beats" {
 		t.Fatalf("first verdict %v, want cutting the feed to beat doing nothing on a weak plant", first)
 	}
+	if limp, _ := verdicts[3].(map[string]any); limp["baseline"] != "policy:b3" || limp["verdict"] != "ties" || doc["easy"] != true {
+		t.Fatalf("verdict %v, easy %v: on a ten-minute story the safe limp feed from the start does as well, so the story is easy", limp, doc["easy"])
+	}
 }
 
 func TestReportCarriesTheOutcomeScoreOnlyWhenAskedFor(t *testing.T) {

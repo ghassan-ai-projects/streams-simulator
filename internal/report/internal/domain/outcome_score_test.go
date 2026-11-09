@@ -32,12 +32,12 @@ func TestTheOutcomeScoreSectionShowsEveryRunAndBaseline(t *testing.T) {
 		{EntityID: "B-1", Trips: []model.TripOutcome{{State: "stranded", Count: 2}}, Boundaries: []model.BoundaryOutcome{{Name: "stranded", Violations: 2}}},
 		{EntityID: "D-1", Trips: []model.TripOutcome{{State: "inverter_ok", Count: 1}}}},
 		Calls: []model.OutcomeCall{{Effector: "set_feed"}}}
-	result := &model.OutcomeReport{OutcomeScore: model.OutcomeScore{Valid: true,
+	result := &model.OutcomeReport{OutcomeScore: model.OutcomeScore{Valid: true, Easy: true,
 		Runs: []model.OutcomeRun{{Mode: model.OutcomeAsRun, Facts: facts, Cost: &model.OutcomeCost{J: -1.25}},
 			{Mode: model.OutcomeDoNothing, Facts: &model.OutcomeFacts{}}},
 		Verdicts: []model.OutcomeVerdict{{Baseline: model.OutcomeDoNothing, Delta: -5.5, Verdict: model.VerdictBeats}}}}
 	lines := outcomeScoreLines(&OutcomeScoring{Status: Scored, Result: result})
-	for _, want := range []string{"| Status | scored |", "| Valid | yes |", "| `as_run` | -1.2500 | 3 | 2 | 1 |",
+	for _, want := range []string{"| Status | scored |", "| Valid | yes |", "| Easy | yes |", "| `as_run` | -1.2500 | 3 | 2 | 1 |",
 		"| `do_nothing` | - | 0 | 0 | 0 |", "| `do_nothing` | -5.5000 | beats |"} {
 		if !slices.Contains(lines, want) {
 			t.Errorf("section %q lacks %q", lines, want)

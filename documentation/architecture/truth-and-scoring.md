@@ -43,7 +43,9 @@ artifact is replayed with every effector call removed, and again with each basel
 is a pure function of inputs fixed before the run (domain, seed, planned faults), the consumer cannot influence it, and it
 never exists while the consumer runs, so one path serves scripted, plant wire and director runs. The world records the
 outcome exactly, at the step where a trip or boundary changes, only when an outcome replay asks for it; ordinary runs are
-unchanged. The run is replayed first and refused if it does not reproduce or is stamped unblinded, as `score` refuses.
+unchanged. The run is replayed first and refused if it does not reproduce or is stamped unblinded, as `score` refuses. A story is
+`valid` when doing nothing is not clean, and `easy` when it is valid and some baseline policy ties or beats the run: a
+fixed rule does as well, so the story does not separate a controller from it.
 Implemented in [`internal/run/`](../../internal/run/) (`ReplayOutcome`), [`internal/score/`](../../internal/score/)
 (cost and verdicts) and [`internal/grading/`](../../internal/grading/) (`GradeOutcome`).
 

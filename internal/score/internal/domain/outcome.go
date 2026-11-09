@@ -30,6 +30,12 @@ func costRuns(scored *model.OutcomeScore, weights *model.OutcomeWeights, asRun i
 	}
 	tie := weights.Tie
 	scored.Tie, scored.Verdicts = &tie, verdicts(scored.Runs, asRun, tie)
+	scored.Easy = scored.Valid && slices.ContainsFunc(scored.Verdicts, matchedByAPolicy)
+}
+
+func matchedByAPolicy(v model.OutcomeVerdict) bool {
+	_, isPolicy := v.Baseline.Policy()
+	return isPolicy && v.Verdict != model.VerdictBeats
 }
 
 func runIndex(runs []model.OutcomeRun, mode model.OutcomeMode) int {

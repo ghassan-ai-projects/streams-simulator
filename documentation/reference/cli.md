@@ -802,7 +802,9 @@ With the domain's `ground_truth.outcome_weights`, each run gets a `cost` J, the 
 and per hour of violation, per trip entry, per unit of a KPI's own change (end minus start; a negative weight rewards more)
 and, only when doing nothing is clean (no boundary violated, no trip), per accepted call. `verdicts` compares the run with
 each baseline: `delta` is J of the run minus J of the baseline, and the run `beats` it (delta below minus `tie`), `ties`
-it (within `tie`) or `loses`. `valid` is true when doing nothing is not clean, so the story tests something. A domain
+it (within `tie`) or `loses`. `valid` is true when doing nothing is not clean, so the story tests something. `easy` is true when the story is valid
+and the run does not beat some baseline policy (it ties or loses): a trivial fixed rule does as well, so the story does not
+tell a controller from that rule (doing nothing is not a policy and never makes a story easy). A domain
 without outcome weights prints the facts only: no `tie`, `cost` or `verdicts`. A run folder that is missing fails with
 `file_not_found`, a domain the run names that neither the artifact embeds nor `--domains-dir` holds with
 `domain_not_found`.
@@ -810,7 +812,7 @@ without outcome weights prints the facts only: no `tie`, `cost` or `verdicts`. A
 Abridged from the S2-A reference run of `examples/belt-conveyor` (one run, one entity and its terms shown):
 
 ```json
-{"run_id": "r-1k3abl2bopgcc", "domain": "belt-conveyor-drives-a", "valid": true, "tie": 0.1,
+{"run_id": "r-1k3abl2bopgcc", "domain": "belt-conveyor-drives-a", "valid": true, "easy": false, "tie": 0.1,
  "runs": [{"mode": "do_nothing",
            "facts": {"horizon_ns": 1767236400000000000,
                      "entities": [{"entity_id": "B-1", "kind": "belt_conveyor",

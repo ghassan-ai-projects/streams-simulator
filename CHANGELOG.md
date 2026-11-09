@@ -4,6 +4,9 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim outcome` says whether a story is easy (conveyor milestone M4, row 1).** The `outcome` document (cli-output
+  v0.1) gains the required `easy`: true when the story is valid and the run does not beat some baseline policy (it ties
+  or loses to it), so a trivial fixed rule does as well (PLAN.md section 6.3). Doing nothing never makes a story easy.
 - **Baselines B1-B3 on both conveyor plants (conveyor milestone M4, row 1, O27).** Closed `baseline_policies` beside B4:
   `b1` a drive's vibration above 4.5 mm/s for 60 s, then feed 0 and, 60 s later, stop that drive; `b2` a drive's current
   above 1.1 times its current at full feed on three drives (3.385 A on plant A, 4.688 A on plant B; the closed record has no

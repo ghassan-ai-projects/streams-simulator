@@ -102,8 +102,38 @@ func TestEachBaselineIsBeatenTiedOrLostWithinTheTie(t *testing.T) {
 		{Baseline: model.PolicyOutcome("close"), Delta: (-0.4 + 1) - (-0.45 + 1), Verdict: model.VerdictTies},
 		{Baseline: model.PolicyOutcome("better"), Delta: (-0.4 + 1) - (-0.6 + 0.5), Verdict: model.VerdictLoses},
 	}
-	if !closeVerdicts(scored.Verdicts, want) || scored.Tie == nil || *scored.Tie != 0.1 || !scored.Valid {
-		t.Fatalf("verdicts %+v (tie %v, valid %v), want %+v", scored.Verdicts, scored.Tie, scored.Valid, want)
+	if !closeVerdicts(scored.Verdicts, want) || scored.Tie == nil || *scored.Tie != 0.1 || !scored.Valid || !scored.Easy {
+		t.Fatalf("verdicts %+v (tie %v, valid %v, easy %v), want %+v and easy", scored.Verdicts, scored.Tie, scored.Valid, scored.Easy, want)
+	}
+}
+
+func TestAStoryIsEasyWhenSomeBaselinePolicyDoesAsWellAsTheRun(t *testing.T) {
+	t.Parallel()
+	failing, clean := facts(nil, belt(50, stranded), drive("D-1", 2)), facts(nil, belt(50), drive("D-1", 2))
+	run := facts(nil, belt(40), drive("D-1", 2))
+	for _, tc := range []struct {
+		name    string
+		nothing *model.OutcomeFacts
+		policy  *model.OutcomeFacts
+		easy    bool
+	}{
+		{"every policy beaten", failing, failing, false},
+		{"a policy that ties", failing, facts(nil, belt(45), drive("D-1", 2)), true},
+		{"a policy that wins", failing, facts(nil, belt(60), drive("D-1", 1)), true},
+		{"doing nothing ties on a clean story", clean, failing, false},
+		{"a policy that ties on a clean story", clean, run, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			scored, err := Outcome(conveyorWeights(0.1), []model.OutcomeRun{{Mode: model.OutcomeAsRun, Facts: run},
+				{Mode: model.OutcomeDoNothing, Facts: tc.nothing}, {Mode: model.PolicyOutcome("b1"), Facts: tc.policy}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if scored.Easy != tc.easy {
+				t.Fatalf("easy %v with verdicts %+v (valid %v), want %v", scored.Easy, scored.Verdicts, scored.Valid, tc.easy)
+			}
+		})
 	}
 }
 
@@ -123,7 +153,7 @@ func TestADomainWithoutWeightsKeepsItsFactsAndHasNoCost(t *testing.T) {
 	t.Parallel()
 	runs := []model.OutcomeRun{{Mode: model.OutcomeAsRun, Facts: facts(nil, belt(50))}, {Mode: model.OutcomeDoNothing, Facts: facts(nil, belt(50, stranded))}}
 	scored, err := Outcome(nil, runs)
-	if err != nil || !scored.Valid || scored.Tie != nil || scored.Verdicts != nil || scored.Runs[0].Cost != nil || scored.Runs[1].Facts != runs[1].Facts {
+	if err != nil || !scored.Valid || scored.Easy || scored.Tie != nil || scored.Verdicts != nil || scored.Runs[0].Cost != nil || scored.Runs[1].Facts != runs[1].Facts {
 		t.Fatalf("score %+v (%v), want the facts, valid, and no cost, tie or verdict", scored, err)
 	}
 	if _, err := Outcome(nil, runs[:1]); !errors.Is(err, ErrOutcomeRuns) {
