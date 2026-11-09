@@ -338,6 +338,13 @@ Each form drives its target state `x` from a weighted input
 | `hysteresis` | relay: `x → 1` when `u ≥ threshold_high`, `x → 0` when `u ≤ threshold_low`, holds between | `threshold_low`, `threshold_high` |
 | `integrator` | `dx/dt = g·u` | `gain` |
 | `threshold_integrator` | `dx/dt = g·max(0, threshold − u)` for `direction: below`; `g·max(0, u − threshold)` for `above` | `threshold`, `direction` |
+| `ratio` | algebraic: `x = Π_{num} cᵢ·sᵢ / max(Π_{den} cⱼ·sⱼ, floor)`, the inputs flagged `denominator: true` forming the denominator | `floor` > 0; 1 to 4 inputs on each side |
+
+`ratio` divides without a division by zero: a denominator at or below `floor` (zero or negative included) divides by the
+floor, so a zero numerator gives zero there. It is the unequal sharing of a load among parallel machines (`wᵢ·n / Σ w·enabled`,
+the drive's share factor) and the closed name for any quotient of states; its oracle is a plain closed form over random
+weights and enabled subsets, the conservation of the shared demand and the floor at zero enabled
+(`internal/world/internal/domain/ratio_oracle_test.go`).
 
 `threshold_integrator` is why the aquaculture example's mortality only accrues below the
 lethal oxygen level rather than integrating a healthy pond toward death — a distinction a

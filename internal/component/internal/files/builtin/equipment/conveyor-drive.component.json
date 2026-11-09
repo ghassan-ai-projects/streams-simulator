@@ -36,6 +36,36 @@
         "initial": 594.5446
       },
       {
+        "name": "drives_seen",
+        "unit": "on",
+        "initial": 3,
+        "min": 0
+      },
+      {
+        "name": "weights_seen",
+        "unit": "ratio",
+        "initial": 3,
+        "min": 0
+      },
+      {
+        "name": "weight",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "weighted",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "share_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
         "name": "stop_ok",
         "unit": "on",
         "initial": 1
@@ -265,6 +295,22 @@
         }
       },
       {
+        "target": "drives_seen",
+        "tier": "F0",
+        "f0": {
+          "baseline": 3,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "weights_seen",
+        "tier": "F0",
+        "f0": {
+          "baseline": 3,
+          "drift_per_hour": 0
+        }
+      },
+      {
         "target": "stop_ok",
         "tier": "F0",
         "f0": {
@@ -400,6 +446,46 @@
         }
       },
       {
+        "target": "weighted",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "weight",
+              "coef": 1
+            },
+            {
+              "state": "enabled",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "share_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "ratio",
+          "floor": 1e-06,
+          "inputs": [
+            {
+              "state": "weight",
+              "coef": 1
+            },
+            {
+              "state": "drives_seen",
+              "coef": 1
+            },
+            {
+              "state": "weights_seen",
+              "coef": 1,
+              "denominator": true
+            }
+          ]
+        }
+      },
+      {
         "target": "load",
         "tier": "F1",
         "f1": {
@@ -408,6 +494,10 @@
             {
               "state": "share",
               "coef": 0.001086957
+            },
+            {
+              "state": "share_factor",
+              "coef": 1
             },
             {
               "state": "enabled",
@@ -1538,6 +1628,29 @@
           "magnitude": 1.0,
           "shape": "step"
         }
+      },
+      {
+        "id": "share_skew",
+        "description": "The drive takes more (or less) than its equal part of the belt's demand: its share weight moves by the severity (a torque bias, droop or a slipping coupling).",
+        "is_negative_class": true,
+        "affects": [
+          {
+            "state": "weight",
+            "delta": 1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "current"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
       }
     ],
     "effectors": [
@@ -1764,6 +1877,18 @@
       "state": "stop_ok"
     },
     {
+      "name": "drives_in",
+      "type": "run_state",
+      "direction": "consumes",
+      "state": "drives_seen"
+    },
+    {
+      "name": "weights_in",
+      "type": "share_weight",
+      "direction": "consumes",
+      "state": "weights_seen"
+    },
+    {
       "name": "enabled_out",
       "type": "run_state",
       "direction": "provides",
@@ -1798,6 +1923,12 @@
       "type": "force_capacity",
       "direction": "provides",
       "state": "rated"
+    },
+    {
+      "name": "weighted_out",
+      "type": "share_weight",
+      "direction": "provides",
+      "state": "weighted"
     }
   ],
   "parameters": [

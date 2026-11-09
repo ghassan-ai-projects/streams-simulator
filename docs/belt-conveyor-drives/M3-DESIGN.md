@@ -86,3 +86,32 @@ As in M2: each repository's AGENTS.md, generic code only, no gate loosening, lon
   belt is refused by the plant permit (`permissive_not_met`); a world test refuses a run command of the other verb.
 - agentic-stream: kind copies updated, the site's drive readings name `current`, the fake node births `current` and
   `tail_speed`.
+
+## 6. As built, row 3 (U7, streamsim)
+
+- F1 form `ratio` (algebraic, no `dt_ms`): `x = Π_num cᵢ·sᵢ / max(Π_den cⱼ·sⱼ, floor)`; an input with `denominator: true` is a
+  factor of the denominator; 1 to 4 factors on each side; `floor` > 0, so a denominator at or below it (zero or negative)
+  divides by the floor. Model (`FormRatio`, `F1Dyn.Floor`, `F1Input.Denominator`), domain validation
+  (`/inputs`, `/floor`, `/inputs/i/denominator` outside a ratio), world (`ratio` in `algebraic.go`), domain-spec v0.2 schema
+  and copy, TECHNICAL_DESIGN §6.2 and DOMAIN_SPEC_V0_2 §23.
+- Oracle (`internal/world/internal/domain/ratio_oracle_test.go`): 60 random plants of 1-5 drives, weights in [0.5, 1.5],
+  random enabled subsets, against the plain closed form `wᵢ·eᵢ·D / Σ w·e` (1e-12 relative); the shares add to the demand;
+  with nothing enabled every share is 0 (a zero numerator over the floor); the floor below and above the denominator; equal
+  weights give a factor of exactly 1 for 1 to 6 drives.
+- Conveyor: each drive has `weight` (initial 1) and provides `weighted = weight·enabled`; the belt sums them like the
+  running count (sampled 1 s, new port type `share_weight`, fraction) and hands `drives` and `weights` back; each drive
+  computes `share_factor = ratio(weight·drives_seen / weights_seen)` and its load is `share·share_factor·enabled/F_rated`,
+  where `share` is the belt's equal share as before. The instance fault `conveyor_drive__share_skew` (step, negative class,
+  `weight += severity`) skews one drive from t = 0; seed rows use it later.
+- Deviation from "belt provides demand, each drive computes w·demand/Σw": the belt's `inv_n` is a 7-digit table
+  (0.3333333), so `w·demand/Σw` would differ from today's runs in the last digits. Scaling today's equal share by
+  `w·n/Σw`, which is exactly 1 when the weights are equal (n/n), keeps every equal-weight run bit for bit and still gives
+  `w·demand/Σw` to the table's precision. Guard (long tier, `belt_equal_share_test.go`): the trace digest and the as-run
+  outcome digest of S1-B, S2-B, S3-A references and S4-A do-nothing, taken before the change, are unchanged.
+- Plant tests: D-3 skewed by 0.2 carries 1.2/3.2 of the demand and D-1, D-2 1/3.2 each, together the whole demand;
+  stopping the skewed D-3 leaves the survivors equal shares.
+- Stop permit under unequal weights (known limit, stated not fixed): the belt's permit checks the survivors' total
+  rating and restart capacity (`(n−1)/n` of the running totals), so it assumes they share equally. Stopping the skewed drive
+  is exact (the survivors' weights are equal). Stopping another drive leaves the skewed survivor `(1+s)/(2+s)` of the demand
+  instead of 1/2: 9 % more than the permit assumes for s = 0.2. A conservative permit would scale the survivors' rating by
+  `Σ_survivors w / ((n−1)·w_max)`; not needed while seed rows skew only the drive that the plan stops (D-3).

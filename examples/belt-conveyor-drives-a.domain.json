@@ -221,6 +221,7 @@
         {"name": "tail_grip", "unit": "ratio", "initial": 1, "min": 0.5, "max": 1},
         {"name": "feed", "unit": "kg/s", "initial": 41.6667, "min": 0},
         {"name": "drives", "unit": "on", "initial": 3, "min": 0},
+        {"name": "weights", "unit": "ratio", "initial": 3, "min": 0},
         {"name": "drag", "unit": "N", "initial": 82.8, "min": 0},
         {"name": "run_cap", "unit": "N", "initial": 4140, "min": 0},
         {"name": "boost_cap", "unit": "N", "initial": 4140, "min": 0},
@@ -286,6 +287,16 @@
             "aggregate": "sum",
             "sample_s": 1,
             "sources": [{"state": "enabled", "link": "belt_conveyor__drives_in__conveyor_drive"}]
+          }
+        },
+        {
+          "target": "weights",
+          "tier": "F0",
+          "f0": {"baseline": 3, "drift_per_hour": 0},
+          "follow": {
+            "aggregate": "sum",
+            "sample_s": 1,
+            "sources": [{"state": "weighted", "link": "belt_conveyor__weights_in__conveyor_drive"}]
           }
         },
         {
@@ -801,6 +812,11 @@
         {"name": "run_cmd", "unit": "on", "initial": 1, "min": 0, "max": 1},
         {"name": "reset_count", "unit": "count", "initial": 0},
         {"name": "share", "unit": "N", "initial": 594.5446},
+        {"name": "drives_seen", "unit": "on", "initial": 3, "min": 0},
+        {"name": "weights_seen", "unit": "ratio", "initial": 3, "min": 0},
+        {"name": "weight", "unit": "ratio", "initial": 1, "min": 0},
+        {"name": "weighted", "unit": "ratio", "initial": 1, "min": 0},
+        {"name": "share_factor", "unit": "ratio", "initial": 1, "min": 0},
         {"name": "stop_ok", "unit": "on", "initial": 1},
         {"name": "lube", "unit": "ratio", "initial": 0, "min": 0, "max": 1},
         {"name": "g", "unit": "ratio", "initial": 0, "min": 0, "max": 1},
@@ -854,6 +870,24 @@
           "follow": {
             "aggregate": "sum",
             "sources": [{"state": "share", "link": "conveyor_drive__share_in__belt_conveyor"}]
+          }
+        },
+        {
+          "target": "drives_seen",
+          "tier": "F0",
+          "f0": {"baseline": 3, "drift_per_hour": 0},
+          "follow": {
+            "aggregate": "sum",
+            "sources": [{"state": "drives", "link": "conveyor_drive__drives_in__belt_conveyor"}]
+          }
+        },
+        {
+          "target": "weights_seen",
+          "tier": "F0",
+          "f0": {"baseline": 3, "drift_per_hour": 0},
+          "follow": {
+            "aggregate": "sum",
+            "sources": [{"state": "weights", "link": "conveyor_drive__weights_in__belt_conveyor"}]
           }
         },
         {
@@ -947,11 +981,33 @@
           "f1": {"form": "product", "inputs": [{"state": "run_cmd", "coef": 1}, {"state": "available", "coef": 1}]}
         },
         {
+          "target": "weighted",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "weight", "coef": 1}, {"state": "enabled", "coef": 1}]}
+        },
+        {
+          "target": "share_factor",
+          "tier": "F1",
+          "f1": {
+            "form": "ratio",
+            "floor": 0.000001,
+            "inputs": [
+              {"state": "weight", "coef": 1},
+              {"state": "drives_seen", "coef": 1},
+              {"state": "weights_seen", "coef": 1, "denominator": true}
+            ]
+          }
+        },
+        {
           "target": "load",
           "tier": "F1",
           "f1": {
             "form": "product",
-            "inputs": [{"state": "share", "coef": 0.001086957}, {"state": "enabled", "coef": 1}]
+            "inputs": [
+              {"state": "share", "coef": 0.001086957},
+              {"state": "share_factor", "coef": 1},
+              {"state": "enabled", "coef": 1}
+            ]
           }
         },
         {
@@ -1848,6 +1904,17 @@
           "onset": {"magnitude": 1, "shape": "step"}
         },
         {
+          "id": "conveyor_drive__share_skew",
+          "affects": [{"state": "weight", "delta": 1}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.current"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
           "id": "conveyor_drive__current__offset",
           "affects": [{"state": "current__bias", "delta": 0.6}],
           "observability": {
@@ -2087,7 +2154,7 @@
       "area": "Transfer belt",
       "provenance": {
         "component": "streamsim/belt-conveyor",
-        "digest": "sha256:ecbc80ef2ad2e920b5c34e66249c1d75e180364ec6313320f24c7afbaaadf8b8",
+        "digest": "sha256:00cea3d0bd79c5153aeec4229a9c06424be295e99eb5835f9e0efec2ca4eb98f",
         "instrument_digests": {
           "streamsim/command-readback@1": "sha256:de82eebdeb4411ded318837a783dd47cfac30f78e79516b98ca97945edf340f4",
           "streamsim/tachometer@1": "sha256:96a64496dab4223b41848854d6eeb364839091ec46eb156da98c79aeab200594"
@@ -2103,7 +2170,7 @@
       "area": "Drive station",
       "provenance": {
         "component": "streamsim/conveyor-drive",
-        "digest": "sha256:c6dff5b0f4aa3de6d2d2618de13c4b03ad65b132d1737057fd1877eb415cde01",
+        "digest": "sha256:5307b5f4dceaeeeea8f2342a5c69f7dac8329e883986b6d1d8b73a090767d25e",
         "instrument_digests": {
           "streamsim/command-readback@1": "sha256:de82eebdeb4411ded318837a783dd47cfac30f78e79516b98ca97945edf340f4",
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
@@ -2128,6 +2195,9 @@
     {"name": "bulk_feeder__moving_in__belt_conveyor", "from": "belt_conveyor", "to": "bulk_feeder"},
     {"name": "conveyor_drive__share_in__belt_conveyor", "from": "belt_conveyor", "to": "conveyor_drive"},
     {"name": "conveyor_drive__stop_ok_in__belt_conveyor", "from": "belt_conveyor", "to": "conveyor_drive"},
+    {"name": "conveyor_drive__drives_in__belt_conveyor", "from": "belt_conveyor", "to": "conveyor_drive"},
+    {"name": "conveyor_drive__weights_in__belt_conveyor", "from": "belt_conveyor", "to": "conveyor_drive"},
+    {"name": "belt_conveyor__weights_in__conveyor_drive", "from": "conveyor_drive", "to": "belt_conveyor"},
     {"name": "belt_conveyor__drives_in__conveyor_drive", "from": "conveyor_drive", "to": "belt_conveyor"},
     {"name": "belt_conveyor__drag_in__conveyor_drive", "from": "conveyor_drive", "to": "belt_conveyor"},
     {"name": "belt_conveyor__rated_in__conveyor_drive", "from": "conveyor_drive", "to": "belt_conveyor"},
@@ -2165,6 +2235,27 @@
       "type": "conveyor_drive__stop_ok_in__belt_conveyor"
     },
     {
+      "from": "B-1",
+      "from_port": "drives_out",
+      "to": "D-1",
+      "to_port": "drives_in",
+      "type": "conveyor_drive__drives_in__belt_conveyor"
+    },
+    {
+      "from": "B-1",
+      "from_port": "weights_out",
+      "to": "D-1",
+      "to_port": "weights_in",
+      "type": "conveyor_drive__weights_in__belt_conveyor"
+    },
+    {
+      "from": "D-1",
+      "from_port": "weighted_out",
+      "to": "B-1",
+      "to_port": "weights_in",
+      "type": "belt_conveyor__weights_in__conveyor_drive"
+    },
+    {
       "from": "D-1",
       "from_port": "enabled_out",
       "to": "B-1",
@@ -2221,6 +2312,27 @@
       "type": "conveyor_drive__stop_ok_in__belt_conveyor"
     },
     {
+      "from": "B-1",
+      "from_port": "drives_out",
+      "to": "D-2",
+      "to_port": "drives_in",
+      "type": "conveyor_drive__drives_in__belt_conveyor"
+    },
+    {
+      "from": "B-1",
+      "from_port": "weights_out",
+      "to": "D-2",
+      "to_port": "weights_in",
+      "type": "conveyor_drive__weights_in__belt_conveyor"
+    },
+    {
+      "from": "D-2",
+      "from_port": "weighted_out",
+      "to": "B-1",
+      "to_port": "weights_in",
+      "type": "belt_conveyor__weights_in__conveyor_drive"
+    },
+    {
       "from": "D-2",
       "from_port": "enabled_out",
       "to": "B-1",
@@ -2275,6 +2387,27 @@
       "to": "D-3",
       "to_port": "stop_ok_in",
       "type": "conveyor_drive__stop_ok_in__belt_conveyor"
+    },
+    {
+      "from": "B-1",
+      "from_port": "drives_out",
+      "to": "D-3",
+      "to_port": "drives_in",
+      "type": "conveyor_drive__drives_in__belt_conveyor"
+    },
+    {
+      "from": "B-1",
+      "from_port": "weights_out",
+      "to": "D-3",
+      "to_port": "weights_in",
+      "type": "conveyor_drive__weights_in__belt_conveyor"
+    },
+    {
+      "from": "D-3",
+      "from_port": "weighted_out",
+      "to": "B-1",
+      "to_port": "weights_in",
+      "type": "belt_conveyor__weights_in__conveyor_drive"
     },
     {
       "from": "D-3",

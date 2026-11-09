@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Unequal load sharing: the algebraic form `ratio` (conveyor milestone M3, row 3, U7).** domain-spec v0.2 F1 form `ratio`:
+  the product of the numerator inputs over the larger of the denominator inputs' product (inputs with `denominator: true`)
+  and a required `floor` > 0, so nothing divides by zero; checked against an independent closed-form oracle. Each conveyor
+  drive now has a share `weight` (initial 1, skewed by the new negative-class fault `share_skew`) and loads itself by
+  `w·n/Σw` of the belt's equal share; with equal weights every story runs bit for bit as before (trace and outcome digests
+  guarded). The belt's stop permit still assumes equal survivors (a stated limit).
+
 - **Every conveyor command is read back (conveyor milestone M3, row 2, O21).** The conveyor commands carry no id argument
   any more (the call or the plant wire device addresses the instance): `set_feed` takes `percent`, `start_drive` and
   `start_belt` take `run_command` 1, `stop_drive` and `stop_belt` `run_command` 0 (each assigns the run command; the plant's

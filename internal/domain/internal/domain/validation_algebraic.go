@@ -13,6 +13,26 @@ func (checks domainChecks) f1Factors(f1 *model.F1Dyn) error {
 	return nil
 }
 
+func (checks domainChecks) f1Ratio(f1 *model.F1Dyn) error {
+	above, below := ratioSides(f1)
+	switch {
+	case above < 1 || above > maxProductFactors || below < 1 || below > maxProductFactors:
+		return checks.bad("/inputs", "a ratio divides 1 to %d numerator inputs by 1 to %d denominator inputs, not %d by %d", maxProductFactors, maxProductFactors, above, below)
+	case f1.Floor <= 0:
+		return checks.bad("/floor", "a ratio needs a floor above zero for its denominator, not %v", f1.Floor)
+	}
+	return nil
+}
+
+func ratioSides(f1 *model.F1Dyn) (above, below int) {
+	for _, in := range f1.Inputs {
+		if in.Denominator {
+			below++
+		}
+	}
+	return len(f1.Inputs) - below, below
+}
+
 func (checks domainChecks) f1Terms(f1 *model.F1Dyn) error {
 	if len(f1.Inputs) == 0 {
 		return checks.bad("/inputs", "a sum needs at least one input")

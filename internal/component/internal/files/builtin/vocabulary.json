@@ -305,6 +305,9 @@
     },
     "run_state": {
       "unit_family": "state"
+    },
+    "share_weight": {
+      "unit_family": "fraction"
     }
   },
   "tag_letters": {

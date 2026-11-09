@@ -477,7 +477,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "pid", "alarm"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "ratio", "pid", "alarm"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -513,7 +513,7 @@
                     "required": ["state"],
                     "properties": {
                       "state": {"type": "string"},
-                      "coef": {"type": "number", "default": 1.0},
+                      "coef": {"type": "number", "default": 1.0}, "denominator": {"type": "boolean", "default": false, "description": "For ratio: the input divides (it is a factor of the denominator); every other input is a factor of the numerator."},
                       "link": {"type": "object", "additionalProperties": false, "required": ["type", "aggregate"], "description": "Read the state over the instances linked into this one by the link type (domain-spec v0.2 §21).",
                         "properties": {
                           "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
@@ -535,6 +535,7 @@
               "additionalProperties": false,
               "properties": {"min": {"type": "number"}, "max": {"type": "number"}}
             },
+            "floor": {"type": "number", "exclusiveMinimum": 0, "description": "For ratio: the least denominator. The value is the product of the numerator inputs over the larger of the denominator inputs' product and the floor, so a denominator at or below it (zero or negative included) divides by the floor."},
             "table": {
               "type": "object",
               "additionalProperties": false,
@@ -632,6 +633,10 @@
               "then": {"required": ["inputs"]}
             },
             {
+              "if": {"properties": {"form": {"const": "ratio"}}, "required": ["form"]},
+              "then": {"required": ["inputs", "floor"]}
+            },
+            {
               "if": {"properties": {"form": {"const": "pid"}}, "required": ["form"]},
               "then": {"required": ["pid", "clamp"]}
             },
@@ -667,7 +672,7 @@
       },
       "allOf": [
         {
-          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"], "not": {"required": ["f1"], "properties": {"f1": {"required": ["form"], "properties": {"form": {"enum": ["curve", "product", "sum"]}}}}}},
+          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"], "not": {"required": ["f1"], "properties": {"f1": {"required": ["form"], "properties": {"form": {"enum": ["curve", "product", "sum", "ratio"]}}}}}},
           "then": {"required": ["dt_ms"]}
         },
         {

@@ -57,6 +57,12 @@
         "min": 0
       },
       {
+        "name": "weights",
+        "unit": "ratio",
+        "initial": 3,
+        "min": 0
+      },
+      {
         "name": "drag",
         "unit": "N",
         "initial": 82.8,
@@ -316,6 +322,14 @@
       },
       {
         "target": "drives",
+        "tier": "F0",
+        "f0": {
+          "baseline": 3,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "weights",
         "tier": "F0",
         "f0": {
           "baseline": 3,
@@ -1427,10 +1441,29 @@
       "state": "stop_ok"
     },
     {
+      "name": "drives_out",
+      "type": "run_state",
+      "direction": "provides",
+      "state": "drives"
+    },
+    {
+      "name": "weights_out",
+      "type": "share_weight",
+      "direction": "provides",
+      "state": "weights"
+    },
+    {
       "name": "drives_in",
       "type": "run_state",
       "direction": "consumes",
       "state": "drives",
+      "sample_s": 1
+    },
+    {
+      "name": "weights_in",
+      "type": "share_weight",
+      "direction": "consumes",
+      "state": "weights",
       "sample_s": 1
     },
     {

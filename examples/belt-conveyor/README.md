@@ -18,6 +18,9 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
 - The drive faults name their expected actions in both compositions (`expected_actions`), so `streamsim score` credits
   them on the instances a label resolves: `lube_loss` expects `set_feed` on the feeder and `stop_drive` on the faulted
   drive, `gear_oil_loss` the same plus `stop_belt` on the belt, `vfd_fault` `set_feed` on the feeder.
+- The drives share the belt's demand by weight: each drive's `weight` is 1 unless the instance fault
+  `conveyor_drive__share_skew` moves it by its severity (a step, from t = 0 in a seed row that skews a drive); a drive then
+  carries `weight·n/Σweight` of the equal share.
 - `kinds/`: the plants' interface to a plant-wire host, which every `domain compose`, `run`, `plantwire node` and
   `plantwire connect` of either plant needs as `--kinds-dir examples/belt-conveyor/kinds` (each kind `implements` its file).
   - `bulk_feeder.kind.json`: the feeder as a host sees it, `feed` (kg/s) and `feed_setpoint` (%, writable) and the command
