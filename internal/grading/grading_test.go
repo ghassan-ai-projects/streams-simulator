@@ -31,3 +31,13 @@ func TestDocumentIsTheCardForOneScorecardAndTheRunOtherwise(t *testing.T) {
 		t.Fatal("no scorecard: document is not the run score")
 	}
 }
+
+func TestGradeOutcomeNamesARunFolderWithoutAnArtifact(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	_, err := grading.GradeOutcome(t.Context(), grading.OutcomeOptions{RunDir: dir})
+	var pathFailure *fs.PathError
+	if !errors.As(err, &pathFailure) || filepath.Dir(pathFailure.Path) != dir {
+		t.Fatalf("err = %v, want a path failure inside %s", err, dir)
+	}
+}
