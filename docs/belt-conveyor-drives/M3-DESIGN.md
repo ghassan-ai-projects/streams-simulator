@@ -182,3 +182,36 @@ the first winding crossing would say gearbox: label at the vibration crossing (b
 which in S1 never holds (the vibration residual is past 0.05 mm/s before the slope residual reaches 2 K/h in every row)
 and in S3 holds 1.31-1.81 h before the seizure. The slope has the smallest margin on S0 (0.83 of 2 K/h). The test also
 asserts the gearbox rule.
+
+## 8. As built, rows 5-7 (agentic-stream) and exit evidence (2026-11-09)
+
+agentic-stream commits on `belt-m3-predict`: `abdc2ae6` (kind copies and site, O21), `22f6f78c` (data, the
+`drive-degradation` spec, fake-node tests, the barrier-paced twin), `699a89e9` (seed rows from `stories.json`, plant B).
+
+- Data: per-drive winding and vibration and the belt's tail speed per device; routes `reduce_feed` (R1, presets `limp_a`
+  54, `limp_b` 18, `restore`), `stop_feed` (R2), `isolate_drive` (R2, D-3), `stop_belt` (R2); a test approver.
+- Spec: `on_close` windows of 1, 15 and 30 min with coverage guards; residuals against the larger peer; phases normal →
+  watch → degrading → shedding → belt_empty → isolated or belt_stopped; one trigger per action phase; ceiling R2. The
+  bearing/gearbox split is the reasoner's (the calibrated rules are in the diagnosis catalog); in the tests a scripted
+  stand-in plays the reasoner.
+- Found on the way: a barrier-paced node reads a command only at its next 60 s slice, so the host's 20 s route expiry
+  refused every command; conveyor routes expire after 180 s and serve runs with a 5 min dispatch lease (the host times
+  expiry against node time; a product-level fix is open). `export-run` needs `--device-id` when a run commanded several
+  devices (the artifact manifest holds one device; open).
+
+Exit evidence, barrier-paced twin (`--slice-s 60`, story `horizon_s`), seed rows 1-3 of each story, 12/12 pass: routes
+in order, every command read back, R2 only on settled features and approved, no drive trip, never stranded, zero
+quarantines, `verify-run` passes.
+
+| Story | Isolation or belt stop, h after onset | J − B0 | J − B4 | Score |
+|---|---|---|---|---|
+| S1-A | 2.93, 3.36, 3.08 (do-nothing trips 8.2-8.6 h) | −4.17, −3.74, −4.10 | −5.07, −4.49, −4.97 | D-3 `lube_loss` detected (latency 0.38-0.87 h), action appropriate, nothing unexpected |
+| S1-B | 4.02, 4.13, 3.74 | −2.96, −2.82, −3.61 | −2.95, −2.81, −3.61 | as S1-A (latency 0.79-1.16 h) |
+| S3-A | belt stopped 0.84, 0.77, 0.83 (before the seizure) | −3.06, −3.38, −3.06 | same | `gear_oil_loss` labelled gearbox, action appropriate |
+| S4-A | no action (1, 1 and 3 surges) | - | - | no detection, no action |
+
+Decision on A5 (PLAN.md section 7): not needed for M3; S1's lead holds without a time-to-threshold feature (O24); A5
+is built in M4 for U9 (O31).
+
+Wall time per row: about 10.5 min for a 16 h S1 row (session 4.3 min, `streamsim outcome` 3.3 min, `score` 0.8 min,
+the rest wind-down), about 2.5 min for S3 and S4. The 63 min of the first run came from machine load, not the loop.

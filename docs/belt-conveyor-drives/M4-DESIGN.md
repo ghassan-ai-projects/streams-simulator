@@ -17,7 +17,7 @@ built and wait for the owner.
 
 | # | Repo | Work |
 |---|---|---|
-| 0 | all | Throughput first: a 16 h story on the barrier-paced twin takes about an hour (S1-A row 1: 63 min); find where the time goes and bring a 16 h story under 15 min, or the 10-seed evidence takes days (O32) |
+| 0 | all | Throughput: met without change; a 16 h story on the barrier-paced twin takes about 10.5 min unloaded (M3-DESIGN §8; the first 63 min came from machine load) |
 | 1 | streamsim | B1-B3 as closed baseline records (O27) on both plants; the outcome document says a story is `easy` when a baseline ties or beats the reference; story tables checked |
 | 2 | streamsim | Two labels on one entity (O25): scoring keys a label by entity and fault; one label per entity scores bit for bit as before |
 | 3 | agentic-stream | A6 per-(entity, diagnosis) detections in the verdict writer; spec `sensor_stuck` (flat D-3 vibration while the peers move, from existing aggregates); S5-A on the twin, 3 seeds |
@@ -57,7 +57,7 @@ the fan experiment guards stay green; new world behaviour comes with an independ
   proposal then waits for one live approval by the owner (a human approves every rule).
 - O31 U9's consumer side uses A5 (`extrapolate`: (limit − level)/slope over a declared window with a validity flag), a
   new operator kind, designed in agentic-stream's design notes before it is written.
-- O32 Throughput before evidence: the 10-seed evidence waits for item 0.
+- O32 Throughput before evidence: met (about 10.5 min per 16 h story); the 10-seed evidence needs no speed-up.
 
 ## 5. Exit
 
