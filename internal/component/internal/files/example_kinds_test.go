@@ -2,7 +2,9 @@ package files
 
 import (
 	"errors"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -85,5 +87,21 @@ func TestInstallingKindFilesReportsWhatTheFileSystemRefuses(t *testing.T) {
 	}
 	if err := writeKindFiles(locked, []domain.KindFile{{Name: "a.kind.json", Document: []byte("{}")}}); err == nil || !strings.Contains(err.Error(), "component: write") {
 		t.Fatalf("an unwritable kinds folder = %v", err)
+	}
+}
+
+type kindsUnlistable struct{ embeddedTree }
+
+func (t kindsUnlistable) names(dir string) ([]string, error) {
+	if dir == path.Join("examples", "kinds") {
+		return nil, fs.ErrPermission
+	}
+	return t.embeddedTree.names(dir)
+}
+
+func TestAnUnreadableExampleKindsFolderFailsTheExamples(t *testing.T) {
+	t.Parallel()
+	if _, err := loadExamples(kindsUnlistable{builtInExampleTree}); !errors.Is(err, fs.ErrPermission) || !strings.Contains(err.Error(), "kinds") {
+		t.Fatalf("an unreadable kinds folder = %v", err)
 	}
 }
