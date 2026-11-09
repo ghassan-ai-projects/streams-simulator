@@ -36,3 +36,42 @@ must not strand. The run folder is graded with `streamsim outcome` and, with a v
 graded by `streamsim score` with A6's verdict and by `streamsim outcome` (beats doing nothing); `verify-run` passes;
 zero quarantines; fan re-check FR+ (streamsim `make phase-gate`, the device tests, agentic-stream `make ci-check` and its
 Experiment tests, the P4 kit rung).
+
+## 5. As built, rows 1 and 2 (2026-11-09, streamsim)
+
+Row 1:
+
+- composition-v0.1 takes `implements` and `board_type` on an equipment entry (`board_type` needs `implements`, a schema
+  rule, refused at `/equipment/<i>/implements`); `domain compose` copies both onto the composed kind and checks the domain
+  against the kind files and board mappings of `--kinds-dir`, as `domain validate` does. Generic: no conveyor word in Go.
+- The bulk feeder gains the point `feed_setpoint` (state `feed_set`, tag ZT, fraction 0-100 %) with a new library
+  instrument `streamsim/setpoint-readback` (the setpoint read back from the controller's register: periodic 2 s, no noise,
+  resolution 0.1 %, one `dropout` fault). No existing instrument fits: the valve position transmitter is a noisy analog
+  feedback (σ 0.2 % of span), and a host verifies a write to within the metric's resolution. Composed channel
+  `bulk_feeder.feed_setpoint`.
+- `examples/belt-conveyor/kinds/`: `bulk_feeder.kind.json` (`feed` kg/s, `feed_setpoint` % writable, `set_feed` with the
+  argument `feed_setpoint`), `feeder-controller.board.json` (`set_feed` → `bulk_feeder__set_feed` with `feeder_id` fixed to
+  `F-1` and `percent` from `feed_setpoint`; `feed` → `bulk_feeder.feed`, `feed_setpoint` → `bulk_feeder.feed_setpoint`), and
+  `belt_conveyor.kind.json`, `conveyor_drive.kind.json` captured from a 20 s session birth (`kind capture`). Plants A and B
+  announce identical digests for all three kinds, so both compositions declare `implements` on all three entries (the
+  feeder also `board_type: feeder-controller`): the committed files are now checked against the plants on every compose,
+  run and session.
+- Consequence: every `domain compose`, `run`, `plantwire node`, `plantwire connect` and `mcp` of a conveyor plant needs
+  `--kinds-dir examples/belt-conveyor/kinds` (a domain that implements is refused without the check). A host sees the feeder
+  as `feed`, `feed_setpoint` and `set_feed`; the world, its command log, the outcome weights and `b4` keep the raw names.
+- Tests: compose copies and refuses (component domain layer); `domain compose` and `plantwire connect --check` of S2-B with
+  and without `--kinds-dir` (cli); a 30 s plant-B session against the reference host: the feeder is born through its kind
+  file with `feed_setpoint` writable, every born kind equals its committed file, and `set_feed {feed_setpoint: 18}` is
+  accepted and verified by read-back within 6 s (test/contract).
+
+Row 2 (`test/contract/belt_limp_deadline_test.go`, long tier): noiseless plant B, steady at full feed, D-3's `vfd_fault`;
+one `bulk_feeder__set_feed` after a delay; saved means no protection trip of D-1 or D-2 and no `stranded` violation in the
+30 min after the command. Bisected on a 1 s grid and checked at the delay ± 1 s:
+
+| Command | Latest delay after the trip that still saves |
+|---|---|
+| limp feed 18 % | 98 s |
+| cut to 0 | 103 s |
+
+The survivors' inverters trip 121 s after the loss with nobody acting, so a limp command has about 98 s; M2's reaction
+bound is set from 98 s with a margin.

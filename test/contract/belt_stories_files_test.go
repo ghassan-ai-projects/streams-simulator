@@ -139,7 +139,8 @@ func TestEveryStoryScenarioAndSessionPlanFollowsItsContract(t *testing.T) {
 			continue
 		}
 		check, err := plantwire.CheckConnect(plantwire.ConnectOptions{Plan: bytes.NewReader(file.content), Source: filepath.Base(file.path),
-			DomainsDir: filepath.Join(testsupport.RepositoryRoot(), "examples"), AdaptersDir: testsupport.AdaptersDir(), SliceNS: 1e9})
+			DomainsDir: filepath.Join(testsupport.RepositoryRoot(), "examples"), AdaptersDir: testsupport.AdaptersDir(),
+			KindsDirs: []string{testsupport.BeltConveyorKindsDir()}, SliceNS: 1e9})
 		if err != nil || len(check.Instances) != 5 {
 			t.Errorf("%s: CheckConnect = %+v, %v", filepath.Base(file.path), check, err)
 		}
@@ -159,11 +160,15 @@ func committedScenario(t *testing.T, name string) *model.Scenario {
 	return scenario
 }
 
+func beltKindsCheck(spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
+	return plantwire.CheckImplements(spec, []string{testsupport.BeltConveyorKindsDir()})
+}
+
 func runCommitted(t *testing.T, scenario *model.Scenario) {
 	t.Helper()
 	summary, err := run.RunScenario(t.Context(), scenario, run.ScenarioRunOptions{DomainsDir: filepath.Join(testsupport.RepositoryRoot(), "examples"),
-		AdaptersDir: testsupport.AdaptersDir(), SinkName: model.SinkInproc, OutDir: t.TempDir()})
-	if err != nil || !summary.Reproducible || summary.Emitted == 0 {
+		AdaptersDir: testsupport.AdaptersDir(), SinkName: model.SinkInproc, OutDir: t.TempDir(), CheckDomain: beltKindsCheck})
+	if err != nil || !summary.Reproducible || summary.Emitted == 0 || len(summary.ImplementsChecked) != 3 {
 		t.Fatalf("RunScenario = %+v, %v", summary, err)
 	}
 }

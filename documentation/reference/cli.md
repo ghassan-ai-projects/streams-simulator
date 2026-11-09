@@ -195,6 +195,12 @@ streamsim domain compose <composition.json> [--out <file>] [--components-dir <di
 
 It prints `{id, digest, channels, faults, effectors}` as `domain validate` does, plus `composed` (the file written). A composition that breaks a library rule fails with `composition_invalid`, each issue at its pointer in the composition (`/equipment/0/preset`, `/connections/1`); a composed domain that fails its own contract fails with `domain_invalid`.
 
+- `--kinds-dir <dir>` — a directory of kind files and board mappings, repeatable (see `domain validate`). An equipment entry may
+  name the kind file its kind presents to a host (`implements`) and the board mapping it reaches it through (`board_type`, which
+  needs `implements`); compose copies both onto the composed kind and checks the composed domain against the files found here,
+  so a composition with `implements` fails `domain_invalid` (`implements_missing`) without the option. The belt conveyor plants
+  take `--kinds-dir examples/belt-conveyor/kinds`, and so does every `run`, `plantwire node` and `plantwire connect` of them.
+
 ### `domain assumptions`
 
 States what a domain, or a twin scaffolded from kind files, assumes, so a reader can judge a default before trusting it. It reads files only and prints one deterministic document ([`domain-assumptions-v0.1`](../../contracts/domain-assumptions-v0.1.schema.json)), validated against that contract before it is printed.

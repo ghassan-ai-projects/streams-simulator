@@ -60,6 +60,7 @@ Derived checks the defaults give (arithmetic, kept as a data test in M0):
 | Drive load L, 3 drives, full feed | 0.646 (model, M0) | 0.964 (model, M0) |
 | L with one drive out, full feed | 0.984 (model, M0) | 1.461 (model, M0) |
 | Survivor trip after loss (from hot) | never: I² 0.973 < 1.1025 (model, M0) | inverter (τ 700 s) first: 119 s = 1 s + τ_inv·ln((1.996−0.938)/(1.996−1.1025)) closed form, 121 s in the model; the relay alone would take 170 s (model, M0) |
+| Latest single `set_feed` after the loss that still saves the survivors and the belt (noiseless, full feed, 30 min watch, 1 s grid) | not needed: survivors never trip | limp feed 18 %: 98 s; cut to 0: 103 s after D-3 trips (model, M2) |
 | Survivor hot spot / aging rate after loss | 123 °C / 0.63 (8.5x normal 0.074) (model, M0) | trips first (overtemp would take about 13 min) (model, M0) |
 | Highest feed keeping 2 drives able to restart (m ≤ (2·k_lim·F_rated − a0 − drag)/a1) | 57.3 % (716 kg) (model, M0) | 29.3 % (366 kg) (model, M0) |
 | Highest feed keeping 2 drives ≤ 1.0x (F_empty + 700.8·f + drag ≤ 2·F_rated) | 104 % (model, M0) | 20.1 % (model, M0) |

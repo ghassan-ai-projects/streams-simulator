@@ -25,7 +25,7 @@ func shortPlantBRun(t *testing.T) string {
 	testsupport.WriteFileIn(t, dir, "short.scenario.json", []byte(shortPlantBScenario))
 	out := filepath.Join(dir, "run")
 	invoke(t, "run", "--scenario", filepath.Join(dir, "short.scenario.json"), "--domains-dir", examplesDir(),
-		"--adapters-dir", testsupport.AdaptersDir(), "--sink", "file", "--out", out).mustSucceed(t)
+		"--adapters-dir", testsupport.AdaptersDir(), "--kinds-dir", testsupport.BeltConveyorKindsDir(), "--sink", "file", "--out", out).mustSucceed(t)
 	return out
 }
 

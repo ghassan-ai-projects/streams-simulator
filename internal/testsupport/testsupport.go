@@ -175,6 +175,10 @@ func BeltConveyorStoriesDir() string {
 	return filepath.Join(RepositoryRoot(), "examples", "belt-conveyor")
 }
 
+func BeltConveyorKindsDir() string {
+	return filepath.Join(BeltConveyorStoriesDir(), "kinds")
+}
+
 func WorkspaceFolder(root, folder string) string { return filepath.Join(root, folder) }
 
 func WorkspaceFile(folder, name string) string { return folder + "/" + name }

@@ -108,7 +108,7 @@ func TestAPlantWireSessionRunYieldsItsOutcome(t *testing.T) {
 		`","horizon_s":120,"disturbances":[{"at_s":30,"instance":"D-3","fault":"conveyor_drive__vfd_fault"}]}`
 	result, err := plantwire.Connect(t.Context(), plantwire.ConnectOptions{Plan: strings.NewReader(plan), Source: "plan.json",
 		DomainsDir: filepath.Join(testsupport.RepositoryRoot(), "examples"), AdaptersDir: testsupport.AdaptersDir(), Out: out,
-		SliceNS: 10e9, BarrierCap: 30 * time.Second})
+		KindsDirs: []string{testsupport.BeltConveyorKindsDir()}, SliceNS: 10e9, BarrierCap: 30 * time.Second})
 	if err != nil || result.Stopped || <-hosted != nil {
 		t.Fatalf("session = %+v, %v", result, err)
 	}

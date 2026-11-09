@@ -223,6 +223,17 @@
       },
       "tag": "FT",
       "default_instrument": "streamsim/mass-flow-meter@1"
+    },
+    {
+      "name": "feed_setpoint",
+      "state": "feed_set",
+      "unit_family": "fraction",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "ZT",
+      "default_instrument": "streamsim/setpoint-readback@1"
     }
   ],
   "ports": [

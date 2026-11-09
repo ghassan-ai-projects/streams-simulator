@@ -21,6 +21,7 @@
   "kinds": [
     {
       "name": "bulk_feeder",
+      "implements": "bulk_feeder",
       "state": [
         {"name": "feed_set", "unit": "%", "initial": 100, "min": 0, "max": 100},
         {"name": "supply", "unit": "ratio", "initial": 1, "min": 0},
@@ -78,6 +79,19 @@
           "range": {"min": 0, "max": 80},
           "resolution": 0.001,
           "tag": "FT",
+          "value_type": "number"
+        },
+        {
+          "name": "bulk_feeder.feed_setpoint",
+          "unit": "%",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 2},
+          "fidelity": "F1",
+          "noise": {"model": "none", "sigma": 0},
+          "observes": "feed_set",
+          "range": {"min": 0, "max": 100},
+          "resolution": 0.1,
+          "tag": "ZT",
           "value_type": "number"
         }
       ],
@@ -163,6 +177,16 @@
           },
           "observation": {"form": "dropout", "channel": "bulk_feeder.feed"},
           "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "bulk_feeder__feed_setpoint__dropout",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "bulk_feeder.feed_setpoint"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "observation": {"form": "dropout", "channel": "bulk_feeder.feed_setpoint"},
+          "onset": {"magnitude": 1, "shape": "step"}
         }
       ],
       "effectors": [
@@ -183,10 +207,12 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "board_type": "feeder-controller"
     },
     {
       "name": "belt_conveyor",
+      "implements": "belt_conveyor",
       "state": [
         {"name": "unit", "unit": "ratio", "initial": 1},
         {"name": "run_cmd", "unit": "on", "initial": 1, "min": 0, "max": 1},
@@ -741,6 +767,7 @@
     },
     {
       "name": "conveyor_drive",
+      "implements": "conveyor_drive",
       "state": [
         {"name": "unit", "unit": "ratio", "initial": 1},
         {"name": "run_cmd", "unit": "on", "initial": 1, "min": 0, "max": 1},
@@ -1980,11 +2007,12 @@
       "area": "Transfer belt",
       "provenance": {
         "component": "streamsim/bulk-feeder",
-        "digest": "sha256:c0d91f56e40c38534af6e5bc06807ed8e614c5bbb507791ee52c458c0a4d3166",
+        "digest": "sha256:92adfd1a612adcbce1fe1cdde41bd686d6fe8409dcf2c8bd1f646c883a7f8a8c",
         "instrument_digests": {
-          "streamsim/mass-flow-meter@1": "sha256:07c0020fecb67db271563988412d002427648b8d65a9253c9072e04803380a23"
+          "streamsim/mass-flow-meter@1": "sha256:07c0020fecb67db271563988412d002427648b8d65a9253c9072e04803380a23",
+          "streamsim/setpoint-readback@1": "sha256:01a78527a825a966fbcb6fdaca68086d1450e65bc682d676cb40297d3a261a1b"
         },
-        "instruments": {"feed": "streamsim/mass-flow-meter@1"},
+        "instruments": {"feed": "streamsim/mass-flow-meter@1", "feed_setpoint": "streamsim/setpoint-readback@1"},
         "version": 1
       }
     },

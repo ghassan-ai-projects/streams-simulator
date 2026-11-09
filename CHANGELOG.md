@@ -4,6 +4,15 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Kind files for the conveyor and a feeder that reads its setpoint back (conveyor milestone M2, rows 1 and 2).**
+  composition-v0.1 takes `implements` and `board_type` on an equipment entry (`board_type` needs `implements`); `domain
+  compose` copies both onto the composed kind and checks them against `--kinds-dir`. The bulk feeder gains the point
+  `feed_setpoint` with the new instrument `streamsim/setpoint-readback` (noise-free, 0.1 % resolution), so a host can verify
+  a feed command. `examples/belt-conveyor/kinds/` holds the feeder kind file (`feed`, `feed_setpoint` writable, `set_feed`),
+  its board mapping `feeder-controller` and the belt and drive kind files captured from a session birth; both conveyor plants
+  implement all three (identical digests on A and B), so their `run`, `domain compose` and `plantwire` commands take
+  `--kinds-dir examples/belt-conveyor/kinds`. Measured on plant B (S2-B, noiseless): one `set_feed` to 18 % still saves the
+  survivors and the belt up to 98 s after D-3 trips, a cut to 0 up to 103 s.
 - **`streamsim outcome`: a run graded on its consequences (conveyor milestone M1).** The command replays a run folder's
   artifact as it ran, with every effector call removed (`do_nothing`) and under each of the domain's `baseline_policies`,
   records per entity the trips, boundary violations and KPI changes exactly at the step where they happen, prices each run

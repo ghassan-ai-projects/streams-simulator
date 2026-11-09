@@ -15,9 +15,18 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
     `anchor`. The policies know the drawn onset: they only prove that a saving reaction exists.
   - `safe_limp_feed_pct`: the feed each plant runs at on two drives, a few points below the highest feed at which two
     drives can still restart the belt they leave loaded and stay at or under their rating.
+- `kinds/`: the plants' interface to a plant-wire host, which every `domain compose`, `run`, `plantwire node` and
+  `plantwire connect` of either plant needs as `--kinds-dir examples/belt-conveyor/kinds` (each kind `implements` its file).
+  - `bulk_feeder.kind.json`: the feeder as a host sees it, `feed` (kg/s) and `feed_setpoint` (%, writable) and the command
+    `set_feed` with the argument `feed_setpoint`, so a host confirms a feed command by reading the setpoint back.
+  - `feeder-controller.board.json`: the board mapping from that kind file to the composed feeder's raw names
+    (`bulk_feeder.feed`, `bulk_feeder.feed_setpoint`, `bulk_feeder__set_feed` with `feeder_id` fixed to `F-1` and `percent`
+    from `feed_setpoint`).
+  - `belt_conveyor.kind.json`, `conveyor_drive.kind.json`: captured from a session birth with `streamsim kind capture`;
+    plants A and B announce the same three kind digests.
 - `scenarios/<story>.do-nothing.scenario.json` and `<story>.reference.scenario.json`: seed row 1 as `scenario-v0.1`
   runs (S0 and S4 have no policy, so no reference file). Run one with
-  `streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples`.
+  `streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --kinds-dir examples/belt-conveyor/kinds`.
 - `sessions/<story>.session-plan.json`: seed row 1 as a live session plan (`session-plan-v0.1`), S2 and S3 paced by the
   wall clock. The `host_socket` `/tmp/streamsim-host.sock` is a placeholder and there are no `policies`: set both to
   the host's own. Each plan carries the story's `horizon_s`, so the session ends itself there (`stopped: false`).
@@ -25,7 +34,7 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
 To grade a story run on its consequences, run its scenario into a folder and score that folder:
 
 ```bash
-streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --sink file --out /tmp/s2-a
+streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --kinds-dir examples/belt-conveyor/kinds --sink file --out /tmp/s2-a
 streamsim outcome --run /tmp/s2-a --domains-dir examples
 ```
 
