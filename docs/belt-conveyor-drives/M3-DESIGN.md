@@ -115,3 +115,70 @@ As in M2: each repository's AGENTS.md, generic code only, no gate loosening, lon
   is exact (the survivors' weights are equal). Stopping another drive leaves the skewed survivor `(1+s)/(2+s)` of the demand
   instead of 1/2: 9 % more than the permit assumes for s = 0.2. A conservative permit would scale the survivors' rating by
   `Σ_survivors w / ((n−1)·w_max)`; not needed while seed rows skew only the drive that the plan stops (D-3).
+- Open point (coordinator, 2026-11-09): `share_skew` is not added to the committed story seed rows in M3. A negative-class
+  label on D-3 beside D-3's real fault label would put two labels on one entity, which scoring cannot yet separate (its
+  judgment and loop scope by entity). Skewed rows wait until scoring can tell two labels on one entity apart.
+
+## 7. Calibration, row 4 (streamsim, equal weights)
+
+Method (`test/contract/belt_calibration_test.go`, `belt_calibration_table_test.go`, long tier): every seed row of S1-A,
+S1-B, S3-A (do nothing), S0-A and S4-A/B, run to the horizon with noise, read as a host receives the readings (every
+drive's winding every 10 s and vibration every 60 s, with their noise, quantization and sensor outages: availability
+0.999, 10 min repairs). Per drive, at the end of every minute: the 15 min mean of vibration and of winding and the
+least-squares winding slope over 30 min (K/h); a window counts only when it holds at least 90 % of its readings (81 of
+90 winding, 14 of 15 vibration, 162 of 180 for the slope). A residual is the drive's value minus the largest of its two
+peers'. Lead = D-3's do-nothing trip (S1: the first protective trip, overtemperature; S3: the seizure, `free_ok`) minus
+the first minute the D-3 residual reaches the threshold; "early" counts rows that crossed before the fault's onset (none).
+The noiseless runs gave the same leads within 0.1 h (measured once, not kept in the test).
+
+D-3 residual leads, hours before the do-nothing trip (min / median / max over 10 seed rows):
+
+| Residual | Threshold | S1-A | S1-B | S3-A (to seizure) |
+|---|---|---|---|---|
+| vibration 15 min mean | 0.05 mm/s | 4.54 / 4.70 / 5.51 | 4.33 / 4.89 / 5.48 | never |
+| | 0.1 mm/s | 4.25 / 4.30 / 5.03 | 3.92 / 4.37 / 4.99 | never |
+| | 0.2 mm/s | 3.85 / 3.91 / 4.56 | 3.49 / 3.81 / 4.40 | never |
+| | 0.3 mm/s | 3.60 / 3.63 / 4.21 | 3.17 / 3.44 / 3.95 | never |
+| | 0.5 mm/s | 3.23 / 3.25 / 3.81 | 2.67 / 2.96 / 3.33 | never |
+| | 1 mm/s | 2.64 / 2.64 / 3.09 | 1.96 / 2.14 / 2.42 | never |
+| winding 15 min mean | 0.5 K | 4.95 / 4.96 / 5.86 | 4.84 / 5.36 / 6.10 | 1.31 / 1.54 / 1.81 |
+| | 1 K | 4.61 / 4.63 / 5.46 | 4.44 / 4.89 / 5.58 | 1.21 / 1.44 / 1.70 |
+| | 2 K | 4.20 / 4.21 / 4.96 | 3.92 / 4.32 / 4.94 | 1.06 / 1.28 / 1.51 |
+| | 3 K | 3.91 / 3.92 / 4.62 | 3.57 / 3.94 / 4.49 | 0.92 / 1.13 / 1.34 |
+| | 5 K | 3.48 / 3.49 / 4.12 | 3.04 / 3.36 / 3.84 | 0.67 / 0.84 / 1.03 |
+| winding slope 30 min | 0.5 K/h | 5.22 / 5.29 / 6.14 | 5.12 / 5.51 / 6.42 | 1.44 / 1.69 / 1.96 |
+| | 1 K/h | 4.87 / 4.92 / 5.72 | 4.66 / 5.09 / 5.64 | 1.39 / 1.63 / 1.90 |
+| | 2 K/h | 4.41 / 4.43 / 5.08 | 4.01 / 4.34 / 4.81 | 1.31 / 1.56 / 1.81 |
+| | 4 K/h | 3.74 / 3.76 / 4.22 | 3.09 / 3.26 / 3.48 | 1.19 / 1.41 / 1.64 |
+
+Onset / do-nothing trip, hours, per seed row (sorted): S1-A 1.14/8.53 1.14/9.31 1.23/8.19 1.32/8.28 1.47/8.46 1.50/8.55
+1.57/8.56 1.66/8.61 1.68/8.69 1.97/8.96; S1-B 0.82/9.68 0.87/8.01 0.96/8.11 1.05/8.49 1.09/8.97 1.32/9.80 1.37/9.18
+1.69/10.35 1.73/10.59 1.74/9.39; S3-A (seizure) 0.50/2.23 0.55/2.71 0.71/2.59 0.80/2.58 0.94/2.56 1.15/2.95 1.21/3.00
+1.39/3.55 1.43/3.35 1.47/3.43.
+
+Largest residual of any drive against its peers over every seed row (noise, quantization, outages):
+
+| Story | Vibration mm/s | Winding K | Slope K/h |
+|---|---|---|---|
+| S0-A (shift pattern, 24 h) | 0.023 | 0.038 | 0.832 |
+| S4-A (one surge) | 0.024 | 0.023 | 0.113 |
+| S4-B (three surges) | 0.020 | 0.056 | 0.132 |
+
+Without the 90 % coverage rule an outage during a load change biases one drive's view: S0's slope residual then reached
+6.9 K/h and S4-B's winding residual 0.32 K. A spec must skip a window that misses readings.
+
+Recommended starting thresholds (guarded by the long-tier test: the S1 leads ≥ 2 h, S3 ≥ 0.5 h, no row early, S0/S4
+below half of each threshold):
+
+| Use | Rule | S1 least lead | S3 least lead | S0/S4 margin |
+|---|---|---|---|---|
+| watch (R0) | winding residual ≥ 1 K or vibration residual ≥ 0.1 mm/s | 4.4 h | 1.2 h | 18× / 4× |
+| bearing (S1) | vibration residual ≥ 0.3 mm/s | 3.2 h | never | 12× |
+| degrading | winding residual ≥ 2 K | 3.9 h | 1.1 h | 36× |
+| gearbox (S3) | winding slope residual ≥ 2 K/h while the vibration residual is < 0.05 mm/s (same minute) | never fires (0 of 20 rows) | 1.3 h (1.31-1.81) | 2.4× |
+
+In S1 the winding residual crosses 1 K about 20 min before the vibration residual crosses 0.1 mm/s, so a label taken at
+the first winding crossing would say gearbox: label at the vibration crossing (bearing) or with the gearbox rule above,
+which in S1 never holds (the vibration residual is past 0.05 mm/s before the slope residual reaches 2 K/h in every row)
+and in S3 holds 1.31-1.81 h before the seizure. The slope has the smallest margin on S0 (0.83 of 2 K/h). The test also
+asserts the gearbox rule.
