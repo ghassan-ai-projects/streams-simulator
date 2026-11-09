@@ -1,15 +1,18 @@
 # Belt conveyor stories
 
-The M0 stories of the multi-drive belt conveyor (`docs/belt-conveyor-drives/PLAN.md` section 2.3) as data, for the
-plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b` (without).
+The stories of the multi-drive belt conveyor (`docs/belt-conveyor-drives/PLAN.md` section 2.3) as data, for the
+plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b` (without), and for S6 the
+master-follower variants of plant A, `belt-conveyor-drives-s6-stop` and `-s6-promote`.
 
-- `stories.json`: one entry per story variant (S0-A, S1-A, S1-B, S2-A, S2-B, S3-A, S4-A, S4-B, S5-A). Each has its
-  plant, horizon, disturbances, ten seed rows and a hand-written reference policy.
+- `stories.json`: one entry per story variant (S0-A, S1-A, S1-B, S2-A, S2-B, S3-A, S4-A, S4-B, S5-A, S6-A-stop,
+  S6-A-promote). Each has its plant, horizon, disturbances, ten seed rows and a hand-written reference policy; an S6
+  story names its `regime` (`a`) beside its plant, and `unavoidable: true` marks S6-A-stop, which no reaction saves: its
+  reference policy (feed 0, no restart) only does no harm and ties doing nothing.
   - A disturbance strikes `instance` with the qualified `fault` at the row field named by `at` (or at `at_s` seconds);
     `severity` is a number or a row field; `duration_s` clears it that much later. A row field that is a list (S4's
     pulses) repeats the disturbance once per element.
   - A seed row holds the world `seed` and the drawn values, in seconds after the world start: `onset_s`, `severity`,
-    `stop_s` (the downstream stop), `trip_s` (S2), `frozen_s` (S5), `pulse_s` and `pulse_severity` (S4). They were drawn
+    `stop_s` (the downstream stop), `trip_s` (S2, S6), `frozen_s` (S5), `pulse_s` and `pulse_severity` (S4). They were drawn
     once from a fixed generator and are committed as numbers.
   - A policy call invokes `effector` on `instance` with `args` at `after_s` seconds after the row field named by
     `anchor`. The policies know the drawn onset: they only prove that a saving reaction exists.
@@ -38,6 +41,13 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
     (`run_command` 1) and `stop_belt` (`run_command` 0); `belt-controller.board.json` maps it to the raw names.
   - A host confirms every feed, start and stop by reading its argument back on the metric of the same name; plants A and
     B announce the same three kind digests.
+  - The S6 plants split the drives into the kinds `drive_master` (D-1) and `drive_follower` (D-2, D-3), both
+    `streamsim/conveyor-drive@2` (the conveyor drive plus a speed-reference link: D-1 -> D-2 -> D-3). A kind file names
+    the kind it describes, so each role has its own, `drive_master.kind.json` and `drive_follower.kind.json` (the drive's
+    metrics and commands under the role's name), mapped by `drive-master-controller.board.json` and
+    `drive-follower-controller.board.json` to the raw names `drive_master.*` and `drive_follower.*`. With
+    `master_loss: stop_all` the followers stop one reference sample apart when D-1 is lost and the loaded belt is stranded;
+    with `promote` they keep their torque and D-2 takes the speed loop 2 s later.
 - `scenarios/<story>.do-nothing.scenario.json` and `<story>.reference.scenario.json`: seed row 1 as `scenario-v0.1`
   runs (S0 and S4 have no policy, so no reference file). Run one with
   `streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --kinds-dir examples/belt-conveyor/kinds`.

@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "domain": "belt-conveyor-drives-s6-stop",
+  "seed": 394431668,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "disturbances": [
+    {
+      "at_s": 697,
+      "instance": "D-1",
+      "fault": "drive_master__vfd_fault"
+    }
+  ],
+  "horizon_s": 10800,
+  "pace": "wall"
+}

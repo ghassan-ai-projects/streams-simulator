@@ -24,6 +24,8 @@ func (c storyCheck) scoreOutcome(policy string) {
 		c.errorf("outcome: valid %v and %s; a negative story leaves doing nothing clean and ties", scored.Valid, verdict.Verdict)
 	case !c.story.NegativeClass && !scored.Valid:
 		c.errorf("outcome: doing nothing is clean, so the story tests nothing")
+	case policy == policyReference && c.story.Unavoidable:
+		c.harmless(verdict)
 	case policy == policyReference && verdict.Verdict != model.VerdictBeats:
 		c.errorf("outcome: the reference policy %s doing nothing by %.4f", verdict.Verdict, verdict.Delta)
 	}

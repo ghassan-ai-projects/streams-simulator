@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -22,8 +23,10 @@ type beltStory struct {
 	ID            string             `json:"id"`
 	Story         string             `json:"story"`
 	Plant         string             `json:"plant"`
+	Regime        string             `json:"regime"`
 	Title         string             `json:"title"`
 	NegativeClass bool               `json:"negative_class"`
+	Unavoidable   bool               `json:"unavoidable"`
 	HorizonS      float64            `json:"horizon_s"`
 	Pace          string             `json:"pace"`
 	Disturbances  []storyDisturbance `json:"disturbances"`
@@ -81,7 +84,8 @@ func loadStories(t *testing.T) storyTable {
 func (s beltStory) domain() string { return "belt-conveyor-drives-" + s.Plant }
 
 func (s beltStory) regime() beltRegime {
-	return beltRegimes[slices.IndexFunc(beltRegimes, func(r beltRegime) bool { return r.name == s.Plant })]
+	name := cmp.Or(s.Regime, s.Plant)
+	return beltRegimes[slices.IndexFunc(beltRegimes, func(r beltRegime) bool { return r.name == name })]
 }
 
 func rowNumbers(row map[string]any, field string) []float64 {
@@ -175,7 +179,7 @@ func effectorArgs(effector string, args map[string]any) map[string]any {
 func TestTheStoryTableHoldsTenRowsPerVariantAndResolvesEveryEvent(t *testing.T) {
 	t.Parallel()
 	table := loadStories(t)
-	want := []string{"s0-a", "s1-a", "s1-b", "s2-a", "s2-b", "s3-a", "s4-a", "s4-b", "s5-a"}
+	want := []string{"s0-a", "s1-a", "s1-b", "s2-a", "s2-b", "s3-a", "s4-a", "s4-b", "s5-a", "s6-a-stop", "s6-a-promote"}
 	var ids []string
 	for _, story := range table.Stories {
 		ids = append(ids, story.ID)

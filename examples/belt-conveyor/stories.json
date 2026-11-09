@@ -1,7 +1,7 @@
 {
   "schema": "belt-conveyor-stories",
   "version": 1,
-  "description": "The M0 stories of the multi-drive belt conveyor as data: per variant the plant, horizon, disturbances, ten seed rows and a hand-written reference policy. Times are seconds after the world start; a disturbance's at names a row field (an array field repeats it), a policy call's anchor names a row field.",
+  "description": "The stories of the multi-drive belt conveyor as data: per variant the plant, horizon, disturbances, ten seed rows and a hand-written reference policy. Times are seconds after the world start; a disturbance's at names a row field (an array field repeats it), a policy call's anchor names a row field.",
   "safe_limp_feed_pct": {"a": 54, "b": 18},
   "stories": [
     {
@@ -244,6 +244,62 @@
         {"seed": 200808986, "onset_s": 6991, "severity": 0.92, "stop_s": 44975, "frozen_s": 4274},
         {"seed": 42031786, "onset_s": 3605, "severity": 0.99, "stop_s": 46544, "frozen_s": 246},
         {"seed": 485130158, "onset_s": 4851, "severity": 0.99, "stop_s": 43601, "frozen_s": 1765}
+      ]
+    },
+    {
+      "id": "s6-a-stop",
+      "story": "S6",
+      "plant": "s6-stop",
+      "regime": "a",
+      "title": "Loss of the speed master D-1, the followers stop with it, drives with margin",
+      "unavoidable": true,
+      "horizon_s": 10800,
+      "pace": "wall",
+      "disturbances": [
+        {"instance": "D-1", "fault": "drive_master__vfd_fault", "at": "trip_s"}
+      ],
+      "policy": [
+        {"anchor": "trip_s", "after_s": 10, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}}
+      ],
+      "rows": [
+        {"seed": 394431668, "trip_s": 697},
+        {"seed": 1051859103, "trip_s": 1194},
+        {"seed": 1329505861, "trip_s": 882},
+        {"seed": 910866977, "trip_s": 1360},
+        {"seed": 391604960, "trip_s": 616},
+        {"seed": 1869066625, "trip_s": 1553},
+        {"seed": 1883084724, "trip_s": 795},
+        {"seed": 2134079674, "trip_s": 1020},
+        {"seed": 1058962288, "trip_s": 1037},
+        {"seed": 800495851, "trip_s": 2316}
+      ]
+    },
+    {
+      "id": "s6-a-promote",
+      "story": "S6",
+      "plant": "s6-promote",
+      "regime": "a",
+      "title": "Loss of the speed master D-1, D-2 takes the speed loop, drives with margin",
+      "horizon_s": 10800,
+      "pace": "wall",
+      "disturbances": [
+        {"instance": "D-1", "fault": "drive_master__vfd_fault", "at": "trip_s"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "trip_s", "after_s": 30, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
+      ],
+      "rows": [
+        {"seed": 346461356, "trip_s": 1252, "stop_s": 3186},
+        {"seed": 2034106561, "trip_s": 2324, "stop_s": 3543},
+        {"seed": 1724006962, "trip_s": 930, "stop_s": 2288},
+        {"seed": 909990323, "trip_s": 1419, "stop_s": 2464},
+        {"seed": 1243281615, "trip_s": 1864, "stop_s": 3322},
+        {"seed": 1848231682, "trip_s": 2034, "stop_s": 4221},
+        {"seed": 2085606266, "trip_s": 777, "stop_s": 1761},
+        {"seed": 396852702, "trip_s": 2027, "stop_s": 3145},
+        {"seed": 341323511, "trip_s": 1763, "stop_s": 4094},
+        {"seed": 975276522, "trip_s": 872, "stop_s": 2080}
       ]
     }
   ]

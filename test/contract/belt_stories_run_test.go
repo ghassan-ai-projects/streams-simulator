@@ -44,6 +44,7 @@ func (o storyOutcome) firstOf(entities, states []string) (float64, string) {
 
 type storyRun struct {
 	*beltWorld
+	watchLine   bool
 	resolutionS float64
 	anchorS     float64
 	outcome     storyOutcome
@@ -76,7 +77,7 @@ func secondsOf(ns any) float64 { return float64(nanoseconds(ns)-model.DefaultSta
 func runStory(t *testing.T, story beltStory, row map[string]any, policy string, resolutionS, anchorS float64) storyOutcome {
 	t.Helper()
 	scenario := story.scenario(row, policy)
-	r := &storyRun{beltWorld: newSeededBeltWorld(t, beltPlant(t, story.Plant), scenario.Seed), resolutionS: resolutionS, anchorS: anchorS,
+	r := &storyRun{beltWorld: newSeededBeltWorld(t, beltPlant(t, story.Plant), scenario.Seed), watchLine: story.Story == "S6", resolutionS: resolutionS, anchorS: anchorS,
 		outcome: storyOutcome{first: map[string]float64{}, anchor: map[string]float64{}}}
 	for _, command := range scenario.Commands {
 		r.execute(command)
@@ -127,6 +128,10 @@ func (r *storyRun) observe() {
 	r.mark("D-3", "run_cmd", 0)
 	r.mark("B-1", "stall_ok", 0)
 	r.mark("B-1", "stranded", 1)
+	if r.watchLine {
+		r.mark("D-2", "speed_lead", 1)
+		r.mark("D-2", "enabled", 0)
+	}
 	if _, seized := r.outcome.first["D-3.free_ok"]; seized && r.outcome.seizedMassKg == 0 {
 		r.outcome.seizedMassKg = r.state("B-1", "m")
 	}

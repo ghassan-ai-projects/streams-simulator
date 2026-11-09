@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1",
+  "id": "s6-a-stop-do-nothing",
+  "description": "S6: Loss of the speed master D-1, the followers stop with it, drives with margin, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-s6-stop",
+  "adapter": "native-jsonl",
+  "seed": 394431668,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767226297000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-1",
+        "fault": "drive_master__vfd_fault",
+        "onset_ns": 1767226297000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767236400000000000
+      }
+    }
+  ]
+}

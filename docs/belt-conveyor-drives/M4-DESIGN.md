@@ -163,7 +163,8 @@ with Python's `random.Random(20261109)`: seed U{1, 2³¹ − 1}, `trip_s` U{600,
 `stop_s` = `trip_s` + U{600, 2400} for 30 min (S2-A's). Reference policies: `stop` feed 0 ten seconds after the trip and
 nothing else (no restart: stranded is unavoidable, harm is the criterion); `promote` S2-A's reaction (limp feed 54 % at
 trip + 30 s). `s6-a-stop` is marked `unavoidable`: no reaction prevents the stop, so its reference only does no harm and
-loses to doing nothing by the price of its calls; a futile restart costs a second stall.
+ties doing nothing exactly (calls are priced only on a story whose do-nothing run is clean); a futile restart costs a
+second stall.
 
 **What agentic-stream needs for S6** (not edited here): the two kind files and boards in its S6 site; births of D-1 as
 `drive_master` and D-2, D-3 as `drive_follower`, with per-device reading rules (A1) under the new kind names; catalog
@@ -172,3 +173,23 @@ under `stop_all`, every drive's run status 0 and the tail pulley stopped with a 
 loaded and raises an R0 advisory (manual unloading, an empty-restart plan); under `promote` S2-A's reaction on D-1's loss;
 the verdict subject map for `drive_master__vfd_fault` on D-1 (diagnosis `vfd_trip`, expected `set_feed` on F-1); the S2
 playbook rule pins `conveyor_drive`'s kind digest, so it does not apply to the role kinds, and an S6 rule needs its own pin.
+
+**Evidence** (every seed row on noiseless worlds, `belt_stories_*_test.go`; first row through the binary,
+`test/acceptance`):
+
+| Story | Do nothing (10 rows) | Reference (10 rows) | J reference − J do nothing | B1 vibration | B2 current | B3 safe limp | B4 drive lost | easy |
+|---|---|---|---|---|---|---|---|---|
+| S6-A-stop | stall at trip + 4 s, stranded at trip + 18 s and to the horizon, one stall, no protective trip | the same; no restart | 0 exactly (ties) | - (ties) | - (ties) | ties (−0.09) | ties (0.00) | yes, by design |
+| S6-A-promote | D-2 leads at trip + 3 s; survivors carry 0.98x, no trip; stranded at the downstream stop | D-2 leads at trip + 3 s; never stranded, no survivor trip | −4.94 to −5.47 h (beats) | - (−5.13) | −5.30 | −0.16 | −5.31 | no |
+
+B0 is not clean on either (the stall and the stranded belt are priced), so both stories are valid. On S6-A-stop nothing
+prevents the stop: the reference policy (feed 0 ten seconds after the trip) ties doing nothing exactly because calls are
+free on a valid story, and every baseline ties it (B3's lost throughput before the trip, 0.09 h on the first row, is inside
+the 0.1 h tie), so the story is `easy`: harm is its criterion, and J sees harm as a second stall (0.5 h) for a futile
+restart. On S6-A-promote the story is S2-A with the master's drive lost: the reference beats every baseline, B3 by the
+smallest margin (0.16 h), as on S2-A. The 40 long-tier runs of S6 (3 h each) take about 3 min at `GOMAXPROCS=4`;
+`streamsim outcome` on an S6 run about 2.5 min.
+
+Open point (world, not fixed here): each drive-to-drive link costs the world's lazy coupling about as much as the rest of
+the plant, so an S6 plant steps about 2.6 times slower than plant A (3.5 s against 1.3 s per plant hour; `@2` alone 1.7 s);
+its 24 h domain lint takes about 87 s against 33 s.

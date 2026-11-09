@@ -59,7 +59,7 @@ func (c storyCheck) errorf(format string, args ...any) {
 }
 
 func (c storyCheck) resolution() float64 {
-	if c.story.Story == "S2" || c.story.Story == "S3" {
+	if c.story.Story == "S2" || c.story.Story == "S3" || c.story.Story == "S6" {
 		return 1
 	}
 	return 10
@@ -91,7 +91,7 @@ func (c storyCheck) quiet(o storyOutcome, policy string) {
 
 func (c storyCheck) saved(o storyOutcome) {
 	c.t.Helper()
-	if when, what := o.firstOf(survivors, storyProtections); !math.IsInf(when, 1) {
+	if when, what := o.firstOf(c.survivors(), storyProtections); !math.IsInf(when, 1) {
 		c.errorf("reference: survivor %s tripped at %.0f s", what, when)
 	}
 	if at := o.at("B-1.stranded"); !math.IsInf(at, 1) {
@@ -102,7 +102,7 @@ func (c storyCheck) saved(o storyOutcome) {
 func (c storyCheck) strandsAtTheDownstreamStop(o storyOutcome) {
 	c.t.Helper()
 	stop, stranded := c.field("stop_s"), o.at("B-1.stranded")
-	if when, what := o.firstOf(survivors, storyProtections); !math.IsInf(when, 1) {
+	if when, what := o.firstOf(c.survivors(), storyProtections); !math.IsInf(when, 1) {
 		c.errorf("do nothing, plant a: survivor %s tripped at %.0f s", what, when)
 	}
 	if stranded < stop || stranded > stop+strandWithinS {
@@ -206,6 +206,8 @@ func (c storyCheck) tell(policy string) {
 		c.suddenTrip(policy)
 	case "S3":
 		c.seizure(policy)
+	case "S6":
+		c.masterLoss(policy)
 	}
 	c.scoreOutcome(policy)
 }
