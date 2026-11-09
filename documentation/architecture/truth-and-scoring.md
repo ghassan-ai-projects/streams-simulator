@@ -32,6 +32,30 @@ The intended sequence is: install truth, seal it, run the world, accept the cons
 
 The consumer verdict and ground-truth record are validated against the versioned contracts under [`contracts/`](../../contracts/). The offline CLI score path reads `verdict.json` and `label.json` (or `labels.json`, one label per disturbance of a run that carries none or several) beside the run artifact unless a label path is supplied with `--label`. A run with several labels prints one scorecard per label, each judged on its own entity, plus what the consumer reported on entities without a label. A label is keyed by entity and fault (O25): with several labels on one entity, a detection is judged with the label whose fault it names, and a call with the labels that expect it; what names or is expected by none of them is judged with each.
 
+### Failure predictions
+
+A detection may carry `predicted_failure_at` (consumer-verdict v0.1, optional): when, at `detected_at`, the consumer
+expects the entity to fail if nobody acts. `streamsim score` grades predictions against truth it computes, not a sealed
+file: when the verdict carries one, the run is replayed with every effector call removed (the `do_nothing` outcome run of
+`streamsim outcome`), and the true failure time t_f of a label's entity is its first protection trip there. Once anyone
+acts the real failure moves, so a prediction is graded only when made at or after the label's first observable time and
+before both t_f and the run's first effector call that took effect (PLAN.md section 8.2, L6). A scorecard's `judgment`
+then holds `prognosis` (absent when there is nothing to grade, so earlier documents are unchanged):
+
+| Member | Meaning |
+| --- | --- |
+| `failure_ns`, `graded_until_ns` | t_f, and the end of the graded window (t_f or the first effective call, whichever comes first) |
+| `predictions` | predictions graded |
+| `alpha`, `beta`, `late_weight` | 0.2, 0.5, 2 |
+| `horizon_ns` | prognostic horizon PH = t_f − t_i, t_i the earliest graded prediction from which every later one is inside ±α; absent when the last one is outside |
+| `lambdas[]` | for λ 0.5 and 0.75: `at_ns` = t_P + λ(t_f − t_P), t_P the first graded prediction; `graded` when that point precedes the window's end; then `alpha_lambda` (the prediction in force there is inside ±α) and `relative_accuracy` RA = 1 − e |
+
+The error of a prediction of failure time p, evaluated at time t, is e = w·|p − t_f| / (t_f − t), that is |RÛL − RUL*| /
+RUL*, with w = 2 when p is after t_f (late) and 1 otherwise. Inside ±α means e ≤ α; a point prediction's probability mass is
+all inside or all outside, so β is met exactly when it is inside. Each prediction counts for PH at the time it was made; at a
+λ point the latest prediction made at or before it is evaluated there. The director's online scorer has no outcome replay
+and grades no prediction.
+
 The score is meaningful only with the exact run artifact, ledger, truth label, simulator version, domain/adapter digests, and consumer inputs that produced it. A score copied without those inputs is not an auditable benchmark result.
 
 ## Outcomes

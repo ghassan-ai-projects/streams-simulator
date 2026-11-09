@@ -149,3 +149,21 @@ S1-B was easy; why, and the plant-B rule (2026-11-09):
   18 % before isolating. Each hour of isolation earlier than needed costs 0.82 equivalent hours: a prediction up to about
   0.5 h early still beats B1 on every row (at a 2 h lead two rows tie), and a late one must stay well inside the 1.5 h or
   D-3 trips. Plant A keeps its rule (limp at 54 % costs 0.46 per hour and the S1-A reference beats B1 by 4.14).
+
+Rows 7 (streamsim side) and 8 (2026-11-09):
+
+- U9: a detection's optional `predicted_failure_at` is added to consumer-verdict **v0.1** in place, departing from
+  "v0.2": the repository adds optional members without a version bump (session-plan `horizon_s`, domain-spec
+  `outcome_weights`), and an unchanged version keeps agentic-stream's verdict writer valid. `streamsim score` replays the
+  run with every effector call removed only when the verdict carries a prediction (grading app), and the score domain
+  grades predictions on each label's entity: t_f its first protection trip there; graded are predictions at or after
+  first observable and before t_f and before the run's first call that took effect (any entity: once anything acts,
+  the do-nothing truth is gone, L6). e = w·|p − t_f| / (t_f − t) with w 2 when late; inside ±α when e ≤ 0.2 (a point
+  prediction meets β 0.5 exactly when inside); PH = t_f − the earliest prediction from which every later one is inside;
+  α-λ and RA = 1 − e at t_P + λ(t_f − t_P) for λ 0.5 and 0.75, evaluating the prediction in force there, ungraded when
+  that point is not before the window's end. Output: `judgment.prognosis` (absent without predictions, so pinned
+  scorecards are unchanged). Oracles: a hand-computed case in the score domain, and S1-A row 1 with hand-written
+  predictions placed against the D-3 trip of a direct world run (do-nothing run: λ points graded; reference run: the
+  feed cut at onset + 4 h ends the window before λ 0.5, so a consumer that acts at its detection is graded on PH only).
+- U8: a campaign phase's fault weight is a number or `{weight, severity_range}`; severities come from a per-run stream
+  `campaign/run/<n>/severity`, so the first-slice campaign is byte for byte as before (digest-pinned).

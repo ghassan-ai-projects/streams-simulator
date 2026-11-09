@@ -10,6 +10,13 @@ This project has not established a formal release stream yet. Until it does, cha
   story's `planned_stop_lead_s`, 1.5 h, rounded down to 5 min), empties the belt, stops D-3 and limps at 18 %: it beats
   B0-B4 on every row (B1 by 0.39-0.79) and S1-B is no longer easy. A 2 h stop lead ties B1 on two rows (M4-DESIGN
   section 6). Seeds and session plans are unchanged; `s1-b.reference.scenario.json` is regenerated.
+- **Failure predictions are graded (conveyor milestone M4, row 7, U9, O31).** A consumer-verdict detection may carry the
+  optional `predicted_failure_at` (consumer-verdict v0.1; an optional member, as earlier additions were, so no version
+  bump). `streamsim score` then replays the run with every effector call removed and grades the predictions on each
+  label's entity against its first protection trip there, up to the run's first effector call that took effect (L6):
+  `judgment.prognosis` holds α-λ accuracy at λ 0.5 and 0.75 (α 0.2, β 0.5), relative accuracy, and the prognostic
+  horizon, a late prediction weighing twice an early one. Verdicts without predictions score bit for bit as before, with
+  no extra replay.
 - **Campaign phases draw a fault's severity (conveyor milestone M4, row 8, U8).** In a `suite campaign` spec a fault's
   weight may be `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6) instead of a number: every disturbance of
   that fault then carries a `severity` drawn uniformly from the range in its session plan. Severities are drawn from each

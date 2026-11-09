@@ -17,4 +17,5 @@ type Evidence struct {
 	History       []model.StateSnapshot
 	Reproducible  bool
 	Unblinded     bool
+	DoNothing     *model.OutcomeFacts
 }

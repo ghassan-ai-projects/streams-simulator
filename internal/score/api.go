@@ -12,6 +12,10 @@ type LoopMetrics = layer.LoopMetrics
 
 type JudgmentMetrics = layer.JudgmentMetrics
 
+type PrognosisMetrics = layer.PrognosisMetrics
+
+type LambdaMetric = layer.LambdaMetric
+
 var ErrNoLabel = layer.ErrNoLabel
 
 var ErrOutcomeRuns = layer.ErrOutcomeRuns

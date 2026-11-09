@@ -27,17 +27,24 @@ func GradeRun(ctx context.Context, options Options) (*score.RunScore, error) {
 }
 
 func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.RunScore, error) {
-	dir := filepath.Dir(options.Artifact)
-	verdict, labels, err := loadReports(dir, options.Label)
+	verdict, labels, err := loadReports(filepath.Dir(options.Artifact), options.Label)
 	if err != nil {
 		return nil, err
 	}
+	evidence, err := verdictEvidence(ctx, options, art, verdict)
+	if err != nil {
+		return nil, err
+	}
+	return gradeRun(evidence, labels)
+}
+
+func verdictEvidence(ctx context.Context, options Options, art *model.RunArtifact, verdict *model.Verdict) (score.Evidence, error) {
 	evidence, err := replayedEvidence(ctx, options, art)
 	if err != nil {
-		return nil, err
+		return score.Evidence{}, err
 	}
 	evidence.Verdict = verdict
-	return gradeRun(evidence, labels)
+	return withDoNothing(ctx, options, art, evidence)
 }
 
 func gradeRun(evidence score.Evidence, labels []*model.GroundTruthRecord) (*score.RunScore, error) {

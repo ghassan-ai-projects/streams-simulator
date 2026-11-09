@@ -55,7 +55,12 @@
             "items": {"type": "string", "pattern": "^seq:[0-9]+$"},
             "description": "Native event sequence numbers the conclusion rests on. Enables the evidence-grounding metric and catches fabricated citations: a seq that was never delivered to this consumer is a hallucination, and the delivery ledger knows which those are."
           },
-          "narrative": {"type": "string", "maxLength": 8192}
+          "narrative": {"type": "string", "maxLength": 8192},
+          "predicted_failure_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional prognosis: the world time at which the consumer, at detected_at, expects the detected entity to fail if nobody acts. Graded against the entity's first protection trip in the run replayed with every effector call removed, and only for predictions made before that failure and before the run's first effector call that took effect (alpha-lambda accuracy, relative accuracy and prognostic horizon, a late prediction weighing twice an early one)."
+          }
         }
       }
     },

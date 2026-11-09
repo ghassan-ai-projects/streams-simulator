@@ -57,6 +57,7 @@ func scoreOne(ev Evidence, gt *model.GroundTruthRecord, gts []*model.GroundTruth
 	}
 	scoped := scopeOf(gt, gts).evidence(ev)
 	card.Judgment, card.Loop = judgment(scoped, gt), loop(scoped, gt)
+	card.Judgment.Prognosis = prognosis(scoped.Verdict.Detections, ev, gt)
 	return card, nil
 }
 
