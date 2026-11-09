@@ -10,11 +10,12 @@ import (
 )
 
 // The digests were taken from the plants before drives shared by weight (M3 row 3): with every weight 1 a run must emit
-// the same readings and record the same outcome, bit for bit.
+// the same readings and record the same outcome, bit for bit. S1-B's guard is its do-nothing run since its reference
+// policy changed in M4; its digests were taken on the commit before weighted sharing too.
 var equalShareRuns = map[string]struct{ trace, outcome string }{
-	"s1-b.reference": {
-		"sha256:bb7b1d48acf9cd094c25fbd30c20c944f40995c4fe5bdaf1109332b294169bd9",
-		"sha256:3d18fa80c418bd0e035d038cc7ce228ae91a5ae042bfd5ca80c67e172653ba5d"},
+	"s1-b.do-nothing": {
+		"sha256:97051972c6d2714fd50fd735d48590379de17d7af6aebf54d13b6f2a4d68df51",
+		"sha256:7b601fcdcc2d3b22110c19685e576112bec087a2d562dc0d50e6f8e105a6b4eb"},
 	"s2-b.reference": {
 		"sha256:e52f0836b349af90f9834a2006c383c779f69411851a04491990c63b0d3bd045",
 		"sha256:d517abf528bb4b4437f1932104672c18889a5df573239a86e450d64041450218"},

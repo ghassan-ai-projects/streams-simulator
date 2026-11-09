@@ -10,9 +10,13 @@ plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b
     pulses) repeats the disturbance once per element.
   - A seed row holds the world `seed` and the drawn values, in seconds after the world start: `onset_s`, `severity`,
     `stop_s` (the downstream stop), `trip_s` (S2), `frozen_s` (S5), `pulse_s` and `pulse_severity` (S4). They were drawn
-    once from a fixed generator and are committed as numbers.
+    once from a fixed generator and are committed as numbers. S1-B's rows also hold `planned_stop_s` (below), computed
+    from the row, not drawn.
   - A policy call invokes `effector` on `instance` with `args` at `after_s` seconds after the row field named by
     `anchor`. The policies know the drawn onset: they only prove that a saving reaction exists.
+  - S1-B's policy anchors on `planned_stop_s`, the row's do-nothing D-3 trip less the story's `planned_stop_lead_s`
+    (1.5 h), rounded down to 5 min, where a perfect prognosis would put it: full feed until then, feed 0 for 180 s to
+    empty the belt, stop D-3, then the safe limp feed. The long tier checks the lead on every row.
   - `safe_limp_feed_pct`: the feed each plant runs at on two drives, a few points below the highest feed at which two
     drives can still restart the belt they leave loaded and stay at or under their rating.
 - The drive faults name their expected actions in both compositions (`expected_actions`), so `streamsim score` credits

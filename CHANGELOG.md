@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **S1-B's reference policy stops D-3 1.5 h before the trip at full feed (conveyor milestone M4, S1-B was easy).** The
+  M1 reference limped at 18 % from 4 h after the onset and lost to baseline B1 by 2.12 equivalent hours on row 1, all of
+  it throughput. The new reference keeps full feed until `planned_stop_s` (each row's do-nothing D-3 trip less the
+  story's `planned_stop_lead_s`, 1.5 h, rounded down to 5 min), empties the belt, stops D-3 and limps at 18 %: it beats
+  B0-B4 on every row (B1 by 0.39-0.79) and S1-B is no longer easy. A 2 h stop lead ties B1 on two rows (M4-DESIGN
+  section 6). Seeds and session plans are unchanged; `s1-b.reference.scenario.json` is regenerated.
 - **Campaign phases draw a fault's severity (conveyor milestone M4, row 8, U8).** In a `suite campaign` spec a fault's
   weight may be `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6) instead of a number: every disturbance of
   that fault then carries a `severity` drawn uniformly from the range in its session plan. Severities are drawn from each

@@ -28,6 +28,7 @@ type beltStory struct {
 	Pace          string             `json:"pace"`
 	Disturbances  []storyDisturbance `json:"disturbances"`
 	Policy        []storyCall        `json:"policy"`
+	StopLeadS     float64            `json:"planned_stop_lead_s"`
 	Rows          []map[string]any   `json:"rows"`
 }
 

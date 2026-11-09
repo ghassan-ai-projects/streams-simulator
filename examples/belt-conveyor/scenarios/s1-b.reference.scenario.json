@@ -29,25 +29,7 @@
     {
       "op": "clock.advance",
       "args": {
-        "to_ns": 1767246069000000000
-      }
-    },
-    {
-      "op": "effector.invoke",
-      "args": {
-        "args": {
-          "percent": 18
-        },
-        "at_ns": 1767246069000000000,
-        "command_id": "s1-b-2",
-        "effector": "bulk_feeder__set_feed",
-        "entity_id": "F-1"
-      }
-    },
-    {
-      "op": "clock.advance",
-      "args": {
-        "to_ns": 1767246369000000000
+        "to_ns": 1767257220000000000
       }
     },
     {
@@ -56,8 +38,8 @@
         "args": {
           "percent": 0
         },
-        "at_ns": 1767246369000000000,
-        "command_id": "s1-b-3",
+        "at_ns": 1767257220000000000,
+        "command_id": "s1-b-2",
         "effector": "bulk_feeder__set_feed",
         "entity_id": "F-1"
       }
@@ -65,7 +47,7 @@
     {
       "op": "clock.advance",
       "args": {
-        "to_ns": 1767246549000000000
+        "to_ns": 1767257400000000000
       }
     },
     {
@@ -74,8 +56,8 @@
         "args": {
           "run_command": 0
         },
-        "at_ns": 1767246549000000000,
-        "command_id": "s1-b-4",
+        "at_ns": 1767257400000000000,
+        "command_id": "s1-b-3",
         "effector": "conveyor_drive__stop_drive",
         "entity_id": "D-3"
       }
@@ -83,7 +65,7 @@
     {
       "op": "clock.advance",
       "args": {
-        "to_ns": 1767246559000000000
+        "to_ns": 1767257410000000000
       }
     },
     {
@@ -92,8 +74,8 @@
         "args": {
           "percent": 18
         },
-        "at_ns": 1767246559000000000,
-        "command_id": "s1-b-5",
+        "at_ns": 1767257410000000000,
+        "command_id": "s1-b-4",
         "effector": "bulk_feeder__set_feed",
         "entity_id": "F-1"
       }

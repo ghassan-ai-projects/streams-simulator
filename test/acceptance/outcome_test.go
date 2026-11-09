@@ -66,13 +66,13 @@ var (
 // where a bearing fails (S5-A too: a policy watches the vibration state, not the frozen reading), and stops the feed
 // for good; B2 (current) on a lost drive and the surges above about 1.3x, but
 // not on S3, whose currents pass 1.1x only in the seconds before the seizure; B3 (the safe limp feed from the start)
-// fires everywhere and costs throughput; B4 on a lost drive. On S1-B B1 costs less than the reference policy, which
-// limps at 18 % from 4 h after the onset, while B1 runs at full feed until its alarm 47 min before D-3 would trip, then
-// empties the belt and stops D-3 in time: S1-B is easy by cost. Every other story beats every baseline.
+// fires everywhere and costs throughput; B4 on a lost drive. On S1-B the reference keeps full feed and stops D-3 1.5 h
+// before it would trip, then limps at 18 %: it beats B1, which stops later but feeds nothing afterwards. Every story
+// beats every baseline, so none is easy.
 var storyBaselines = map[string][4]baselineDid{
 	"s0-a": {quiet, quiet, fires, quiet},
 	"s1-a": {fires, fires, fires, fires},
-	"s1-b": {{true, "loses"}, fires, fires, fires},
+	"s1-b": {fires, fires, fires, fires},
 	"s2-a": {{false, beats}, fires, fires, fires},
 	"s2-b": {{false, beats}, fires, fires, fires},
 	"s3-a": {{false, beats}, {false, beats}, fires, fires},
@@ -111,8 +111,8 @@ func TestEveryStoryRunIsGradedAgainstDoingNothingAndEachBaseline(t *testing.T) {
 			nothing, did := verdictAgainst(graded, "do_nothing"), baselinesDid(graded)
 			t.Logf("%s: valid %v, easy %v; against do_nothing %v; b1-b4 (fires, verdict) %v; verdicts %v", story, graded["valid"], graded["easy"],
 				nothing["verdict"], did, graded["verdicts"])
-			if graded["valid"] != positive || graded["easy"] != (story == "s1-b") || (positive && nothing["verdict"] != beats) || (!positive && nothing["verdict"] != ties) {
-				t.Errorf("%s: valid %v, easy %v, %s doing nothing; want a story that is valid exactly when positive, easy only on s1-b, beating doing nothing on a positive story and tying it on a negative one",
+			if graded["valid"] != positive || graded["easy"] != false || (positive && nothing["verdict"] != beats) || (!positive && nothing["verdict"] != ties) {
+				t.Errorf("%s: valid %v, easy %v, %s doing nothing; want a story that is valid exactly when positive, never easy, beating doing nothing on a positive story and tying it on a negative one",
 					story, graded["valid"], graded["easy"], nothing["verdict"])
 			}
 			if did != want {

@@ -127,8 +127,8 @@ func (c storyCheck) slowBearing(policy string) {
 	if policy == policyReference {
 		reference := c.run(policyReference)
 		c.saved(reference)
-		if stopped, trip := reference.at("D-3.run_cmd"), c.d3Trip(); stopped >= trip {
-			c.errorf("reference: D-3 stopped by command at %.0f s, not before its do-nothing trip at %.0f s", stopped, trip)
+		if stopped, trip := reference.at("D-3.run_cmd"), c.d3Trip(); stopped > trip-c.story.StopLeadS || stopped >= trip {
+			c.errorf("reference: D-3 stopped by command at %.0f s, not %.0f s before its do-nothing trip at %.0f s", stopped, c.story.StopLeadS, trip)
 		}
 		return
 	}

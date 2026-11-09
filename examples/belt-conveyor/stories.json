@@ -67,23 +67,23 @@
         {"instance": "D-3", "fault": "conveyor_drive__lube_loss", "at": "onset_s", "severity": "severity"},
         {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
       ],
+      "planned_stop_lead_s": 5400,
       "policy": [
-        {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}},
-        {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
-        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
-        {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}}
+        {"anchor": "planned_stop_s", "after_s": -180, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "planned_stop_s", "after_s": 0, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
+        {"anchor": "planned_stop_s", "after_s": 10, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 18}}
       ],
       "rows": [
-        {"seed": 769124933, "onset_s": 6069, "severity": 0.82, "stop_s": 44737},
-        {"seed": 1978963967, "onset_s": 6214, "severity": 0.8, "stop_s": 49085},
-        {"seed": 221980177, "onset_s": 3929, "severity": 0.91, "stop_s": 41742},
-        {"seed": 2055867722, "onset_s": 2946, "severity": 0.8, "stop_s": 43802},
-        {"seed": 1724132388, "onset_s": 4770, "severity": 0.84, "stop_s": 40351},
-        {"seed": 711577152, "onset_s": 3470, "severity": 1.24, "stop_s": 42423},
-        {"seed": 988422870, "onset_s": 3792, "severity": 0.97, "stop_s": 38026},
-        {"seed": 457782991, "onset_s": 3120, "severity": 1.24, "stop_s": 43411},
-        {"seed": 2035782535, "onset_s": 6257, "severity": 0.94, "stop_s": 43697},
-        {"seed": 197054348, "onset_s": 4937, "severity": 0.92, "stop_s": 42063}
+        {"seed": 769124933, "onset_s": 6069, "severity": 0.82, "stop_s": 44737, "planned_stop_s": 31800},
+        {"seed": 1978963967, "onset_s": 6214, "severity": 0.8, "stop_s": 49085, "planned_stop_s": 32700},
+        {"seed": 221980177, "onset_s": 3929, "severity": 0.91, "stop_s": 41742, "planned_stop_s": 26700},
+        {"seed": 2055867722, "onset_s": 2946, "severity": 0.8, "stop_s": 43802, "planned_stop_s": 29400},
+        {"seed": 1724132388, "onset_s": 4770, "severity": 0.84, "stop_s": 40351, "planned_stop_s": 29700},
+        {"seed": 711577152, "onset_s": 3470, "severity": 1.24, "stop_s": 42423, "planned_stop_s": 23700},
+        {"seed": 988422870, "onset_s": 3792, "severity": 0.97, "stop_s": 38026, "planned_stop_s": 24900},
+        {"seed": 457782991, "onset_s": 3120, "severity": 1.24, "stop_s": 43411, "planned_stop_s": 23400},
+        {"seed": 2035782535, "onset_s": 6257, "severity": 0.94, "stop_s": 43697, "planned_stop_s": 28200},
+        {"seed": 197054348, "onset_s": 4937, "severity": 0.92, "stop_s": 42063, "planned_stop_s": 27600}
       ]
     },
     {

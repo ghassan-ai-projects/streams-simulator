@@ -112,15 +112,18 @@ Exit evidence:
   | Story | Reference J | Do nothing J | Delta |
   |---|---|---|---|
   | S1-A | -11.09 .. -10.70 | -8.43 .. -6.02 | -4.77 .. -2.52 |
-  | S1-B | -7.47 .. -6.71 | -4.59 .. -2.01 | -4.74 .. -2.87 |
+  | S1-B (M4 reference) | -10.16 .. -8.05 | -4.59 .. -2.01 | -6.03 .. -5.57 |
   | S2-A | -1.64 .. -1.48 | 3.48 .. 4.02 | -5.51 .. -5.05 |
   | S2-B | -0.84 .. -0.59 | 4.99 .. 5.29 | -5.88 .. -5.83 |
   | S3-A | -1.98 .. -1.01 | 1.45 .. 2.77 | -3.90 .. -3.35 |
   | S5-A | -11.07 .. -10.64 | -8.07 .. -5.71 | -4.95 .. -2.72 |
   | S0-A, S4-A, S4-B | - | -20.40; -6.12 .. -6.03; -6.11 .. -6.02 | 0 (ties) |
 
+  S1-B's reference changed in M4 (M4-DESIGN section 6): it keeps full feed and stops D-3 1.5 h before the do-nothing
+  trip; the M1 reference (18 % limp from 4 h after the onset) had J -7.47 .. -6.71, delta -4.74 .. -2.87.
+
 - Against B4, row 1 of every story through the binary (`streamsim run --scenario`, then `streamsim outcome`,
-  `test/acceptance`): the reference beats B4 on S1-A (-5.67), S1-B (-3.07), S2-A (-5.52), S2-B (-5.85), S3-A (-3.35) and
+  `test/acceptance`): the reference beats B4 on S1-A (-5.67), S1-B (-3.07; the M4 reference -5.60), S2-A (-5.52), S2-B (-5.85), S3-A (-3.35) and
   S5-A (-4.89); on S0-A, S4-A and S4-B B4 never fires and everything ties.
 - S2 costs (row 1, equivalent production hours):
 

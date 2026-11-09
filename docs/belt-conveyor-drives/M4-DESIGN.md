@@ -82,7 +82,8 @@ Rows 1 and 2 (2026-11-09):
   |---|---|---|---|---|---|
   | S0-A | - | - | -9.63 | - | no (not valid) |
   | S1-A | -4.14 | -5.67 | -2.92 | -5.67 | no |
-  | S1-B | +2.12 (B1 wins) | -3.07 | -4.63 | -3.07 | yes |
+  | S1-B (row 1, M1 reference) | +2.12 (B1 wins) | -3.07 | -4.63 | -3.07 | yes |
+  | S1-B (row 1, M4 reference, below) | -0.42 | -5.61 | -7.17 | -5.60 | no |
   | S2-A | - | -5.51 | -0.19 | -5.52 | no |
   | S2-B | - | -5.85 | -0.24 | -5.85 | no |
   | S3-A | - | - | -4.59 | -3.35 | no |
@@ -91,8 +92,8 @@ Rows 1 and 2 (2026-11-09):
   | S5-A | -4.05 | -4.88 | -2.98 | -4.89 | no |
 
   Departures from PLAN.md section 2.3: B1 is not late on S1-B (it alarms 47 min before D-3 would trip, empties the belt
-  and stops D-3 in time, and beats the reference policy, which limps at 18 % from 4 h after the onset: S1-B is easy by
-  cost; its pass rule's 2 h lead is not part of J); B1 fires on S5-A, because a policy watches the vibration state, not
+  and stops D-3 in time, and beat the M1 reference policy, which limped at 18 % from 4 h after the onset; the M4
+  reference below beats it on every row); B1 fires on S5-A, because a policy watches the vibration state, not
   the frozen reading; B2 does not fire on S0 (the feed never passes about 1.33x) nor on S3-A (the currents pass 1.1x only
   in the seconds before the seizure); B3 beats nothing but costs least on S2 (0.2 h behind the reference).
 - `streamsim outcome` on a 16 h story replays six runs plus the reproduction check: 321 s with `GOMAXPROCS=4` on a
@@ -100,3 +101,51 @@ Rows 1 and 2 (2026-11-09):
 - A label is keyed by entity and fault (O25): with several labels on one entity a detection is judged with the label its
   `label` names and a call with the labels that expect it; what names none is judged with each. One label per entity
   scores bit for bit as before (digest-pinned run-score documents).
+
+S1-B was easy; why, and the plant-B rule (2026-11-09):
+
+- Per-term deltas of the outcome document, row 1, M1 reference against B1: neither run trips, strands or pays for a call;
+  `delivered` −7.451 against −9.569 (+2.118), `life_used` 0.017 against 0.019, `gear_used` 0.010 against 0.009: J +2.12
+  is throughput alone, about 318 t (150 t per equivalent hour). The reference empties the belt and stops D-3 at 5.8 h and
+  limps at 18 % for the remaining 10.2 h; B1 runs full feed until its alarm at 9.56 h (D-3 would trip at 10.35 h), then
+  delivers nothing for 6.4 h. Every hour the isolation comes earlier costs 0.82 equivalent hours of full feed (1 − 0.18);
+  every hour of 18 % after B1's alarm gains 0.18. On plant B the limp feed is too small to pay for an early isolation,
+  and the agentic-stream loop (18 % limp from about onset + 3.9 h) loses to B1 for the same reason.
+- What beats B1: full feed until a planned stop, then feed 0 for 180 s (belt empty), stop D-3, then the safe limp feed
+  18 %. With the stop at the do-nothing trip minus a lead L, measured on all ten rows (exploration runs with the outcome
+  replays, J delta against B1; beats means below −0.1):
+
+  | L | Rows that beat B1 | Delta against B1 |
+  |---|---|---|
+  | 2 h (stop at the pass rule's lead) | 8 of 10 | −0.39 .. −0.13; rows 1 and 2 tie (−0.02, +0.01) |
+  | 1.5 h | 10 of 10 | −0.80 .. −0.40 |
+
+  So no plan of this shape beats B1 on every row with the stop 2 h ahead. PLAN.md section 2.3 asks the 2 h lead of the
+  bearing *detection* and only "D-3 stopped by command before t_f (planned, not tripped)" of the stop, so the new
+  reference stops 1.5 h ahead: `planned_stop_lead_s` 5400 in the S1-B entry of `stories.json`, and each row's
+  `planned_stop_s` is the do-nothing trip less 1.5 h, rounded down to 5 min (the reference knows the trip as a perfect
+  prognosis would; the long tier checks the lead on every row). Row seeds and draws are unchanged; only
+  `s1-b.reference.scenario.json` is regenerated (session plans carry no policy).
+- New S1-B reference, every row (equivalent hours; delta of the reference against each baseline; all `beats`, never
+  `easy`; reference J −10.16 .. −8.05):
+
+  | Row | J | B0 | B1 | B2 | B3 | B4 |
+  |---|---|---|---|---|---|---|
+  | 1 | −9.96 | −5.61 | −0.42 | −5.61 | −7.17 | −5.60 |
+  | 2 | −10.16 | −5.57 | −0.39 | −5.57 | −7.37 | −5.57 |
+  | 3 | −8.80 | −5.82 | −0.61 | −5.82 | −6.01 | −5.82 |
+  | 4 | −9.41 | −5.73 | −0.58 | −5.73 | −6.62 | −5.72 |
+  | 5 | −9.48 | −5.68 | −0.49 | −5.68 | −6.69 | −5.67 |
+  | 6 | −8.12 | −6.00 | −0.76 | −6.00 | −5.32 | −6.00 |
+  | 7 | −8.39 | −5.89 | −0.66 | −5.89 | −5.60 | −5.89 |
+  | 8 | −8.05 | −6.03 | −0.79 | −6.03 | −5.25 | −6.03 |
+  | 9 | −9.14 | −5.75 | −0.51 | −5.74 | −6.35 | −5.74 |
+  | 10 | −9.00 | −5.83 | −0.61 | −5.82 | −6.21 | −5.82 |
+
+- Rule for the agentic-stream S1 spec on plant B (survivors without margin, limp feed 18 %): do not cut the feed when the
+  bearing is detected; detect at least 2 h before the trip (the pass rule) and keep full feed; take the planned isolation
+  (feed 0, belt empty, stop D-3, feed 18 %) from the predicted trip time (A5 `extrapolate`, the time published as
+  `predicted_failure_at`), with the stop 1.5 h before it, no earlier than the prediction's error needs; never limp at
+  18 % before isolating. Each hour of isolation earlier than needed costs 0.82 equivalent hours: a prediction up to about
+  0.5 h early still beats B1 on every row (at a 2 h lead two rows tie), and a late one must stay well inside the 1.5 h or
+  D-3 trips. Plant A keeps its rule (limp at 54 % costs 0.46 per hour and the S1-A reference beats B1 by 4.14).
