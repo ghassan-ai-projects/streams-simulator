@@ -1,0 +1,19 @@
+{
+  "board_type": "drive-master-controller",
+  "kinds": {
+    "drive_master": {
+      "commands": {
+        "start_drive": {"raw": "drive_master__start_drive", "args": {"run_command": {"from": "run_command"}}},
+        "stop_drive": {"raw": "drive_master__stop_drive", "args": {"run_command": {"from": "run_command"}}},
+        "reset_trip": {"raw": "drive_master__reset_trip"}
+      },
+      "metrics": {
+        "current": {"raw": "drive_master.current"},
+        "winding": {"raw": "drive_master.winding"},
+        "vibration": {"raw": "drive_master.vibration"},
+        "run_status": {"raw": "drive_master.run_status"},
+        "run_command": {"raw": "drive_master.run_command"}
+      }
+    }
+  }
+}

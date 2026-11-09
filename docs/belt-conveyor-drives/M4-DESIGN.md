@@ -167,3 +167,95 @@ Rows 7 (streamsim side) and 8 (2026-11-09):
   feed cut at onset + 4 h ends the window before λ 0.5, so a consumer that acts at its detection is graded on PH only).
 - U8: a campaign phase's fault weight is a number or `{weight, severity_range}`; severities come from a per-run stream
   `campaign/run/<n>/severity`, so the first-slice campaign is byte for byte as before (digest-pinned).
+## 7. S6 design (row 5)
+
+Loss of the torque master, PLAN.md section 2.3 S6, decided as O33 (section 9.6). Only existing F1 forms (`sum`, `trip`,
+`product`) and an F0 state; no new form, no code.
+
+**Component.** `streamsim/conveyor-drive@2` is `@1` plus a speed-reference link (a contract test strips the link from
+`@2` and finds `@1`). Plants A and B stay on `@1`, byte for byte. Added to the drive:
+
+| State | Form | Meaning |
+|---|---|---|
+| `ref_seen` | F0 1; port `reference_in` (`run_state`, consumes, `sample_s` 1) | the speed reference from the drive before it in the line; 1 when nothing is connected |
+| `ref_in` | sum: master `unit`, follower `ref_seen` | a master ignores any reference; a follower obeys it |
+| `ref_held` | trip: `ref_in` < 0.5 for `promote_s`, latched, reset by `reset_trip` | the reference has been missing for `promote_s` (a trip state, so the outcome facts carry its time) |
+| `promoted` | sum: `stop_all` 0; `promote` 1 − `ref_held` | the follower closed the speed loop itself |
+| `speed_lead` | sum: master 1, follower `promoted` | the drive runs the belt's speed loop |
+| `ref_ok` | sum: `stop_all` `ref_in`; `promote` 1 | the drive may run on the reference it has |
+| `enabled` | product `run_cmd · available · ref_ok` (was `run_cmd · available`) | |
+
+Port `reference_out` (`run_state`, provides, state `enabled`): a running drive passes the reference on. Parameters, enum
+cases writing coefficients only: `role` (`master` default, `follower`), `master_loss` (`stop_all` default, the usual
+fieldbus-loss action of an inverter, or `promote`: keep the last torque and let the next drive take the speed loop) and
+`promote_s` (2 s, 1-60 s, the trip's hold). A follower that lost its reference stays `available` (its protections and
+inverter are fine), so the belt's restart margin still counts it: two healthy followers cannot break the loaded belt
+loose, which is why the stopped belt is stranded.
+
+**Line.** D-1 `reference_out` -> D-2 `reference_in`, D-2 `reference_out` -> D-3 `reference_in` (a chain, so D-2 is the
+successor). `stop_all`: D-2 stops one sample after D-1, D-3 one after D-2. `promote`: D-2 keeps its torque through the
+transfer, so D-3 never loses its reference, and D-2 leads `1 + promote_s` s after D-1. The hold changes nothing the belt
+shows (O9: no slowdown under a torque deficit); after it the survivors carry S2-A's share. Known limit: in the chain a
+follower's own trip under `stop_all` also stops the drives after it (no story trips a follower; a star fieldbus would not).
+
+**Plants.** `belt-conveyor-drives-s6-stop` and `-s6-promote` are plant A with two drive entries: D-1 (`as: drive_master`,
+`role: master`) and D-2, D-3 (`as: drive_follower`, `role: follower`, `master_loss`), and the two reference connections.
+Outcome weights name both drive kinds; `b1` and `b2` watch the followers, `b4` the master (the event of the story),
+`b3` is plant A's. They are not shipped as built-in examples (like M0's 2-drive belt), so the canvas and its example list
+are unchanged. Both lint clean.
+
+**Kind files and boards.** A kind file's `kind` is the domain kind's name (the wire announces it), so the role kinds need
+their own: `drive_master.kind.json` and `drive_follower.kind.json` (the content of `conveyor_drive.kind.json` under the new
+name, so two new kind digests) and boards `drive-master-controller` and `drive-follower-controller` (raw names
+`drive_master.*`, `drive_follower__*`). The conveyor kind file, its board and plants A and B do not change.
+
+**Oracle** (`test/contract/belt_master_loss_test.go`, closed forms in the test, noiseless plant, master lost at 600 s):
+
+| Check | Closed form | World |
+|---|---|---|
+| `stop_all`: followers stop | k reference samples after D-1 (k = 1, 2) | 1 s, 2 s |
+| shortfall | the belt counts its drives one sample late; one drive's run limit 1380 N < demand 1866 N: 2 s | - |
+| stall trip | shortfall + `boost_s` = 4 s | 4 s |
+| stopped (v < 0.1 m/s) | shortfall + 2 s · ln(2 / 0.1) = 7.99 s | 8 s |
+| stranded | stopped + 10 s = 17.99 s | 18 s |
+| restart margin | 2 · 1.5 · 920 − (1630 + 1.424 · m) − 6 · 27.6 < 0 | to 1e-6 N |
+| a restart (`stop_belt`, `start_belt`) | stalls again within `boost_s` + 1 s, a second stall counted | 1 s, 2 stalls |
+| `promote`: D-2 leads | 1 + `promote_s`: 3 s (and 6 s with `promote_s` 5); D-3 never | 3 s, 6 s; D-3 0 |
+| survivors' load | (F_empty + k_m · m + v · feed + drag) / 2 / F_rated = 0.98437 | 0.98437 each |
+| until the master is lost | every state of plant A, bit for bit, through a D-3 trip | equal |
+
+**Stories.** `s6-a-stop` (plant `s6-stop`) and `s6-a-promote` (plant `s6-promote`), 3 h, wall pace, ten rows drawn once
+with Python's `random.Random(20261109)`: seed U{1, 2³¹ − 1}, `trip_s` U{600, 2400}, and for `promote` the downstream stop
+`stop_s` = `trip_s` + U{600, 2400} for 30 min (S2-A's). Reference policies: `stop` feed 0 ten seconds after the trip and
+nothing else (no restart: stranded is unavoidable, harm is the criterion); `promote` S2-A's reaction (limp feed 54 % at
+trip + 30 s). `s6-a-stop` is marked `unavoidable`: no reaction prevents the stop, so its reference only does no harm and
+ties doing nothing exactly (calls are priced only on a story whose do-nothing run is clean); a futile restart costs a
+second stall.
+
+**What agentic-stream needs for S6** (not edited here): the two kind files and boards in its S6 site; births of D-1 as
+`drive_master` and D-2, D-3 as `drive_follower`, with per-device reading rules (A1) under the new kind names; catalog
+routes for `start_drive`, `stop_drive`, `reset_trip` per role kind; a spec phase `master_lost` (D-1's current near 0 and,
+under `stop_all`, every drive's run status 0 and the tail pulley stopped with a loaded belt) that refuses `start_belt` while
+loaded and raises an R0 advisory (manual unloading, an empty-restart plan); under `promote` S2-A's reaction on D-1's loss;
+the verdict subject map for `drive_master__vfd_fault` on D-1 (diagnosis `vfd_trip`, expected `set_feed` on F-1); the S2
+playbook rule pins `conveyor_drive`'s kind digest, so it does not apply to the role kinds, and an S6 rule needs its own pin.
+
+**Evidence** (every seed row on noiseless worlds, `belt_stories_*_test.go`; first row through the binary,
+`test/acceptance`):
+
+| Story | Do nothing (10 rows) | Reference (10 rows) | J reference − J do nothing | B1 vibration | B2 current | B3 safe limp | B4 drive lost | easy |
+|---|---|---|---|---|---|---|---|---|
+| S6-A-stop | stall at trip + 4 s, stranded at trip + 18 s and to the horizon, one stall, no protective trip | the same; no restart | 0 exactly (ties) | - (ties) | - (ties) | ties (−0.09) | ties (0.00) | yes, by design |
+| S6-A-promote | D-2 leads at trip + 3 s; survivors carry 0.98x, no trip; stranded at the downstream stop | D-2 leads at trip + 3 s; never stranded, no survivor trip | −4.94 to −5.47 h (beats) | - (−5.13) | −5.30 | −0.16 | −5.31 | no |
+
+B0 is not clean on either (the stall and the stranded belt are priced), so both stories are valid. On S6-A-stop nothing
+prevents the stop: the reference policy (feed 0 ten seconds after the trip) ties doing nothing exactly because calls are
+free on a valid story, and every baseline ties it (B3's lost throughput before the trip, 0.09 h on the first row, is inside
+the 0.1 h tie), so the story is `easy`: harm is its criterion, and J sees harm as a second stall (0.5 h) for a futile
+restart. On S6-A-promote the story is S2-A with the master's drive lost: the reference beats every baseline, B3 by the
+smallest margin (0.16 h), as on S2-A. The 40 long-tier runs of S6 (3 h each) take about 3 min at `GOMAXPROCS=4`;
+`streamsim outcome` on an S6 run about 2.5 min.
+
+Open point (world, not fixed here): each drive-to-drive link costs the world's lazy coupling about as much as the rest of
+the plant, so an S6 plant steps about 2.6 times slower than plant A (3.5 s against 1.3 s per plant hour; `@2` alone 1.7 s);
+its 24 h domain lint takes about 87 s against 33 s.

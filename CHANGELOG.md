@@ -23,6 +23,12 @@ This project has not established a formal release stream yet. Until it does, cha
   run's own stream (`campaign/run/<n>/severity`, in disturbance order), so a range moves no other draw, and a spec without
   ranges generates the same files byte for byte (the committed first-slice campaign is digest-pinned). The committed
   conveyor story tables are unchanged.
+- **Loss of the torque master, S6 (conveyor milestone M4, row 5, O33).** New library version
+  `streamsim/conveyor-drive@2`: the conveyor drive plus a speed-reference link (port `reference_in`, sampled 1 s, and
+  `reference_out`; parameters `role` `master`/`follower`, `master_loss` `stop_all`/`promote` and `promote_s`), data only,
+  checked against closed forms. Example plants `belt-conveyor-drives-s6-stop` and `-s6-promote` (plant A with D-1 as kind
+  `drive_master`, D-2 and D-3 as `drive_follower`), their kind files and boards, and the stories S6-A-stop and
+  S6-A-promote with scenarios and session plans. Plants A and B and their stories are unchanged.
 - **Two labels on one entity are judged apart (conveyor milestone M4, row 2, O25).** A label is keyed by entity and
   fault: when several labels of a run sit on one entity, a detection whose `label` names one of their faults is judged
   with that label alone, and a call or action only some of them expect goes to those; a detection or call on that entity

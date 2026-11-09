@@ -67,18 +67,36 @@ var (
 // for good; B2 (current) on a lost drive and the surges above about 1.3x, but
 // not on S3, whose currents pass 1.1x only in the seconds before the seizure; B3 (the safe limp feed from the start)
 // fires everywhere and costs throughput; B4 on a lost drive. On S1-B the reference keeps full feed and stops D-3 1.5 h
-// before it would trip, then limps at 18 %: it beats B1, which stops later but feeds nothing afterwards. Every story
-// beats every baseline, so none is easy.
+// before it would trip, then limps at 18 %: it beats B1, which stops later but feeds nothing afterwards. On S6-A with the
+// followers stopping no reaction saves the belt, so its reference ties doing nothing and every baseline (B3's throughput
+// before the trip, 0.09 h on the first row, is inside the tie): it is easy by design. Every other story beats every
+// baseline.
 var storyBaselines = map[string][4]baselineDid{
-	"s0-a": {quiet, quiet, fires, quiet},
-	"s1-a": {fires, fires, fires, fires},
-	"s1-b": {fires, fires, fires, fires},
-	"s2-a": {{false, beats}, fires, fires, fires},
-	"s2-b": {{false, beats}, fires, fires, fires},
-	"s3-a": {{false, beats}, {false, beats}, fires, fires},
-	"s4-a": {quiet, fires, fires, quiet},
-	"s4-b": {quiet, fires, fires, quiet},
-	"s5-a": {fires, fires, fires, fires},
+	"s0-a":         {quiet, quiet, fires, quiet},
+	"s1-a":         {fires, fires, fires, fires},
+	"s1-b":         {fires, fires, fires, fires},
+	"s2-a":         {{false, beats}, fires, fires, fires},
+	"s2-b":         {{false, beats}, fires, fires, fires},
+	"s3-a":         {{false, beats}, {false, beats}, fires, fires},
+	"s4-a":         {quiet, fires, fires, quiet},
+	"s4-b":         {quiet, fires, fires, quiet},
+	"s5-a":         {fires, fires, fires, fires},
+	"s6-a-stop":    {{false, ties}, {false, ties}, {true, ties}, {true, ties}},
+	"s6-a-promote": {{false, beats}, fires, fires, fires},
+}
+
+// easyStories are the stories some baseline ties or beats; unavoidableStories, those no reaction can save, whose
+// reference ties doing nothing.
+var (
+	easyStories        = map[string]bool{"s6-a-stop": true}
+	unavoidableStories = map[string]bool{"s6-a-stop": true}
+)
+
+func againstNothing(story string, positive bool) string {
+	if positive && !unavoidableStories[story] {
+		return beats
+	}
+	return ties
 }
 
 func baselinesDid(graded map[string]any) [4]baselineDid {
@@ -111,8 +129,8 @@ func TestEveryStoryRunIsGradedAgainstDoingNothingAndEachBaseline(t *testing.T) {
 			nothing, did := verdictAgainst(graded, "do_nothing"), baselinesDid(graded)
 			t.Logf("%s: valid %v, easy %v; against do_nothing %v; b1-b4 (fires, verdict) %v; verdicts %v", story, graded["valid"], graded["easy"],
 				nothing["verdict"], did, graded["verdicts"])
-			if graded["valid"] != positive || graded["easy"] != false || (positive && nothing["verdict"] != beats) || (!positive && nothing["verdict"] != ties) {
-				t.Errorf("%s: valid %v, easy %v, %s doing nothing; want a story that is valid exactly when positive, never easy, beating doing nothing on a positive story and tying it on a negative one",
+			if graded["valid"] != positive || graded["easy"] != easyStories[story] || nothing["verdict"] != againstNothing(story, positive) {
+				t.Errorf("%s: valid %v, easy %v, %s doing nothing; want a story that is valid exactly when positive, easy only on s6-a-stop, beating doing nothing on a positive story that can be saved and tying it otherwise",
 					story, graded["valid"], graded["easy"], nothing["verdict"])
 			}
 			if did != want {
