@@ -30,3 +30,32 @@ zero quarantines; `streamsim score` credits the right actions (O24).
 
 As in M2: each repository's AGENTS.md, generic code only, no gate loosening, long tests per package with `-p 1` and
 `GOMAXPROCS=4`, nothing left running; the fan experiment guards stay green.
+
+## 4. As built, row 1 (O24, streamsim)
+
+- Action fidelity matches a verdict action to the world's call by command id, effector and entity (and belief against
+  acceptance); `issued_at` must parse but may precede the call. A plant-wire host reports `'sha256:' + hex(key)`, which is
+  the DCMD's `idempotency_key`, the id the node logs the call under (`plantwire` `execute` passes `c.Key`).
+- Domain-spec v0.2: a fault may list `expected_actions: [{kind, effector}]`; the domain checks the kind is declared and
+  declares the effector (`/expected_actions/<i>/kind|effector`). The label resolves them when it is built
+  (`truth.BuildRecord`): the fault's own kind on the faulted instance, another kind on every instance of that kind in the
+  run's population; ground-truth v0.1 carries `expected_actions: [{entity_id, effector}]`. Both members are omitempty, so
+  every domain and label without them is byte-identical (behaviour pin unchanged).
+- Composition v0.1: an equipment entry may give `expected_actions` keyed by its component's fault id, each
+  `{kind, effector}` with the composed kind name and the component's effector name. Compose writes them onto the qualified
+  fault with the effector qualified (`bulk_feeder__set_feed`) and refuses a fault the equipment does not declare. They
+  belong to the composition, not the component, because a component does not know the other kinds of a plant (and the
+  kind names can be changed with `as`).
+- Scoring: a right call is the expected effector on the label's entity or one of the label's expected actions (with
+  effect); it counts for `action_appropriate` and the deadline. With several labels a scorecard's judgment sees only its
+  entity, its loop its entity and its expected instances; `unexpected` holds detections on unlabeled entities and
+  actions and calls on entities neither labeled nor expected.
+- `grading.Grade` (one label only) and `ErrNotOneLabel` are gone; the report grades with `GradeRun` whenever `label.json`
+  or `labels.json` is present and stores `grading.Document` (the scorecard for one label, the run document otherwise);
+  the Markdown shows each scorecard and the unexpected counts.
+- Conveyor compositions: `lube_loss` expects `set_feed` on the feeder and `stop_drive` on the drive, `gear_oil_loss` the
+  same plus `stop_belt` on the belt, `vfd_fault` `set_feed` on the feeder; composed domains regenerated (only these
+  members change; the world, the stories and the outcome numbers are untouched).
+- Contract test `test/contract/belt_score_test.go`: plant B, D-3's inverter trips at 60 s, a host decides a feed cut at
+  65 s that the world applies at 70 s under the DCMD key; the label expects `bulk_feeder__set_feed` on F-1, and
+  `GradeRun` gives action fidelity, the right action, D-3 detected with the right label and nothing unexpected.

@@ -194,8 +194,14 @@ type Fault struct {
 	Observation      *ObservationFault `json:"observation,omitempty"`
 	Observability    Observability     `json:"observability"`
 	ExpectedEffector string            `json:"expected_effector,omitempty"`
+	ExpectedActions  []FaultAction     `json:"expected_actions,omitempty"`
 	DeadlineS        float64           `json:"deadline_s,omitempty"`
 	Counterfactual   *Counterfactual   `json:"counterfactual,omitempty"`
+}
+
+type FaultAction struct {
+	Kind     string `json:"kind"`
+	Effector string `json:"effector"`
 }
 
 type FaultOnset struct {

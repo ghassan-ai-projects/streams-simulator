@@ -1769,6 +1769,10 @@
         {
           "id": "conveyor_drive__lube_loss",
           "affects": [{"state": "lube", "delta": 1}],
+          "expected_actions": [
+            {"kind": "bulk_feeder", "effector": "bulk_feeder__set_feed"},
+            {"kind": "conveyor_drive", "effector": "conveyor_drive__stop_drive"}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.vibration"},
             "first_observable_snr": 3,
@@ -1779,6 +1783,11 @@
         {
           "id": "conveyor_drive__gear_oil_loss",
           "affects": [{"state": "g", "delta": 2}],
+          "expected_actions": [
+            {"kind": "bulk_feeder", "effector": "bulk_feeder__set_feed"},
+            {"kind": "conveyor_drive", "effector": "conveyor_drive__stop_drive"},
+            {"kind": "belt_conveyor", "effector": "belt_conveyor__stop_belt"}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.winding"},
             "first_observable_snr": 3,
@@ -1789,6 +1798,7 @@
         {
           "id": "conveyor_drive__vfd_fault",
           "affects": [{"state": "vfd_ok", "delta": -1}],
+          "expected_actions": [{"kind": "bulk_feeder", "effector": "bulk_feeder__set_feed"}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "conveyor_drive.current"},
             "first_observable_snr": 3,

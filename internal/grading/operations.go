@@ -9,10 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
-	return app.Grade(ctx, options)
-}
-
 func GradeRun(ctx context.Context, options Options) (*score.RunScore, error) {
 	return app.GradeRun(ctx, options)
 }

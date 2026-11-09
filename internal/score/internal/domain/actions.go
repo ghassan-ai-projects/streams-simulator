@@ -46,8 +46,8 @@ func actionMatchesCall(action model.Action, call world.EffectorCall) bool {
 	if action.CommandID != call.CommandID || action.Effector != call.Effector || action.EntityID != call.EntityID {
 		return false
 	}
-	issued, err := model.ParseTime(action.IssuedAt)
-	return err == nil && issued >= call.AtNS && beliefMatchesAcceptance(action.OutcomeBelieved, call.Accepted)
+	_, err := model.ParseTime(action.IssuedAt)
+	return err == nil && beliefMatchesAcceptance(action.OutcomeBelieved, call.Accepted)
 }
 
 func beliefMatchesAcceptance(belief string, accepted bool) bool {

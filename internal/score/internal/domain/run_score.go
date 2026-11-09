@@ -28,7 +28,7 @@ func ScoreRun(ev Evidence, gts []*model.GroundTruthRecord) (*RunScore, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RunScore{RunID: ev.RunID, Scorecards: cards, Unexpected: unexpectedOf(ev, disturbedEntities(gts))}, nil
+	return &RunScore{RunID: ev.RunID, Scorecards: cards, Unexpected: unexpectedOf(ev, gts)}, nil
 }
 
 func Document(r *RunScore) any {
@@ -55,18 +55,17 @@ func scoreOne(ev Evidence, gt *model.GroundTruthRecord, among bool) (*Scorecard,
 	if err != nil || !among {
 		return card, err
 	}
-	scoped := onlyEntity(ev, gt.EntityID)
-	card.Judgment, card.Loop = judgment(scoped, gt), loop(scoped, gt)
+	labeled, acted := labeledEntities(gt), actedEntities(gt)
+	card.Judgment = judgment(selectEntities(ev, func(id string) bool { return labeled[id] }), gt)
+	card.Loop = loop(selectEntities(ev, func(id string) bool { return acted[id] }), gt)
 	return card, nil
 }
 
-func onlyEntity(ev Evidence, entity string) Evidence {
-	return selectEntities(ev, func(id string) bool { return id == entity })
-}
-
-func unexpectedOf(ev Evidence, disturbed map[string]bool) Unexpected {
-	rest := selectEntities(ev, func(id string) bool { return !disturbed[id] })
-	return Unexpected{Detections: rest.Verdict.Detections, Actions: rest.Verdict.Actions, EffectCalls: len(rest.Calls)}
+func unexpectedOf(ev Evidence, gts []*model.GroundTruthRecord) Unexpected {
+	labeled, acted := labeledEntities(gts...), actedEntities(gts...)
+	rest := selectEntities(ev, func(id string) bool { return !acted[id] })
+	detections := selected(ev.Verdict.Detections, func(d model.Detection) bool { return !labeled[d.EntityID] })
+	return Unexpected{Detections: detections, Actions: rest.Verdict.Actions, EffectCalls: len(rest.Calls)}
 }
 
 func selectEntities(ev Evidence, keep func(entity string) bool) Evidence {
@@ -88,10 +87,20 @@ func selected[T any](items []T, keep func(T) bool) []T {
 	})
 }
 
-func disturbedEntities(gts []*model.GroundTruthRecord) map[string]bool {
+func labeledEntities(gts ...*model.GroundTruthRecord) map[string]bool {
 	entities := map[string]bool{}
 	for _, gt := range gts {
 		entities[gt.EntityID] = true
+	}
+	return entities
+}
+
+func actedEntities(gts ...*model.GroundTruthRecord) map[string]bool {
+	entities := labeledEntities(gts...)
+	for _, gt := range gts {
+		for _, action := range gt.ExpectedActions {
+			entities[action.EntityID] = true
+		}
 	}
 	return entities
 }

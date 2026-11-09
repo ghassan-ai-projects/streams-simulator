@@ -70,6 +70,13 @@ mapping) a plain string that resolves to one declaration, so the adapter, pertur
 at the same pointer as before. A fault or effector acts only on entities of its own kind: injecting a fault or invoking an effector
 on an entity of another kind is refused by the world.
 
+**Expected actions on other kinds.** A fault may list `expected_actions`, each `{kind, effector}`: the right actions when it
+strikes, which may be another kind's (a drive fault is answered by cutting the feeder's feed). The kind must be declared and declare
+the effector (issues at `/expected_actions/i/kind` and `/expected_actions/i/effector`). The label resolves them at label time: an
+action of the fault's own kind is expected on the faulted instance, an action of another kind on every instance of that kind in the
+run, so the label carries `expected_actions` as `{entity_id, effector}`. Scoring credits a call that matches one as appropriate and
+grades it with the fault instead of as unexpected.
+
 **Per-kind behaviour.** An entity emits only its kind's channels. A `peer_residual` detector pools the entity's peers: the live
 entities **of the same kind**. A suite scenario draws its entity from the entities of the injected fault's kind, applies profile setup
 calls only when the entity's kind declares the effector, and audits against the channels and the negative-class control fault of that

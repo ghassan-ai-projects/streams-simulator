@@ -55,7 +55,7 @@ streamsim plantwire connect --plan <dir>/run-0001.session-plan.json \
 streamsim score --run <run-dir>/run.json --domains-dir examples/pump-station
 ```
 
-`score` reads whichever label file the folder holds and replays the artifact, so an edited ledger cannot change a grade. With several labels it returns one scorecard per label, each judged on its own entity, plus `unexpected` (detections, actions and effector calls on entities with no label, all false). An effector call counts only if it names the fault (`work_order` is the exact fault id). Details: [artifacts](../reference/artifacts.md) and [truth and scoring](../architecture/truth-and-scoring.md).
+`score` reads whichever label file the folder holds and replays the artifact, so an edited ledger cannot change a grade. With several labels it returns one scorecard per label, each judged on its own entity, plus `unexpected` (detections on entities with no label, actions and effector calls on entities neither labelled nor named by a label's `expected_actions`, all false). An effector call counts only if it names the fault (`work_order` is the exact fault id). Details: [artifacts](../reference/artifacts.md) and [truth and scoring](../architecture/truth-and-scoring.md).
 
 ## Comparing arms
 

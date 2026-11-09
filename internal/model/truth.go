@@ -15,6 +15,7 @@ type GroundTruthRecord struct {
 	DeadlineNS             int64              `json:"deadline_ns,omitempty"`
 	Counterfactual         *Counterfactual    `json:"counterfactual,omitempty"`
 	ExpectedEffector       string             `json:"expected_effector,omitempty"`
+	ExpectedActions        []ExpectedAction   `json:"expected_actions,omitempty"`
 	TrivialBaselineVerdict string             `json:"trivial_baseline_verdict"`
 	TrivialBaselineDetail  map[string]float64 `json:"trivial_baseline_detail,omitempty"`
 	PreDegraded            bool               `json:"pre_degraded,omitempty"`
@@ -47,6 +48,11 @@ const (
 	SolveAnalytic = "analytic"
 	SolveNumeric  = "numeric"
 )
+
+type ExpectedAction struct {
+	EntityID string `json:"entity_id"`
+	Effector string `json:"effector"`
+}
 
 func (g *GroundTruthRecord) IsPositive() bool {
 	return !g.IsNegativeClass && g.ExpectedEpisode

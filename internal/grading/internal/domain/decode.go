@@ -3,13 +3,10 @@ package domain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
-
-var ErrNotOneLabel = errors.New("score: a single scorecard needs exactly one label")
 
 func DecodeDocument(raw []byte, path string, validate func([]byte) error, dst any) error {
 	if err := validate(raw); err != nil {

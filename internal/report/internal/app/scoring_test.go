@@ -51,18 +51,27 @@ func finishedRun(t *testing.T, dir string, explore bool) {
 	writeLabel(t, dir, faultAt)
 }
 
-func writeLabel(t *testing.T, dir string, faultAt int64) {
-	t.Helper()
-	label, err := json.Marshal(&model.GroundTruthRecord{ScenarioID: "report/0001", Domain: "aquaculture-pond", Seed: 5, EntityID: pond,
+func pondLabel(entity string, faultAt int64) *model.GroundTruthRecord {
+	return &model.GroundTruthRecord{ScenarioID: "report/0001", Domain: "aquaculture-pond", Seed: 5, EntityID: entity,
 		Label: "aerator_failure", ExpectedEpisode: true, InjectionTimeNS: faultAt, FirstObservableTimeNS: faultAt,
 		UnavoidableTimeNS: faultAt + 3600e9,
 		Observability: model.ObservabilityInfo{DetectorForm: "single_channel_snr", Channels: []string{"pond.dissolved_oxygen"},
 			EffectiveSigma: 0.1, FirstObservableSNR: 3, UnavoidableSNR: 10},
-		TrivialBaselineVerdict: model.TrivialNonTrivial})
+		TrivialBaselineVerdict: model.TrivialNonTrivial}
+}
+
+func writeLabel(t *testing.T, dir string, faultAt int64) {
+	t.Helper()
+	writeLabelFile(t, dir, "label.json", pondLabel(pond, faultAt))
+}
+
+func writeLabelFile(t *testing.T, dir, name string, document any) {
+	t.Helper()
+	label, err := json.Marshal(document)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "label.json"), label, 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, name), label, 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -155,5 +164,28 @@ func TestReportOfAScoredRunIsTheSameBytesInACopy(t *testing.T) {
 	finishedRun(t, dir, false)
 	if first, second := render(t, dir, JSONFormat), render(t, copyFolder(t, dir), JSONFormat); !bytes.Equal(first, second) {
 		t.Fatal("the scored report differs between a folder and its copy")
+	}
+}
+
+func TestReportScoresARunWithSeveralLabelsAsOneRunDocument(t *testing.T) {
+	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
+	dir := t.TempDir()
+	finishedRun(t, dir, false)
+	faultAt := model.DefaultStartTimeNS + 6*3600*1e9
+	writeLabelFile(t, dir, "labels.json", []*model.GroundTruthRecord{pondLabel(pond, faultAt), pondLabel("site-a/pond-2", faultAt)})
+	if err := os.Remove(filepath.Join(dir, "label.json")); err != nil {
+		t.Fatal(err)
+	}
+	var graded struct {
+		Scorecards []struct {
+			GroundTruth model.GroundTruthRecord `json:"ground_truth"`
+		} `json:"scorecards"`
+		Unexpected map[string]any `json:"unexpected"`
+	}
+	scoring := scoringOf(t, dir)
+	if err := json.Unmarshal(scoring.Scorecard, &graded); err != nil || scoring.Status != rules.Scored || len(graded.Scorecards) != 2 ||
+		graded.Scorecards[1].GroundTruth.EntityID != "site-a/pond-2" || graded.Unexpected == nil {
+		t.Fatalf("scoring = %+v (%v), want both ponds' scorecards and the unexpected section", scoring, err)
 	}
 }

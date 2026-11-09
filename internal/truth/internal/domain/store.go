@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sync"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -91,11 +93,9 @@ func cloneRecord(in *model.GroundTruthRecord) *model.GroundTruthRecord {
 	out := *in
 	out.Observability.Channels = append([]string(nil), in.Observability.Channels...)
 	out.Perturbations = append([]string(nil), in.Perturbations...)
+	out.ExpectedActions = slices.Clone(in.ExpectedActions)
 	out.TrivialBaselineDetail = make(map[string]float64, len(in.TrivialBaselineDetail))
-	// determinism-safe: copies a map into a map.
-	for k, v := range in.TrivialBaselineDetail {
-		out.TrivialBaselineDetail[k] = v
-	}
+	maps.Copy(out.TrivialBaselineDetail, in.TrivialBaselineDetail)
 	if in.Counterfactual != nil {
 		cf := *in.Counterfactual
 		out.Counterfactual = &cf

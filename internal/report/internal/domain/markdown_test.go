@@ -84,3 +84,20 @@ func TestMarkdownKeepsACodeSpanLiteralAndOutlivesBackticksInIt(t *testing.T) {
 		t.Fatalf("a code span must keep its text literal, fenced past the backtick it holds:\n%s", got)
 	}
 }
+
+func TestMarkdownShowsEachScorecardOfASeveralLabelRunAndWhatWasUnexpected(t *testing.T) {
+	t.Parallel()
+	document := `{"run_id":"r-1","scorecards":[{"ground_truth":{"entity_id":"D-3","label":"vfd_fault"},"loop":{"action_appropriate":true}},` +
+		`{"ground_truth":{"entity_id":"D-1","label":"lube_loss"},"loop":{"action_appropriate":false}}],` +
+		`"unexpected":{"detections":[],"actions":[{"entity_id":"D-2"}],"effect_calls":1}}`
+	got := string(Markdown(&Report{Scoring: &Scoring{Status: Scored, Scorecard: json.RawMessage(document)}}))
+	for _, want := range []string{
+		"### Scorecard 1\n\n| Field | Value |\n|---|---|\n| Entity | `D-3` |\n| Label | `vfd_fault` |\n\n#### loop\n\n| Metric | Value |\n|---|---|\n| action\\_appropriate | true |",
+		"### Scorecard 2\n\n| Field | Value |\n|---|---|\n| Entity | `D-1` |\n| Label | `lube_loss` |\n\n#### loop\n\n| Metric | Value |\n|---|---|\n| action\\_appropriate | false |",
+		"### unexpected\n\n| Metric | Value |\n|---|---|\n| actions | 1 |\n| detections | 0 |\n| effect\\_calls | 1 |",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("markdown lacks %q:\n%s", want, got)
+		}
+	}
+}

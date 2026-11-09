@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -64,6 +65,12 @@ func TestEachKindIsCheckedAgainstItsOwnDeclarations(t *testing.T) {
 		{"fault expects an effector of another kind", func(doc map[string]any) {
 			kindAt(doc, 0)["faults"].([]any)[0].(map[string]any)["expected_effector"] = "boost"
 		}, "/kinds/0/faults/0/expected_effector"},
+		{"fault expects an action of an undeclared kind", func(doc map[string]any) {
+			kindAt(doc, 0)["faults"].([]any)[0].(map[string]any)["expected_actions"] = []any{map[string]any{"kind": "valve", "effector": "boost"}}
+		}, "/kinds/0/faults/0/expected_actions/0/kind"},
+		{"fault expects an effector its named kind does not declare", func(doc map[string]any) {
+			kindAt(doc, 0)["faults"].([]any)[0].(map[string]any)["expected_actions"] = []any{map[string]any{"kind": "pump", "effector": "refill"}}
+		}, "/kinds/0/faults/0/expected_actions/0/effector"},
 		{"channel observes a state of another kind", func(doc map[string]any) {
 			kindAt(doc, 1)["channels"].([]any)[0].(map[string]any)["observes"] = "level_true"
 		}, "/kinds/1/channels/0/observes"},
@@ -100,5 +107,19 @@ func TestExplicitIdsAreCountedPerInstanceSet(t *testing.T) {
 	}
 	if err := c.CheckEntityIDs([]string{"tank-1", "valve-1"}); err == nil || !strings.Contains(err.Error(), `"valve-1" does not fit instance id template`) {
 		t.Fatalf("an id that fits no set: %v, want a refusal naming it", err)
+	}
+}
+
+func TestAFaultMayExpectAnActionOfAnotherKind(t *testing.T) {
+	t.Parallel()
+	c, err := Parse(twoKindDocument(t, func(doc map[string]any) {
+		kindAt(doc, 0)["faults"].([]any)[0].(map[string]any)["expected_actions"] = []any{map[string]any{"kind": "pump", "effector": "boost"}}
+	}), "two-kind.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fault := c.Spec.Kinds[0].Faults[0]
+	if want := []model.FaultAction{{Kind: "pump", Effector: "boost"}}; !slices.Equal(fault.ExpectedActions, want) {
+		t.Fatalf("expected actions = %v, want %v", fault.ExpectedActions, want)
 	}
 }

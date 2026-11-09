@@ -26,17 +26,6 @@ func GradeRun(ctx context.Context, options Options) (*score.RunScore, error) {
 	return gradeArtifact(ctx, options, art)
 }
 
-func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
-	graded, err := GradeRun(ctx, options)
-	if err != nil {
-		return nil, err
-	}
-	if len(graded.Scorecards) != 1 {
-		return nil, fmt.Errorf("streamsim: %w: the run holds %d", domain.ErrNotOneLabel, len(graded.Scorecards))
-	}
-	return graded.Scorecards[0], nil
-}
-
 func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.RunScore, error) {
 	dir := filepath.Dir(options.Artifact)
 	verdict, labels, err := loadReports(dir, options.Label)

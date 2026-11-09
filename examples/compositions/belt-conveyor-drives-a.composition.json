@@ -13,7 +13,12 @@
   "equipment": [
     {"use": "streamsim/bulk-feeder@1", "names": ["F-1"], "area": "Transfer belt", "implements": "bulk_feeder", "board_type": "feeder-controller"},
     {"use": "streamsim/belt-conveyor@1", "parameters": {"breakaway_n_per_kg": 1.424}, "names": ["B-1"], "area": "Transfer belt", "implements": "belt_conveyor"},
-    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "strong"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station", "implements": "conveyor_drive"}
+    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "strong"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station", "implements": "conveyor_drive",
+      "expected_actions": {
+        "lube_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}],
+        "gear_oil_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}, {"kind": "belt_conveyor", "effector": "stop_belt"}],
+        "vfd_fault": [{"kind": "bulk_feeder", "effector": "set_feed"}]
+      }}
   ],
   "connections": [
     {"from": "F-1.feed_out", "to": "B-1.feed_in"},

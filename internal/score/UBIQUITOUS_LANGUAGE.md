@@ -12,6 +12,9 @@ reads only what the simulator generated or the consumer submitted through
 | Instrument metrics | The simulator grading itself: ledger completeness, perturbation fidelity, effector idempotency, delivery counts | `InstrumentMetrics` | `instrument` |
 | Consumer metrics | What the consumer did with delivery faults: duplicates, identity conflict, lateness, dropped events, clock skew, evidence grounding, action fidelity, interlock handling | `ConsumerMetrics` | `consumer` |
 | Loop metrics | What only a closed loop can measure: resolution, deadline, unnecessary action, false success | `LoopMetrics` | `loop` |
+| Right call | An effector call with effect that is the label's expected effector on its entity or one of its expected actions (an effector on a named instance) | `rightCall`, `model.ExpectedAction` | `expected_effector`, `expected_actions` |
+| Action fidelity | Every verdict action names a world call by command id, effector and entity, with a matching belief; it may be issued before the call | `matchesActions` | `action_fidelity` |
+| Unexpected | Detections on unlabeled entities, and actions and calls on entities neither labeled nor expected by a label | `Unexpected` | `unexpected` |
 | Judgment metrics | Detection quality against truth: detected, label correct, latency, false positive | `JudgmentMetrics` | `judgment` |
 | Online / offline | Scoring a live run's evidence versus scoring artifacts alone; offline cannot compute loop metrics from history | `Score`, `Offline` | – |
 | Hidden-state history | The director-only per-emission state snapshots the loop metrics read | `model.StateSnapshot` | `world_state_history.jsonl` |
