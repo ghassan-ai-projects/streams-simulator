@@ -18,8 +18,16 @@ func multiSpec(phase CampaignPhase) *CampaignSpec {
 	return spec
 }
 
-func threeFaults() map[string]float64 {
-	return map[string]float64{"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1}
+func threeFaults() map[string]FaultWeight {
+	return weighted(map[string]float64{"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1})
+}
+
+func weighted(weights map[string]float64) map[string]FaultWeight {
+	faults := map[string]FaultWeight{}
+	for id, weight := range weights {
+		faults[id] = FaultWeight{Weight: weight}
+	}
+	return faults
 }
 
 func buildPlans(t *testing.T, spec *CampaignSpec) []model.SessionPlan {

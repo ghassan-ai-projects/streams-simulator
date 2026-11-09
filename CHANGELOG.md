@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Campaign phases draw a fault's severity (conveyor milestone M4, row 8, U8).** In a `suite campaign` spec a fault's
+  weight may be `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6) instead of a number: every disturbance of
+  that fault then carries a `severity` drawn uniformly from the range in its session plan. Severities are drawn from each
+  run's own stream (`campaign/run/<n>/severity`, in disturbance order), so a range moves no other draw, and a spec without
+  ranges generates the same files byte for byte (the committed first-slice campaign is digest-pinned). The committed
+  conveyor story tables are unchanged.
 - **Two labels on one entity are judged apart (conveyor milestone M4, row 2, O25).** A label is keyed by entity and
   fault: when several labels of a run sit on one entity, a detection whose `label` names one of their faults is judged
   with that label alone, and a call or action only some of them expect goes to those; a detection or call on that entity

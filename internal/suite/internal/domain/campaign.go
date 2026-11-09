@@ -72,6 +72,7 @@ func (b *campaignBuild) addRun(phase *CampaignPhase, faults []string, negative s
 	rng := randutil.Substream(b.spec.Seed, fmt.Sprintf("campaign/run/%d", index))
 	seed := rng.Next() & maxSafeSeed
 	disturbances := b.disturbances(phase.Domain, faults, negative, rng)
+	phase.drawSeverities(disturbances, randutil.Substream(b.spec.Seed, fmt.Sprintf("campaign/run/%d/severity", index)))
 	b.campaign.Runs = append(b.campaign.Runs, CampaignRun{Index: index, Phase: phase.Name, Domain: phase.Domain, Seed: seed,
 		DurationS: b.spec.DurationS, SessionPlan: PlanFileName(index)})
 	b.plans = append(b.plans, b.sessionPlan(phase.Domain, seed, int64(index-1)*int64(b.spec.DurationS), disturbances))

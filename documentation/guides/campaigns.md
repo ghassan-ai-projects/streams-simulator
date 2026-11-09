@@ -35,6 +35,13 @@ streamsim suite campaign --spec examples/pump-station/campaign/first-slice.campa
 - Each disturbance of a run is on a different entity that declares the fault and starts inside `fault_start_window_s`. A phase is refused when `faults_per_run` plus `negatives_per_run` exceeds the entities available.
 - `faults_per_run: 0` with no `faults` is a warm-up phase: no disturbance, or only the negatives.
 
+### Drawn severity
+
+A fault's weight may be an object, `{"weight": 1, "severity_range": [0.8, 1.25]}`: every disturbance of that fault then
+carries a `severity` drawn uniformly from the range in its session plan; without a range the domain's magnitude applies.
+The draws come from each run's own severity stream in disturbance order, so adding a range changes no instance, start
+time or seed, and a spec without ranges generates the same files byte for byte.
+
 ## Run one session
 
 ```bash

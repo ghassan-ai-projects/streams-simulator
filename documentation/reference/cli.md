@@ -759,6 +759,7 @@ Flags:
 - `negatives_per_run` (default 0) adds that many negative-class disturbances to every run.
 - Each disturbance of a run is on a different entity that declares its fault, starts inside `fault_start_window_s`, and a phase is refused when `faults_per_run` plus `negatives_per_run` exceeds the entities a fault is declared on.
 - `faults_per_run: 0` with no `faults` makes a warm-up phase: its runs carry no disturbance (or only the negatives).
+- A fault's weight is a number or `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6; no other member). With a range, every disturbance of that fault carries a `severity` drawn uniformly from it in its session plan (otherwise the domain's magnitude applies). Severities come from each run's own stream (`campaign/run/<n>/severity`, in disturbance order), so a range moves no other draw and a spec without ranges generates the same files byte for byte as before ranges existed.
 - Example: `{"name": "multi", "domain": "pump-station", "runs": 20, "faults_per_run": 2, "negatives_per_run": 1, "faults": {"bearing_wear": 1, "misalignment": 1}}`; a warm-up: `{"name": "warmup", "domain": "pump-station", "runs": 2, "faults_per_run": 0}`.
 
 ### `score`
