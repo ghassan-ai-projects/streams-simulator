@@ -161,7 +161,11 @@ func committedScenario(t *testing.T, name string) *model.Scenario {
 }
 
 func beltKindsCheck(spec *model.DomainSpec) ([]model.ImplementsChecked, error) {
-	return plantwire.CheckImplements(spec, []string{testsupport.BeltConveyorKindsDir()})
+	checked, err := plantwire.CheckImplements(spec, []string{testsupport.BeltConveyorKindsDir()})
+	if err != nil {
+		return nil, fmt.Errorf("check the conveyor kind files: %w", err)
+	}
+	return checked, nil
 }
 
 func runCommitted(t *testing.T, scenario *model.Scenario) {
