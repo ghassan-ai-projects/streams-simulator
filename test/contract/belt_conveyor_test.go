@@ -151,7 +151,7 @@ func beltDemand(b *beltWorld, rated float64, enabled ...float64) float64 {
 
 func TestComposingTheBeltConveyorCompositionsReproducesTheExamplesByteForByte(t *testing.T) {
 	t.Parallel()
-	for _, regime := range []string{"a", "b"} {
+	for _, regime := range []string{"a", "b", "s6-stop", "s6-promote"} {
 		want, err := os.ReadFile(testsupport.BeltConveyorDomain(regime))
 		if err != nil {
 			t.Fatal(err)
