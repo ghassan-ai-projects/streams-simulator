@@ -105,6 +105,8 @@ type Entry struct {
 	IDTemplate  string            `json:"id_template"`
 	Count       model.EntityCount `json:"count"`
 	Area        string            `json:"area"`
+	Implements  string            `json:"implements"`
+	BoardType   string            `json:"board_type"`
 	Instruments InstrumentChanges `json:"instruments"`
 }
 

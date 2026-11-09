@@ -174,6 +174,16 @@
           "area": {
             "$ref": "#/$defs/area"
           },
+          "implements": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "Copied onto the composed kind: the kind file (plant wire KIND, found by its kind name) whose interface the kind presents to a host (domain-spec v0.2)."
+          },
+          "board_type": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$",
+            "description": "Copied onto the composed kind: the board mapping (<board_type>.board.json beside the kind files) through which the kind's own channels and effectors implement the kind file. Needs implements."
+          },
           "instruments": {
             "type": "object",
             "additionalProperties": false,
@@ -218,7 +228,17 @@
               "count"
             ]
           }
-        ]
+        ],
+        "if": {
+          "required": [
+            "board_type"
+          ]
+        },
+        "then": {
+          "required": [
+            "implements"
+          ]
+        }
       }
     },
     "connections": {
