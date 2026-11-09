@@ -247,6 +247,36 @@
       ]
     },
     {
+      "id": "s5b-a",
+      "story": "S5b",
+      "plant": "a",
+      "title": "D-3's vibration channel drops out during its slow bearing failure",
+      "horizon_s": 57600,
+      "disturbances": [
+        {"instance": "D-3", "fault": "conveyor_drive__vibration__dropout", "at": "dropout_s"},
+        {"instance": "D-3", "fault": "conveyor_drive__lube_loss", "at": "onset_s", "severity": "severity"},
+        {"instance": "B-1", "fault": "belt_conveyor__downstream_stop", "at": "stop_s", "duration_s": 1800}
+      ],
+      "policy": [
+        {"anchor": "onset_s", "after_s": 14400, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}},
+        {"anchor": "onset_s", "after_s": 14700, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 0}},
+        {"anchor": "onset_s", "after_s": 14880, "effector": "conveyor_drive__stop_drive", "instance": "D-3", "args": {"run_command": 0}},
+        {"anchor": "onset_s", "after_s": 14890, "effector": "bulk_feeder__set_feed", "instance": "F-1", "args": {"percent": 54}}
+      ],
+      "rows": [
+        {"seed": 1177676952, "onset_s": 5166, "severity": 1.16, "stop_s": 43929, "dropout_s": 2485},
+        {"seed": 397896178, "onset_s": 4053, "severity": 0.81, "stop_s": 40792, "dropout_s": 952},
+        {"seed": 579258288, "onset_s": 6868, "severity": 1.15, "stop_s": 47085, "dropout_s": 4645},
+        {"seed": 1359152074, "onset_s": 3984, "severity": 1.11, "stop_s": 46097, "dropout_s": 1465},
+        {"seed": 729982534, "onset_s": 4018, "severity": 0.9, "stop_s": 43776, "dropout_s": 1012},
+        {"seed": 309293695, "onset_s": 4218, "severity": 0.98, "stop_s": 41427, "dropout_s": 2257},
+        {"seed": 1381282680, "onset_s": 3786, "severity": 0.98, "stop_s": 38589, "dropout_s": 1504},
+        {"seed": 200808986, "onset_s": 6991, "severity": 0.92, "stop_s": 44975, "dropout_s": 4274},
+        {"seed": 42031786, "onset_s": 3605, "severity": 0.99, "stop_s": 46544, "dropout_s": 246},
+        {"seed": 485130158, "onset_s": 4851, "severity": 0.99, "stop_s": 43601, "dropout_s": 1765}
+      ]
+    },
+    {
       "id": "s6-a-stop",
       "story": "S6",
       "plant": "s6-stop",

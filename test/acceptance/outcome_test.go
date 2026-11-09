@@ -63,10 +63,10 @@ var (
 )
 
 // storyBaselines states what B1-B4 (PLAN.md section 2.2, O27) do on each story's first row. B1 (vibration) fires only
-// where a bearing fails (S5-A too: a policy watches the vibration state, not the frozen reading), and stops the feed
-// for good; B2 (current) on a lost drive and the surges above about 1.3x, but
-// not on S3, whose currents pass 1.1x only in the seconds before the seizure; B3 (the safe limp feed from the start)
-// fires everywhere and costs throughput; B4 on a lost drive. On S1-B the reference keeps full feed and stops D-3 1.5 h
+// where a bearing fails (S5-A and S5b too: a policy watches the vibration state, not the frozen or lost reading), and
+// stops the feed for good; B2 (current) on a lost drive and the surges above about 1.3x, but not on S3, whose currents
+// pass 1.1x only in the seconds before the seizure; B3 (the safe limp feed from the start) fires everywhere and costs
+// throughput; B4 on a lost drive. On S1-B the reference keeps full feed and stops D-3 1.5 h
 // before it would trip, then limps at 18 %: it beats B1, which stops later but feeds nothing afterwards. On S6-A with the
 // followers stopping no reaction saves the belt, so its reference ties doing nothing and every baseline (B3's throughput
 // before the trip, 0.09 h on the first row, is inside the tie): it is easy by design. Every other story beats every
@@ -81,6 +81,7 @@ var storyBaselines = map[string][4]baselineDid{
 	"s4-a":         {quiet, fires, fires, quiet},
 	"s4-b":         {quiet, fires, fires, quiet},
 	"s5-a":         {fires, fires, fires, fires},
+	"s5b-a":        {fires, fires, fires, fires},
 	"s6-a-stop":    {{false, ties}, {false, ties}, {true, ties}, {true, ties}},
 	"s6-a-promote": {{false, beats}, fires, fires, fires},
 }
@@ -123,6 +124,7 @@ func TestEveryStoryRunIsGradedAgainstDoingNothingAndEachBaseline(t *testing.T) {
 			dir := t.TempDir()
 			kinds := filepath.Join(b.root, "examples", "belt-conveyor", "kinds")
 			b.run(append([]string{"run", "--scenario", scenario, "--sink", "file", "--out", dir, "--kinds-dir", kinds}, plantInputs...)...).mustSucceed(t)
+			checkDropoutDelivered(t, story, scenario, dir)
 			started := time.Now()
 			graded := b.runWithin(30*time.Minute, append([]string{"outcome", "--run", dir}, plantInputs...)...).mustSucceed(t).document(t)
 			t.Logf("%s: outcome took %s", story, time.Since(started).Round(time.Second))

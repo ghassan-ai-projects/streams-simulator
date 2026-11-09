@@ -4,7 +4,7 @@ The stories of the multi-drive belt conveyor (`docs/belt-conveyor-drives/PLAN.md
 plants `belt-conveyor-drives-a` (drives with margin) and `belt-conveyor-drives-b` (without), and for S6 the
 master-follower variants of plant A, `belt-conveyor-drives-s6-stop` and `-s6-promote`.
 
-- `stories.json`: one entry per story variant (S0-A, S1-A, S1-B, S2-A, S2-B, S3-A, S4-A, S4-B, S5-A, S6-A-stop,
+- `stories.json`: one entry per story variant (S0-A, S1-A, S1-B, S2-A, S2-B, S3-A, S4-A, S4-B, S5-A, S5b-A, S6-A-stop,
   S6-A-promote). Each has its plant, horizon, disturbances, ten seed rows and a hand-written reference policy; an S6
   story names its `regime` (`a`) beside its plant, and `unavoidable: true` marks S6-A-stop, which no reaction saves: its
   reference policy (feed 0, no restart) only does no harm and ties doing nothing.
@@ -12,9 +12,12 @@ master-follower variants of plant A, `belt-conveyor-drives-s6-stop` and `-s6-pro
     `severity` is a number or a row field; `duration_s` clears it that much later. A row field that is a list (S4's
     pulses) repeats the disturbance once per element.
   - A seed row holds the world `seed` and the drawn values, in seconds after the world start: `onset_s`, `severity`,
-    `stop_s` (the downstream stop), `trip_s` (S2, S6), `frozen_s` (S5), `pulse_s` and `pulse_severity` (S4). They were drawn
-    once from a fixed generator and are committed as numbers. S1-B's rows also hold `planned_stop_s` (below), computed
-    from the row, not drawn.
+    `stop_s` (the downstream stop), `trip_s` (S2, S6), `frozen_s` (S5), `dropout_s` (S5b), `pulse_s` and `pulse_severity`
+    (S4). They were drawn once from a fixed generator and are committed as numbers. S5b's rows are S5-A's, with
+    `frozen_s` as `dropout_s`: D-3's vibration channel drops out (`conveyor_drive__vibration__dropout`, no reading
+    delivered from the injection on) where S5-A freezes it, and nothing else differs. The dropout is a label of its own
+    on D-3 beside `lube_loss`, observable at its injection and expecting no action. S1-B's rows also hold
+    `planned_stop_s` (below), computed from the row, not drawn.
   - A policy call invokes `effector` on `instance` with `args` at `after_s` seconds after the row field named by
     `anchor`. The policies know the drawn onset: they only prove that a saving reaction exists.
   - S1-B's policy anchors on `planned_stop_s`, the row's do-nothing D-3 trip less the story's `planned_stop_lead_s`

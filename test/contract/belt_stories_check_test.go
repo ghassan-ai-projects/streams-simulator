@@ -200,7 +200,7 @@ func (c storyCheck) tell(policy string) {
 	switch c.story.Story {
 	case "S0", "S4":
 		c.quiet(c.run(policy), policy)
-	case "S1", "S5":
+	case "S1", "S5", "S5b":
 		c.slowBearing(policy)
 	case "S2":
 		c.suddenTrip(policy)

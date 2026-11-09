@@ -180,7 +180,7 @@ func effectorArgs(effector string, args map[string]any) map[string]any {
 func TestTheStoryTableHoldsTenRowsPerVariantAndResolvesEveryEvent(t *testing.T) {
 	t.Parallel()
 	table := loadStories(t)
-	want := []string{"s0-a", "s1-a", "s1-b", "s2-a", "s2-b", "s3-a", "s4-a", "s4-b", "s5-a", "s6-a-stop", "s6-a-promote"}
+	want := []string{"s0-a", "s1-a", "s1-b", "s2-a", "s2-b", "s3-a", "s4-a", "s4-b", "s5-a", "s5b-a", "s6-a-stop", "s6-a-promote"}
 	var ids []string
 	for _, story := range table.Stories {
 		ids = append(ids, story.ID)

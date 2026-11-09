@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **S5b: D-3's vibration channel drops out during the slow bearing failure (conveyor milestone M4, row 4, streamsim
+  side).** `stories.json` gains S5b-A: S5-A's ten seed rows, plant, horizon, downstream stop and reference policy, with
+  `conveyor_drive__vibration__dropout` (the existing instrument fault, data only) at `dropout_s` in place of the freeze.
+  From the injection on no reading of D-3's vibration is delivered; the dropout is a label of its own on D-3 (O25),
+  observable at its injection and expecting no action, beside `lube_loss`. Scenarios and the session plan are generated
+  from the table; the other stories' files are unchanged.
 - **S1-B's reference policy stops D-3 1.5 h before the trip at full feed (conveyor milestone M4, S1-B was easy).** The
   M1 reference limped at 18 % from 4 h after the onset and lost to baseline B1 by 2.12 equivalent hours on row 1, all of
   it throughput. The new reference keeps full feed until `planned_stop_s` (each row's do-nothing D-3 trip less the

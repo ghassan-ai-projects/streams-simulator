@@ -167,6 +167,45 @@ Rows 7 (streamsim side) and 8 (2026-11-09):
   feed cut at onset + 4 h ends the window before λ 0.5, so a consumer that acts at its detection is graded on PH only).
 - U8: a campaign phase's fault weight is a number or `{weight, severity_range}`; severities come from a per-run stream
   `campaign/run/<n>/severity`, so the first-slice campaign is byte for byte as before (digest-pinned).
+
+Row 4, streamsim side: the S5b story rows (2026-11-10):
+
+- No new world or perturbation behaviour: the composed plants already carry the accelerometer's instrument fault
+  `conveyor_drive__vibration__dropout` (observation form `dropout`), under which the world schedules no reading of the
+  channel while the fault acts (`emitChannelReading`, `processEventCheck`), and truth's single-channel detector already
+  treats a dropped reading as an infinite deviation. S5b is data only: a new `stories.json` entry `s5b-a` (story `S5b`).
+- Rows: S5-A's ten rows (seed, onset, severity, downstream stop) with `frozen_s` renamed `dropout_s`; disturbances and
+  reference policy are S5-A's with the freeze replaced by the dropout. So S5-A and S5b are a pair: a consumer's results
+  on the same row differ only by freeze against dropout. Generated: `s5b-a.do-nothing` and `.reference` scenarios and the
+  session plan; every other story file is byte for byte unchanged.
+- Labels: two on D-3, `conveyor_drive__lube_loss` (the bearing) and `conveyor_drive__vibration__dropout`. The dropout is a
+  label, not left unlabelled: every planned disturbance yields a record (`labels.json` of a plant-wire session), and
+  marking it negative-class would claim a look-alike, which it is not. O25 keys the two labels by fault, so a consumer
+  that reports the lost input is credited on the dropout and its bearing detection is judged on its own; one that does
+  not misses only the dropout label. O26 does not apply: unlike the freeze, a dropout is observable, at its injection
+  (first observable = injection, checked). The dropout expects no action: its only right response is to keep the R2
+  steps open (agentic-stream A3), which the outcome grades through the bearing's consequences.
+- S5b story table (equivalent production hours):
+
+  | | S5b-A |
+  |---|---|
+  | Do nothing | D-3 overtemperature trip 6.99-8.54 h after onset (8.12-9.67 h after the start); the belt strands at the downstream stop; J −8.07 .. −5.71 |
+  | Reference (S5-A's: limp 54 % at onset + 4 h, empty, stop D-3, limp) | no survivor trip, never stranded; beats doing nothing on every row by 2.72-4.95 (J −11.07 .. −10.64) |
+  | Row 1 against B0-B4 (binary) | B0 −3.65, B1 −4.05, B2 −4.88, B3 −2.98, B4 −4.89: beats all, every baseline fires |
+  | Labels | `lube_loss` on D-3 and `vibration__dropout` on D-3 (first observable at injection, no expected action) |
+  | Easy | no |
+
+  B1 fires as on S5-A: a baseline policy watches the vibration state, not the delivered reading. The long tier's
+  outcome lines (D-3 trip time, J and delta for both policies) are identical row for row to S5-A's, as they must be: a
+  dropout changes what the observer gets, not what happens.
+- Evidence: the long tier (`TestEverySeedRowOfEveryStoryTellsItsStory/s5b-a`, 20 runs, 320 plant hours) in 3 min 15 s at
+  `GOMAXPROCS=4 -p 1`; row 1 through the binary in `test/acceptance` (`run --scenario`, 2.3 min; `outcome`, 5.1 min),
+  which also reads the delivered `trace.jsonl`: D-3's vibration 41 readings before the dropout at 2485 s and none after;
+  in CI, `test/contract/belt_stories_dropout_test.go` runs the committed scenario to 10 min past the dropout (D-3 none,
+  D-1 and D-2 one a minute) in about 5 s, and builds the dropout's label (positive, observable at injection, no action).
+- Over the plant wire the dropout is a metric that is no longer refreshed (no `DATA` for it), not a quality code; the
+  host's staleness by scan class is what agentic-stream's A3 turns into `input_stale.<name>`.
+
 ## 7. S6 design (row 5)
 
 Loss of the torque master, PLAN.md section 2.3 S6, decided as O33 (section 9.6). Only existing F1 forms (`sum`, `trip`,
