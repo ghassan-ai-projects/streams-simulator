@@ -62,6 +62,13 @@
       "tie": 0.1
     },
     "baseline_policies": [
+      {"name": "b1", "when": {"kind": "conveyor_drive", "state": "vibration", "operator": "gt", "threshold": 4.5}, "for_s": 60,
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 0}},
+          {"effector": "conveyor_drive__stop_drive", "target": "matched", "args": {"run_command": 0}, "delay_s": 60}]},
+      {"name": "b2", "when": {"kind": "conveyor_drive", "state": "current", "operator": "gt", "threshold": 3.385}, "for_s": 60,
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 67}}]},
+      {"name": "b3", "when": {"kind": "bulk_feeder", "state": "feed_set", "operator": "gte", "threshold": 0},
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 54}}]},
       {"name": "b4", "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5},
         "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 67}}]}
     ]

@@ -2478,6 +2478,31 @@
   "ground_truth": {
     "baseline_policies": [
       {
+        "name": "b1",
+        "for_s": 60,
+        "then": [
+          {"target": "F-1", "args": {"percent": 0}, "effector": "bulk_feeder__set_feed"},
+          {
+            "target": "matched",
+            "args": {"run_command": 0},
+            "delay_s": 60,
+            "effector": "conveyor_drive__stop_drive"
+          }
+        ],
+        "when": {"kind": "conveyor_drive", "state": "vibration", "operator": "gt", "threshold": 4.5}
+      },
+      {
+        "name": "b2",
+        "for_s": 60,
+        "then": [{"target": "F-1", "args": {"percent": 67}, "effector": "bulk_feeder__set_feed"}],
+        "when": {"kind": "conveyor_drive", "state": "current", "operator": "gt", "threshold": 3.385}
+      },
+      {
+        "name": "b3",
+        "then": [{"target": "F-1", "args": {"percent": 54}, "effector": "bulk_feeder__set_feed"}],
+        "when": {"kind": "bulk_feeder", "state": "feed_set", "operator": "gte", "threshold": 0}
+      },
+      {
         "name": "b4",
         "then": [{"target": "F-1", "args": {"percent": 67}, "effector": "bulk_feeder__set_feed"}],
         "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5}

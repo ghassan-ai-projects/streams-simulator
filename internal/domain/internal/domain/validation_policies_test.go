@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -25,9 +26,9 @@ func TestEveryBaselinePolicyNamesSomethingTheDomainDeclares(t *testing.T) {
 	const at = "/ground_truth/baseline_policies/0"
 	runRefusals(t, testsupport.BeltConveyorDomain("a"), []refusalCase{
 		{"a condition on an unknown kind", func(d map[string]any) { put(d, "motor", policy("when", "kind")...) },
-			at + "/when/kind", `baseline policy "b4" watches kind "motor", which the domain does not declare`},
+			at + "/when/kind", `baseline policy "b1" watches kind "motor", which the domain does not declare`},
 		{"a condition on a state the kind lacks", func(d map[string]any) { put(d, "delivered", policy("when", "state")...) },
-			at + "/when/state", `baseline policy "b4" watches "delivered", which is not a state of kind "conveyor_drive"`},
+			at + "/when/state", `baseline policy "b1" watches "delivered", which is not a state of kind "conveyor_drive"`},
 		{"a call of an unknown effector", func(d map[string]any) { put(d, "set_feed", policy("then", 0, "effector")...) },
 			at + "/then/0/effector", `the domain declares no effector "set_feed"`},
 		{"a target that is no instance", func(d map[string]any) { put(d, "F-9", policy("then", 0, "target")...) },
@@ -50,7 +51,7 @@ func TestEveryBaselinePolicyNamesSomethingTheDomainDeclares(t *testing.T) {
 		{"a policy declared twice", func(d map[string]any) {
 			list := listAt(d, "ground_truth", "baseline_policies")
 			put(d, append(list, list[0]), "ground_truth", "baseline_policies")
-		}, "/ground_truth/baseline_policies/1/name", `baseline policy "b4" is declared twice`},
+		}, "/ground_truth/baseline_policies/4/name", `baseline policy "b1" is declared twice`},
 	})
 }
 
@@ -83,18 +84,31 @@ func TestAMatchedCallGoesToTheKindWhoseConditionFired(t *testing.T) {
 	}
 }
 
-func TestBothConveyorPlantsCarryTheirOutcomeWeightsAndPolicyB4(t *testing.T) {
+// conveyorBaselines are B1-B4 of PLAN.md section 2.2 as decided in O27: b2's threshold is 1.1 times the drive current at
+// full feed on three drives, b3 feeds the plant's safe limp feed.
+func conveyorBaselines(nominalAmps, limpPct float64) []model.BaselinePolicy {
+	feed := func(percent float64) model.PolicyCall {
+		return model.PolicyCall{Effector: "bulk_feeder__set_feed", Target: "F-1", Args: map[string]any{"percent": percent}}
+	}
+	stop := model.PolicyCall{Effector: "conveyor_drive__stop_drive", Target: model.PolicyTargetMatched, Args: map[string]any{"run_command": 0.0}, DelayS: 60}
+	return []model.BaselinePolicy{
+		{Name: "b1", When: model.PolicyCondition{Kind: "conveyor_drive", State: "vibration", Operator: "gt", Threshold: 4.5}, ForS: 60, Then: []model.PolicyCall{feed(0), stop}},
+		{Name: "b2", When: model.PolicyCondition{Kind: "conveyor_drive", State: "current", Operator: "gt", Threshold: nominalAmps}, ForS: 60, Then: []model.PolicyCall{feed(67)}},
+		{Name: "b3", When: model.PolicyCondition{Kind: "bulk_feeder", State: "feed_set", Operator: "gte", Threshold: 0}, Then: []model.PolicyCall{feed(limpPct)}},
+		{Name: "b4", When: model.PolicyCondition{Kind: "conveyor_drive", State: "available", Operator: "lt", Threshold: 0.5}, Then: []model.PolicyCall{feed(67)}},
+	}
+}
+
+func TestBothConveyorPlantsCarryTheirOutcomeWeightsAndBaselinesB1ToB4(t *testing.T) {
 	t.Parallel()
-	for _, regime := range []string{"a", "b"} {
+	for regime, want := range map[string][]model.BaselinePolicy{"a": conveyorBaselines(3.385, 54), "b": conveyorBaselines(4.688, 18)} {
 		c, err := Load(testsupport.BeltConveyorDomain(regime))
 		if err != nil {
 			t.Fatal(err)
 		}
 		truth := c.Spec.GroundTruth
-		b4 := truth.BaselinePolicies
-		if len(b4) != 1 || b4[0].Name != "b4" || b4[0].When != (model.PolicyCondition{Kind: "conveyor_drive", State: "available", Operator: "lt", Threshold: 0.5}) ||
-			len(b4[0].Then) != 1 || b4[0].Then[0].Target != "F-1" || b4[0].Then[0].Args["percent"] != 67.0 {
-			t.Fatalf("%s: baseline policies = %+v", regime, b4)
+		if !reflect.DeepEqual(truth.BaselinePolicies, want) {
+			t.Fatalf("%s: baseline policies = %+v\nwant %+v", regime, truth.BaselinePolicies, want)
 		}
 		w := truth.OutcomeWeights
 		if w == nil || len(w.Boundaries) != 1 || w.Boundaries[0].PerViolation != 4 || len(w.Trips) != 5 || len(w.KPIs) != 3 || len(w.Calls) != 3 || w.Tie != 0.1 {

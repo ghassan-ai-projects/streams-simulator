@@ -35,8 +35,8 @@ func TestOutcomeScoresARunAgainstDoingNothingAndEachBaselinePolicy(t *testing.T)
 		mustSucceed(t).document(t, "outcome")
 	runs, _ := doc["runs"].([]any)
 	verdicts, _ := doc["verdicts"].([]any)
-	if len(runs) != 3 || len(verdicts) != 2 || doc["valid"] != true || doc["tie"] != 0.1 || doc["domain"] != "belt-conveyor-drives-b" {
-		t.Fatalf("outcome = %v, want as_run, do_nothing and b4, a valid story and two verdicts", doc)
+	if len(runs) != 6 || len(verdicts) != 5 || doc["valid"] != true || doc["tie"] != 0.1 || doc["domain"] != "belt-conveyor-drives-b" {
+		t.Fatalf("outcome = %v, want as_run, do_nothing and b1-b4, a valid story and five verdicts", doc)
 	}
 	first, _ := verdicts[0].(map[string]any)
 	if first["baseline"] != "do_nothing" || first["verdict"] != "beats" {

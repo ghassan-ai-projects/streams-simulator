@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Baselines B1-B3 on both conveyor plants (conveyor milestone M4, row 1, O27).** Closed `baseline_policies` beside B4:
+  `b1` a drive's vibration above 4.5 mm/s for 60 s, then feed 0 and, 60 s later, stop that drive; `b2` a drive's current
+  above 1.1 times its current at full feed on three drives (3.385 A on plant A, 4.688 A on plant B; the closed record has no
+  rolling mean, so the plan's 1 h mean became this absolute threshold), held 60 s, then feed 67 %; `b3` from the first
+  sample (feeder setpoint at or above 0) the plant's safe limp feed, 54 % on A and 18 % on B. `streamsim outcome` now
+  replays four policies.
 - **Unequal load sharing: the algebraic form `ratio` (conveyor milestone M3, row 3, U7).** domain-spec v0.2 F1 form `ratio`:
   the product of the numerator inputs over the larger of the denominator inputs' product (inputs with `denominator: true`)
   and a required `floor` > 0, so nothing divides by zero; checked against an independent closed-form oracle. Each conveyor

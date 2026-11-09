@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
@@ -58,11 +59,16 @@ func TestGradeOutcomeScoresTheRunAgainstDoingNothingAndEveryPolicyInOrder(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(graded.Runs) != 3 || graded.Runs[0].Mode != model.OutcomeAsRun || graded.Runs[1].Mode != model.OutcomeDoNothing ||
-		graded.Runs[2].Mode != model.PolicyOutcome("b4") {
-		t.Fatalf("runs %+v, want as_run, do_nothing and b4 in that order", graded.Runs)
+	modes := []model.OutcomeMode{model.OutcomeAsRun, model.OutcomeDoNothing, model.PolicyOutcome("b1"), model.PolicyOutcome("b2"),
+		model.PolicyOutcome("b3"), model.PolicyOutcome("b4")}
+	var got []model.OutcomeMode
+	for _, run := range graded.Runs {
+		got = append(got, run.Mode)
 	}
-	if !graded.Valid || len(graded.Verdicts) != 2 || graded.Verdicts[0].Verdict != model.VerdictBeats || graded.Domain != "belt-conveyor-drives-b" {
+	if !slices.Equal(got, modes) {
+		t.Fatalf("runs %+v, want as_run, do_nothing and b1-b4 in that order", graded.Runs)
+	}
+	if !graded.Valid || len(graded.Verdicts) != 5 || graded.Verdicts[0].Verdict != model.VerdictBeats || graded.Domain != "belt-conveyor-drives-b" {
 		t.Fatalf("graded %+v, want a valid story the early feed cut beats", graded.OutcomeScore)
 	}
 }

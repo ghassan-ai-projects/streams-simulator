@@ -75,8 +75,8 @@ func TestTheOutcomeScoreIsComputedOnlyWhenAskedForAndOnlyForAnEndedRunWithWeight
 	if got := outcomeOf(t, ended, false); got != nil {
 		t.Fatalf("a report not asked for the outcome carries %+v", got)
 	}
-	if got := outcomeOf(t, ended, true); got == nil || got.Status != rules.Scored || got.Result == nil || len(got.Result.Runs) != 3 {
-		t.Fatalf("outcome score %+v, want a scored result with as_run, do_nothing and b4", got)
+	if got := outcomeOf(t, ended, true); got == nil || got.Status != rules.Scored || got.Result == nil || len(got.Result.Runs) != 6 {
+		t.Fatalf("outcome score %+v, want a scored result with as_run, do_nothing and b1-b4", got)
 	}
 	if got := outcomeOf(t, plantRun(t, false), true); got != nil {
 		t.Fatalf("an open run carries %+v, want no outcome score before it ends", got)

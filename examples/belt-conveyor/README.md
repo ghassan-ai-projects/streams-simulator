@@ -52,8 +52,11 @@ streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenari
 streamsim outcome --run /tmp/s2-a --domains-dir examples
 ```
 
-`outcome` replays the run as it ran, with every effector call removed (`do_nothing`) and under the plant's baseline policy
-`b4` (feed to 67 % when a drive is unavailable), prices each with the plant's `outcome_weights` (equivalent production
+`outcome` replays the run as it ran, with every effector call removed (`do_nothing`) and under each of the plant's
+baseline policies (PLAN.md section 2.2 as decided in O27): `b1` (a drive's vibration above 4.5 mm/s for 60 s: feed 0, and
+60 s later stop that drive), `b2` (a drive's current above 1.1 times its current at full feed on three drives, 3.385 A on
+plant A and 4.688 A on plant B, for 60 s: feed 67 %), `b3` (from the first second, the plant's safe limp feed: 54 % on A,
+18 % on B) and `b4` (feed to 67 % when a drive is unavailable), prices each with the plant's `outcome_weights` (equivalent production
 hours) and says whether the run beats, ties or loses against each. `streamsim report /tmp/s2-a --outcome` carries the same result in
 its `outcome_score` section (a report without `--outcome` does not compute it). A live session that ended at its `horizon_s` is graded the same way from its run folder.
 

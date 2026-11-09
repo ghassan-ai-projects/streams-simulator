@@ -55,8 +55,8 @@ func TestAReportAskedForTheOutcomeOfADomainWithOutcomeWeightsCarriesTheOutcomeSc
 	}
 	built := document.(*report.Report)
 	scored := built.OutcomeScore
-	if scored == nil || scored.Status != "scored" || scored.Result == nil || !scored.Result.Valid || len(scored.Result.Verdicts) != 2 {
-		t.Fatalf("outcome score %+v, want a scored valid story with verdicts against doing nothing and b4", scored)
+	if scored == nil || scored.Status != "scored" || scored.Result == nil || !scored.Result.Valid || len(scored.Result.Verdicts) != 5 {
+		t.Fatalf("outcome score %+v, want a scored valid story with verdicts against doing nothing and b1-b4", scored)
 	}
 	asJSON, err := report.Render(built, report.FormatJSON)
 	if err != nil {
