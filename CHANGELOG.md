@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Two labels on one entity are judged apart (conveyor milestone M4, row 2, O25).** A label is keyed by entity and
+  fault: when several labels of a run sit on one entity, a detection whose `label` names one of their faults is judged
+  with that label alone, and a call or action only some of them expect goes to those; a detection or call on that entity
+  that names or is expected by none of them is judged with each. One label per entity scores bit for bit as before
+  (digest-pinned). S5's frozen vibration reading and dry bearing on D-3 get their own judgments, and their order is read
+  from the two scorecards.
 - **`streamsim outcome` says whether a story is easy (conveyor milestone M4, row 1).** The `outcome` document (cli-output
   v0.1) gains the required `easy`: true when the story is valid and the run does not beat some baseline policy (it ties
   or loses to it), so a trivial fixed rule does as well (PLAN.md section 6.3). Doing nothing never makes a story easy.

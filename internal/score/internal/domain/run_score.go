@@ -41,7 +41,7 @@ func Document(r *RunScore) any {
 func scorecardsOf(ev Evidence, gts []*model.GroundTruthRecord) ([]*Scorecard, error) {
 	cards := []*Scorecard{}
 	for _, gt := range gts {
-		card, err := scoreOne(ev, gt, len(gts) > 1)
+		card, err := scoreOne(ev, gt, gts)
 		if err != nil {
 			return nil, err
 		}
@@ -50,14 +50,13 @@ func scorecardsOf(ev Evidence, gts []*model.GroundTruthRecord) ([]*Scorecard, er
 	return cards, nil
 }
 
-func scoreOne(ev Evidence, gt *model.GroundTruthRecord, among bool) (*Scorecard, error) {
+func scoreOne(ev Evidence, gt *model.GroundTruthRecord, gts []*model.GroundTruthRecord) (*Scorecard, error) {
 	card, err := Score(ev, gt)
-	if err != nil || !among {
+	if err != nil || len(gts) < 2 {
 		return card, err
 	}
-	labeled, acted := labeledEntities(gt), actedEntities(gt)
-	card.Judgment = judgment(selectEntities(ev, func(id string) bool { return labeled[id] }), gt)
-	card.Loop = loop(selectEntities(ev, func(id string) bool { return acted[id] }), gt)
+	scoped := scopeOf(gt, gts).evidence(ev)
+	card.Judgment, card.Loop = judgment(scoped, gt), loop(scoped, gt)
 	return card, nil
 }
 

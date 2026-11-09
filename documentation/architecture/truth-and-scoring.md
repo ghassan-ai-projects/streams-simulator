@@ -30,7 +30,7 @@ The intended sequence is: install truth, seal it, run the world, accept the cons
 
 ## Verdicts and labels
 
-The consumer verdict and ground-truth record are validated against the versioned contracts under [`contracts/`](../../contracts/). The offline CLI score path reads `verdict.json` and `label.json` (or `labels.json`, one label per disturbance of a run that carries none or several) beside the run artifact unless a label path is supplied with `--label`. A run with several labels prints one scorecard per label, each judged on its own entity, plus what the consumer reported on entities without a label.
+The consumer verdict and ground-truth record are validated against the versioned contracts under [`contracts/`](../../contracts/). The offline CLI score path reads `verdict.json` and `label.json` (or `labels.json`, one label per disturbance of a run that carries none or several) beside the run artifact unless a label path is supplied with `--label`. A run with several labels prints one scorecard per label, each judged on its own entity, plus what the consumer reported on entities without a label. A label is keyed by entity and fault (O25): with several labels on one entity, a detection is judged with the label whose fault it names, and a call with the labels that expect it; what names or is expected by none of them is judged with each.
 
 The score is meaningful only with the exact run artifact, ledger, truth label, simulator version, domain/adapter digests, and consumer inputs that produced it. A score copied without those inputs is not an auditable benchmark result.
 
