@@ -27,13 +27,13 @@ func outcomeWords(artifact *model.RunArtifact) (unit string, labels map[string]s
 	}
 	for _, policy := range spec.GroundTruth.BaselinePolicies {
 		if policy.Label != "" {
-			labels = labelled(labels, string(model.PolicyOutcome(policy.Name)), policy.Label)
+			labels = withLabel(labels, string(model.PolicyOutcome(policy.Name)), policy.Label)
 		}
 	}
 	return unit, labels
 }
 
-func labelled(labels map[string]string, mode, label string) map[string]string {
+func withLabel(labels map[string]string, mode, label string) map[string]string {
 	if labels == nil {
 		labels = map[string]string{}
 	}
