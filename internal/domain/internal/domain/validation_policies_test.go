@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -85,17 +86,17 @@ func TestAMatchedCallGoesToTheKindWhoseConditionFired(t *testing.T) {
 }
 
 // conveyorBaselines are B1-B4 of PLAN.md section 2.2 as decided in O27: b2's threshold is 1.1 times the drive current at
-// full feed on three drives, b3 feeds the plant's safe limp feed.
+// full feed on three drives, b3 feeds the plant's safe limp feed. Each carries the label a report shows beside its name.
 func conveyorBaselines(nominalAmps, limpPct float64) []model.BaselinePolicy {
 	feed := func(percent float64) model.PolicyCall {
 		return model.PolicyCall{Effector: "bulk_feeder__set_feed", Target: "F-1", Args: map[string]any{"percent": percent}}
 	}
 	stop := model.PolicyCall{Effector: "conveyor_drive__stop_drive", Target: model.PolicyTargetMatched, Args: map[string]any{"run_command": 0.0}, DelayS: 60}
 	return []model.BaselinePolicy{
-		{Name: "b1", When: model.PolicyCondition{Kind: "conveyor_drive", State: "vibration", Operator: "gt", Threshold: 4.5}, ForS: 60, Then: []model.PolicyCall{feed(0), stop}},
-		{Name: "b2", When: model.PolicyCondition{Kind: "conveyor_drive", State: "current", Operator: "gt", Threshold: nominalAmps}, ForS: 60, Then: []model.PolicyCall{feed(67)}},
-		{Name: "b3", When: model.PolicyCondition{Kind: "bulk_feeder", State: "feed_set", Operator: "gte", Threshold: 0}, Then: []model.PolicyCall{feed(limpPct)}},
-		{Name: "b4", When: model.PolicyCondition{Kind: "conveyor_drive", State: "available", Operator: "lt", Threshold: 0.5}, Then: []model.PolicyCall{feed(67)}},
+		{Name: "b1", Label: "vibration alarm: feed 0, then stop the drive", When: model.PolicyCondition{Kind: "conveyor_drive", State: "vibration", Operator: "gt", Threshold: 4.5}, ForS: 60, Then: []model.PolicyCall{feed(0), stop}},
+		{Name: "b2", Label: "current threshold: feed 67 %", When: model.PolicyCondition{Kind: "conveyor_drive", State: "current", Operator: "gt", Threshold: nominalAmps}, ForS: 60, Then: []model.PolicyCall{feed(67)}},
+		{Name: "b3", Label: fmt.Sprintf("safe limp feed: %.0f %% from the start", limpPct), When: model.PolicyCondition{Kind: "bulk_feeder", State: "feed_set", Operator: "gte", Threshold: 0}, Then: []model.PolicyCall{feed(limpPct)}},
+		{Name: "b4", Label: "drive lost: feed 67 %", When: model.PolicyCondition{Kind: "conveyor_drive", State: "available", Operator: "lt", Threshold: 0.5}, Then: []model.PolicyCall{feed(67)}},
 	}
 }
 
@@ -111,7 +112,7 @@ func TestBothConveyorPlantsCarryTheirOutcomeWeightsAndBaselinesB1ToB4(t *testing
 			t.Fatalf("%s: baseline policies = %+v\nwant %+v", regime, truth.BaselinePolicies, want)
 		}
 		w := truth.OutcomeWeights
-		if w == nil || len(w.Boundaries) != 1 || w.Boundaries[0].PerViolation != 4 || len(w.Trips) != 5 || len(w.KPIs) != 3 || len(w.Calls) != 3 || w.Tie != 0.1 {
+		if w == nil || len(w.Boundaries) != 1 || w.Boundaries[0].PerViolation != 4 || len(w.Trips) != 5 || len(w.KPIs) != 3 || len(w.Calls) != 3 || w.Tie != 0.1 || w.Unit != "equivalent production hours" {
 			t.Fatalf("%s: outcome weights = %+v", regime, w)
 		}
 	}

@@ -6,6 +6,7 @@ type OutcomeWeights struct {
 	KPIs       []KPIWeight      `json:"kpis,omitempty"`
 	Calls      []CallWeight     `json:"calls,omitempty"`
 	Tie        float64          `json:"tie,omitempty"`
+	Unit       string           `json:"unit,omitempty"`
 }
 
 type BoundaryWeight struct {

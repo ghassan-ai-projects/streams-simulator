@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -49,5 +50,25 @@ func TestOutcomeFactsLeaveOutTheTermsAnEntityDidNotHave(t *testing.T) {
 		`"calls":[{"effector":"bulk_feeder__set_feed","entity_id":"F-1","at_ns":60000000000,"accepted":true}]}`
 	if string(raw) != want {
 		t.Fatalf("facts = %s, want %s", raw, want)
+	}
+}
+
+func TestTheCostUnitAndAPolicyLabelAreReadFromTheDomainAndLeftOutWhenAbsent(t *testing.T) {
+	t.Parallel()
+	var truth GroundTruth
+	raw := `{"negative_class_fraction":0.4,"outcome_weights":{"tie":0.1,"unit":"equivalent production hours"},` +
+		`"baseline_policies":[{"name":"b1","label":"vibration alarm","when":{"kind":"k","state":"s","operator":"gt","threshold":1},"then":[]}]}`
+	if err := json.Unmarshal([]byte(raw), &truth); err != nil {
+		t.Fatal(err)
+	}
+	if truth.OutcomeWeights.Unit != "equivalent production hours" || truth.BaselinePolicies[0].Label != "vibration alarm" {
+		t.Fatalf("ground truth = %+v, want the unit and the label", truth)
+	}
+	bare, err := json.Marshal(BaselinePolicy{Name: "b1", Then: []PolicyCall{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(bare), "label") {
+		t.Fatalf("policy = %s, want no label member when it has none", bare)
 	}
 }

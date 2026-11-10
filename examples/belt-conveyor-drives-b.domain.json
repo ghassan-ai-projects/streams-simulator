@@ -2480,6 +2480,7 @@
       {
         "name": "b1",
         "for_s": 60,
+        "label": "vibration alarm: feed 0, then stop the drive",
         "then": [
           {"target": "F-1", "args": {"percent": 0}, "effector": "bulk_feeder__set_feed"},
           {
@@ -2494,16 +2495,19 @@
       {
         "name": "b2",
         "for_s": 60,
+        "label": "current threshold: feed 67 %",
         "then": [{"target": "F-1", "args": {"percent": 67}, "effector": "bulk_feeder__set_feed"}],
         "when": {"kind": "conveyor_drive", "state": "current", "operator": "gt", "threshold": 4.688}
       },
       {
         "name": "b3",
+        "label": "safe limp feed: 18 % from the start",
         "then": [{"target": "F-1", "args": {"percent": 18}, "effector": "bulk_feeder__set_feed"}],
         "when": {"kind": "bulk_feeder", "state": "feed_set", "operator": "gte", "threshold": 0}
       },
       {
         "name": "b4",
+        "label": "drive lost: feed 67 %",
         "then": [{"target": "F-1", "args": {"percent": 67}, "effector": "bulk_feeder__set_feed"}],
         "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5}
       }
@@ -2512,6 +2516,7 @@
     "min_scenarios": 100,
     "negative_class_fraction": 0.35,
     "outcome_weights": {
+      "unit": "equivalent production hours",
       "boundaries": [{"name": "stranded", "kind": "belt_conveyor", "per_violation": 4}],
       "calls": [
         {"effector": "bulk_feeder__set_feed", "per_call": 0.25},

@@ -384,7 +384,8 @@
             "trips": {"type": "array", "items": {"$ref": "#/$defs/trip_weight"}},
             "kpis": {"type": "array", "items": {"$ref": "#/$defs/kpi_weight"}},
             "calls": {"type": "array", "items": {"$ref": "#/$defs/call_weight"}},
-            "tie": {"type": "number", "minimum": 0, "default": 0, "description": "Two costs closer than this are a tie: a run beats a baseline only when its cost is lower by more than tie."}
+            "tie": {"type": "number", "minimum": 0, "default": 0, "description": "Two costs closer than this are a tie: a run beats a baseline only when its cost is lower by more than tie."},
+            "unit": {"type": "string", "minLength": 1, "maxLength": 40, "description": "The unit J is counted in, as a reader says it (for example equivalent production hours). Shown with every cost; the simulator converts nothing."}
           }
         },
         "baseline_policies": {
@@ -734,6 +735,7 @@
       "description": "Fires on each instance's rising edge of when, held for for_s, and then issues its calls in order, each delay_s after the firing. A call refused by its effector's requires is recorded as refused.",
       "properties": {
         "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 80, "description": "What the policy does, as a reader says it (for example stop on a vibration alarm). Shown beside its name; it changes no behaviour."},
         "when": {
           "type": "object",
           "additionalProperties": false,

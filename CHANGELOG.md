@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A domain names its cost unit and its baseline policies in words.** `domain-spec-v0.2` gains two optional members,
+  added in place: `ground_truth.outcome_weights.unit` (the unit J is counted in) and `baseline_policies[].label` (what a
+  policy does, shown beside its name). Neither changes a cost, a verdict or a run. The four conveyor plants carry them
+  (`equivalent production hours`; B1 vibration alarm, B2 current threshold, B3 safe limp feed, B4 drive lost), so their
+  domain digests move: A `sha256:86e15c4b…` to `sha256:a2858568…`, B `sha256:898ea1e5…` to `sha256:657bafe5…`,
+  S6-promote `sha256:3539af7d…` to `sha256:ac4081d3…`, S6-stop `sha256:815c5426…` to `sha256:bd061ccc…`. Run ids do not
+  move (they name the domain id only).
+
 - **A frozen or stuck reading is first observable at its injection.** Truth's single-channel detector counts a held
   reading (`stuck` or `freeze`) of a channel with noise as lost from its injection, as it already did a dropped one: the
   delivered reading stops moving at once. Before, a session label took a freeze's first observable from the time the

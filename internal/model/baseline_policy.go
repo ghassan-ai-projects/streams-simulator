@@ -3,10 +3,11 @@ package model
 const PolicyTargetMatched = "matched"
 
 type BaselinePolicy struct {
-	Name string          `json:"name"`
-	When PolicyCondition `json:"when"`
-	ForS float64         `json:"for_s,omitempty"`
-	Then []PolicyCall    `json:"then"`
+	Name  string          `json:"name"`
+	Label string          `json:"label,omitempty"`
+	When  PolicyCondition `json:"when"`
+	ForS  float64         `json:"for_s,omitempty"`
+	Then  []PolicyCall    `json:"then"`
 }
 
 type PolicyCondition struct {
