@@ -19,8 +19,7 @@ func (w *World) observationFactor(ent *Entity, ch *model.Channel, t int64, form 
 func (w *World) heldObservation(ent *Entity, ch *model.Channel, t int64) (float64, bool) {
 	var held *observationEffect
 	for _, effect := range w.actingObservationFaults(ent, ch, t) {
-		form := effect.fault.fault.Observation.Form
-		if (form == model.ObservationStuck || form == model.ObservationFreeze) && (held == nil || effect.fault.onsetNS >= held.fault.onsetNS) {
+		if holdsReading(effect.fault.fault.Observation.Form) && (held == nil || effect.fault.onsetNS >= held.fault.onsetNS) {
 			held = &effect
 		}
 	}

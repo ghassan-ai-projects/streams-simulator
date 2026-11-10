@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A frozen or stuck reading is first observable at its injection.** Truth's single-channel detector counts a held
+  reading (`stuck` or `freeze`) of a channel with noise as lost from its injection, as it already did a dropped one: the
+  delivered reading stops moving at once. Before, a session label took a freeze's first observable from the time the
+  true reading drifted 3σ off the frozen one (S5-A row 1: 1.62 h, after the bearing onset), so a consumer that reported
+  the flat channel 15 min after the freeze was graded `suspicious` instead of detected (O26 amended). A held reading of a
+  channel without noise is judged by its level as before. `world.World.ReadingHeld` is new.
 - **`streamsim outcome` runs its silent outcome replays concurrently.** `grading.GradeOutcome` replays `as_run`,
   `do_nothing` and each baseline policy on min(4, `GOMAXPROCS`) workers (`OutcomeOptions.Workers` overrides it) after the
   reproduction check. The replays share no mutable state; results keep mode order, and an error is the first by mode

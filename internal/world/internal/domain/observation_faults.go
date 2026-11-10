@@ -35,8 +35,20 @@ type observationEffect struct {
 }
 
 func (w *World) droppedOut(ent *Entity, ch *model.Channel, t int64) bool {
+	return w.observationActs(ent, ch, t, func(form string) bool { return form == model.ObservationDropout })
+}
+
+func (w *World) heldOut(ent *Entity, ch *model.Channel, t int64) bool {
+	return w.observationActs(ent, ch, t, holdsReading)
+}
+
+func holdsReading(form string) bool {
+	return form == model.ObservationStuck || form == model.ObservationFreeze
+}
+
+func (w *World) observationActs(ent *Entity, ch *model.Channel, t int64, form func(string) bool) bool {
 	for _, effect := range w.actingObservationFaults(ent, ch, t) {
-		if effect.fault.fault.Observation.Form == model.ObservationDropout {
+		if form(effect.fault.fault.Observation.Form) {
 			return true
 		}
 	}
@@ -64,6 +76,11 @@ func (w *World) ReadingNoise(entityID, channelName string, t int64) float64 {
 func (w *World) ReadingDropped(entityID, channelName string, t int64) bool {
 	ent, ch := w.liveChannel(entityID, channelName)
 	return ch != nil && w.droppedOut(ent, ch, t)
+}
+
+func (w *World) ReadingHeld(entityID, channelName string, t int64) bool {
+	ent, ch := w.liveChannel(entityID, channelName)
+	return ch != nil && w.heldOut(ent, ch, t)
 }
 
 func (w *World) liveChannel(entityID, channelName string) (*Entity, *model.Channel) {

@@ -32,6 +32,11 @@ The intended sequence is: install truth, seal it, run the world, accept the cons
 
 The consumer verdict and ground-truth record are validated against the versioned contracts under [`contracts/`](../../contracts/). The offline CLI score path reads `verdict.json` and `label.json` (or `labels.json`, one label per disturbance of a run that carries none or several) beside the run artifact unless a label path is supplied with `--label`. A run with several labels prints one scorecard per label, each judged on its own entity, plus what the consumer reported on entities without a label. A label is keyed by entity and fault (O25): with several labels on one entity, a detection is judged with the label whose fault it names, and a call with the labels that expect it; what names or is expected by none of them is judged with each.
 
+A detection before its label's first observable time is `suspicious` (too early), not detected. An instrument fault
+that drops a reading, or holds it (`stuck` or `freeze`) on a channel with noise, is first observable at its injection: the
+channel stops delivering or stops moving at once, so a consumer that reports it from that is graded on its lead from the
+injection.
+
 ### Failure predictions
 
 A detection may carry `predicted_failure_at` (consumer-verdict v0.1, optional): when, at `detected_at`, the consumer

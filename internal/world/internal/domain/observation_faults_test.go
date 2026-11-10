@@ -129,3 +129,13 @@ func TestAFrozenReadingIsCapturedAtOnsetWhateverTheReadSchedule(t *testing.T) {
 		t.Fatalf("a world read first at onset freezes at %v, want %v", got, want)
 	}
 }
+
+func TestAStuckOrFrozenReadingIsHeldFromItsOnsetAndNoOtherFormIs(t *testing.T) {
+	t.Parallel()
+	for fault, held := range map[string]bool{"stuck_high": true, "frozen": true, "dropped": false, "noisy": false, "": false} {
+		w := instrumentWorld(t, fault, 600)
+		if w.ReadingHeld("e-1", "ch", atSeconds(300)) || w.ReadingHeld("e-1", "ch", atSeconds(1800)) != held {
+			t.Fatalf("%q: held before onset %v, after %v; want false and %v", fault, w.ReadingHeld("e-1", "ch", atSeconds(300)), w.ReadingHeld("e-1", "ch", atSeconds(1800)), held)
+		}
+	}
+}

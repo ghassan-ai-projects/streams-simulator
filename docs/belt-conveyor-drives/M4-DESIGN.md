@@ -44,6 +44,11 @@ the fan experiment guards stay green; new world behaviour comes with an independ
   which stays out of the committed tables (it would move every outcome digest).
 - O26 A frozen sensor's lead is counted from its injection: a freeze is unobservable by design, so it has no
   `first_observable`; S5's order rule (stuck reported before the bearing) needs none.
+  Amended 2026-11-10 (consumer run of S5-A): a real session's label took the freeze's first observable from the
+  single-channel detector, when the wiggle had moved the true reading 3σ off the frozen one (row 1: 1.62 h, after the
+  bearing onset), so a report from the flatness 15 min after the freeze was graded too early. Truth now counts a held
+  reading (`stuck` or `freeze`) of a channel with noise as first observable at its injection, as a dropout is: the
+  noise stops at once. The lead is counted from the injection as decided, and the score's too-early rule is unchanged.
 - O27 Baselines: B1 = vibration > 4.5 mm/s for 60 s, then feed 0 and stop the matched drive 60 s later. B2 departs from
   the plan: the closed record has no rolling mean, so B2 is an absolute current threshold at 1.1 times the
   nominal-feed drive current, held 60 s, then feed 67 %. B3 = a condition true from the first sample (feeder setpoint

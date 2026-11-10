@@ -12,8 +12,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // S5b is S5-A with D-3's vibration channel dropped out instead of frozen: the world stops delivering that channel at
@@ -24,13 +22,14 @@ const (
 	afterDropoutS    = 600
 )
 
-func dropoutOnsetNS(t *testing.T, scenario *model.Scenario) (int, int64) {
+// injectionOnD3 finds the command that injects a fault on D-3 and the fault's onset.
+func injectionOnD3(t *testing.T, scenario *model.Scenario, fault string) (int, int64) {
 	t.Helper()
 	at := slices.IndexFunc(scenario.Commands, func(c model.ScenarioCommand) bool {
-		return c.Op == model.OpFaultInject && c.Args["fault"] == vibrationDropout && c.Args["entity_id"] == "D-3"
+		return c.Op == model.OpFaultInject && c.Args["fault"] == fault && c.Args["entity_id"] == "D-3"
 	})
 	if at < 0 {
-		t.Fatalf("%s injects no %s on D-3", scenario.ID, vibrationDropout)
+		t.Fatalf("%s injects no %s on D-3", scenario.ID, fault)
 	}
 	onset, err := scenario.Commands[at].Args["onset_ns"].(json.Number).Int64()
 	if err != nil {
@@ -80,7 +79,7 @@ func readingsAround(t *testing.T, trace string, channel string, at int64) (befor
 func TestS5bDeliversNoVibrationReadingOfD3AfterItsDropout(t *testing.T) {
 	t.Parallel()
 	scenario := committedScenario(t, "s5b-a.do-nothing.scenario.json")
-	at, onset := dropoutOnsetNS(t, scenario)
+	at, onset := injectionOnD3(t, scenario, vibrationDropout)
 	scenario.Commands = append(scenario.Commands[:at+1], model.ScenarioCommand{Op: model.OpClockAdvance,
 		Args: map[string]any{"to_ns": onset + afterDropoutS*1e9}})
 	dir := t.TempDir()
@@ -104,17 +103,8 @@ func TestS5bDeliversNoVibrationReadingOfD3AfterItsDropout(t *testing.T) {
 func TestS5bLabelsTheDropoutOnD3ObservableAtItsInjectionWithNothingToDo(t *testing.T) {
 	t.Parallel()
 	scenario := committedScenario(t, "s5b-a.do-nothing.scenario.json")
-	_, onset := dropoutOnsetNS(t, scenario)
-	spec := beltPlant(t, "a")
-	solver, err := truth.NewSolver(spec, scenario.Seed, 120*1e9, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	label, err := truth.BuildRecord(spec, solver, truth.Injection{ScenarioID: "belt-conveyor-drives-a/0001", Seed: scenario.Seed, EntityID: "D-3",
-		FaultID: vibrationDropout, OnsetNS: onset, StartNS: model.DefaultStartTimeNS, EntityIDs: world.PopulationIDs(spec, 0)})
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, onset := injectionOnD3(t, scenario, vibrationDropout)
+	label := sessionLabelOnD3(t, scenario.Seed, vibrationDropout, onset)
 	if !label.IsPositive() || label.FirstObservableTimeNS != onset || len(label.ExpectedActions) != 0 || label.ExpectedEffector != "" {
 		t.Fatalf("dropout label: positive %v, first observable %d (injected %d), expected actions %v %q; want a positive label observable at its injection with no action",
 			label.IsPositive(), label.FirstObservableTimeNS, onset, label.ExpectedActions, label.ExpectedEffector)
