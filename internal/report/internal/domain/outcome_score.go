@@ -26,13 +26,20 @@ func outcomeScoreLines(scoring *OutcomeScoring) []string {
 	if scoring == nil {
 		return nil
 	}
-	lines := fieldTable([]field{{"Status", scoring.Status}, {"Reason", scoring.Reason}})
+	lines := fieldTable(outcomeFields(scoring))
 	if result := scoring.Result; result != nil {
-		lines = append(lines, fieldTable([]field{{"Valid", yesNo(result.Valid)}, {"Easy", yesNo(result.Easy)}})...)
 		lines = append(append(lines, ""), table([]string{"Run", "Cost J", "Trips", "Boundary violations", "Calls"}, outcomeRunRows(result.Runs))...)
 		lines = append(append(lines, ""), table([]string{"Baseline", "Delta", "Verdict"}, verdictRows(result.Verdicts))...)
 	}
 	return lines
+}
+
+func outcomeFields(scoring *OutcomeScoring) []field {
+	fields := []field{{"Status", scoring.Status}, {"Reason", scoring.Reason}}
+	if result := scoring.Result; result != nil {
+		fields = append(fields, field{"Valid", yesNo(result.Valid)}, field{"Easy", yesNo(result.Easy)})
+	}
+	return fields
 }
 
 func outcomeRunRows(runs []model.OutcomeRun) [][]string {
