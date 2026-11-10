@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim outcome` runs its silent outcome replays concurrently.** `grading.GradeOutcome` replays `as_run`,
+  `do_nothing` and each baseline policy on min(4, `GOMAXPROCS`) workers (`OutcomeOptions.Workers` overrides it) after the
+  reproduction check. The replays share no mutable state; results keep mode order, and an error is the first by mode
+  order, whose failure cancels only the later replays, so the document and the error are the same at any worker count.
+  A replay now stops before its next command once its context is canceled. On the S1-A row 1 run folder at
+  `GOMAXPROCS=3` the command went from 346 s to 191 s, byte-identical output.
 - **S5b: D-3's vibration channel drops out during the slow bearing failure (conveyor milestone M4, row 4, streamsim
   side).** `stories.json` gains S5b-A: S5-A's ten seed rows, plant, horizon, downstream stop and reference policy, with
   `conveyor_drive__vibration__dropout` (the existing instrument fault, data only) at `dropout_s` in place of the freeze.

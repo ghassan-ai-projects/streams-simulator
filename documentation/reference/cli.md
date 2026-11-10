@@ -834,6 +834,9 @@ Abridged from the S2-A reference run of `examples/belt-conveyor` (one run, one e
 ```
 
 Each outcome replay costs about one silent world run (about 25 s for a 16 hour conveyor story), plus the reproduction check.
+The outcome replays share nothing and run concurrently on at most four workers (fewer when `GOMAXPROCS` is lower, so
+`GOMAXPROCS=1` runs them one after another); the document and the error reported (the first by mode order) are the same
+whatever the worker count.
 
 ```text
 streamsim outcome --run <run-dir> [--domains-dir <path>] [--adapters-dir <path>]

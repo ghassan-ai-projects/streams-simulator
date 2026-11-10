@@ -137,7 +137,9 @@ Exit evidence:
 - Plant-wire: a simulated session that ended at its horizon is graded from its run folder.
 
 Timings (10 cores): outcome replays of a 16 h story take 26 s (`as_run`), 22 s (`do_nothing`) and 25 s (`b4`); `streamsim
-outcome` on it about 100 s (one emission replay plus three silent ones); the story long tier 258 s (205 s before the cut was
+outcome` on it about 100 s (one emission replay plus three silent ones, then run one after another; since 2026-11-10 the
+silent ones run concurrently on min(4, `GOMAXPROCS`) workers: S1-A row 1 with its six silent replays went from 346 s to
+191 s at `GOMAXPROCS=3` on a loaded machine, the emission replay still first and alone); the story long tier 258 s (205 s before the cut was
 removed); `test/contract` without `-short` 280 s on 10 cores and 613 s with `GOMAXPROCS=4 -p 1` (over go's default
 10 minute test timeout at that cap); `test/acceptance` without `-short` 271 s on 10 cores, 379 s with `GOMAXPROCS=4`.
 

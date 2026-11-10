@@ -12,7 +12,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-type OutcomeOptions struct{ RunDir, DomainsDir, AdaptersDir string }
+type OutcomeOptions struct {
+	RunDir, DomainsDir, AdaptersDir string
+	Workers                         int
+}
 
 func GradeOutcome(ctx context.Context, options OutcomeOptions) (*model.OutcomeReport, error) {
 	art, err := blindArtifact(filepath.Join(options.RunDir, model.FileRunArtifact))
@@ -26,7 +29,7 @@ func GradeOutcome(ctx context.Context, options OutcomeOptions) (*model.OutcomeRe
 	if err := requireReplayed(ctx, art, spec, adap); err != nil {
 		return nil, err
 	}
-	return scoreOutcome(ctx, art, spec, adap)
+	return scoreOutcome(ctx, art, outcomeInputs{spec, adap}, options.Workers)
 }
 
 func blindArtifact(path string) (*model.RunArtifact, error) {
@@ -45,18 +48,29 @@ func requireReplayed(ctx context.Context, art *model.RunArtifact, spec *catalog.
 	return domain.RequireMatch(replayed)
 }
 
-func scoreOutcome(ctx context.Context, art *model.RunArtifact, spec *catalog.Compiled, adap *model.Adapter) (*model.OutcomeReport, error) {
-	var runs []model.OutcomeRun
-	for _, mode := range domain.OutcomeModes(spec.Spec) {
-		facts, err := run.ReplayOutcome(ctx, art, spec, adap, mode)
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %s: %w", mode, err)
-		}
-		runs = append(runs, model.OutcomeRun{Mode: mode, Facts: facts})
+type outcomeInputs struct {
+	spec    *catalog.Compiled
+	adapter *model.Adapter
+}
+
+func scoreOutcome(ctx context.Context, art *model.RunArtifact, inputs outcomeInputs, workers int) (*model.OutcomeReport, error) {
+	runs, err := replayOutcomes(ctx, domain.OutcomeModes(inputs.spec.Spec), workers, inputs.replayer(art))
+	if err != nil {
+		return nil, err
 	}
-	scored, err := score.Outcome(spec.Spec.GroundTruth.OutcomeWeights, runs)
+	scored, err := score.Outcome(inputs.spec.Spec.GroundTruth.OutcomeWeights, runs)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return &model.OutcomeReport{RunID: art.RunID, Domain: art.Domain.ID, OutcomeScore: *scored}, nil
+}
+
+func (inputs outcomeInputs) replayer(art *model.RunArtifact) outcomeReplay {
+	return func(ctx context.Context, mode model.OutcomeMode) (model.OutcomeRun, error) {
+		facts, err := run.ReplayOutcome(ctx, art, inputs.spec, inputs.adapter, mode)
+		if err != nil {
+			return model.OutcomeRun{}, fmt.Errorf("streamsim: %s: %w", mode, err)
+		}
+		return model.OutcomeRun{Mode: mode, Facts: facts}, nil
+	}
 }
