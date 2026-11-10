@@ -62,20 +62,42 @@ master-follower variants of plant A, `belt-conveyor-drives-s6-stop` and `-s6-pro
   wall clock. The `host_socket` `/tmp/streamsim-host.sock` is a placeholder and there are no `policies`: set both to
   the host's own. Each plan carries the story's `horizon_s`, so the session ends itself there (`stopped: false`).
 
-To grade a story run on its consequences, run its scenario into a folder and score that folder:
+To grade a story run on its consequences, run its scenario into a folder, check that it reproduces and score that
+folder:
 
 ```bash
 streamsim run --scenario examples/belt-conveyor/scenarios/s2-a.reference.scenario.json --domains-dir examples --kinds-dir examples/belt-conveyor/kinds --sink file --out /tmp/s2-a
-streamsim outcome --run /tmp/s2-a --domains-dir examples
+streamsim verify /tmp/s2-a/run.json
+streamsim outcome --run /tmp/s2-a
+streamsim report /tmp/s2-a --outcome --format markdown --out /tmp/s2-a.report.md
 ```
+
+Only `run` needs `--domains-dir examples` (and `--kinds-dir`): `run.json` embeds the plant, so `verify`, `outcome` and
+`report --outcome` read it from there. `outcome` takes the folder as `--run <dir>`; `report` and `verify` take theirs
+as a positional argument. At `GOMAXPROCS=3` `outcome` takes about 3 min on a 16 h story (S1-A: 171 s) and
+`report --outcome` as long, since it computes the same outcome; a 3 h story (S2-B) takes about 36 s.
+
+Every run of one plant has the same `run_id` (for example `r-1k3abl2bopgcc` for plant A), whatever the story or seed:
+the id names the domain only, so that a consumer cannot recover the seed from it (see `run` in
+`documentation/reference/cli.md`). Tell story runs apart by their folder, or by `expected_trace_digest` in `run.json`.
 
 `outcome` replays the run as it ran, with every effector call removed (`do_nothing`) and under each of the plant's
 baseline policies (PLAN.md section 2.2 as decided in O27): `b1` (a drive's vibration above 4.5 mm/s for 60 s: feed 0, and
 60 s later stop that drive), `b2` (a drive's current above 1.1 times its current at full feed on three drives, 3.385 A on
 plant A and 4.688 A on plant B, for 60 s: feed 67 %), `b3` (from the first second, the plant's safe limp feed: 54 % on A,
 18 % on B) and `b4` (feed to 67 % when a drive is unavailable), prices each with the plant's `outcome_weights` (equivalent production
-hours) and says whether the run beats, ties or loses against each. `streamsim report /tmp/s2-a --outcome` carries the same result in
-its `outcome_score` section (a report without `--outcome` does not compute it). A live session that ended at its `horizon_s` is graded the same way from its run folder.
+hours) and says whether the run beats, ties or loses against each: a negative `delta` means the run cost less than that
+baseline. `streamsim report /tmp/s2-a --outcome` carries the same result in its `outcome_score` section (a report without
+`--outcome` does not compute it); its Markdown opens that section with a one-line summary and names each policy by its
+`label`. A live session that ended at its `horizon_s` is graded the same way from its run folder.
+
+S0 (a nominal day) and S4 (feed surges on a healthy belt) are control stories: doing nothing is clean, so `outcome`
+prints `valid: false` (the Markdown reads "Control story: doing nothing is clean") and `easy: false`. That does not mean
+the run is invalid: there is nothing to react to, and the question is only whether acting does harm. Their scenarios
+have no policy, so the run ties doing nothing and every policy that never fires, and beats the policies that act
+anyway at a cost: on S0-A row 1, B3's limp feed from the first second costs 9.63 equivalent production hours more
+(9.38 of lost throughput and its one unneeded call), and on S4-A row 1 B2's three feed cuts on current surges cost 1.89
+more.
 
 The scenario and session files are generated from `stories.json` by `test/contract/belt_stories_files_test.go`, which
 fails when a committed file differs; after editing the table, regenerate them with

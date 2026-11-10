@@ -621,6 +621,13 @@ occurrence behind it. During the run, an effector call the world refuses through
 a reused command id is a recorded outcome.
 A scenario's `description` is for readers; a scenario without a `clock.advance` emits nothing.
 
+**Run ids.** `run_id` (and the world's `world_id`) names the domain and nothing else: every run of one domain has the same
+id, whatever its seed, scenario or commands. That is deliberate. The id reaches the consumer, and an id derived from the
+seed let a consumer recover the seed by brute force and with it the world's hidden numbers (the sealed-oracle rule;
+`TestTheRunIdNamesTheDomainAndCarriesNoSeed` keeps it so). Tell runs apart by their run folder (`--out`) or by
+`expected_trace_digest` in `run.json` (the `trace_digest` `run` prints), which differs whenever what was delivered
+differs.
+
 ```text
 streamsim run [flags]
 streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--kinds-dir d]... [--sink s] [--sink-target t] [--out dir] [--explore]
@@ -833,18 +840,24 @@ Abridged from the S2-A reference run of `examples/belt-conveyor` (one run, one e
               {"baseline": "policy:b4", "delta": -5.5165, "verdict": "beats"}]}
 ```
 
-Each outcome replay costs about one silent world run (about 25 s for a 16 hour conveyor story), plus the reproduction check.
-The outcome replays share nothing and run concurrently on at most four workers (fewer when `GOMAXPROCS` is lower, so
-`GOMAXPROCS=1` runs them one after another); the document and the error reported (the first by mode order) are the same
-whatever the worker count.
+The command first checks that the run reproduces, then replays it once per mode. The outcome replays share nothing and
+run concurrently on at most four workers (fewer when `GOMAXPROCS` is lower, so `GOMAXPROCS=1` runs them one after
+another); the document and the error reported (the first by mode order) are the same whatever the worker count. Measured
+on the conveyor stories at `GOMAXPROCS=3`, the whole command takes about 3 min for a 16 hour story (S1-A: 171 s; the
+24 hour S0-A: 216 s; the 3 hour S2-B: 36 s).
 
 ```text
 streamsim outcome --run <run-dir> [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
+`outcome` takes the run folder as the flag `--run`, while `report` and `verify` take theirs as a positional argument
+(`report <run-dir>`, `verify <run.json>`). `--domains-dir` and `--adapters-dir` are not needed for a run made by this
+simulator: `run.json` embeds the domain and adapter it ran, and the replays use those. They are read only for an older
+artifact that records none.
+
 ### `report`
 
-- Summarises a run folder (the directory `run --out` publishes) as one document: run identity and inputs, the digests the run recorded, whether the files in the folder still agree with them (`verification`: a check, not a replay; `verify` is the proof), delivery counts and drop reasons, the faults (each as an interval: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` and `cleared_by`, which is `command`, `pulse_end` or `responder`, both null while the fault is active at the end of the run), the perturbations, environment faults and effector calls from the command log with the world's real outcomes, the consumer from `verdict.json` (its `config_digest` only when the verdict recorded one), and the scorecard when `verdict.json` and `label.json` or `labels.json` are present (scored from the specs the artifact embeds, so no `--domains-dir` is needed; with several labels `scoring.scorecard` is the run document `score` prints, `{run_id, scorecards, unexpected}`, and the Markdown shows each scorecard and the unexpected counts).
+- Summarises a run folder (the directory `run --out` publishes, given as a positional argument: `report <run-dir>`, where `outcome` takes `--run <run-dir>`) as one document: run identity and inputs, the digests the run recorded, whether the files in the folder still agree with them (`verification`: a check, not a replay; `verify` is the proof), delivery counts and drop reasons, the faults (each as an interval: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` and `cleared_by`, which is `command`, `pulse_end` or `responder`, both null while the fault is active at the end of the run), the perturbations, environment faults and effector calls from the command log with the world's real outcomes, the consumer from `verdict.json` (its `config_digest` only when the verdict recorded one), and the scorecard when `verdict.json` and `label.json` or `labels.json` are present (scored from the specs the artifact embeds, so no `--domains-dir` is needed; with several labels `scoring.scorecard` is the run document `score` prints, `{run_id, scorecards, unexpected}`, and the Markdown shows each scorecard and the unexpected counts).
 - It also says whether the run is `evaluate` or `explore` and whether it is complete.
 - A run started from a plan with a name or purpose carries them as `run.name` and `run.purpose` (authored text: not evidence, not part of any digest); the fault intervals and perturbations are enough to rebuild its plan: a fault cleared by `command` gives the plan's `until_s` as `cleared_ns`, and a perturbation's `from_ns` and `until_ns` (`0` for no end) give its `at_s` and `until_s`.
 - The report is a pure function of the folder: the same folder gives the same bytes.
@@ -866,7 +879,7 @@ streamsim report compare --a <run-dir> --b <run-dir> [--format json|markdown] [-
 | `--format` | `json` | `json` or `markdown`. |
 | `--out` | empty | Write the report to this file. |
 | `--replay` | off | Replay the recording of a run that has ended and say whether it reproduces (`replay.status`). Not for `compare`. |
-| `--domains-dir`, `--adapters-dir` | `domains`, `adapters` | Where a replay finds a domain or adapter the run did not embed. |
+| `--domains-dir`, `--adapters-dir` | `domains`, `adapters` | Where a replay finds a domain or adapter the run did not embed; a run made by this simulator embeds both, so `--replay` and `--outcome` need neither. |
 
 Without `--out`, the JSON report is the command's one stdout document. With `--out`, the file holds the chosen format and stdout holds `{"report_written": "<file>", "format": "<format>"}`. `--format markdown` without `--out` keeps stdout one JSON document: `{"format": "markdown", "markdown": "<text>"}`. A folder with neither `run.json` nor `journal.jsonl` fails with `file_not_found`; a verdict or artifact that breaks its contract fails with `artifact_invalid`.
 
@@ -879,7 +892,8 @@ Without `--out`, the JSON report is the command's one stdout document. With `--o
   `{status, reason?, unit?, labels?, result?}` with `status` `scored`, `not_scored` (an unblinded or Explore run) or
   `failed` (the run does not replay, for example), `unit` the domain's `outcome_weights.unit`, `labels` the `label` of
   each baseline policy that has one, by mode (`policy:<name>`), and `result` the document `streamsim outcome` prints for
-  the folder. Asking for it replays the run as `outcome` does (about 100 s for a 16 hour conveyor story). The Markdown
+  the folder. Asking for it replays the run as `outcome` does, so it takes as long (about 3 min for a 16 hour conveyor story at
+  `GOMAXPROCS=3`); it needs no `--domains-dir` either. The Markdown
   report then adds an "Outcome score" section: a one-line summary of what the run beats, ties and loses to (doing nothing
   and each policy, with each delta), what the costs mean (J in the domain's unit; a delta is the run's J minus the
   baseline's, so a negative delta means the run cost less; the tie), the story (`valid: no` reads "Control story: doing
