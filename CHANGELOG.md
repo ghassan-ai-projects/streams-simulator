@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The run report's outcome score says who won.** The Markdown "Outcome score" section opens with one summary line
+  (the run beats, ties or loses to doing nothing and each baseline policy, with the deltas), says what the costs mean
+  (J in the domain's `outcome_weights.unit`; a negative delta means the run cost less; the tie), reads `valid: no` as a
+  control story (doing nothing is clean) and `easy` as a baseline policy tying or beating the run, and shows each
+  policy's `label`. The JSON `outcome_score` gains `unit` and `labels` (`run-report-v0.1`, added in place). No cost,
+  verdict or outcome number changes.
+
 - **A domain names its cost unit and its baseline policies in words.** `domain-spec-v0.2` gains two optional members,
   added in place: `ground_truth.outcome_weights.unit` (the unit J is counted in) and `baseline_policies[].label` (what a
   policy does, shown beside its name). Neither changes a cost, a verdict or a run. The four conveyor plants carry them

@@ -10,7 +10,14 @@ import (
 type OutcomeScoring struct {
 	Status string               `json:"status"`
 	Reason string               `json:"reason,omitempty"`
+	Unit   string               `json:"unit,omitempty"`
+	Labels map[string]string    `json:"labels,omitempty"`
 	Result *model.OutcomeReport `json:"result,omitempty"`
+}
+
+func ScoredOutcome(result *model.OutcomeReport, artifact *model.RunArtifact) *OutcomeScoring {
+	unit, labels := outcomeWords(artifact)
+	return &OutcomeScoring{Status: Scored, Unit: unit, Labels: labels, Result: result}
 }
 
 func DeclaresOutcome(artifact *model.RunArtifact) bool {
@@ -22,31 +29,12 @@ func DeclaresOutcome(artifact *model.RunArtifact) bool {
 	return artifact != nil && json.Unmarshal(artifact.DomainSpec, &spec) == nil && len(spec.GroundTruth.OutcomeWeights) > 0
 }
 
-func outcomeScoreLines(scoring *OutcomeScoring) []string {
-	if scoring == nil {
-		return nil
-	}
-	lines := fieldTable(outcomeFields(scoring))
-	if result := scoring.Result; result != nil {
-		lines = append(append(lines, ""), table([]string{"Run", "Cost J", "Trips", "Boundary violations", "Calls"}, outcomeRunRows(result.Runs))...)
-		lines = append(append(lines, ""), table([]string{"Baseline", "Delta", "Verdict"}, verdictRows(result.Verdicts))...)
-	}
-	return lines
-}
-
-func outcomeFields(scoring *OutcomeScoring) []field {
-	fields := []field{{"Status", scoring.Status}, {"Reason", scoring.Reason}}
-	if result := scoring.Result; result != nil {
-		fields = append(fields, field{"Valid", yesNo(result.Valid)}, field{"Easy", yesNo(result.Easy)})
-	}
-	return fields
-}
-
-func outcomeRunRows(runs []model.OutcomeRun) [][]string {
-	rows := make([][]string, len(runs))
-	for i, run := range runs {
+func outcomeRunRows(scoring *OutcomeScoring) [][]string {
+	rows := make([][]string, len(scoring.Result.Runs))
+	for i, run := range scoring.Result.Runs {
 		trips, violations := outcomeCounts(run.Facts)
-		rows[i] = []string{code(string(run.Mode)), costText(run.Cost), fmt.Sprint(trips), fmt.Sprint(violations), fmt.Sprint(len(run.Facts.Calls))}
+		rows[i] = []string{code(string(run.Mode)), scoring.policyText(run.Mode), costText(run.Cost), fmt.Sprint(trips), fmt.Sprint(violations),
+			fmt.Sprint(len(run.Facts.Calls))}
 	}
 	return rows
 }
@@ -70,10 +58,14 @@ func costText(cost *model.OutcomeCost) string {
 	return fmt.Sprintf("%.4f", cost.J)
 }
 
-func verdictRows(verdicts []model.OutcomeVerdict) [][]string {
-	rows := make([][]string, len(verdicts))
-	for i, verdict := range verdicts {
-		rows[i] = []string{code(string(verdict.Baseline)), fmt.Sprintf("%.4f", verdict.Delta), verdict.Verdict}
+func verdictRows(scoring *OutcomeScoring) [][]string {
+	rows := make([][]string, len(scoring.Result.Verdicts))
+	for i, verdict := range scoring.Result.Verdicts {
+		rows[i] = []string{code(string(verdict.Baseline)), scoring.policyText(verdict.Baseline), costDelta(verdict.Delta), verdict.Verdict}
 	}
 	return rows
+}
+
+func costDelta(delta float64) string {
+	return fmt.Sprintf("%.4f", delta)
 }

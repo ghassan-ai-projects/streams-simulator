@@ -58,6 +58,9 @@ func TestAReportAskedForTheOutcomeOfADomainWithOutcomeWeightsCarriesTheOutcomeSc
 	if scored == nil || scored.Status != "scored" || scored.Result == nil || !scored.Result.Valid || len(scored.Result.Verdicts) != 5 {
 		t.Fatalf("outcome score %+v, want a scored valid story with verdicts against doing nothing and b1-b4", scored)
 	}
+	if scored.Unit != "equivalent production hours" || scored.Labels["policy:b4"] != "drive lost: feed 67 %" {
+		t.Fatalf("outcome score unit %q, labels %v, want the plant's cost unit and B1-B4 labels", scored.Unit, scored.Labels)
+	}
 	asJSON, err := report.Render(built, report.FormatJSON)
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +77,8 @@ func TestAReportAskedForTheOutcomeOfADomainWithOutcomeWeightsCarriesTheOutcomeSc
 		t.Fatalf("report does not match run-report-v0.1:\n%s", jsonschema.FormatErrors(errs))
 	}
 	asMarkdown, err := report.Render(built, report.FormatMarkdown)
-	if err != nil || !strings.Contains(string(asMarkdown), "## Outcome score") || !strings.Contains(string(asMarkdown), "| `policy:b4` |") {
+	if err != nil || !strings.Contains(string(asMarkdown), "## Outcome score") || !strings.Contains(string(asMarkdown), "| `policy:b4` | drive lost: feed 67 % |") ||
+		!strings.Contains(string(asMarkdown), "**Summary:** The run ") {
 		t.Fatalf("markdown = %s (%v), want an outcome score section", asMarkdown, err)
 	}
 }

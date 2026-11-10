@@ -230,6 +230,8 @@
       "properties": {
         "status": {"enum": ["scored", "not_scored", "failed"]},
         "reason": {"type": "string", "minLength": 1},
+        "unit": {"type": "string", "minLength": 1, "description": "The unit J is counted in: the domain's ground_truth.outcome_weights.unit, absent when the domain names none."},
+        "labels": {"type": "object", "description": "The label of each baseline policy that carries one in the domain, by baseline mode (policy:<name>).", "additionalProperties": {"type": "string", "minLength": 1}},
         "result": {"type": "object", "description": "The outcome document of streamsim outcome (cli-output-v0.1 outcome)."}
       }
     },

@@ -876,10 +876,16 @@ Without `--out`, the JSON report is the command's one stdout document. With `--o
 - `open_questions` lists what a reader cannot conclude from the run, asked by rules of the binary in a fixed order, each as `{code, message}`: `evidence_foreign` (a file of the folder belongs to another run), `evaluate_unsealed` (an Evaluate run that has not ended: truth sealed, not comparable), `run_not_ended` (an Explore run still open), `run_incomplete`, `stopped_early` (its sentence gives the stop and the requested end as simulated clock times, `hh:mm:ss`), `files_differ`, `replay_not_checked`, `replay_does_not_reproduce`, `no_observations`, `torn_tail`, `no_kpi_results`, `no_outside_scoring` (no verdict was scored, or the run is an unscored investigation).
 - `outcome_score` (only with `--outcome`, and then only when the run ended and its domain declares
   `ground_truth.outcome_weights`; without the flag no report carries it and none replays the run for it):
-  `{status, reason?, result?}` with `status` `scored`, `not_scored` (an unblinded or Explore run) or `failed` (the run does
-  not replay, for example), and `result` the document `streamsim outcome` prints for the folder. Asking for it replays the
-  run four times (about 100 s for a 16 hour conveyor story). The Markdown report then adds an "Outcome score" section:
-  status, `valid`, one row per run (cost J, trips, boundary violations, calls) and one per baseline (delta, verdict).
+  `{status, reason?, unit?, labels?, result?}` with `status` `scored`, `not_scored` (an unblinded or Explore run) or
+  `failed` (the run does not replay, for example), `unit` the domain's `outcome_weights.unit`, `labels` the `label` of
+  each baseline policy that has one, by mode (`policy:<name>`), and `result` the document `streamsim outcome` prints for
+  the folder. Asking for it replays the run as `outcome` does (about 100 s for a 16 hour conveyor story). The Markdown
+  report then adds an "Outcome score" section: a one-line summary of what the run beats, ties and loses to (doing nothing
+  and each policy, with each delta), what the costs mean (J in the domain's unit; a delta is the run's J minus the
+  baseline's, so a negative delta means the run cost less; the tie), the story (`valid: no` reads "Control story: doing
+  nothing is clean", a story that tests no reaction, not an invalid run), whether it is easy (a baseline policy ties or
+  beats the run), one row per run (policy label, cost J, trips, boundary violations, calls) and one per baseline (policy
+  label, delta, verdict).
   `--outcome` does not apply to `report compare`.
 - The Markdown report reads as a handover: Purpose, What ran, Outcome and integrity (execution outcome, recording integrity, replay and outside scoring as separate rows), Evidence coverage, Results (the scope of the KPI truth and `Objective: Not assessed`, since the run declares no objective), Plan, the fault, perturbation, environment and effector tables, Open questions, then the digests and verification detail.
 - Per-entity coverage is not part of the report.

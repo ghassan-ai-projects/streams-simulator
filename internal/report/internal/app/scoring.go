@@ -57,12 +57,12 @@ func withOutcome(ctx context.Context, dir string, built *domain.Report) (*domain
 		return nil, err
 	}
 	if built.TruthUnavailable == "" && domain.DeclaresOutcome(artifact) {
-		built.OutcomeScore = outcomeScoreOf(ctx, dir)
+		built.OutcomeScore = outcomeScoreOf(ctx, dir, artifact)
 	}
 	return built, nil
 }
 
-func outcomeScoreOf(ctx context.Context, dir string) *domain.OutcomeScoring {
+func outcomeScoreOf(ctx context.Context, dir string, artifact *model.RunArtifact) *domain.OutcomeScoring {
 	graded, err := grading.GradeOutcome(ctx, grading.OutcomeOptions{RunDir: dir})
 	switch {
 	case errors.Is(err, grading.ErrRunUnblinded):
@@ -70,7 +70,7 @@ func outcomeScoreOf(ctx context.Context, dir string) *domain.OutcomeScoring {
 	case err != nil:
 		return &domain.OutcomeScoring{Status: domain.Failed, Reason: insideFolder(err, dir)}
 	}
-	return &domain.OutcomeScoring{Status: domain.Scored, Result: graded}
+	return domain.ScoredOutcome(graded, artifact)
 }
 
 func insideFolder(err error, dir string) string {
