@@ -317,3 +317,17 @@ wakes reasoning; failed reasoning is retried), O36 (`drive_degrading`), the per-
 
 Finding: the model alone does not take a cause-free step under an unknown cause; the loop around it must name the
 symptom and keep asking when evidence changes.
+
+## 9. S6 consumer side (agentic-stream `belt-m4-s6`, 2026-11-10)
+
+Spec `master-loss`: phases `running`, `master_lost`, then `stranded` (stop_all: `stop_feed`, R2) or `followers_lead`
+(promote: limp 54 %, R1), diagnosis `drive_tripped`. Scripted twin row 1: s6-a-promote beats every baseline (B0 −5.14,
+B3 −0.18, B4 −5.32); s6-a-stop ties every baseline and is `easy`, with no restart while loaded. Gaps for the simulator
+backlog, not built:
+
+- An R0 advisory (an unload request to a person) has no route: the plant wire carries no operator-message record, and
+  every declared intent must route to a device. The request is text in the decision's summary.
+- An empty restart is not expressible: no reading says the belt is empty (unloading is manual), and the S6 plants have
+  no `start_belt` route. "No restart while loaded" holds because no start intent is declared.
+- The outcome counts D-2's `ref_held` promotion latch as a trip; the promote story is judged against doing nothing's
+  trips.
