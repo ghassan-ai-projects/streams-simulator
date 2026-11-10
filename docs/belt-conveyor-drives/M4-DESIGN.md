@@ -336,3 +336,19 @@ backlog, not built:
   no `start_belt` route. "No restart while loaded" holds because no start intent is declared.
 - The outcome counts D-2's `ref_held` promotion latch as a trip; the promote story is judged against doing nothing's
   trips.
+
+## 10. Acceptance, arm A (rules only), 2026-11-10
+
+Every story the agentic-stream twin tests play, seed rows 1-10 on the barrier-paced twin (streamsim `ebae07b9`,
+agentic-stream `1269adf6`, scripted stand-in reasoner, 4 processes at `GOMAXPROCS=2`): **113/113 pass**, 0 quarantines,
+`verify-run` on every run, 3 h 23 min wall (13 h of job time), peak 5-minute load 7.4.
+
+| Story | Rows | Result |
+|---|---|---|
+| S1-A, S1-B, S3-A, S5-A, S5b-A, S6-A-promote | 10 each | every row beats B0-B4, detected, label correct; latency S1-A 0.34-0.87 h, S1-B 0.49-1.17 h, S3-A 0.46-0.55 h, S5 0.24-0.27 h, S6 10-13 s |
+| S6-A-stop | 10 | ties every baseline, `easy` by design |
+| S4-A, S4-B, S4-A and S0-A on the planned-stop spec | 10 each | no step, no detection (controls) |
+| S2-B | 3 fixed seeds | beats B0, B1, B2, B4; ties B3 (`easy`) |
+
+Gaps: the S2 twin test plays S2-B on three fixed seeds, not the story table's rows, and S2-A not at all; S2-A and S2-B
+rows 1-10 are covered by streamsim's own long tier with the reference policy only.
