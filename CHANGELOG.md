@@ -4,6 +4,11 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A failure names the program once on stderr.** A command whose error already began with `streamsim: ` printed it
+  twice (`streamsim: streamsim: run: read artifact ...` from `outcome --run`, `replay`, `verify`, `catalog describe`,
+  `domain validate` and others). The stderr line now strips the inner prefix as the failure document's `message`
+  already did. The JSON failure documents do not change.
+
 - **The run report shows a KPI's unit, and a counter by its change.** `truth.kpi_units` (`run-report-v0.1`, added in
   place) holds the unit of each KPI state the embedded domain declares. The Markdown KPI table gains a Unit column, and
   with `--outcome` each KPI the outcome's `as_run` facts record is shown by start, end and change, not by the mean,

@@ -156,3 +156,14 @@ func clearsAnUnknownFault(t *testing.T) string {
 		`"adapter":"native-jsonl","seed":1,"world":{"start_time_ns":1767225600000000000},`+
 		`"commands":[{"op":"fault.clear","args":{"fault_id":"never-injected","at_ns":1767225600000000000}}]}`)
 }
+
+func TestAFailureNamesTheProgramOnceOnStderr(t *testing.T) {
+	t.Parallel()
+	missing := filepath.Join(t.TempDir(), "none")
+	for _, args := range [][]string{{"outcome", "--run", missing}, {"replay", filepath.Join(missing, "run.json")}, {"verify", filepath.Join(missing, "run.json")}} {
+		got := invoke(t, args...)
+		if got.code == 0 || !strings.HasPrefix(got.stderr, "streamsim: run: read artifact ") || strings.Contains(got.stderr, "streamsim: streamsim:") {
+			t.Errorf("%v: exit %d, stderr %q, want one streamsim prefix before the reason", args, got.code, got.stderr)
+		}
+	}
+}

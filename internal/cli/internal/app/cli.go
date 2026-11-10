@@ -110,7 +110,7 @@ func (s *session) fail(documents io.Writer, name string, err error) int {
 		return 0
 	}
 	if _, flagReported := asUsageExit(err); !flagReported {
-		_, _ = fmt.Fprintf(s.stderr, "streamsim: %v\n", err)
+		_, _ = fmt.Fprintf(s.stderr, "streamsim: %s\n", withoutProgramName(err.Error()))
 	}
 	_ = printJSON(documents, describeFailure(name, err))
 	return exitStatusOf(err)
