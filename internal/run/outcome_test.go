@@ -1,6 +1,7 @@
 package run_test
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"testing"
@@ -81,5 +82,15 @@ func TestAnUnknownOutcomeModeOrPolicyIsATypedError(t *testing.T) {
 	}
 	if _, err := run.ReplayOutcome(t.Context(), art, nil, nil, "everything"); !errors.Is(err, run.ErrUnknownOutcomeMode) {
 		t.Fatalf("err = %v, want ErrUnknownOutcomeMode", err)
+	}
+}
+
+func TestACanceledOutcomeReplayStopsBeforeItsNextCommand(t *testing.T) {
+	t.Parallel()
+	art := conveyorArtifact(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := run.ReplayOutcome(ctx, art, nil, nil, model.OutcomeDoNothing); !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
 	}
 }

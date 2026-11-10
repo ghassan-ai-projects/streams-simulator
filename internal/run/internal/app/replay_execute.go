@@ -35,6 +35,9 @@ type commandStep func(context.Context, *Run, *model.Command, refusalPolicy) erro
 
 func replayEach(ctx context.Context, replay *Run, commands []model.Command, execute commandStep) error {
 	for _, command := range commands {
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("run: replay canceled before command %d: %w", command.Seq, err)
+		}
 		if err := execute(ctx, replay, &command, keepEveryRefusal); err != nil {
 			return fmt.Errorf("run: replay command %d (%s): %w", command.Seq, command.Op, err)
 		}
