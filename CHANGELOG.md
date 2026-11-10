@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The run report shows a KPI's unit, and a counter by its change.** `truth.kpi_units` (`run-report-v0.1`, added in
+  place) holds the unit of each KPI state the embedded domain declares. The Markdown KPI table gains a Unit column, and
+  with `--outcome` each KPI the outcome's `as_run` facts record is shown by start, end and change, not by the mean,
+  minimum and maximum of a cumulative counter (B-1 `delivered` on S2-B: 100000.000 to 100104.473 t, +104.473). The
+  domain model has no cumulative marker, so the outcome's facts decide; without `--outcome` the generic table stays.
+
 - **The run report's outcome score says who won.** The Markdown "Outcome score" section opens with one summary line
   (the run beats, ties or loses to doing nothing and each baseline policy, with the deltas), says what the costs mean
   (J in the domain's `outcome_weights.unit`; a negative delta means the run cost less; the tie), reads `valid: no` as a

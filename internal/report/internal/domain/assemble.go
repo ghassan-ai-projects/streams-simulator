@@ -92,6 +92,7 @@ func withTruth(report *Report, art *model.RunArtifact, in streams) (*Report, err
 	if err != nil {
 		return nil, err
 	}
+	truth.KPIUnits = kpiUnits(truth.KPIs, art)
 	report.Truth = truth
 	if art == nil {
 		report.Run.Seed = directorSeed(in.director)

@@ -88,6 +88,7 @@ type Truth struct {
 	Environment   []Environment         `json:"environment"`
 	EffectorCalls []EffectorCall        `json:"effector_calls"`
 	KPIs          *model.KPITruth       `json:"kpis,omitempty"`
+	KPIUnits      map[string]string     `json:"kpi_units,omitempty"`
 }
 
 type Perturbation struct {

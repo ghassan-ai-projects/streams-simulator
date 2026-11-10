@@ -188,6 +188,11 @@
             }
           }
         },
+        "kpi_units": {
+          "type": "object",
+          "description": "The unit of each KPI state by state name, from the kinds of the embedded domain that declare it a KPI; a state those kinds give no unit or two different units is left out. Absent without KPI truth or an embedded domain.",
+          "additionalProperties": {"type": "string", "minLength": 1}
+        },
         "kpis": {
           "type": "object",
           "description": "The run's KPI truth from its sealed journal (domain-spec v0.2 section 29): the true mean, minimum and maximum of every KPI state, and the ISA-18.2 KPIs of every alarm state and of the alarm system.",

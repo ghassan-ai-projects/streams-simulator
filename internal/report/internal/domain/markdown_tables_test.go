@@ -85,16 +85,18 @@ func TestEveryTableOfAReportWithAnOutcomeScoreParses(t *testing.T) {
 	t.Parallel()
 	report := &Report{Run: Run{RunID: "r-1", Mode: "evaluate", Ended: true}, Verification: Verification{Status: FilesMatch},
 		Truth: &Truth{KPIs: &model.KPITruth{Entities: []model.EntityKPIs{{EntityID: "B-1",
-			KPIs: []model.KPIValue{{State: "delivered", Mean: 2, Min: 1, Max: 3, Samples: 3}}}}}},
-		OutcomeScore: &OutcomeScoring{Status: Scored, Result: &model.OutcomeReport{OutcomeScore: model.OutcomeScore{Valid: true,
-			Runs: []model.OutcomeRun{{Mode: model.OutcomeAsRun, Facts: &model.OutcomeFacts{}, Cost: &model.OutcomeCost{J: -1}},
+			KPIs: []model.KPIValue{{State: "delivered", Mean: 2, Min: 1, Max: 3, Samples: 3}, {State: "load", Mean: 2, Min: 1, Max: 3, Samples: 3}}}}},
+			KPIUnits: map[string]string{"delivered": "t"}},
+		OutcomeScore: &OutcomeScoring{Status: Scored, Unit: "h", Result: &model.OutcomeReport{OutcomeScore: model.OutcomeScore{Valid: true,
+			Runs: []model.OutcomeRun{{Mode: model.OutcomeAsRun, Facts: &model.OutcomeFacts{Entities: []model.EntityOutcome{{EntityID: "B-1",
+				KPIs: []model.KPIOutcome{{State: "delivered", Start: 1, End: 3}}}}}, Cost: &model.OutcomeCost{J: -1}},
 				{Mode: model.OutcomeDoNothing, Facts: &model.OutcomeFacts{}, Cost: &model.OutcomeCost{J: 2}}},
 			Verdicts: []model.OutcomeVerdict{{Baseline: model.OutcomeDoNothing, Delta: -3, Verdict: model.VerdictBeats}}}}}}
 	tables, problems := tableProblems(string(Markdown(report)))
 	for _, problem := range problems {
 		t.Error(problem)
 	}
-	if tables < 6 {
-		t.Fatalf("parsed %d tables, want the run, outcome, KPI, alarm system, plan and outcome score tables", tables)
+	if tables < 9 {
+		t.Fatalf("parsed %d tables, want the run, outcome, two KPI, alarm system, plan and three outcome score tables", tables)
 	}
 }
