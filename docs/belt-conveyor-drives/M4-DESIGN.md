@@ -352,3 +352,22 @@ agentic-stream `1269adf6`, scripted stand-in reasoner, 4 processes at `GOMAXPROC
 
 Gaps: the S2 twin test plays S2-B on three fixed seeds, not the story table's rows, and S2-A not at all; S2-A and S2-B
 rows 1-10 are covered by streamsim's own long tier with the reference policy only.
+
+## 11. Live evidence, arm B, new stories (GLM 5.3 Flash, 2026-11-10)
+
+Rounds 5-6 through Tamoz on the barrier-paced twin, seed rows 1-3 (agentic-stream `6997467b` for round 6):
+
+| Story | Result | J - B0 | Notes |
+|---|---|---|---|
+| S6-A-promote | 3/3 | -5.14 .. -5.35 | one call per run; beats every baseline |
+| S6-A-stop | 3/3 | 0 (ties, `easy`) | one call per run |
+| S1-B | 3/3 | -5.63 .. -5.94 | full feed until the predicted trip, D-3 stopped 1.34-1.37 h before it; beats B1 by 0.44-0.73; prognosis RA at lambda 0.5: 0.18-0.49 |
+| S5-A | 3/3 | -2.19 .. -3.93 | both labels detected; row 1 emptied the belt late (a second watch on `sensor_stuck`), row 2 lost two approvals to version churn in `shedding` |
+| S5b-A | 3/3 | -2.19 .. -3.86 | both labels detected; R2 steps kept through the dropout |
+
+Round 6: 9/9 pass, 52 model calls, 116 k input and 190 k output tokens, no Tamoz failure. Round 5 found a test defect
+(a watch command crashed the command log) and approvals withdrawn by watch wakes; both fixed (O41).
+
+Open: on S5 the model names the sensor fault until the cause phase and sometimes answers a stepped phase with a watch;
+watch fires in a phase whose trigger names `watch_fired` still advance the version during a long episode (the window
+operators' per-input closing makes features flip at minute boundaries).
