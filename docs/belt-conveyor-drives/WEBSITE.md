@@ -36,7 +36,7 @@ All plant parameters are synthetic engineering estimates, not a customer's data.
 | Belt | 60 m, flat, 2 m/s, 150 t/h nominal feed (about 1.25 t on the belt) |
 | Drives | 3 (motor, gearbox, pulley, VFD); torque load sharing; D-1 leads the speed |
 | Plant A (large margin) | one drive out: survivors at 0.97× rating; safe limp feed 54 % |
-| Plant B (small margin) | one drive out: survivors at 1.40× rating, inverter trip in about 2 min; safe limp feed 18 % |
+| Plant B (small margin) | one drive out: survivors at 1.46× rating, inverter trip in about 2 min; safe limp feed 18 % |
 | Sensors | per drive: current, winding temperature, vibration, pulley speed; belt speed; feed rate |
 | Actions | feeder setpoint, stop a drive, stop the belt (stopping steps need human approval) |
 
