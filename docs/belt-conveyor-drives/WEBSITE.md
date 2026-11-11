@@ -65,6 +65,34 @@ Each story has 10 seeds, each drawing its own onset time, severity and sensor no
 The cost J is in equivalent production hours: a stranded belt, protective trips, drive wear, tonnes not delivered and
 unneeded actions each carry a weight. A negative difference means the run cost less than the baseline.
 
+## Seen in the simulator
+
+Screens from Streams Simulator's canvas, replaying the bearing failure on plant B (story S1-B).
+
+![The plant: feeder, belt and three drives.](images/plant-layout.png)
+
+The plant: feeder, belt and three drives, each drive with its current, winding temperature and vibration sensors.
+
+![A 16-hour run on one timeline.](images/s1b-timeline.png)
+
+A 16-hour run on one timeline: the bearing fault on D-3 and the routine downstream stop.
+
+![Nobody acts: winding temperature and vibration trends.](images/s1b-nobody-acts-trends.png)
+
+Nobody acts: D-3's winding temperature and vibration climb until it trips; less than two minutes later the other two drives trip too and the belt stops loaded.
+
+![The operator's run: actions on the timeline.](images/s1b-operator-actions.png)
+
+The operator's run: empty the belt, stop D-3 by plan, then run on two drives at a safe reduced feed. Each action is shown as applied.
+
+![Operator run: D-3 stopped, the other two drives carry on.](images/s1b-operator-trends.png)
+
+D-3 is stopped before it overheats; the other two drives carry the belt on.
+
+![The two runs side by side in the compare view.](images/s1b-compare.png)
+
+The two runs side by side in the simulator's compare view.
+
 ## Evidence
 
 **Rules only, 10 seeds per story, 113 of 113 runs pass.** These runs use the operator's rules with a scripted reasoner,
