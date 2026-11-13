@@ -19,6 +19,24 @@ function minimapClass(node: FlowNode): string {
 
 const families = Object.keys(familyNames) as Family[];
 
+function familiesIn(nodes: readonly FlowNode[]): string {
+  const used = new Set<string>();
+  for (const node of nodes) {
+    if (node.type !== "instance") continue;
+    const { ins, outs } = node.data.view.pins;
+    for (const pin of [...ins, ...outs]) if (pin.family !== null) used.add(pin.family);
+  }
+  return families.filter((family) => used.has(family)).join(" ");
+}
+
+function usePlantFamilies(): readonly Family[] {
+  const used = useStore((state) => familiesIn(state.nodes as FlowNode[]));
+  return useMemo(
+    () => (used === "" ? families : families.filter((family) => used.split(" ").includes(family))),
+    [used],
+  );
+}
+
 function ReadingKeys() {
   return (
     <ul className={styles.legendList} aria-label="Readings on a node">
@@ -38,7 +56,36 @@ function ReadingKeys() {
   );
 }
 
+function PinKeys() {
+  return (
+    <>
+      <li>
+        <span className={cx(styles.swatch, styles.unknown, "family-none")} aria-hidden="true" />
+        Port not recorded
+      </li>
+      <li>
+        <span className={cx(styles.swatch, "family-none")} aria-hidden="true" />
+        Filled: connected
+      </li>
+      <li>
+        <span className={cx(styles.swatch, styles.hollow, "family-none")} aria-hidden="true" />
+        Hollow: not connected
+      </li>
+    </>
+  );
+}
+
+function GroupedKey() {
+  return (
+    <p className={styles.direction}>
+      <span aria-hidden="true">×3</span> Three links between the same two instances, drawn as one wire. A wire that
+      carries more than one type is grey.
+    </p>
+  );
+}
+
 function Legend({ review, grouped }: { readonly review: boolean; readonly grouped: boolean }) {
+  const shown = usePlantFamilies();
   return (
     <div className={styles.legend} id="port-types" role="group" aria-labelledby="port-types-title">
       <p className={styles.legendTitle} id="port-types-title">
@@ -48,31 +95,15 @@ function Legend({ review, grouped }: { readonly review: boolean; readonly groupe
         <span aria-hidden="true">→</span> Model connections carry values from outputs to inputs; arrows point to the
         receiving endpoint.
       </p>
-      {grouped && (
-        <p className={styles.direction}>
-          <span aria-hidden="true">×3</span> Three links between the same two instances, drawn as one wire. A wire that
-          carries more than one type is grey.
-        </p>
-      )}
+      {grouped && <GroupedKey />}
       <ul className={styles.legendList}>
-        {families.map((family) => (
+        {shown.map((family) => (
           <li key={family}>
             <span className={cx(styles.swatch, styles[shapeOf(family)], `family-${family}`)} aria-hidden="true" />
             {familyNames[family]}
           </li>
         ))}
-        <li>
-          <span className={cx(styles.swatch, styles.unknown, "family-none")} aria-hidden="true" />
-          Port not recorded
-        </li>
-        <li>
-          <span className={cx(styles.swatch, "family-none")} aria-hidden="true" />
-          Filled: connected
-        </li>
-        <li>
-          <span className={cx(styles.swatch, styles.hollow, "family-none")} aria-hidden="true" />
-          Hollow: not connected
-        </li>
+        {!grouped && <PinKeys />}
       </ul>
       {review && <ReadingKeys />}
     </div>

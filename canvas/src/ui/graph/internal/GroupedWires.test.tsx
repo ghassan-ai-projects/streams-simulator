@@ -58,8 +58,10 @@ describe("the group links control", () => {
     render(<Bar plant={belt} />);
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
     expect(screen.getByText(/drawn as one wire/)).toBeInTheDocument();
+    expect(screen.queryByText("Hollow: not connected")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Group links" }));
     expect(screen.queryByText(/drawn as one wire/)).not.toBeInTheDocument();
+    expect(screen.getByText("Hollow: not connected")).toBeInTheDocument();
   });
 });
 
@@ -92,5 +94,19 @@ describe("a grouped plant graph", () => {
     expect(screen.getByText("°C")).toBeInTheDocument();
     expect(screen.getByText("+2 more")).toBeInTheDocument();
     expect(screen.queryByText("drag out")).not.toBeInTheDocument();
+  });
+
+  it("keys only the port families the plant uses in the legend", () => {
+    render(
+      <ReactFlowProvider>
+        <ZoomBar />
+        <PlantGraph view={view} viewKey="v" selected={null} onSelect={() => undefined} />
+      </ReactFlowProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Legend" }));
+    expect(screen.getByText("Bulk material")).toBeInTheDocument();
+    expect(screen.getByText("Power")).toBeInTheDocument();
+    expect(screen.getByText("Signal")).toBeInTheDocument();
+    expect(screen.queryByText("Compressed air")).not.toBeInTheDocument();
   });
 });
