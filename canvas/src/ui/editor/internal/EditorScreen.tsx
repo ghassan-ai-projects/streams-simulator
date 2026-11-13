@@ -11,7 +11,7 @@ import { plantView } from "../../../model/graph";
 import { linkRefusal, plantTitle } from "../../../model/plant";
 import type { Plant } from "../../../model/plant";
 import type { PlantView } from "../../../model/graph";
-import { Navigator, Outline, PlantGraph, useCanvasAspect } from "../../graph";
+import { Navigator, Outline, PlantGraph, useCanvasAspect, useWires } from "../../graph";
 import { useStore } from "../../primitives";
 import { EditorBar } from "./EditorBar";
 import styles from "./Editor.module.css";
@@ -27,9 +27,13 @@ interface EditorScreenProps {
 
 function usePlant(draft: Draft, aspect: number | undefined) {
   const plant = useMemo(() => compositionPlant(draft.doc, shortKind), [draft.doc]);
-  const view = useMemo(() => plantView(plant, draft.specs, { open: null, aspect }), [plant, draft.specs, aspect]);
+  const { wires, control } = useWires(plant, "keep");
+  const view = useMemo(
+    () => plantView(plant, draft.specs, { open: null, aspect, wires }),
+    [plant, draft.specs, aspect, wires],
+  );
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
-  return { plant, view, flagged };
+  return { plant, view, flagged, control };
 }
 
 function useLeaveGuard(dirty: boolean) {
@@ -70,7 +74,7 @@ function EditorGraph({ draft, plant, editor, view, flagged, aspect }: GraphProps
     <PlantGraph
       view={view}
       viewKey={`edit:${draft.path}`}
-      fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}`}
+      fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}:${view.wires}`}
       panCue
       notice={refusal}
       selected={draft.selected}
@@ -91,7 +95,7 @@ function EditorGraph({ draft, plant, editor, view, flagged, aspect }: GraphProps
 
 function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit<EditorScreenProps, "composition">) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
-  const { plant, view, flagged } = usePlant(draft, aspect);
+  const { plant, view, flagged, control } = usePlant(draft, aspect);
   const [request] = useState(() => new FocusRequest());
   useLeaveGuard(isDirty(draft));
   const select = (id: string | null) => {
@@ -112,7 +116,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
           {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
         <section className={screen.center} aria-label={`Editing ${plantTitle(plant)}`}>
-          <EditorBar draft={draft} editor={editor} navigation={navigation} request={request} />
+          <EditorBar draft={draft} editor={editor} navigation={navigation} request={request} wires={control} />
           <div ref={ref} className={screen.graphHost}>
             {plant.instances.length === 0 ? (
               <NoEquipment />

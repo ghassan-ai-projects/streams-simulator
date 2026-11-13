@@ -1,7 +1,7 @@
 export { boundsWithTitles, countWords, splitName } from "./internal/frameTitle";
 export { directionOf, firstOf, nearest } from "./internal/graphKeys";
 export { fitId, idCap, idRoom } from "./internal/headerFit";
-export { describeNode } from "./internal/nodeWords";
+export { describeNode, unmeasuredWords } from "./internal/nodeWords";
 export { groups, matchWords, marked, belowCount } from "./internal/outline";
 export { mergeMarks } from "./internal/mergeMarks";
 export { sameValue } from "./internal/sameValue";

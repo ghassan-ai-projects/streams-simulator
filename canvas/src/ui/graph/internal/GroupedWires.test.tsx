@@ -54,6 +54,27 @@ describe("the group links control", () => {
     expect(result.current.wires).toBe("grouped");
   });
 
+  it("keeps the opening choice while an edited plant gains or loses links", () => {
+    const sparse: typeof belt = { ...belt, links: belt.links.filter((link) => link.fromPort !== "enabled_out") };
+    const kept = renderHook(({ plant }) => useWires(plant, "keep"), { initialProps: { plant: sparse } });
+    expect(kept.result.current.wires).toBe("each");
+    kept.rerender({ plant: belt });
+    expect(kept.result.current.wires).toBe("each");
+    const followed = renderHook(({ plant }) => useWires(plant), { initialProps: { plant: sparse } });
+    followed.rerender({ plant: belt });
+    expect(followed.result.current.wires).toBe("grouped");
+  });
+
+  it("says in an editor that pins come back when grouping is off", () => {
+    const control = { value: "grouped" as const, onChange: () => undefined };
+    render(
+      <ReactFlowProvider>
+        <ZoomBar wires={control} linking />
+      </ReactFlowProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Group links" }).title).toMatch(/draw a link between two of them/);
+  });
+
   it("explains the count on a grouped wire in the legend", () => {
     render(<Bar plant={belt} />);
     fireEvent.click(screen.getByRole("button", { name: "Legend" }));
@@ -108,5 +129,21 @@ describe("a grouped plant graph", () => {
     expect(screen.getByText("Power")).toBeInTheDocument();
     expect(screen.getByText("Signal")).toBeInTheDocument();
     expect(screen.queryByText("Compressed air")).not.toBeInTheDocument();
+  });
+
+  it("counts the ports of an instance that has no measured channel to list, as in the editor", () => {
+    const bare = { ...belt, kinds: new Map() };
+    render(
+      <ReactFlowProvider>
+        <PlantGraph
+          view={plantView(bare, beltSpecs, { open: null, wires: "grouped" })}
+          viewKey="v"
+          selected={null}
+          onSelect={() => undefined}
+        />
+      </ReactFlowProvider>,
+    );
+    expect(screen.getByText("4 inputs · 3 outputs")).toBeInTheDocument();
+    expect(screen.getByText("1 input · 1 output")).toBeInTheDocument();
   });
 });

@@ -13,14 +13,21 @@ interface Choice {
   readonly wires: Wires;
 }
 
-export function useWires(plant: Plant | null): { readonly wires: Wires; readonly control: WiresControl | null } {
+interface Wiring {
+  readonly wires: Wires;
+  readonly control: WiresControl | null;
+}
+
+export function useWires(plant: Plant | null, opening: "follow" | "keep" = "follow"): Wiring {
   const [choice, setChoice] = useState<Choice | null>(null);
+  const [first] = useState(() => (plant === null ? null : openingWires(plant)));
   return useMemo(() => {
     if (plant === null || !canGroupWires(plant)) return { wires: "each", control: null };
-    const wires = choice?.plant === plant.id ? choice.wires : openingWires(plant);
+    const opened = opening === "keep" && first !== null ? first : openingWires(plant);
+    const wires = choice?.plant === plant.id ? choice.wires : opened;
     const onChange = (next: Wires) => {
       setChoice({ plant: plant.id, wires: next });
     };
     return { wires, control: { value: wires, onChange } };
-  }, [plant, choice]);
+  }, [plant, choice, opening, first]);
 }

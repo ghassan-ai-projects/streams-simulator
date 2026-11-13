@@ -1,4 +1,4 @@
-import { channelRows, channelWords } from "../../../model/graph";
+import { channelRows, channelWords, unmeasuredWords } from "../../../model/graph";
 import type { ViewNode } from "../../../model/graph";
 import styles from "./readout.module.css";
 
@@ -14,7 +14,7 @@ export function Channels({ view }: { readonly view: ViewNode }) {
           </dd>
         </div>
       ))}
-      {view.channels.length === 0 && <span className={styles.none}>no measured channels</span>}
+      {view.channels.length === 0 && <span className={styles.none}>{unmeasuredWords(view)}</span>}
       {more > 0 && (
         <div className={styles.more}>
           <dt>{`+${String(more)} more`}</dt>

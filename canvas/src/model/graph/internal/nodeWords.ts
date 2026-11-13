@@ -17,6 +17,12 @@ interface NodeFacts {
   readonly effector?: string;
 }
 
+export function unmeasuredWords(node: ViewNode): string {
+  const { ins, outs } = node.pins;
+  if (ins.length + outs.length === 0) return "no measured channels";
+  return `${counted(ins.length, "input")} · ${counted(outs.length, "output")}`;
+}
+
 export function describeNode(node: ViewNode, facts: NodeFacts): string {
   const { selected, status = null, count = 0, fault = "", effector = "" } = facts;
   const ports =

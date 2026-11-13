@@ -188,9 +188,11 @@ function useSettledZoom(): string {
 export function ZoomBar({
   review = false,
   wires = null,
+  linking = false,
 }: {
   readonly review?: boolean;
   readonly wires?: WiresControl | null;
+  readonly linking?: boolean;
 }) {
   const zoomTo = useZoomActions();
   const zoom = useStore((state) => state.transform[2]);
@@ -216,7 +218,7 @@ export function ZoomBar({
       >
         <Maximize size={14} aria-hidden="true" />
       </button>
-      {wires !== null && <WiresToggle control={wires} />}
+      {wires !== null && <WiresToggle control={wires} linking={linking} />}
       <LegendButton review={review} grouped={wires?.value === "grouped"} />
     </div>
   );
