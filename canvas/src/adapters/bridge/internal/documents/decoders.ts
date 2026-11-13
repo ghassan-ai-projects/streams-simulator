@@ -1,6 +1,6 @@
 import type { ComposeSummary, DomainDocument, FileContent, InstalledKinds } from "../../../../app/ports";
 import type { Workspace } from "../../../../model/workspace";
-import type { ExamplePlant, LibraryEntry, Presets } from "../../../../model/plant";
+import type { ExamplePlant, InstancePopulation, LibraryEntry, Presets } from "../../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../../model/plant";
 import type { Replay, Report } from "../../../../model/review";
 import type { Comparison } from "../../../../model/compare";
@@ -227,6 +227,16 @@ export function composition(value: unknown): Record<string, unknown> | null {
   if (!isRecord(doc.axes) || !Array.isArray(doc.profiles) || !isRecord(doc.ground_truth)) return null;
   if (doc.equipment !== undefined && !Array.isArray(doc.equipment)) return null;
   return value.composition;
+}
+
+export function population(value: unknown): InstancePopulation | null {
+  if (!isRecord(value) || !Array.isArray(value.sets)) return null;
+  const sets = value.sets.map((set: unknown) => (isRecord(set) ? set.ids : null));
+  return sets.every(isTextList) ? sets : null;
+}
+
+function isTextList(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every((id) => typeof id === "string");
 }
 
 export function installedKinds(value: unknown): InstalledKinds | null {

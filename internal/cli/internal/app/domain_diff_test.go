@@ -106,3 +106,23 @@ func runWithoutSpec(t *testing.T) string {
 	writeIn(t, dir, "run.json", strings.Replace(string(raw), `"domain_spec"`, `"domain_spec_removed"`, 1))
 	return dir
 }
+
+func TestDomainPopulationNamesEachTemplatedInstance(t *testing.T) {
+	t.Parallel()
+	out := invoke(t, "domain", "population", testsupport.Domain("host-system-health")).mustSucceed(t)
+	if !strings.Contains(out.stdout, "rack-a/server-12") {
+		t.Fatalf("output = %s", out.stdout)
+	}
+}
+
+func TestDomainPopulationRequiresExactlyOneSource(t *testing.T) {
+	t.Parallel()
+	for name, args := range map[string][]string{"none": nil, "both": {"--stdin", "a.json"}, "two": {"a.json", "b.json"}} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if code := invoke(t, append([]string{"domain", "population"}, args...)...).code; code == 0 {
+				t.Fatal("want a usage failure")
+			}
+		})
+	}
+}

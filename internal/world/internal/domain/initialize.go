@@ -2,7 +2,6 @@ package domain
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -56,30 +55,7 @@ func initialEntityIDs(spec *domain.Compiled, ids []string) []string {
 }
 
 func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
-	var ids []string
-	counted := firstTemplatedSet(spec)
-	for i := range spec.Spec.Instances {
-		set := &spec.Spec.Instances[i]
-		count := set.Count.Default
-		if i == counted && firstSetCount > 0 {
-			count = firstSetCount
-		}
-		ids = append(ids, set.Names...)
-		ids = append(ids, templatedIDs(set, count)...)
-	}
-	return ids
-}
-
-func firstTemplatedSet(spec *domain.Compiled) int {
-	return slices.IndexFunc(spec.Spec.Instances, func(set model.InstanceSet) bool { return set.IDTemplate != "" })
-}
-
-func templatedIDs(set *model.InstanceSet, count int) []string {
-	var ids []string
-	for n := 1; set.IDTemplate != "" && n <= max(count, 1); n++ {
-		ids = append(ids, renderID(set.IDTemplate, n, nil))
-	}
-	return ids
+	return domain.PopulationIDs(spec, firstSetCount)
 }
 
 func (w *World) populateInitialEntities(ids []string, startNS int64) error {

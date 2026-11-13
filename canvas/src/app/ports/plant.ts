@@ -1,4 +1,4 @@
-import type { ComponentSpec } from "../../model/plant";
+import type { ComponentSpec, InstancePopulation } from "../../model/plant";
 import type { Composition } from "../../model/editor";
 import type { ExamplePlant } from "../../model/plant";
 import type {
@@ -22,6 +22,7 @@ export type PlantFailure =
 export interface PlantGateway {
   readFile(path: string): Promise<Outcome<FileContent, PlantFailure>>;
   component(ref: string): Promise<Outcome<ComponentSpec, PlantFailure>>;
+  population(document: string): Promise<Outcome<InstancePopulation, PlantFailure>>;
   examples(): Promise<Outcome<readonly ExamplePlant[], PlantFailure>>;
   generateComposition(input: {
     readonly source: PlantSource;

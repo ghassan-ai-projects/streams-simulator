@@ -1,8 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../../../test/plantFixture";
-import { areaOf, channelOf, effectorNamesOf, effectorOf, hasEffectors, linksOf, parsePlant, stateUnit } from "./plant";
+import {
+  areaOf,
+  channelOf,
+  declaresTemplates,
+  effectorNamesOf,
+  effectorOf,
+  hasEffectors,
+  linksOf,
+  parsePlant,
+  stateUnit,
+} from "./plant";
 
 describe("plant from a domain file", () => {
+  it("names a templated set from the binary's population, in set order", () => {
+    const templated = {
+      instances: [
+        { kind: "tank", names: ["T-1"] },
+        { kind: "pond", id_template: "site-a/pond-{n}", count: { default: 2 } },
+      ],
+    };
+    expect(declaresTemplates(templated)).toBe(true);
+    expect(parsePlant(templated).instances.map((instance) => instance.id)).toEqual(["T-1"]);
+    const plant = parsePlant(templated, null, [["T-1"], ["site-a/pond-1", "site-a/pond-2"]]);
+    expect(plant.instances.map((instance) => [instance.id, instance.kind])).toEqual([
+      ["T-1", "tank"],
+      ["site-a/pond-1", "pond"],
+      ["site-a/pond-2", "pond"],
+    ]);
+  });
+
+  it("does not take named sets for templates", () => {
+    expect(declaresTemplates(domain)).toBe(false);
+    expect(declaresTemplates({})).toBe(false);
+  });
+
   it("reads instances, kinds, areas and links", () => {
     const plant = parsePlant(domain);
     expect(plant.id).toBe("mini");

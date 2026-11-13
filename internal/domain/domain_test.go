@@ -1,8 +1,11 @@
 package domain_test
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -100,5 +103,48 @@ func TestSummarizeNamesTheDomainAndCountsItsParts(t *testing.T) {
 	got := domain.Summarize(pond)
 	if got.ID != "aquaculture-pond" || got.Digest != pond.Digest || got.Channels != len(pond.ChannelNames()) || got.Faults != pond.FaultCount() || got.Effectors != pond.EffectorCount() {
 		t.Fatalf("Summarize = %+v", got)
+	}
+}
+
+func TestPopulationReadsTheSameDomainFromAFileAndAStream(t *testing.T) {
+	t.Parallel()
+	path := testsupport.Domain("aquaculture-pond")
+	fromFile, err := domain.PopulationOfFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fromStream, err := domain.PopulationOfStream(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fromFile.Sets) != 1 || len(fromFile.Sets[0].IDs) != 8 || fromFile.Sets[0].IDs[7] != "site-a/pond-8" {
+		t.Fatalf("population = %+v", fromFile)
+	}
+	if !reflect.DeepEqual(fromFile, fromStream) {
+		t.Fatalf("file %+v, stream %+v", fromFile, fromStream)
+	}
+}
+
+func TestPopulationRefusesAnInvalidOrOversizedStream(t *testing.T) {
+	t.Parallel()
+	cases := map[string]struct {
+		input []byte
+		want  string
+	}{
+		"invalid":   {[]byte(`{"id":"x"}`), "standard input"},
+		"oversized": {bytes.Repeat([]byte(" "), 8<<20+1), "more than"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			_, err := domain.PopulationOfStream(bytes.NewReader(tc.input))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v, want it to mention %q", err, tc.want)
+			}
+		})
 	}
 }

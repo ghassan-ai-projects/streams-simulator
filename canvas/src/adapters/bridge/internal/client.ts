@@ -22,6 +22,7 @@ import {
   library,
   markdown,
   paired,
+  population,
   presets,
   replay,
   report,
@@ -74,6 +75,7 @@ function plantGateway(transport: Transport): BridgeAdapters["plant"] {
   return {
     ...fileActions(transport, plantFailure),
     examples: () => action(transport, "component.examples", {}, examples, plantFailure("read")),
+    population: (content) => action(transport, "domain.population", { content }, population, plantFailure("read")),
     generateComposition: (input) =>
       action(
         transport,

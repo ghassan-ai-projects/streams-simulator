@@ -55,6 +55,21 @@ describe("plant and editor gateways", () => {
     });
   });
 
+  it("reads a domain's population, one id list per set, and refuses any other shape", async () => {
+    const t = answering({
+      sets: [
+        { kind: "pond", ids: ["p-1", "p-2"] },
+        { kind: "tank", ids: [] },
+      ],
+    });
+    expect(await bridgeAdapter(t).plant.population("{}")).toEqual({ ok: true, value: [["p-1", "p-2"], []] });
+    expect(lastCall(t)).toEqual({ url: "/api/actions/domain.population", body: { args: { content: "{}" } } });
+    for (const answer of [{}, { sets: [null] }, { sets: [{ ids: "p-1" }] }, { sets: [{ ids: [1] }] }]) {
+      const outcome = await bridgeAdapter(answering(answer)).plant.population("{}");
+      expect(outcome).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
+    }
+  });
+
   it("refuses a generated composition that is not a valid document", async () => {
     const outcome = await bridgeAdapter(answering({ composition: { id: "n" } })).plant.generateComposition({
       source: { kind: "example", id: "mini" },

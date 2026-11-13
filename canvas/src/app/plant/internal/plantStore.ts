@@ -1,7 +1,7 @@
 import { parseComposition } from "../../../model/editor";
 import type { Workspace } from "../../../model/workspace";
-import type { Plant } from "../../../model/plant";
-import { parseDomainFile, parsePlant } from "../../../model/plant";
+import type { InstancePopulation, Plant } from "../../../model/plant";
+import { declaresTemplates, parseDomainFile, parsePlant } from "../../../model/plant";
 import type { ComponentSpec } from "../../../model/plant";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "../../shared";
@@ -85,6 +85,12 @@ export class PlantStore extends Observable<PlantState> {
     );
   }
 
+  private async population(domain: unknown, document: string): Promise<InstancePopulation | null> {
+    if (!declaresTemplates(domain)) return null;
+    const answer = await this.gateway.population(document);
+    return answer.ok ? answer.value : null;
+  }
+
   private held(path: string): ReadyPlant | null {
     const state = this.snapshot();
     return state.phase === "ready" && state.path === path ? state : null;
@@ -99,7 +105,8 @@ export class PlantStore extends Observable<PlantState> {
   ): Promise<void> {
     const { domain, id } = parseDomainFile(file.content);
     const composition = pairOf(id, workspace);
-    const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
+    const paired = composition === null ? null : await this.composition(composition);
+    const plant = parsePlant(domain, paired, await this.population(domain, file.content));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);
     if (!request.live()) return;
@@ -111,7 +118,7 @@ export class PlantStore extends Observable<PlantState> {
     if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
     const request = this.operations.begin();
     this.set({ phase: "loading", path: key });
-    const plant = parsePlant(domain);
+    const plant = parsePlant(domain, null, await this.population(domain, JSON.stringify(domain)));
     const specs = await this.specs(plant);
     if (!request.live()) return;
     this.opened({ path: key, etag: "", plant, specs, composition: null, selected: null });

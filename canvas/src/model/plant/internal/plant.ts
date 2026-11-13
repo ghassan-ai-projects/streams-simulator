@@ -103,8 +103,10 @@ function kind(value: unknown): Kind {
   };
 }
 
-function instances(value: unknown): readonly Instance[] {
-  return list(value).flatMap((raw) => {
+export type InstancePopulation = readonly (readonly string[])[];
+
+function instances(value: unknown, population: InstancePopulation | null): readonly Instance[] {
+  return list(value).flatMap((raw, set) => {
     const entry = record(raw);
     const provenance = record(entry.provenance);
     const component = text(provenance.component) || null;
@@ -113,7 +115,7 @@ function instances(value: unknown): readonly Instance[] {
     );
     const ids = list(entry.names).map(text);
     const single = text(entry.id);
-    return (ids.length > 0 ? ids : [single])
+    return (population?.[set] ?? (ids.length > 0 ? ids : [single]))
       .filter((id) => id !== "")
       .map((id) => ({ id, kind: text(entry.kind), area: text(entry.area), component, instruments }));
   });
@@ -162,7 +164,15 @@ function links(value: unknown, composition: unknown): readonly Link[] {
   });
 }
 
-export function parsePlant(domain: unknown, composition: unknown = null): Plant {
+export function declaresTemplates(domain: unknown): boolean {
+  return list(record(domain).instances).some((set) => text(record(set).id_template) !== "");
+}
+
+export function parsePlant(
+  domain: unknown,
+  composition: unknown = null,
+  population: InstancePopulation | null = null,
+): Plant {
   const body = record(domain);
   const site = record(body.site);
   return {
@@ -171,7 +181,7 @@ export function parsePlant(domain: unknown, composition: unknown = null): Plant 
     ...(text(body.description) === "" ? {} : { description: text(body.description) }),
     site: text(site.name),
     areas: areas(site),
-    instances: instances(body.instances),
+    instances: instances(body.instances, population),
     links: links(body.links, composition),
     kinds: new Map(
       list(body.kinds)

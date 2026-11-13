@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { flushPromises } from "../../../test/deferred";
+import type { DomainDocument } from "../../ports";
 import { failure as failed, success } from "../../ports";
 import { FakeBridge, cannedFailure, cannedFile } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
@@ -18,7 +19,60 @@ const workspace = {
   compositions: [{ path: "compositions/mini.composition.json", id: "mini", title: "Mini", instances: 0 }],
 };
 
+const templated = {
+  id: "ponds",
+  instances: [{ kind: "pond", id_template: "site-a/pond-{n}", count: { default: 2 } }],
+};
+
 describe("plant store", () => {
+  it("asks the binary for a templated plant's instances and sends the file as written", async () => {
+    const fake = new FakeBridge();
+    fake.addFile("domains/ponds.domain.json", templated);
+    fake.actions.set(
+      "domain.population",
+      success({ domain: "ponds", sets: [{ kind: "pond", ids: ["site-a/pond-1", "site-a/pond-2"] }] }),
+    );
+    const session = createPlantSession(fake.plant);
+    await session.load("domains/ponds.domain.json", sampleWorkspace);
+    const state = session.snapshot();
+    expect(state.phase === "ready" && state.plant.instances.map((instance) => instance.id)).toEqual([
+      "site-a/pond-1",
+      "site-a/pond-2",
+    ]);
+    expect(fake.calls.find((call) => call.name === "domain.population")?.args).toEqual({
+      content: JSON.stringify(templated),
+    });
+  });
+
+  it("does not ask the binary about a plant with only named instances", async () => {
+    const fake = bridge();
+    const session = createPlantSession(fake.plant);
+    await session.load("domains/mini.domain.json", sampleWorkspace);
+    expect(fake.calls.some((call) => call.name === "domain.population")).toBe(false);
+  });
+
+  it("shows the named instances alone when the binary refuses a templated document", async () => {
+    const fake = new FakeBridge();
+    fake.addFile("domains/ponds.domain.json", templated);
+    fake.actions.set("domain.population", failed(cannedFailure("domain_invalid", 422)));
+    const session = createPlantSession(fake.plant);
+    await session.load("domains/ponds.domain.json", sampleWorkspace);
+    const state = session.snapshot();
+    expect(state.phase === "ready" && state.plant.instances).toEqual([]);
+  });
+
+  it("asks about a recorded run's templated domain too", async () => {
+    const fake = new FakeBridge();
+    fake.actions.set(
+      "domain.population",
+      success({ domain: "ponds", sets: [{ kind: "pond", ids: ["site-a/pond-1"] }] }),
+    );
+    const session = createPlantSession(fake.plant);
+    await session.show("run:w-1", templated as unknown as DomainDocument);
+    const state = session.snapshot();
+    expect(state.phase === "ready" && state.plant.instances.map((instance) => instance.id)).toEqual(["site-a/pond-1"]);
+  });
+
   it("loads the domain, its composition and each component's ports through the bridge", async () => {
     const fake = bridge();
     fake.actions.set(
