@@ -12,7 +12,7 @@ import { shownFaults } from "../../../model/launch";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
-import { ZoomBar } from "../../graph";
+import { useWires, ZoomBar } from "../../graph";
 import type { RunningHere } from "./PlantActions";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
@@ -95,8 +95,10 @@ function LiveViewButton({
   );
 }
 
-function Bar(props: PlantCentreProps & { readonly running: RunningHere | null }) {
-  const { state, hall, navigation, run, connected, running } = props;
+type Wiring = ReturnType<typeof useWires>;
+
+function Bar(props: PlantCentreProps & { readonly running: RunningHere | null; readonly wiring: Wiring }) {
+  const { state, hall, navigation, run, connected, running, wiring } = props;
   return (
     <div className={screen.bar}>
       <Network size={14} aria-hidden="true" />
@@ -112,7 +114,7 @@ function Bar(props: PlantCentreProps & { readonly running: RunningHere | null })
         secondary={connected?.kind === "session"}
       />
       {connected?.trendsToggle}
-      <ZoomBar />
+      <ZoomBar wires={hall === null ? wiring.control : null} />
     </div>
   );
 }
@@ -131,7 +133,8 @@ export function PlantCentre(props: PlantCentreProps) {
   const { state, hall, plants, navigation, launch, connected } = props;
   const running = useRunningHere(launch, state.plant.id);
   const planned = usePlannedFaults(launch, state.plant.id);
-  const bar = <Bar {...props} running={running} />;
+  const wiring = useWires(state.plant);
+  const bar = <Bar {...props} running={running} wiring={wiring} />;
   return (
     <section
       className={cx(screen.center, connected?.kind === "session" && styles.withInterrupts)}
@@ -152,6 +155,7 @@ export function PlantCentre(props: PlantCentreProps) {
           plants={plants}
           navigation={navigation}
           launch={launch}
+          wires={wiring.wires}
           {...(connected === undefined ? {} : { connected })}
         />
         {connected?.trends?.((id) => {

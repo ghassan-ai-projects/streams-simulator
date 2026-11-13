@@ -4,6 +4,7 @@ import type { Opening } from "../../../../model/review";
 import { runClock } from "../../../../model/review";
 import { grouped } from "../../../../model/shared/units";
 import { ZoomBar } from "../../../graph";
+import type { ComponentProps } from "react";
 import { Notices } from "./Notices";
 import styles from "./GraphBar.module.css";
 
@@ -28,7 +29,9 @@ export function GraphBar({
   opening,
   startNs,
   trends,
+  wires = null,
 }: {
+  readonly wires?: ComponentProps<typeof ZoomBar>["wires"];
   readonly state: ReviewState;
   readonly opening: Opening | null;
   readonly startNs: number;
@@ -42,7 +45,7 @@ export function GraphBar({
       </span>
       <Notices state={state} />
       {trends}
-      <ZoomBar review />
+      <ZoomBar review wires={wires ?? null} />
     </div>
   );
 }

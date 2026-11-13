@@ -1,8 +1,6 @@
 import type { ReadoutBody, ReadoutRow, RowCount, Shown, ViewPresentation } from "../../../graph";
-import { attentionOf, channelWords, noteHeight } from "../../../graph";
+import { attentionOf, channelRows, channelWords, noteHeight } from "../../../graph";
 import type { Pin, Pins } from "../../../plant";
-
-const channelRows = 4;
 
 function portChannels(pins: Pins): ReadonlySet<string> {
   const channels = [...pins.ins, ...pins.outs].flatMap((pin) => (pin.channel === null ? [] : [pin.channel]));
@@ -14,14 +12,14 @@ function portless(pins: Pins): boolean {
 }
 
 function hiddenOf(pins: Pins, channels: readonly string[]): readonly string[] {
-  if (portless(pins)) return channels.slice(channelRows);
+  if (portless(pins)) return channels.slice(channelRows(channels.length).listed);
   const ported = portChannels(pins);
   return channels.filter((channel) => !ported.has(channel));
 }
 
 const reviewRowCount: RowCount = (pins, channels) => {
   const ports = pins.ins.length + pins.outs.length;
-  const listed = portless(pins) ? Math.min(channels.length, channelRows) : ports;
+  const listed = portless(pins) ? channelRows(channels.length).listed : ports;
   const more = hiddenOf(pins, channels).length > 0 ? 1 : 0;
   return Math.max(1, listed + more);
 };
@@ -73,7 +71,9 @@ function channelRow(channel: string, readings: Readings): ReadoutRow {
 }
 
 function listedRows(pins: Pins, channels: readonly string[], readings: Readings): readonly ReadoutRow[] {
-  if (portless(pins)) return channels.slice(0, channelRows).map((channel) => channelRow(channel, readings));
+  if (portless(pins)) {
+    return channels.slice(0, channelRows(channels.length).listed).map((channel) => channelRow(channel, readings));
+  }
   return [
     ...pins.ins.map((pin) => portRow(pin, "in", pins, readings)),
     ...pins.outs.map((pin) => portRow(pin, "out", pins, readings)),

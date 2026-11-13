@@ -7,6 +7,8 @@ import { familyNames, shapeOf } from "../../../model/plant";
 import type { FlowNode } from "./flow";
 import { fittedViewport, lowestZoom, steppedZoom } from "./viewportFit";
 import { cx } from "../../primitives";
+import type { WiresControl } from "./useWires";
+import { WiresToggle } from "./WiresToggle";
 import styles from "./GraphControls.module.css";
 import vendor from "./vendor.module.css";
 
@@ -36,7 +38,7 @@ function ReadingKeys() {
   );
 }
 
-function Legend({ review }: { readonly review: boolean }) {
+function Legend({ review, grouped }: { readonly review: boolean; readonly grouped: boolean }) {
   return (
     <div className={styles.legend} id="port-types" role="group" aria-labelledby="port-types-title">
       <p className={styles.legendTitle} id="port-types-title">
@@ -46,6 +48,12 @@ function Legend({ review }: { readonly review: boolean }) {
         <span aria-hidden="true">→</span> Model connections carry values from outputs to inputs; arrows point to the
         receiving endpoint.
       </p>
+      {grouped && (
+        <p className={styles.direction}>
+          <span aria-hidden="true">×3</span> Three links between the same two instances, drawn as one wire. A wire that
+          carries more than one type is grey.
+        </p>
+      )}
       <ul className={styles.legendList}>
         {families.map((family) => (
           <li key={family}>
@@ -92,7 +100,7 @@ function useLegendDismissal(open: boolean, anchor: RefObject<HTMLDivElement | nu
   }, [open, anchor, close]);
 }
 
-function LegendButton({ review }: { readonly review: boolean }) {
+function LegendButton({ review, grouped }: { readonly review: boolean; readonly grouped: boolean }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLDivElement>(null);
   const close = useCallback(() => {
@@ -114,7 +122,7 @@ function LegendButton({ review }: { readonly review: boolean }) {
         <List size={14} aria-hidden="true" />
         Legend
       </button>
-      {open && <Legend review={review} />}
+      {open && <Legend review={review} grouped={grouped} />}
     </div>
   );
 }
@@ -146,7 +154,13 @@ function useSettledZoom(): string {
   return settled;
 }
 
-export function ZoomBar({ review = false }: { readonly review?: boolean }) {
+export function ZoomBar({
+  review = false,
+  wires = null,
+}: {
+  readonly review?: boolean;
+  readonly wires?: WiresControl | null;
+}) {
   const zoomTo = useZoomActions();
   const zoom = useStore((state) => state.transform[2]);
   const settled = useSettledZoom();
@@ -171,7 +185,8 @@ export function ZoomBar({ review = false }: { readonly review?: boolean }) {
       >
         <Maximize size={14} aria-hidden="true" />
       </button>
-      <LegendButton review={review} />
+      {wires !== null && <WiresToggle control={wires} />}
+      <LegendButton review={review} grouped={wires?.value === "grouped"} />
     </div>
   );
 }

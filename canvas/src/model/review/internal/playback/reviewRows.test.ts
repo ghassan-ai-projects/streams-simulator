@@ -52,12 +52,21 @@ describe("review rows", () => {
     ]);
   });
 
-  it("falls back to the first four channels for an instance without ports", () => {
+  it("lists up to six channels for an instance without ports", () => {
     const channels = ["a", "b", "c", "d", "e", "f"];
     const body = readoutBody({ ins: [], outs: [] }, channels, [reading("b")], new Set(["b", "e", "f"]));
-    expect(body.rows.map((row) => row.label)).toEqual(["a", "b", "c", "d"]);
+    expect(body.rows.map((row) => row.label)).toEqual(channels);
     expect(body.rows[1]?.value).toBe("7.0");
+    expect(body.hidden).toBe(0);
+    expect(reviewView.rows({ ins: [], outs: [] }, channels)).toBe(6);
+  });
+
+  it("folds the channels past the fifth into one more line when there are more than six", () => {
+    const channels = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const body = readoutBody({ ins: [], outs: [] }, channels, [reading("b")], new Set(["b", "f", "h"]));
+    expect(body.rows.map((row) => row.label)).toEqual(["a", "b", "c", "d", "e"]);
     expect(body.hidden).toBe(2);
+    expect(reviewView.rows({ ins: [], outs: [] }, channels)).toBe(6);
   });
 
   it("reserves a row for the more line only when channels are hidden, and at least one row", () => {

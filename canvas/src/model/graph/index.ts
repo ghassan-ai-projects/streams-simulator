@@ -25,6 +25,7 @@ export {
 } from "./internal/viewport";
 export { labelPoint, wirePath } from "./internal/wirePath";
 export { routeView } from "./internal/wireView";
+export { canGroupWires, channelRows, openingWires, rowPins } from "./internal/wires";
 export { originLabels, originWords, plannedSimulated, unknownOrigin } from "./internal/origin";
 export type {
   CutSide,
@@ -40,7 +41,9 @@ export type {
   Rect,
   RowCount,
   Shown,
+  ViewEdge,
   ViewNode,
   ViewPresentation,
   Viewport,
+  Wires,
 } from "./contract";

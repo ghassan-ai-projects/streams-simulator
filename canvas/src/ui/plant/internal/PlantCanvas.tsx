@@ -5,7 +5,7 @@ import type { NavigationStore } from "../../../app/shell";
 import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import { showingMarks } from "../../../model/launch";
 import { planMarks, plantView } from "../../../model/graph";
-import type { PlanMark, PlantView } from "../../../model/graph";
+import type { PlanMark, PlantView, Wires } from "../../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
 import type { Connected } from "./connected";
@@ -42,7 +42,7 @@ function PlantViewGraph({
     <PlantGraph
       view={view}
       viewKey={hall ?? "plant"}
-      fitKey={`${hall ?? "plant"}:${String(aspect)}`}
+      fitKey={`${hall ?? "plant"}:${String(aspect)}:${view.wires}`}
       panCue
       selected={state.selected}
       {...(connected === undefined ? {} : { live: connected.live })}
@@ -66,6 +66,7 @@ function useLaidOutPlant(
   aspect: number | undefined,
   connected: Connected | undefined,
   marks: ReadonlyMap<string, PlanMark> | undefined,
+  wires: Wires,
 ): PlantView {
   const presentation = connected?.view;
   const notes = useNoteLines(connected?.notes, marks);
@@ -76,8 +77,9 @@ function useLaidOutPlant(
         aspect,
         ...(presentation === undefined ? {} : { view: presentation }),
         notes,
+        wires,
       }),
-    [state.plant, state.specs, hall, aspect, presentation, notes],
+    [state.plant, state.specs, hall, aspect, presentation, notes, wires],
   );
 }
 
@@ -88,6 +90,7 @@ export function PlantCanvas({
   navigation,
   launch,
   connected,
+  wires,
 }: {
   readonly state: ReadyPlant;
   readonly hall: string | null;
@@ -95,10 +98,11 @@ export function PlantCanvas({
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
   readonly connected?: Connected;
+  readonly wires: Wires;
 }) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
-  const view = useLaidOutPlant(state, hall, aspect, connected, marks);
+  const view = useLaidOutPlant(state, hall, aspect, connected, marks, wires);
   return (
     <div ref={ref} className={screen.graphHost}>
       <PlantViewGraph
