@@ -4,7 +4,7 @@ import { headerReserve } from "./frameTitle";
 import { tally } from "../../shared/collect";
 import { hallOf, hallsOf } from "./halls";
 import { groupedView, rowPins } from "./wires";
-import { groupedEdges } from "./groupedEdges";
+import { flowOrder, groupedEdges } from "./groupedEdges";
 import type { ComponentSpec, Family, Instance, Link, Pin, Pins, Plant } from "../../plant";
 import { areaOf, familyOf, pinsOf } from "../../plant";
 import { kindLabel, shortChannel } from "../../shared/words";
@@ -155,7 +155,7 @@ function finish(input: ViewInput, nodes: readonly ViewNode[], edges: readonly Vi
   return {
     nodes,
     edges,
-    layout: layout(boxes, edges, order, rows, input.aspect, headerReserve),
+    layout: layout(boxes, flowOrder(edges), order, rows, input.aspect, headerReserve),
     halls: input.halls,
     wires: input.wires,
   };

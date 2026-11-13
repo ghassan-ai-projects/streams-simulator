@@ -42,6 +42,11 @@ function edgeOf(pair: Pair): ViewEdge {
   };
 }
 
+export function flowOrder(edges: readonly ViewEdge[]): ViewEdge[] {
+  const supplied = new Set(edges.filter((edge) => carries(edge.family)).map((edge) => `${edge.from}\u0000${edge.to}`));
+  return edges.filter((edge) => carries(edge.family) || !supplied.has(`${edge.to}\u0000${edge.from}`));
+}
+
 export function groupedEdges(
   links: readonly Link[],
   shown: (id: string) => boolean,

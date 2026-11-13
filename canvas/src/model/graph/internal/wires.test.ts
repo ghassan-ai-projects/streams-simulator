@@ -51,10 +51,16 @@ describe("grouped wires", () => {
     expect(view.edges.find((edge) => edge.from === "D-1")?.family).toBeNull();
   });
 
-  it("puts the feeder before the belt it feeds, whatever their ids", () => {
-    const view = plantView(belt, beltSpecs, { open: null, wires: "grouped" });
+  it.each(["grouped", "each"] as const)("puts the feeder before the belt it feeds, with wires %s", (wires) => {
+    const view = plantView(belt, beltSpecs, { open: null, wires });
     const x = (id: string) => view.layout.nodes.get(id)?.x ?? 0;
     expect(x("F-1")).toBeLessThan(x("B-1"));
+  });
+
+  it("orders by links alone where no port type says what a link carries", () => {
+    const view = plantView(belt, new Map(), { open: null });
+    const x = (id: string) => view.layout.nodes.get(id)?.x ?? 0;
+    expect(x("B-1")).toBeLessThan(x("F-1"));
   });
 
   it("sizes a grouped node by its measured channels, not its ports", () => {
