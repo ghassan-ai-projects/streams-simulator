@@ -4,7 +4,7 @@ import { titleAbove, titleBandHeight, titleScale } from "./frameTitle";
 import type { Tier } from "./viewport";
 import type { End } from "./wireEnds";
 import { runsAcross, spreadEnds } from "./wireEnds";
-import type { WireLink } from "./wireRoute";
+import type { Side, WireLink } from "./wireRoute";
 import { routeWires, wireClearance } from "./wireRoute";
 
 type WireMode = "pins" | "rows" | "centre";
@@ -40,7 +40,7 @@ function endY(view: PlantView, id: string, handle: string | null, role: "from" |
   return rowCentre(node, box, row, mode);
 }
 
-function endOf(view: PlantView, edge: ViewEdge, role: "from" | "to", mode: WireMode): End {
+function pinnedEnd(view: PlantView, edge: ViewEdge, role: "from" | "to", mode: WireMode): End {
   const id = role === "from" ? edge.from : edge.to;
   const handle = role === "from" ? edge.fromHandle : edge.toHandle;
   const box = view.layout.nodes.get(id) ?? noBox;
@@ -48,6 +48,33 @@ function endOf(view: PlantView, edge: ViewEdge, role: "from" | "to", mode: WireM
   const point = { x: role === "from" ? box.x + box.width : box.x, y };
   const slot = role === "from" ? `${edge.from}.${edge.fromHandle ?? ""}` : edge.id;
   return { id: edge.id, role, point, box, side: role === "from" ? "right" : "left", slot, other: point };
+}
+
+function facing(from: Rect, to: Rect): readonly [Side, Side] {
+  if (to.x >= from.x + from.width) return ["right", "left"];
+  if (to.x + to.width <= from.x) return ["left", "right"];
+  return to.y >= from.y ? ["down", "up"] : ["up", "down"];
+}
+
+function sidePoint(box: Rect, side: Side): Point {
+  if (side === "right" || side === "left") {
+    return { x: side === "right" ? box.x + box.width : box.x, y: box.y + box.height / 2 };
+  }
+  return { x: box.x + box.width / 2, y: side === "down" ? box.y + box.height : box.y };
+}
+
+function facingEnd(view: PlantView, edge: ViewEdge, role: "from" | "to"): End {
+  const from = view.layout.nodes.get(edge.from) ?? noBox;
+  const to = view.layout.nodes.get(edge.to) ?? noBox;
+  const sides = facing(from, to);
+  const side = role === "from" ? sides[0] : sides[1];
+  const box = role === "from" ? from : to;
+  const point = sidePoint(box, side);
+  return { id: edge.id, role, point, box, side, slot: edge.id, other: point };
+}
+
+function endOf(view: PlantView, edge: ViewEdge, role: "from" | "to", mode: WireMode): End {
+  return view.wires === "grouped" ? facingEnd(view, edge, role) : pinnedEnd(view, edge, role, mode);
 }
 
 function pairOf(view: PlantView, edge: ViewEdge, mode: WireMode): readonly [End, End] {
@@ -66,6 +93,7 @@ function stubOf(from: End, to: End): number | undefined {
 }
 
 const corridorGutter = 48;
+const groupedEndGap = 18;
 
 function corridorOf(view: PlantView, edge: ViewEdge): Rect | null {
   const from = view.layout.nodes.get(edge.from);
@@ -83,6 +111,7 @@ function wireLinks(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
   const placed = spreadEnds(
     routed.flatMap(({ pair }) => pair),
     pixel,
+    view.wires === "grouped" ? groupedEndGap : undefined,
   );
   return routed.map(({ edge, pair: [from, to] }) => {
     const stub = stubOf(from, to);

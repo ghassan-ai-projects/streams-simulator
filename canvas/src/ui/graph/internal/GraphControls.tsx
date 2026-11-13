@@ -1,122 +1,18 @@
 import { MiniMap, useOnViewportChange, useReactFlow, useStore, useStoreApi } from "@xyflow/react";
-import { List, Maximize, Minus, Plus } from "lucide-react";
-import type { RefObject } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Family } from "../../../model/plant";
-import { familyNames, shapeOf } from "../../../model/plant";
+import { Maximize, Minus, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
 import type { FlowNode } from "./flow";
 import { fittedViewport, lowestZoom, steppedZoom } from "./viewportFit";
 import { cx } from "../../primitives";
+import { LegendButton } from "./Legend";
+import type { WiresControl } from "./useWires";
+import { WiresToggle } from "./WiresToggle";
 import styles from "./GraphControls.module.css";
 import vendor from "./vendor.module.css";
 
 function minimapClass(node: FlowNode): string {
   if (node.type === "frame" || node.type === "frameTitle") return cx(styles.minimapNode, styles.minimapFrame);
   return cx(styles.minimapNode, node.selected === true && styles.minimapSelected);
-}
-
-const families = Object.keys(familyNames) as Family[];
-
-function ReadingKeys() {
-  return (
-    <ul className={styles.legendList} aria-label="Readings on a node">
-      <li>
-        <span className={styles.glyph} aria-hidden="true">
-          ·
-        </span>
-        No reading from this run for this row (its words say why)
-      </li>
-      <li>
-        <span className={styles.glyph} aria-hidden="true">
-          –
-        </span>
-        No reading yet at this time
-      </li>
-    </ul>
-  );
-}
-
-function Legend({ review }: { readonly review: boolean }) {
-  return (
-    <div className={styles.legend} id="port-types" role="group" aria-labelledby="port-types-title">
-      <p className={styles.legendTitle} id="port-types-title">
-        Wire colour and pin shape by port type
-      </p>
-      <p className={styles.direction}>
-        <span aria-hidden="true">→</span> Model connections carry values from outputs to inputs; arrows point to the
-        receiving endpoint.
-      </p>
-      <ul className={styles.legendList}>
-        {families.map((family) => (
-          <li key={family}>
-            <span className={cx(styles.swatch, styles[shapeOf(family)], `family-${family}`)} aria-hidden="true" />
-            {familyNames[family]}
-          </li>
-        ))}
-        <li>
-          <span className={cx(styles.swatch, styles.unknown, "family-none")} aria-hidden="true" />
-          Port not recorded
-        </li>
-        <li>
-          <span className={cx(styles.swatch, "family-none")} aria-hidden="true" />
-          Filled: connected
-        </li>
-        <li>
-          <span className={cx(styles.swatch, styles.hollow, "family-none")} aria-hidden="true" />
-          Hollow: not connected
-        </li>
-      </ul>
-      {review && <ReadingKeys />}
-    </div>
-  );
-}
-
-function useLegendDismissal(open: boolean, anchor: RefObject<HTMLDivElement | null>, close: () => void) {
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      close();
-      anchor.current?.querySelector("button")?.focus();
-    };
-    const onPointer = (event: PointerEvent) => {
-      if (event.target instanceof Node && anchor.current?.contains(event.target) !== true) close();
-    };
-    document.addEventListener("keydown", onKey, true);
-    document.addEventListener("pointerdown", onPointer, true);
-    return () => {
-      document.removeEventListener("keydown", onKey, true);
-      document.removeEventListener("pointerdown", onPointer, true);
-    };
-  }, [open, anchor, close]);
-}
-
-function LegendButton({ review }: { readonly review: boolean }) {
-  const [open, setOpen] = useState(false);
-  const anchor = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
-  useLegendDismissal(open, anchor, close);
-  return (
-    <div className={styles.legendAnchor} ref={anchor}>
-      <button
-        type="button"
-        className={styles.legendButton}
-        aria-expanded={open}
-        aria-controls="port-types"
-        title="What the wire colours and pin shapes mean"
-        onClick={() => {
-          setOpen((value) => !value);
-        }}
-      >
-        <List size={14} aria-hidden="true" />
-        Legend
-      </button>
-      {open && <Legend review={review} />}
-    </div>
-  );
 }
 
 function motion(ms: number): number {
@@ -146,7 +42,15 @@ function useSettledZoom(): string {
   return settled;
 }
 
-export function ZoomBar({ review = false }: { readonly review?: boolean }) {
+export function ZoomBar({
+  review = false,
+  wires = null,
+  linking = false,
+}: {
+  readonly review?: boolean;
+  readonly wires?: WiresControl | null;
+  readonly linking?: boolean;
+}) {
   const zoomTo = useZoomActions();
   const zoom = useStore((state) => state.transform[2]);
   const settled = useSettledZoom();
@@ -171,7 +75,8 @@ export function ZoomBar({ review = false }: { readonly review?: boolean }) {
       >
         <Maximize size={14} aria-hidden="true" />
       </button>
-      <LegendButton review={review} />
+      {wires !== null && <WiresToggle control={wires} linking={linking} />}
+      <LegendButton review={review} grouped={wires?.value === "grouped"} />
     </div>
   );
 }

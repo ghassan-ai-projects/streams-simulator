@@ -1,7 +1,7 @@
 export { boundsWithTitles, countWords, splitName } from "./internal/frameTitle";
 export { directionOf, firstOf, nearest } from "./internal/graphKeys";
 export { fitId, idCap, idRoom } from "./internal/headerFit";
-export { describeNode } from "./internal/nodeWords";
+export { describeNode, unmeasuredWords } from "./internal/nodeWords";
 export { groups, matchWords, marked, belowCount } from "./internal/outline";
 export { mergeMarks } from "./internal/mergeMarks";
 export { sameValue } from "./internal/sameValue";
@@ -25,6 +25,7 @@ export {
 } from "./internal/viewport";
 export { labelPoint, wirePath } from "./internal/wirePath";
 export { routeView } from "./internal/wireView";
+export { canGroupWires, channelRows, openingWires, rowPins } from "./internal/wires";
 export { originLabels, originWords, plannedSimulated, unknownOrigin } from "./internal/origin";
 export type {
   CutSide,
@@ -40,7 +41,9 @@ export type {
   Rect,
   RowCount,
   Shown,
+  ViewEdge,
   ViewNode,
   ViewPresentation,
   Viewport,
+  Wires,
 } from "./contract";

@@ -55,6 +55,15 @@
   stroke: var(--port-power);
 }
 
+.family-bulk {
+  color: var(--port-bulk);
+}
+
+.react-flow__edge.family-bulk .react-flow__edge-path {
+  stroke: var(--port-bulk);
+  stroke-width: 2.6;
+}
+
 .family-signal {
   color: var(--port-signal);
 }
@@ -115,6 +124,10 @@
 
 .react-flow__background {
   --xy-background-pattern-color: var(--grid-major);
+}
+
+.react-flow__edge.wire-grouped .react-flow__edge-path {
+  stroke-width: 2.4;
 }
 
 .react-flow__edge.wire-off .react-flow__edge-path {

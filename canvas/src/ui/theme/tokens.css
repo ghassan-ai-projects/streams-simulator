@@ -61,6 +61,7 @@
   --port-temp: #a3308e;
   --port-heat: #c43a66;
   --port-power: #8f6200;
+  --port-bulk: #8a4b2a;
   --port-signal: #3f4552;
   --port-env: #737b8b;
   --cat-air: #2a62a0;
@@ -123,6 +124,7 @@
   --port-temp: #f27ad8;
   --port-heat: #f78bb3;
   --port-power: #f2c14e;
+  --port-bulk: #e0a07a;
   --port-signal: #c3c9d4;
   --port-env: #97a0ae;
   --cat-air: #4f86c6;

@@ -88,13 +88,14 @@ function officeTower(): PlantView {
     id,
     label: id,
     noteLines: 1,
+    ported: true,
     pins: { ins: ins.map(pin), outs: outs.map(pin) },
   }));
   const edges = edgeIds.map((id) => {
     const [from = "", rest = ""] = id.split(">");
     const [fromId = "", fromHandle = ""] = from.split(".");
     const [toId = "", toHandle = ""] = rest.split(".");
-    return { id, from: fromId, to: toId, fromHandle, toHandle, family: null, count: 1 };
+    return { id, from: fromId, to: toId, fromHandle, toHandle, family: null, count: 1, reverse: 0 };
   });
   const box = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
   return {
@@ -105,6 +106,7 @@ function officeTower(): PlantView {
       groups: new Map(frameRows.map(([title, x, y, w, h]) => [title, box(x, y, w, h)] as const)),
     },
     halls: [],
+    wires: "each",
   } as unknown as PlantView;
 }
 

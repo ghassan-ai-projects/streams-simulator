@@ -58,6 +58,7 @@ const units: Readonly<Record<string, string>> = {
   t: "t",
   "currency/h": "currency/h",
   "currency/kWh": "currency/kWh",
+  "equivalent production hours": "equivalent production hours",
 };
 
 export function displayUnit(unit: string): string {

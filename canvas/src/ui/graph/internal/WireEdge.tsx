@@ -5,9 +5,12 @@ import { labelPoint, wirePath } from "../../../model/graph";
 
 export type WireEdgeType = Edge<{ readonly points: readonly Point[] }, "wire">;
 
-export function WireEdge({ id, data, markerEnd, label }: EdgeProps<WireEdgeType>) {
+export function WireEdge({ id, data, markerEnd, markerStart, label }: EdgeProps<WireEdgeType>) {
   const points = data?.points ?? [];
   const middle = labelPoint(points);
-  const marker = markerEnd === undefined ? {} : { markerEnd };
+  const marker = {
+    ...(markerEnd === undefined ? {} : { markerEnd }),
+    ...(markerStart === undefined ? {} : { markerStart }),
+  };
   return <BaseEdge id={id} path={wirePath(points)} {...marker} label={label} labelX={middle.x} labelY={middle.y} />;
 }

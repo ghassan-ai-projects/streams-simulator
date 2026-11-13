@@ -10,6 +10,8 @@ export interface ReadingValue {
 
 export type RowCount = (pins: Pins, channels: readonly string[]) => number;
 
+export type Wires = "each" | "grouped";
+
 export interface ViewPresentation {
   readonly rows: RowCount;
   readonly note: (lines: number) => number;
@@ -64,6 +66,8 @@ export interface ViewNode {
   readonly members: number;
   readonly pins: Pins;
   readonly channels: readonly string[];
+  readonly units: readonly string[];
+  readonly ported: boolean;
   readonly noteLines: number;
 }
 
@@ -75,6 +79,7 @@ export interface ViewEdge {
   readonly toHandle: string | null;
   readonly family: Family | null;
   readonly count: number;
+  readonly reverse: number;
 }
 
 export interface PlantView {
@@ -82,6 +87,7 @@ export interface PlantView {
   readonly edges: readonly ViewEdge[];
   readonly layout: Layout;
   readonly halls: readonly string[];
+  readonly wires: Wires;
 }
 
 export interface Rect {

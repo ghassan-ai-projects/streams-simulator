@@ -78,13 +78,13 @@ function bounds(end: End): readonly [number, number] {
   return [start + wireClearance.lane, start + extent - wireClearance.lane];
 }
 
-function placeSide(group: readonly End[], pixel: number, placed: Map<string, Point>): void {
+function placeSide(group: readonly End[], gap: number, placed: Map<string, Point>): void {
   const slots = slotsOf(group);
   const lead = slots[0]?.[0];
   if (lead === undefined) return;
   const [low, high] = bounds(lead);
   const desired = slots.map((slot) => axisOf(lead, slot[0]?.point ?? lead.point));
-  const at = places(desired, endGap * pixel, low, high);
+  const at = places(desired, gap, low, high);
   slots.forEach((slot, index) => {
     for (const end of slot) {
       const value = at[index] ?? 0;
@@ -96,9 +96,9 @@ function placeSide(group: readonly End[], pixel: number, placed: Map<string, Poi
   });
 }
 
-export function spreadEnds(ends: readonly End[], pixel: number): ReadonlyMap<string, Point> {
+export function spreadEnds(ends: readonly End[], pixel: number, gap = endGap): ReadonlyMap<string, Point> {
   const groups = groupBy(ends, boxKey);
   const placed = new Map<string, Point>();
-  for (const group of groups.values()) placeSide(group, pixel, placed);
+  for (const group of groups.values()) placeSide(group, gap * pixel, placed);
   return placed;
 }

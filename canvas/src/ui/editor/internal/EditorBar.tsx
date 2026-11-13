@@ -1,5 +1,6 @@
 import { screen, shared } from "../../primitives";
 import { PenLine, RefreshCw, Save } from "lucide-react";
+import type { ComponentProps } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
 import { canSave, checked, isDirty, isSaving, saveStatusOf, writeConflicted } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
@@ -88,7 +89,15 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
   );
 }
 
-export function EditorBar({ draft, editor, navigation, request }: BarProps & { readonly request: FocusRequest }) {
+type Wires = ComponentProps<typeof ZoomBar>["wires"];
+
+export function EditorBar({
+  draft,
+  editor,
+  navigation,
+  request,
+  wires = null,
+}: BarProps & { readonly request: FocusRequest; readonly wires?: Wires }) {
   useEditorKeys(editor);
   const status = saveStatusOf(draft);
   const saving = isSaving(draft);
@@ -101,7 +110,7 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
       <OpenPlant draft={draft} navigation={navigation} />
       <ShowIssues draft={draft} editor={editor} request={request} />
       <Reload draft={draft} editor={editor} />
-      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
+      {equipmentOf(draft.doc).length > 0 && <ZoomBar wires={wires ?? null} linking />}
       <span role="status" className={bar[`status-${status.tone || "idle"}`]} title={status.detail ?? status.text}>
         {status.text}
       </span>

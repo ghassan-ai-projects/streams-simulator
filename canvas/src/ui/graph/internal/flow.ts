@@ -1,7 +1,7 @@
 import type { NodeLive } from "./types";
 import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
-import type { PlanMark, PlantView, Point, ViewNode } from "../../../model/graph";
+import type { PlanMark, PlantView, Point, ViewEdge, ViewNode } from "../../../model/graph";
 import { groupCounts } from "../../../model/graph";
 
 type InstanceData = Readonly<{
@@ -111,29 +111,45 @@ function markerColor(
   return familyColor(family);
 }
 
+function arrow(color: string) {
+  return { type: MarkerType.ArrowClosed, width: 10, height: 10, color };
+}
+
+function wireWords(edge: ViewEdge): string {
+  const total = edge.count + edge.reverse;
+  if (total === 1) return `${edge.from} to ${edge.to}`;
+  if (edge.reverse === 0) return `${edge.from} to ${edge.to}, ${String(total)} links`;
+  return `${edge.from} and ${edge.to}, ${String(total)} links: ${String(edge.count)} to ${edge.to}, ${String(edge.reverse)} to ${edge.from}`;
+}
+
+function wireClass(edge: ViewEdge, selected: string | null): string {
+  const grouped = edge.count + edge.reverse > 1 ? " wire-grouped" : "";
+  return `wire family-${edge.family ?? "none"}${grouped}${emphasis(selected, edge.from, edge.to)}`;
+}
+
 export function flowEdges(
   view: PlantView,
   routes: ReadonlyMap<string, readonly Point[]>,
   selected: string | null = null,
 ): Edge[] {
-  return view.edges.map((edge) => ({
-    id: edge.id,
-    type: "wire",
-    source: edge.from,
-    target: edge.to,
-    sourceHandle: "out",
-    targetHandle: "in",
-    data: { points: routes.get(edge.id) ?? [] },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      width: 10,
-      height: 10,
-      color: markerColor(edge.family, selected, edge.from, edge.to),
-    },
-    className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
-    zIndex: 0,
-    label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
-    ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
-    focusable: false,
-  }));
+  return view.edges.map((edge) => {
+    const marker = arrow(markerColor(edge.family, selected, edge.from, edge.to));
+    const total = edge.count + edge.reverse;
+    return {
+      id: edge.id,
+      type: "wire",
+      source: edge.from,
+      target: edge.to,
+      sourceHandle: "out",
+      targetHandle: "in",
+      data: { points: routes.get(edge.id) ?? [] },
+      markerEnd: marker,
+      ...(edge.reverse > 0 ? { markerStart: { ...marker, orient: "auto-start-reverse" } } : {}),
+      className: wireClass(edge, selected),
+      zIndex: 0,
+      label: total > 1 ? `×${String(total)}` : undefined,
+      ariaLabel: wireWords(edge),
+      focusable: false,
+    };
+  });
 }

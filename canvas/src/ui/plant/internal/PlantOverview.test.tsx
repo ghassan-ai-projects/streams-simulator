@@ -19,6 +19,17 @@ describe("plant overview", () => {
     expect(screen.getByRole("region", { name: "Areas across the halls" })).toBeInTheDocument();
   });
 
+  it("says what the plant is when its domain describes it, and nothing when it does not", () => {
+    const words = "The drives run near their rating.";
+    const { unmount } = render(
+      <PlantOverview plant={parsePlant({ ...domain, description: words })} runs={[]} onReview={vi.fn()} />,
+    );
+    expect(screen.getByText(words)).toBeInTheDocument();
+    unmount();
+    render(<PlantOverview plant={parsePlant(domain)} runs={[]} onReview={vi.fn()} />);
+    expect(screen.queryByText(words)).toBeNull();
+  });
+
   it("counts a plant without halls by area", () => {
     render(<PlantOverview plant={parsePlant(domain)} runs={[]} onReview={vi.fn()} />);
     expect(screen.queryByRole("region", { name: "Halls" })).toBeNull();

@@ -1,11 +1,14 @@
-import type { LayoutNode, PlantView, ViewEdge, ViewNode, ViewPresentation } from "./types";
+import type { LayoutNode, PlantView, ViewEdge, ViewNode, ViewPresentation, Wires } from "./types";
 import { layout } from "./layout";
 import { headerReserve } from "./frameTitle";
 import { tally } from "../../shared/collect";
 import { hallOf, hallsOf } from "./halls";
+import { groupedView, rowPins } from "./wires";
+import { flowOrder, groupedEdges } from "./groupedEdges";
 import type { ComponentSpec, Family, Instance, Link, Pin, Pins, Plant } from "../../plant";
 import { areaOf, familyOf, pinsOf } from "../../plant";
 import { kindLabel, shortChannel } from "../../shared/words";
+import { displayUnit } from "../../shared/units";
 
 export const nodeSize = {
   width: 232,
@@ -45,8 +48,10 @@ export function groupCounts(view: PlantView): Map<string, number> {
 type Specs = ReadonlyMap<string, ComponentSpec>;
 type Notes = ReadonlyMap<string, number>;
 
-function instanceNode(plant: Plant, instance: Instance, specs: Specs, notes: Notes): ViewNode {
+function instanceNode(input: ViewInput, instance: Instance, ported = true): ViewNode {
+  const { plant, specs, notes } = input;
   const spec = instance.component === null ? undefined : specs.get(instance.component);
+  const channels = plant.kinds.get(instance.kind)?.channels ?? [];
   return {
     id: instance.id,
     label: instance.id,
@@ -56,7 +61,9 @@ function instanceNode(plant: Plant, instance: Instance, specs: Specs, notes: Not
     category: spec?.category ?? "env",
     members: 1,
     pins: pinsOf(plant, instance, spec?.ports),
-    channels: (plant.kinds.get(instance.kind)?.channels ?? []).map((channel) => shortChannel(channel.name)),
+    channels: channels.map((channel) => shortChannel(channel.name)),
+    units: channels.map((channel) => displayUnit(channel.unit)),
+    ported,
     noteLines: notes.get(instance.id) ?? 1,
   };
 }
@@ -72,6 +79,8 @@ function hallNode(hall: string, members: number): ViewNode {
     members,
     pins: { ins: [], outs: [] },
     channels: [],
+    units: [],
+    ported: true,
     noteLines: 1,
   };
 }
@@ -113,7 +122,7 @@ function bundle(
       id,
       known
         ? { ...known, count: known.count + 1 }
-        : { id, from, to, fromHandle, toHandle, family: linkFamily(plant, link, specs), count: 1 },
+        : { id, from, to, fromHandle, toHandle, family: linkFamily(plant, link, specs), count: 1, reverse: 0 },
     );
   }
   return [...edges.values()];
@@ -126,13 +135,14 @@ interface ViewInput {
   readonly view: ViewPresentation;
   readonly aspect: number | undefined;
   readonly notes: Notes;
+  readonly wires: Wires;
 }
 
 function nodeBox(node: ViewNode, view: ViewPresentation): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
-  const rows = view.rows(node.pins, node.channels);
+  const rows = view.rows(rowPins(node), node.channels);
   const note = view.note(node.noteLines);
   const height = headerHeight(node.label) + nodeSize.padding + note + rows * nodeSize.pin;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
@@ -145,8 +155,9 @@ function finish(input: ViewInput, nodes: readonly ViewNode[], edges: readonly Vi
   return {
     nodes,
     edges,
-    layout: layout(boxes, edges, order, rows, input.aspect, headerReserve),
+    layout: layout(boxes, flowOrder(edges), order, rows, input.aspect, headerReserve),
     halls: input.halls,
+    wires: input.wires,
   };
 }
 
@@ -158,7 +169,7 @@ function hallLevel(input: ViewInput): PlantView {
   );
   const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
   const nodes = [
-    ...shared.map((instance) => instanceNode(plant, instance, specs, input.notes)),
+    ...shared.map((instance) => instanceNode(input, instance)),
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
@@ -181,10 +192,20 @@ function hallLevel(input: ViewInput): PlantView {
 function instanceLevel(input: ViewInput, keep: (instance: Instance) => boolean): PlantView {
   const kept = input.plant.instances.filter(keep);
   const ids = new Set(kept.map((instance) => instance.id));
-  const nodes = kept.map((instance) => instanceNode(input.plant, instance, input.specs, input.notes));
+  const { plant, specs } = input;
+  if (input.wires === "grouped") {
+    const nodes = kept.map((instance) => instanceNode(input, instance, false));
+    const edges = groupedEdges(
+      plant.links,
+      (id) => ids.has(id),
+      (link) => linkFamily(plant, link, specs),
+    );
+    return finish(input, nodes, edges);
+  }
+  const nodes = kept.map((instance) => instanceNode(input, instance));
   const key = (id: string) => (ids.has(id) ? id : null);
   const pins = new Map(nodes.map((node) => [node.id, node.pins] as const));
-  return finish(input, nodes, bundle(input.plant, input.plant.links, key, input.specs, pins));
+  return finish(input, nodes, bundle(plant, plant.links, key, specs, pins));
 }
 
 function withinHall(view: PlantView, hall: string): PlantView {
@@ -202,11 +223,14 @@ interface PlantViewOptions {
   readonly view?: ViewPresentation;
   readonly aspect?: number | undefined;
   readonly notes?: Notes;
+  readonly wires?: Wires;
 }
 
 export function plantView(plant: Plant, specs: Specs, options: PlantViewOptions): PlantView {
-  const { open, view = plainView, aspect, notes = new Map() } = options;
-  const input = { plant, specs, halls: hallsOf(plant), view, aspect, notes };
+  const { open, aspect, notes = new Map(), wires = "each" } = options;
+  const view = options.view ?? (wires === "grouped" ? groupedView : plainView);
+  const halls = hallsOf(plant);
+  const input = { plant, specs, halls, view, aspect, notes, wires: halls.length === 0 ? wires : "each" };
   if (input.halls.length === 0) {
     return instanceLevel(input, () => true);
   }

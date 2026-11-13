@@ -1,5 +1,5 @@
 import type { InstanceOrigin, NodeInterrupt, NodeStatus, PlantView, ReadoutBody, Shown } from "../../../graph";
-import { attentionOf, hallOf, showReading, worstOf } from "../../../graph";
+import { attentionOf, hallOf, rowPins, showReading, worstOf } from "../../../graph";
 import type { Plant } from "../../../plant";
 import { channelOf } from "../../../plant";
 import { interruptOf } from "../interrupts/interruptSelect";
@@ -59,8 +59,9 @@ function shownAt(facts: LiveFacts, id: string): readonly Shown[] {
 function readoutOf(facts: LiveFacts, id: string, shown: readonly Shown[], observed: ReadonlySet<string>): ReadoutBody {
   const node = facts.view?.nodes.find((entry) => entry.id === id);
   if (node === undefined) return noReadout;
-  if (isRealBoard(facts.origins, id) && shown.length > 0) return deviceReadoutBody(node.pins, node.channels, shown);
-  return readoutBody(node.pins, node.channels, shown, observed, facts.phase);
+  const pins = rowPins(node);
+  if (isRealBoard(facts.origins, id) && shown.length > 0) return deviceReadoutBody(pins, node.channels, shown);
+  return readoutBody(pins, node.channels, shown, observed, facts.phase);
 }
 
 function interruptShown(facts: LiveFacts, id: string): NodeInterrupt | null {

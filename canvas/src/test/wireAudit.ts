@@ -26,13 +26,14 @@ export function viewOf(dump: Dump): PlantView {
     id: node.id,
     label: node.id,
     noteLines: 1,
+    ported: true,
     pins: { ins: node.ins.map(pin), outs: node.outs.map(pin) },
   }));
   const edges = dump.edges.map((id) => {
     const [from = "", rest = ""] = id.split(">");
     const [fromId = "", fromHandle = ""] = from.split(".");
     const [toId = "", toHandle = ""] = rest.split(".");
-    return { id, from: fromId, to: toId, fromHandle, toHandle, family: null, count: 1 };
+    return { id, from: fromId, to: toId, fromHandle, toHandle, family: null, count: 1, reverse: 0 };
   });
   const box = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
   return {
@@ -43,6 +44,7 @@ export function viewOf(dump: Dump): PlantView {
       groups: new Map(dump.frames.map((f) => [f.title, box(f.x, f.y, f.width, f.height)] as const)),
     },
     halls: [],
+    wires: "each",
   } as unknown as PlantView;
 }
 

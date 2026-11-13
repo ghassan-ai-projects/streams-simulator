@@ -60,6 +60,82 @@ export const towerPorts: { readonly ports: readonly PortSpec[] } = {
   ],
 };
 
+const beltLinks = [
+  ["F-1.feed_out", "B-1.feed_in"],
+  ["B-1.moving_out", "F-1.moving_in"],
+  ["B-1.share_out", "D-1.share_in"],
+  ["B-1.stop_ok_out", "D-1.stop_ok_in"],
+  ["D-1.drag_out", "B-1.drag_in"],
+  ["D-1.run_cap_out", "B-1.run_cap_in"],
+  ["D-1.enabled_out", "B-1.drives_in"],
+] as const;
+
+export const beltDomain = {
+  id: "belt",
+  title: "Belt",
+  site: { name: "Belt", areas: [{ name: "Belt" }, { name: "Transfer", parent: "Belt" }] },
+  kinds: [
+    { name: "feeder", channels: [{ name: "feeder.feed", unit: "kg/s" }] },
+    { name: "belt", channels: [{ name: "belt.tail_speed", unit: "rpm" }] },
+    {
+      name: "drive",
+      channels: ["current", "winding", "vibration", "run_status", "run_command", "torque", "slip"].map((name) => ({
+        name: `drive.${name}`,
+        unit: name === "winding" ? "degC" : "",
+      })),
+    },
+  ],
+  instances: [
+    { kind: "belt", names: ["B-1"], area: "Transfer", provenance: { component: "lib/belt" } },
+    { kind: "drive", names: ["D-1"], area: "Transfer", provenance: { component: "lib/drive" } },
+    { kind: "feeder", names: ["F-1"], area: "Transfer", provenance: { component: "lib/feeder" } },
+  ],
+  links: beltLinks.map(([from, to]) => ({ from: from.split(".")[0], to: to.split(".")[0], type: "link" })),
+};
+
+export const beltComposition = { connections: beltLinks.map(([from, to]) => ({ from, to })) };
+
+const beltPort = (name: string, type: string): PortSpec => ({
+  name,
+  type,
+  direction: name.endsWith("_in") ? "in" : "out",
+});
+
+export const beltSpecs = new Map([
+  [
+    "lib/feeder",
+    { ports: [beltPort("moving_in", "run_state"), beltPort("feed_out", "bulk_flow")], category: "prod" as const },
+  ],
+  [
+    "lib/belt",
+    {
+      ports: [
+        beltPort("feed_in", "bulk_flow"),
+        beltPort("drag_in", "drag_force"),
+        beltPort("run_cap_in", "force_capacity"),
+        beltPort("drives_in", "run_state"),
+        beltPort("moving_out", "run_state"),
+        beltPort("share_out", "load_torque"),
+        beltPort("stop_ok_out", "run_state"),
+      ],
+      category: "prod" as const,
+    },
+  ],
+  [
+    "lib/drive",
+    {
+      ports: [
+        beltPort("share_in", "load_torque"),
+        beltPort("stop_ok_in", "run_state"),
+        beltPort("drag_out", "drag_force"),
+        beltPort("run_cap_out", "force_capacity"),
+        beltPort("enabled_out", "run_state"),
+      ],
+      category: "prod" as const,
+    },
+  ],
+]);
+
 export function campus(halls: number) {
   const names = (base: string) => Array.from({ length: halls }, (_, i) => `h${String(i + 1).padStart(2, "0")}/${base}`);
   return {

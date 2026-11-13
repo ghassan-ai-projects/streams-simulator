@@ -1,7 +1,7 @@
 import { spaced } from "../../shared/words";
 import type { Instance, Plant } from "./plant";
 
-export type Family = "air" | "pressure" | "water" | "cw" | "temp" | "heat" | "power" | "signal" | "env";
+export type Family = "air" | "pressure" | "water" | "cw" | "temp" | "heat" | "power" | "bulk" | "signal" | "env";
 type Shape = "circle" | "square" | "diamond" | "hexagon" | "bar";
 
 const families: Readonly<Record<string, Family>> = {
@@ -23,6 +23,8 @@ const families: Readonly<Record<string, Family>> = {
   pulley_force: "power",
   drag_force: "power",
   force_capacity: "power",
+  bulk_flow: "bulk",
+  share_weight: "signal",
   shift: "signal",
   run_state: "signal",
   tariff: "signal",
@@ -37,6 +39,7 @@ const shapes: Readonly<Record<Family, Shape>> = {
   cw: "circle",
   heat: "bar",
   power: "square",
+  bulk: "bar",
   pressure: "diamond",
   temp: "hexagon",
   signal: "hexagon",
@@ -51,6 +54,7 @@ export const familyNames: Readonly<Record<Family, string>> = {
   temp: "Temperature",
   heat: "Heat",
   power: "Power",
+  bulk: "Bulk material",
   signal: "Signal",
   env: "Weather",
 };

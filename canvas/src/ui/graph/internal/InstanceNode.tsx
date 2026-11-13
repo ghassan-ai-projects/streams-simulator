@@ -5,6 +5,7 @@ import { describeNode, headerHeight, idExtra, originWords } from "../../../model
 import type { ViewNode } from "../../../model/graph";
 import { cx } from "../../primitives";
 import type { InstanceNodeType } from "./flow";
+import { Channels } from "./Channels";
 import { InstanceHeader } from "./InstanceHeader";
 import { Pins } from "./Pins";
 import { Readout } from "./Readout";
@@ -54,7 +55,10 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="source" position={Position.Right} id="out" className={pins.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} zoom={zoom} />
       {data.live !== null && <Readout body={data.live.readout} fault={fault} effector={effector} />}
-      {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
+      {data.live === null && view.ported && (
+        <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />
+      )}
+      {data.live === null && !view.ported && <Channels view={view} />}
     </div>
   );
 }

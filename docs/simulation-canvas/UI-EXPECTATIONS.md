@@ -97,17 +97,18 @@ How to read the tables:
 | P-1 | The header shows the plant title, a one-line summary (instances, areas, links), and its actions: Edit and Run. Nothing important clips at 1280. | ◐ the summary clips | |
 | P-2 | At the opening zoom every node is legible: id, kind in words, and a category colour or icon. A user can tell a chiller from a pump without zooming. | ✅ id and kind in words at the opening zoom, with a category band (fa21952) | |
 | P-3 | The opening view fits the plant to the space with a small even margin. There are no large empty bands above or below the area frames. | ✗ | |
-| P-4 | Wires are readable: they are routed between areas without crossing node text, and coloured by port family. Hovering or selecting a node highlights only its wires and dims the rest. | ◐ selection highlights; the overall view is spaghetti | |
+| P-4 | Wires are readable: they are routed between areas without crossing node text, and coloured by port family. Hovering or selecting a node highlights only its wires and dims the rest. | ◐ selection highlights; a plant with parallel links opens with one counted wire per pair of instances (P-15) | |
 | P-5 | The outline groups instances by area and shows each instance's kind in words. It filters as you type. | ✅ kinds and a filter in the outline | |
 | P-6 | The inspector with nothing selected shows the plant overview: areas with counts, kinds with counts, recent runs of this plant with Review links. | ✅ plant overview with recent runs, areas and kinds | B (runs per plant) |
 | P-7 | The inspector for an instance leads with its kind in words and its area, then channels with units, links in and out (clickable to select the other end), faults and effectors in words. Raw ids sit in a details line. | ◐ kind and area lead; links are not clickable yet | |
 | P-8 | Halls (large plants) open with one click or Enter, and the breadcrumb shows the hall. | ✅ | |
 | P-9 | The outline scrolls in its own region with a scroll cue, and the selected row is scrolled into view. | ◐ the selected row scrolls into view | |
 | P-10 | The Navigator minimap is fully visible at a fixed size at 1280 and 1440. | ✗ cut off at the window bottom | |
-| P-11 | A legend explains wire colours (port families) and pin shapes on the plant and editor screens. | ✗ no legend | |
+| P-11 | A legend explains wire colours (port families) and pin shapes on the plant and editor screens. | ✅ a legend that lists only the families the plant uses, and the count on a grouped wire; selecting a family hides or shows its wires | |
 | P-12 | Hall nodes show that they open (a chevron or "Open"), the hall layout is regular, site nodes are not blank, and hall names match the outline case. | ✗ campus ragged; CAL-1 truncates "feeds all 3 h…"; lowercase h01 | |
 | P-13 | The inspector has a close control, its kind line never breaks mid-token, and long lists (13 faults, 17 states) are grouped or collapsible. | ✅ close control, folding lists | |
 | P-14 | Area frame titles are never crossed by wires, and wires do not cross node headers. | ✗ yellow wire through "Substation" at 1920 | |
+| P-15 | A plant whose instances share many links stays readable: parallel links between two instances are one wire with their count and an arrow each way, nodes list measured channels with units (their readings in a review) instead of model ports, and one control switches back to a wire per link. | ✅ Group links on the plant, review and editor screens, on by default from three links one way between two instances (2026-11-13) | |
 
 ## 4. Editor (build and edit a plant)
 
