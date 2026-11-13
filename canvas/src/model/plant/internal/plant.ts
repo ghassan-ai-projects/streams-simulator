@@ -70,6 +70,7 @@ export interface Link {
 export interface Plant {
   readonly id: string;
   readonly title: string;
+  readonly description?: string;
   readonly site: string;
   readonly areas: readonly AreaRef[];
   readonly instances: readonly Instance[];
@@ -167,6 +168,7 @@ export function parsePlant(domain: unknown, composition: unknown = null): Plant 
   return {
     id: text(body.id),
     title: text(body.title),
+    ...(text(body.description) === "" ? {} : { description: text(body.description) }),
     site: text(site.name),
     areas: areas(site),
     instances: instances(body.instances),

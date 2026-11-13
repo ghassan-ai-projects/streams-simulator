@@ -102,6 +102,7 @@ function OverviewHead({ plant, where }: { readonly plant: Plant; readonly where:
           "links",
         )}`}
       </p>
+      {plant.description !== undefined && <p className={styles.about}>{plant.description}</p>}
       <p className={styles.hint}>
         Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
         and effectors.
