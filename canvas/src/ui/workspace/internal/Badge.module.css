@@ -1,6 +1,7 @@
 .badge,
 .explore,
 .running,
+.unfinished,
 .verified {
   display: inline-flex;
   align-items: center;
