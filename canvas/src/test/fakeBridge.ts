@@ -233,6 +233,7 @@ export class FakeBridge {
     if (job !== undefined) return job;
     if (name === "catalog.perturbations") return success(perturbationsWire);
     if (name === "catalog.describe") return success(describedWire);
+    if (name === "component.install_kinds") return success({ example: args.example, written: [], unchanged: [] });
     return failed(cannedFailure("unknown_action", 404));
   }
 }

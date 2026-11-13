@@ -13,18 +13,19 @@ const (
 )
 
 type Report struct {
-	SchemaVersion    string       `json:"schema_version"`
-	Run              Run          `json:"run"`
-	Digests          *Digests     `json:"digests,omitempty"`
-	Verification     Verification `json:"verification"`
-	Replay           Replay       `json:"replay"`
-	Counts           Counts       `json:"counts"`
-	Truth            *Truth       `json:"truth,omitempty"`
-	TruthUnavailable string       `json:"truth_unavailable,omitempty"`
-	TornTail         []string     `json:"torn_tail,omitempty"`
-	Consumer         *Consumer    `json:"consumer,omitempty"`
-	Scoring          *Scoring     `json:"scoring,omitempty"`
-	OpenQuestions    []Question   `json:"open_questions"`
+	SchemaVersion    string          `json:"schema_version"`
+	Run              Run             `json:"run"`
+	Digests          *Digests        `json:"digests,omitempty"`
+	Verification     Verification    `json:"verification"`
+	Replay           Replay          `json:"replay"`
+	Counts           Counts          `json:"counts"`
+	Truth            *Truth          `json:"truth,omitempty"`
+	TruthUnavailable string          `json:"truth_unavailable,omitempty"`
+	TornTail         []string        `json:"torn_tail,omitempty"`
+	Consumer         *Consumer       `json:"consumer,omitempty"`
+	Scoring          *Scoring        `json:"scoring,omitempty"`
+	OutcomeScore     *OutcomeScoring `json:"outcome_score,omitempty"`
+	OpenQuestions    []Question      `json:"open_questions"`
 }
 
 type Run struct {
@@ -87,6 +88,7 @@ type Truth struct {
 	Environment   []Environment         `json:"environment"`
 	EffectorCalls []EffectorCall        `json:"effector_calls"`
 	KPIs          *model.KPITruth       `json:"kpis,omitempty"`
+	KPIUnits      map[string]string     `json:"kpi_units,omitempty"`
 }
 
 type Perturbation struct {

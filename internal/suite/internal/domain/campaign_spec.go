@@ -30,11 +30,11 @@ type CampaignSpec struct {
 }
 
 type CampaignPhase struct {
-	Name          string             `json:"name"`
-	Domain        string             `json:"domain"`
-	Runs          int                `json:"runs"`
-	NegativeShare float64            `json:"negative_share"`
-	Faults        map[string]float64 `json:"faults"`
+	Name          string                 `json:"name"`
+	Domain        string                 `json:"domain"`
+	Runs          int                    `json:"runs"`
+	NegativeShare float64                `json:"negative_share"`
+	Faults        map[string]FaultWeight `json:"faults"`
 
 	FaultsPerRun    *int `json:"faults_per_run,omitempty"`
 	NegativesPerRun int  `json:"negatives_per_run,omitempty"`

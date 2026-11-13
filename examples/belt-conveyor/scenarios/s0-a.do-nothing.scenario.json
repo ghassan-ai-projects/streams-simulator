@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1",
+  "id": "s0-a-do-nothing",
+  "description": "S0: Nominal day: the feed follows the shift pattern, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 2119795751,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "F-1",
+        "fault": "bulk_feeder__shift_pattern",
+        "onset_ns": 1767225600000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767312000000000000
+      }
+    }
+  ]
+}

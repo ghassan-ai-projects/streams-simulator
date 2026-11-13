@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/session-plan-v0.1.schema.json",
   "title": "session-plan-v0.1",
-  "description": "The plan of one connected session that streamsim plantwire connect runs until it is stopped: the plant, the plant wire host it links to, an optional gateway, and which plant instances are real boards behind that gateway. The plant does not change: every instance not named in real is simulated.",
+  "description": "The plan of one connected session that streamsim plantwire connect runs until it is stopped or reaches its horizon: the plant, the plant wire host it links to, an optional gateway, and which plant instances are real boards behind that gateway. The plant does not change: every instance not named in real is simulated.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "domain", "host_socket"],
@@ -46,6 +46,13 @@
       "maximum": 315360000,
       "x-expected": "whole seconds from 0 to 315360000 (ten years), and no pace member",
       "description": "Seconds after the default world start (2026-01-01T00:00:00Z) at which the world starts, so the runs of a campaign follow one another in world time. Absent: the default start. Not with pace, which starts the world at the wall time."
+    },
+    "horizon_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 2592000,
+      "x-expected": "seconds after the world start, more than 0 and at most 2592000 (30 days)",
+      "description": "Seconds after the world starts at which the session ends itself, so a run covers a fixed window. Every disturbance starts before it and is cleared by it. In a session paced by the wall clock the world starts when the session starts while disturbances count from the host's attach, so a host that attaches late shortens the time after them. Absent: the session runs until it is stopped. Only for a session of simulated boards (no gateway_socket)."
     },
     "pace": {
       "enum": ["wall"],

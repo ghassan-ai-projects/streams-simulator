@@ -4,6 +4,7 @@ const (
 	FormCurve   = "curve"
 	FormProduct = "product"
 	FormSum     = "sum"
+	FormRatio   = "ratio"
 )
 
 type Table struct {
@@ -18,7 +19,7 @@ func (d *Dynamics) Algebraic() bool {
 		return false
 	}
 	switch d.F1.Form {
-	case FormCurve, FormProduct, FormSum:
+	case FormCurve, FormProduct, FormSum, FormRatio:
 		return true
 	}
 	return false

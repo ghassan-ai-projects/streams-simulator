@@ -41,18 +41,22 @@ export function workspaceFailure(error: RequestFailure): WorkspaceFailure {
   return serverFault(error.problem, display);
 }
 
-export function plantFailure(action: "read" | "generate" | "write" | "compose"): FailureMapper<PlantFailure> {
+type PlantStep = "read" | "generate" | "install" | "write" | "compose";
+
+const refusingPlantSteps: readonly PlantStep[] = ["install", "compose"];
+
+export function plantFailure(action: PlantStep): FailureMapper<PlantFailure> {
   return (error) => (error.kind === "http" ? plantProblem(error.problem, action) : unreached(error));
 }
 
-function plantProblem(problem: WireProblem, action: "read" | "generate" | "write" | "compose"): PlantFailure {
+function plantProblem(problem: WireProblem, action: PlantStep): PlantFailure {
   const display = diagnostic(problem);
   if (isMissing(problem)) return { kind: "missing", diagnostic: display };
   if (problem.code === "conflict") return { kind: "conflict", diagnostic: display };
   if (action === "generate" && problem.issues.length > 0) {
     return { kind: "invalid-composition", diagnostic: display, issues: problem.issues };
   }
-  if (action === "compose" && problem.issues.length > 0) {
+  if (refusingPlantSteps.includes(action) && problem.issues.length > 0) {
     return { kind: "compose-refused", diagnostic: display, issues: problem.issues };
   }
   return serverFault(problem, display);

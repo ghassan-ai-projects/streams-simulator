@@ -7,8 +7,8 @@ import (
 
 type Options = app.Options
 
-var ErrRunUnblinded = layer.ErrRunUnblinded
+type OutcomeOptions = app.OutcomeOptions
 
-var ErrNotOneLabel = layer.ErrNotOneLabel
+var ErrRunUnblinded = layer.ErrRunUnblinded
 
 type ReplayMismatchError = layer.ReplayMismatchError

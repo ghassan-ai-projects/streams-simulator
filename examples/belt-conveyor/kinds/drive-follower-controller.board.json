@@ -1,0 +1,19 @@
+{
+  "board_type": "drive-follower-controller",
+  "kinds": {
+    "drive_follower": {
+      "commands": {
+        "start_drive": {"raw": "drive_follower__start_drive", "args": {"run_command": {"from": "run_command"}}},
+        "stop_drive": {"raw": "drive_follower__stop_drive", "args": {"run_command": {"from": "run_command"}}},
+        "reset_trip": {"raw": "drive_follower__reset_trip"}
+      },
+      "metrics": {
+        "current": {"raw": "drive_follower.current"},
+        "winding": {"raw": "drive_follower.winding"},
+        "vibration": {"raw": "drive_follower.vibration"},
+        "run_status": {"raw": "drive_follower.run_status"},
+        "run_command": {"raw": "drive_follower.run_command"}
+      }
+    }
+  }
+}

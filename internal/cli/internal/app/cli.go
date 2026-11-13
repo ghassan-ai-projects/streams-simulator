@@ -45,6 +45,7 @@ var commands = map[string]command{
 	"refconsumer": {run: cmdRefconsumer},
 	"suite":       {run: cmdSuite},
 	"score":       {run: cmdScore},
+	"outcome":     {run: cmdOutcome},
 	"report":      {run: cmdReport},
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
@@ -109,7 +110,7 @@ func (s *session) fail(documents io.Writer, name string, err error) int {
 		return 0
 	}
 	if _, flagReported := asUsageExit(err); !flagReported {
-		_, _ = fmt.Fprintf(s.stderr, "streamsim: %v\n", err)
+		_, _ = fmt.Fprintf(s.stderr, "streamsim: %s\n", withoutProgramName(err.Error()))
 	}
 	_ = printJSON(documents, describeFailure(name, err))
 	return exitStatusOf(err)
@@ -156,7 +157,7 @@ Commands:
                                         or a journal (--kinds-dir compares with kind files); writes nothing
   component list [--unit u [--min n --max n]]|show <ref>|validate
                                         The component library: equipment, instruments, vocabulary
-  component examples|example <id>       Ready-to-run example plants shipped with the library
+  component examples|example <id>|install-kinds <id> --kinds-dir <d>  Example plants and their kind files
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
                                         (built in; --components-dir adds customer
                                         directories, repeatable; STREAMSIM_COMPONENTS_DIRS)
@@ -175,8 +176,8 @@ Commands:
   suite --domain --profile              Generate an audited graded suite
   suite campaign --spec --out           Generate a campaign of one-fault runs and their session plans
   score --run --label                   Offline scorecard from artifacts
-  report <run-dir>                      Summarize a run folder (--format json|markdown,
-                                        --out <file>, --replay)
+  outcome --run <run-dir>               Consequences of a run against doing nothing and the baseline policies
+  report <run-dir>                      Summarize a run folder (--format json|markdown, --out <file>, --replay)
   report compare --a --b                Compare two ended runs (reference a)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)

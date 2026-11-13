@@ -4,6 +4,157 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **A failure names the program once on stderr.** A command whose error already began with `streamsim: ` printed it
+  twice (`streamsim: streamsim: run: read artifact ...` from `outcome --run`, `replay`, `verify`, `catalog describe`,
+  `domain validate` and others). The stderr line now strips the inner prefix as the failure document's `message`
+  already did. The JSON failure documents do not change.
+
+- **The run report shows a KPI's unit, and a counter by its change.** `truth.kpi_units` (`run-report-v0.1`, added in
+  place) holds the unit of each KPI state the embedded domain declares. The Markdown KPI table gains a Unit column, and
+  with `--outcome` each KPI the outcome's `as_run` facts record is shown by start, end and change, not by the mean,
+  minimum and maximum of a cumulative counter (B-1 `delivered` on S2-B: 100000.000 to 100104.473 t, +104.473). The
+  domain model has no cumulative marker, so the outcome's facts decide; without `--outcome` the generic table stays.
+
+- **The run report's outcome score says who won.** The Markdown "Outcome score" section opens with one summary line
+  (the run beats, ties or loses to doing nothing and each baseline policy, with the deltas), says what the costs mean
+  (J in the domain's `outcome_weights.unit`; a negative delta means the run cost less; the tie), reads `valid: no` as a
+  control story (doing nothing is clean) and `easy` as a baseline policy tying or beating the run, and shows each
+  policy's `label`. The JSON `outcome_score` gains `unit` and `labels` (`run-report-v0.1`, added in place). No cost,
+  verdict or outcome number changes.
+
+- **A domain names its cost unit and its baseline policies in words.** `domain-spec-v0.2` gains two optional members,
+  added in place: `ground_truth.outcome_weights.unit` (the unit J is counted in) and `baseline_policies[].label` (what a
+  policy does, shown beside its name). Neither changes a cost, a verdict or a run. The four conveyor plants carry them
+  (`equivalent production hours`; B1 vibration alarm, B2 current threshold, B3 safe limp feed, B4 drive lost), so their
+  domain digests move: A `sha256:86e15c4b…` to `sha256:a2858568…`, B `sha256:898ea1e5…` to `sha256:657bafe5…`,
+  S6-promote `sha256:3539af7d…` to `sha256:ac4081d3…`, S6-stop `sha256:815c5426…` to `sha256:bd061ccc…`. Run ids do not
+  move (they name the domain id only).
+
+- **A frozen or stuck reading is first observable at its injection.** Truth's single-channel detector counts a held
+  reading (`stuck` or `freeze`) of a channel with noise as lost from its injection, as it already did a dropped one: the
+  delivered reading stops moving at once. Before, a session label took a freeze's first observable from the time the
+  true reading drifted 3σ off the frozen one (S5-A row 1: 1.62 h, after the bearing onset), so a consumer that reported
+  the flat channel 15 min after the freeze was graded `suspicious` instead of detected (O26 amended). A held reading of a
+  channel without noise is judged by its level as before. `world.World.ReadingHeld` is new.
+- **`streamsim outcome` runs its silent outcome replays concurrently.** `grading.GradeOutcome` replays `as_run`,
+  `do_nothing` and each baseline policy on min(4, `GOMAXPROCS`) workers (`OutcomeOptions.Workers` overrides it) after the
+  reproduction check. The replays share no mutable state; results keep mode order, and an error is the first by mode
+  order, whose failure cancels only the later replays, so the document and the error are the same at any worker count.
+  A replay now stops before its next command once its context is canceled. On the S1-A row 1 run folder at
+  `GOMAXPROCS=3` the command went from 346 s to 191 s, byte-identical output.
+- **S5b: D-3's vibration channel drops out during the slow bearing failure (conveyor milestone M4, row 4, streamsim
+  side).** `stories.json` gains S5b-A: S5-A's ten seed rows, plant, horizon, downstream stop and reference policy, with
+  `conveyor_drive__vibration__dropout` (the existing instrument fault, data only) at `dropout_s` in place of the freeze.
+  From the injection on no reading of D-3's vibration is delivered; the dropout is a label of its own on D-3 (O25),
+  observable at its injection and expecting no action, beside `lube_loss`. Scenarios and the session plan are generated
+  from the table; the other stories' files are unchanged.
+- **S1-B's reference policy stops D-3 1.5 h before the trip at full feed (conveyor milestone M4, S1-B was easy).** The
+  M1 reference limped at 18 % from 4 h after the onset and lost to baseline B1 by 2.12 equivalent hours on row 1, all of
+  it throughput. The new reference keeps full feed until `planned_stop_s` (each row's do-nothing D-3 trip less the
+  story's `planned_stop_lead_s`, 1.5 h, rounded down to 5 min), empties the belt, stops D-3 and limps at 18 %: it beats
+  B0-B4 on every row (B1 by 0.39-0.79) and S1-B is no longer easy. A 2 h stop lead ties B1 on two rows (M4-DESIGN
+  section 6). Seeds and session plans are unchanged; `s1-b.reference.scenario.json` is regenerated.
+- **Failure predictions are graded (conveyor milestone M4, row 7, U9, O31).** A consumer-verdict detection may carry the
+  optional `predicted_failure_at` (consumer-verdict v0.1; an optional member, as earlier additions were, so no version
+  bump). `streamsim score` then replays the run with every effector call removed and grades the predictions on each
+  label's entity against its first protection trip there, up to the run's first effector call that took effect (L6):
+  `judgment.prognosis` holds α-λ accuracy at λ 0.5 and 0.75 (α 0.2, β 0.5), relative accuracy, and the prognostic
+  horizon, a late prediction weighing twice an early one. Verdicts without predictions score bit for bit as before, with
+  no extra replay.
+- **Campaign phases draw a fault's severity (conveyor milestone M4, row 8, U8).** In a `suite campaign` spec a fault's
+  weight may be `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6) instead of a number: every disturbance of
+  that fault then carries a `severity` drawn uniformly from the range in its session plan. Severities are drawn from each
+  run's own stream (`campaign/run/<n>/severity`, in disturbance order), so a range moves no other draw, and a spec without
+  ranges generates the same files byte for byte (the committed first-slice campaign is digest-pinned). The committed
+  conveyor story tables are unchanged.
+- **Loss of the torque master, S6 (conveyor milestone M4, row 5, O33).** New library version
+  `streamsim/conveyor-drive@2`: the conveyor drive plus a speed-reference link (port `reference_in`, sampled 1 s, and
+  `reference_out`; parameters `role` `master`/`follower`, `master_loss` `stop_all`/`promote` and `promote_s`), data only,
+  checked against closed forms. Example plants `belt-conveyor-drives-s6-stop` and `-s6-promote` (plant A with D-1 as kind
+  `drive_master`, D-2 and D-3 as `drive_follower`), their kind files and boards, and the stories S6-A-stop and
+  S6-A-promote with scenarios and session plans. Plants A and B and their stories are unchanged.
+- **Two labels on one entity are judged apart (conveyor milestone M4, row 2, O25).** A label is keyed by entity and
+  fault: when several labels of a run sit on one entity, a detection whose `label` names one of their faults is judged
+  with that label alone, and a call or action only some of them expect goes to those; a detection or call on that entity
+  that names or is expected by none of them is judged with each. One label per entity scores bit for bit as before
+  (digest-pinned). S5's frozen vibration reading and dry bearing on D-3 get their own judgments, and their order is read
+  from the two scorecards.
+- **`streamsim outcome` says whether a story is easy (conveyor milestone M4, row 1).** The `outcome` document (cli-output
+  v0.1) gains the required `easy`: true when the story is valid and the run does not beat some baseline policy (it ties
+  or loses to it), so a trivial fixed rule does as well (PLAN.md section 6.3). Doing nothing never makes a story easy.
+- **Baselines B1-B3 on both conveyor plants (conveyor milestone M4, row 1, O27).** Closed `baseline_policies` beside B4:
+  `b1` a drive's vibration above 4.5 mm/s for 60 s, then feed 0 and, 60 s later, stop that drive; `b2` a drive's current
+  above 1.1 times its current at full feed on three drives (3.385 A on plant A, 4.688 A on plant B; the closed record has no
+  rolling mean, so the plan's 1 h mean became this absolute threshold), held 60 s, then feed 67 %; `b3` from the first
+  sample (feeder setpoint at or above 0) the plant's safe limp feed, 54 % on A and 18 % on B. `streamsim outcome` now
+  replays four policies.
+- **Unequal load sharing: the algebraic form `ratio` (conveyor milestone M3, row 3, U7).** domain-spec v0.2 F1 form `ratio`:
+  the product of the numerator inputs over the larger of the denominator inputs' product (inputs with `denominator: true`)
+  and a required `floor` > 0, so nothing divides by zero; checked against an independent closed-form oracle. Each conveyor
+  drive now has a share `weight` (initial 1, skewed by the new negative-class fault `share_skew`) and loads itself by
+  `w·n/Σw` of the belt's equal share; with equal weights every story runs bit for bit as before (trace and outcome digests
+  guarded). The belt's stop permit still assumes equal survivors (a stated limit).
+
+- **Every conveyor command is read back (conveyor milestone M3, row 2, O21).** The conveyor commands carry no id argument
+  any more (the call or the plant wire device addresses the instance): `set_feed` takes `percent`, `start_drive` and
+  `start_belt` take `run_command` 1, `stop_drive` and `stop_belt` `run_command` 0 (each assigns the run command; the plant's
+  `requires` permits are unchanged, so the world is too), `reset_trip` nothing. Drive and belt gain the point `run_command`
+  with the new instrument `streamsim/command-readback` (the on or off a controller was told, read from its register as a
+  number: noise-free, 0.1 resolution, periodic 2 s), so their run command is a writable metric. Their kind files are now
+  semantic (`current`, `winding`, `vibration`, `run_status`, `run_command`; `start_drive`, `stop_drive`, `reset_trip`;
+  `tail_speed`, `run_command`; `start_belt`, `stop_belt`) and reach the raw names through the new board mappings
+  `drive-controller` and `belt-controller`; the feeder's `feeder-controller` mapping loses its fixed `F-1`.
+- **Scoring credits remedies on other entities and matches actions by command id (conveyor milestone M3, row 1, O24).**
+  A verdict action matches the world's call by command id, effector and entity; its `issued_at` may precede the call. A
+  fault may declare `expected_actions` (`{kind, effector}`, domain-spec v0.2; on a composition entry keyed by the
+  component's fault id, composition v0.1), which a label resolves to instances (ground-truth v0.1): a matching call is the
+  right action, and with several labels it is graded with its fault instead of as unexpected. `grading.Grade` (one label
+  only) is gone; the report grades `labels.json` too. The conveyor's drive faults expect the feed cut, the drive stop and,
+  for gear oil loss, the belt stop.
+
+- **An example plant brings its kind files.** The belt conveyor examples implement plant wire kind files, so a copy made
+  in the canvas could not compose (`implements_missing`). The component module now embeds the kind files and board
+  mappings next to the example compositions (byte-equal to `examples/belt-conveyor/kinds/`, checked by a test) and chooses
+  an example's from its entries' `implements` and `board_type`. `component example` and `component new --example` carry
+  them in a new `kind_files` member (cli-output v0.1), and the new `component install-kinds <example> --kinds-dir <dir>`
+  writes them, leaving an identical file as it is and refusing a different one (`kind_failed`, `kind_file_differs`)
+  without writing anything. The canvas bridge action `component.install_kinds` runs it on the workspace `kinds/` folder
+  when the canvas copies an example, before the copy is written and composed.
+- **Kind files for the conveyor and a feeder that reads its setpoint back (conveyor milestone M2, rows 1 and 2).**
+  composition-v0.1 takes `implements` and `board_type` on an equipment entry (`board_type` needs `implements`); `domain
+  compose` copies both onto the composed kind and checks them against `--kinds-dir`. The bulk feeder gains the point
+  `feed_setpoint` with the new instrument `streamsim/setpoint-readback` (noise-free, 0.1 % resolution), so a host can verify
+  a feed command. `examples/belt-conveyor/kinds/` holds the feeder kind file (`feed`, `feed_setpoint` writable, `set_feed`),
+  its board mapping `feeder-controller` and the belt and drive kind files captured from a session birth; both conveyor plants
+  implement all three (identical digests on A and B), so their `run`, `domain compose` and `plantwire` commands take
+  `--kinds-dir examples/belt-conveyor/kinds`. Measured on plant B (S2-B, noiseless): one `set_feed` to 18 % still saves the
+  survivors and the belt up to 98 s after D-3 trips, a cut to 0 up to 103 s.
+- **`streamsim outcome`: a run graded on its consequences (conveyor milestone M1).** The command replays a run folder's
+  artifact as it ran, with every effector call removed (`do_nothing`) and under each of the domain's `baseline_policies`,
+  records per entity the trips, boundary violations and KPI changes exactly at the step where they happen, prices each run
+  with `outcome_weights` (new optional `tie`, 0.1 on both conveyor plants) and says whether the run `beats`, `ties` or
+  `loses` against each baseline; `valid` says doing nothing is not clean. Computed at scoring time, never sealed (O15); no
+  verdict or label is read. A domain without weights gets the facts only. New `outcome` document in cli-output v0.1 and the
+  `outcome_failed` code. `streamsim report --outcome` carries the same result in a new optional `outcome_score` member (run-report
+  v0.1) and an "Outcome score" Markdown section when the run's domain declares outcome weights; without the flag a report
+  is unchanged and replays nothing. Exit evidence: on every seed row of every conveyor story the reference policy beats doing nothing (S1-S3, S5),
+  and doing nothing is clean only on S0 and S4; through the binary the reference beats B4 on every positive story, and B4
+  never fires on S0 and S4. The story long tier's do-nothing runs now run to their horizon.
+- **Outcome data in a domain and a session horizon (conveyor milestone M1, round 1).** domain-spec v0.2 `ground_truth` takes
+  two optional members: `outcome_weights` (cost per boundary violation and hour, per trip of a trip state, per unit of a
+  KPI's change, per unneeded call) and `baseline_policies` (one condition on one state of a kind, an optional hold, then calls
+  to `matched` or a named instance). Every name in them is checked against the domain when it loads. Both conveyor plants
+  carry the weights and the policy `b4` (feed to 67 % when a drive is unavailable). session-plan v0.1 takes an optional
+  `horizon_s` for a session of simulated boards: the session ends itself there (`stopped: false`), and the story session
+  plans carry their story's horizon. Nothing scores with the outcome data yet. Design: `docs/belt-conveyor-drives/M1-DESIGN.md`.
+- **Multi-drive belt conveyor (conveyor milestone M0).** Three library parts: `streamsim/bulk-feeder`, `streamsim/belt-conveyor`
+  (drives share its pull; material on the belt, breakaway force, stall, a run permit from downstream, restart margin and a
+  `stranded` boundary) and `streamsim/conveyor-drive` (motor relay and inverter overload, winding heat and aging, bearing and
+  gear failures, seizure; `margin` strong or weak), the IO-Link `streamsim/vibration-sensor` with a `frozen` fault, the `force`
+  unit family and five port types. Example plants `belt-conveyor-drives-a` (strong) and `-b` (weak), and the stories S0-S5 as
+  data in `examples/belt-conveyor/` (ten seed rows each, do-nothing and reference-policy scenario files, live session plans),
+  checked against closed forms in `test/contract`. Design: `docs/belt-conveyor-drives/M0-DESIGN.md`.
+
 - **Plant wire contract 1.5.0: liveness is judged by heartbeats on every node.** A simulated node declared the host lost after
   three consecutive missed barriers, but a host may hold an `HSYNC` for as long as its reasoning lasts, so a live, busy host
   was lost after 3 x `--barrier-cap-ms`. Now the host keeps sending its `STATE` heartbeat while it holds an answer (the

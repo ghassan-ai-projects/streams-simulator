@@ -11,7 +11,7 @@ func TestExamplePlantsAreListedByTitleAndFoundById(t *testing.T) {
 	examples, err := LoadExamples([]File{
 		{Path: "b.composition.json", Raw: []byte(`{"id":"b","title":"Beta","description":"second"}`)},
 		{Path: "a.composition.json", Raw: []byte(`{"id":"a","title":"Alpha"}`)},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,9 +19,9 @@ func TestExamplePlantsAreListedByTitleAndFoundById(t *testing.T) {
 	if len(list) != 2 || list[0] != (ExampleSummary{ID: "a", Title: "Alpha"}) || list[1].Description != "second" {
 		t.Fatalf("List = %+v", list)
 	}
-	document, err := examples.Find("b")
-	if err != nil || !strings.Contains(string(document), `"Beta"`) {
-		t.Fatalf("Find(b) = %s, %v", document, err)
+	found, err := examples.Find("b")
+	if err != nil || !strings.Contains(string(found.Composition), `"Beta"`) || found.KindFiles == nil || len(found.KindFiles) != 0 {
+		t.Fatalf("Find(b) = %+v, %v", found, err)
 	}
 	if _, err := examples.Find("c"); !errors.Is(err, ErrUnknownExample) || !strings.Contains(err.Error(), `"c"`) {
 		t.Fatalf("Find(c) error = %v", err)
@@ -40,7 +40,7 @@ func TestAnExamplePlantNeedsJsonAndAnId(t *testing.T) {
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			_, err := LoadExamples([]File{{Path: "x.composition.json", Raw: []byte(c.raw)}})
+			_, err := LoadExamples([]File{{Path: "x.composition.json", Raw: []byte(c.raw)}}, nil)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Fatalf("LoadExamples error = %v, want %q", err, c.want)
 			}

@@ -235,7 +235,7 @@ Only measurable because the simulator closes the loop.
 | time to resolution | from `first_observable_time` to the world state recovering |
 | deadline adherence | fraction of `aquaculture-pond`-class scenarios resolved before stock loss |
 | unnecessary action rate | effector calls on negative-class scenarios |
-| action appropriateness | the effector matched `expected_effector` |
+| action appropriateness | the effector matched `expected_effector` on the label's entity, or one of the label's `expected_actions` (an effector on a named instance, resolved from the fault's `{kind, effector}` list) |
 | **false-success rate** | success reported under `silent_no_effect` (the shadow-state variant with no confirming tell) |
 | compensating-action correctness | a follow-up action correctly compensated an effect a later correction invalidated |
 | approval latency | round trip on a consumer's human-approval path, on `auth-and-edr` and `water-distribution` |

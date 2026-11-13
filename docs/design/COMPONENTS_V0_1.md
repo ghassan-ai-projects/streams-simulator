@@ -120,7 +120,7 @@ Offset and drift magnitudes are in the instrument's unit (fractions of the span 
 | `id`, `version`, `title`, `description`, `stresses`, `axes`, `profiles`, `ground_truth` | Copied into the domain; profile fault weights use composed (qualified) fault ids |
 | `site` | `{name, timezone}`, copied to the domain's `site` (structure only until the site calendar of P7k) |
 | `areas[]` | `{name, parent?}`: the ISA-95 hierarchy, copied to `site.areas`; a parent must be declared earlier |
-| `equipment[]` | `{use, as?, preset?, parameters?, names[] and/or (id_template, count), area?, instruments?}`; `area` must be declared in `areas` |
+| `equipment[]` | `{use, as?, preset?, parameters?, names[] and/or (id_template, count), area?, implements?, board_type?, instruments?}`; `area` must be declared in `areas`; `implements` and `board_type` are copied onto the composed kind (domain-spec v0.2), and `board_type` needs `implements` |
 | `connections[]` | `{from: "<instance id>.<port>", to: "<instance id>.<port>"}`; an endpoint splits at its last dot and must name an id the entry renders |
 
 A profile's `not_applicable` reason is at least 20 characters, as in the domain schema. `names`, `id_template` and `count` follow domain-spec v0.2 instance sets (§2.2, §8). `instruments` changes an entry's default

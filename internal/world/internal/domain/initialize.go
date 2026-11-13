@@ -30,6 +30,7 @@ func newWorldState(spec *domain.Compiled, seed uint64, id, key string, startNS i
 		forceEffectorOK:  opts.ForceEffectorOK,
 		forceFailureMode: opts.ForceFailureMode,
 		kpis:             newKPITracker(opts.TrackKPIs),
+		outcome:          newOutcomeRecorder(opts.RecordOutcome),
 	}
 }
 
@@ -92,6 +93,7 @@ func (w *World) populateInitialEntities(ids []string, startNS int64) error {
 			w.nextIndex[set]++
 		}
 	}
+	w.openOutcome(ids, startNS)
 	return nil
 }
 

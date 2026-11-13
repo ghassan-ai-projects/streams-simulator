@@ -17,6 +17,7 @@ type SessionPlan struct {
 	Policies      []string      `json:"policies,omitempty"`
 	Disturbances  []Disturbance `json:"disturbances,omitempty"`
 	StartS        *int64        `json:"start_s,omitempty"`
+	HorizonS      *float64      `json:"horizon_s,omitempty"`
 	Pace          string        `json:"pace,omitempty"`
 }
 

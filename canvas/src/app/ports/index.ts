@@ -40,7 +40,15 @@ export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
 export type { Clock, Scheduler } from "./clock";
 export type { Clipboard, FileSaver, Location, PreferenceStore, SystemTheme } from "./browser";
 export { failure, success } from "./shared";
-export type { ComposeSummary, Diagnostic, DomainDocument, FileContent, Outcome, PlantSource } from "./shared";
+export type {
+  ComposeSummary,
+  Diagnostic,
+  DomainDocument,
+  FileContent,
+  InstalledKinds,
+  Outcome,
+  PlantSource,
+} from "./shared";
 
 import type { DevicesGateway } from "./devices";
 import type { EditorGateway } from "./editor";

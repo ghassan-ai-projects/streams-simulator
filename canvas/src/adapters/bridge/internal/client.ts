@@ -18,6 +18,7 @@ import {
   composition,
   examples,
   fileContent,
+  installedKinds,
   library,
   markdown,
   paired,
@@ -81,6 +82,8 @@ function plantGateway(transport: Transport): BridgeAdapters["plant"] {
         composition,
         plantFailure("generate"),
       ),
+    installKinds: (example) =>
+      action(transport, "component.install_kinds", { example }, installedKinds, plantFailure("install")),
   };
 }
 

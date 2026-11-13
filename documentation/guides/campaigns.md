@@ -35,6 +35,13 @@ streamsim suite campaign --spec examples/pump-station/campaign/first-slice.campa
 - Each disturbance of a run is on a different entity that declares the fault and starts inside `fault_start_window_s`. A phase is refused when `faults_per_run` plus `negatives_per_run` exceeds the entities available.
 - `faults_per_run: 0` with no `faults` is a warm-up phase: no disturbance, or only the negatives.
 
+### Drawn severity
+
+A fault's weight may be an object, `{"weight": 1, "severity_range": [0.8, 1.25]}`: every disturbance of that fault then
+carries a `severity` drawn uniformly from the range in its session plan; without a range the domain's magnitude applies.
+The draws come from each run's own severity stream in disturbance order, so adding a range changes no instance, start
+time or seed, and a spec without ranges generates the same files byte for byte.
+
 ## Run one session
 
 ```bash
@@ -44,7 +51,7 @@ streamsim plantwire connect --plan <dir>/run-0001.session-plan.json \
 
 - `--out` must be a new folder for every session; a folder holding any run file is refused.
 - The plan's `host_socket` must be an absolute path of at most 103 characters in a directory only you can enter. The committed `/tmp/streamsim-host.sock` is a placeholder.
-- A session never ends by itself: interrupt `connect` (SIGINT) when world time reaches `duration_s`. Closing the host first leaves an incomplete run.
+- A campaign's session plans carry no `horizon_s`, so a session does not end by itself: interrupt `connect` (SIGINT) when world time reaches `duration_s`. Closing the host first leaves an incomplete run.
 - Pace the host with a `--delay-ms` or a session writes a very large run folder; a 48 h run takes about 585 MB at `--slice-s 60`. Plan disk use for the whole campaign (160 runs at that size is on the order of 90 GB).
 
 ## Labels and scoring
@@ -55,7 +62,7 @@ streamsim plantwire connect --plan <dir>/run-0001.session-plan.json \
 streamsim score --run <run-dir>/run.json --domains-dir examples/pump-station
 ```
 
-`score` reads whichever label file the folder holds and replays the artifact, so an edited ledger cannot change a grade. With several labels it returns one scorecard per label, each judged on its own entity, plus `unexpected` (detections, actions and effector calls on entities with no label, all false). An effector call counts only if it names the fault (`work_order` is the exact fault id). Details: [artifacts](../reference/artifacts.md) and [truth and scoring](../architecture/truth-and-scoring.md).
+`score` reads whichever label file the folder holds and replays the artifact, so an edited ledger cannot change a grade. With several labels it returns one scorecard per label, each judged on its own entity (and, when two labels share an entity, on the detections and calls that name or are expected by its own fault), plus `unexpected` (detections on entities with no label, actions and effector calls on entities neither labelled nor named by a label's `expected_actions`, all false). An effector call counts only if it names the fault (`work_order` is the exact fault id). Details: [artifacts](../reference/artifacts.md) and [truth and scoring](../architecture/truth-and-scoring.md).
 
 ## Comparing arms
 

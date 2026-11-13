@@ -18,7 +18,7 @@ func exampleVerb(verb string, args []string) (any, error) {
 		return nil, usagef("usage: streamsim component example <id>")
 	}
 	example, err := component.Example(args[0])
-	return map[string]any{"example": example}, wrapCLI(err)
+	return map[string]any{"example": example.Composition, "kind_files": example.KindFiles}, wrapCLI(err)
 }
 
 func wrapCLI(err error) error {

@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "domain": "belt-conveyor-drives-b",
+  "seed": 769124933,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "disturbances": [
+    {
+      "at_s": 6069,
+      "instance": "D-3",
+      "fault": "conveyor_drive__lube_loss",
+      "severity": 0.82
+    },
+    {
+      "at_s": 44737,
+      "instance": "B-1",
+      "fault": "belt_conveyor__downstream_stop",
+      "duration_s": 1800
+    }
+  ],
+  "horizon_s": 57600
+}

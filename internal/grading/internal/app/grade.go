@@ -26,29 +26,25 @@ func GradeRun(ctx context.Context, options Options) (*score.RunScore, error) {
 	return gradeArtifact(ctx, options, art)
 }
 
-func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
-	graded, err := GradeRun(ctx, options)
+func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.RunScore, error) {
+	verdict, labels, err := loadReports(filepath.Dir(options.Artifact), options.Label)
 	if err != nil {
 		return nil, err
 	}
-	if len(graded.Scorecards) != 1 {
-		return nil, fmt.Errorf("streamsim: %w: the run holds %d", domain.ErrNotOneLabel, len(graded.Scorecards))
+	evidence, err := verdictEvidence(ctx, options, art, verdict)
+	if err != nil {
+		return nil, err
 	}
-	return graded.Scorecards[0], nil
+	return gradeRun(evidence, labels)
 }
 
-func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.RunScore, error) {
-	dir := filepath.Dir(options.Artifact)
-	verdict, labels, err := loadReports(dir, options.Label)
-	if err != nil {
-		return nil, err
-	}
+func verdictEvidence(ctx context.Context, options Options, art *model.RunArtifact, verdict *model.Verdict) (score.Evidence, error) {
 	evidence, err := replayedEvidence(ctx, options, art)
 	if err != nil {
-		return nil, err
+		return score.Evidence{}, err
 	}
 	evidence.Verdict = verdict
-	return gradeRun(evidence, labels)
+	return withDoNothing(ctx, options, art, evidence)
 }
 
 func gradeRun(evidence score.Evidence, labels []*model.GroundTruthRecord) (*score.RunScore, error) {

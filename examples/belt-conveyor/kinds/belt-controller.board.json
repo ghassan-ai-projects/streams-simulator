@@ -1,0 +1,15 @@
+{
+  "board_type": "belt-controller",
+  "kinds": {
+    "belt_conveyor": {
+      "commands": {
+        "start_belt": {"raw": "belt_conveyor__start_belt", "args": {"run_command": {"from": "run_command"}}},
+        "stop_belt": {"raw": "belt_conveyor__stop_belt", "args": {"run_command": {"from": "run_command"}}}
+      },
+      "metrics": {
+        "tail_speed": {"raw": "belt_conveyor.tail_speed"},
+        "run_command": {"raw": "belt_conveyor.run_command"}
+      }
+    }
+  }
+}

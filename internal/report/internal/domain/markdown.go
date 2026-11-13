@@ -53,5 +53,6 @@ func closingSections(report *Report) []section {
 		{"Torn tail", tornLines(report.TornTail)},
 		{"Consumer", consumerLines(report.Consumer)},
 		{"Scoring", scoringLines(report.Scoring)},
+		{"Outcome score", outcomeScoreLines(report.OutcomeScore)},
 	}
 }

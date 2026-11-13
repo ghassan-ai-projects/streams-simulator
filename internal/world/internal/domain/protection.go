@@ -23,6 +23,10 @@ func (w *World) conditionHolds(entityID string, c *model.Condition, atNS int64) 
 	return compare(c.Operator, w.stateAt(entityID, c.State, atNS), threshold)
 }
 
+func (w *World) ConditionHolds(entityID string, c model.Condition, atNS int64) bool {
+	return w.conditionHolds(entityID, &c, atNS)
+}
+
 func compare(operator string, v, threshold float64) bool {
 	switch operator {
 	case "lt":
@@ -42,11 +46,12 @@ func (w *World) stepTrip(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt
 	if f1.ResetOn != "" && p.changed(w.stateAt(ent.ID, f1.ResetOn, at)) {
 		p.latched = false
 	}
-	tripped := w.sampleTrip(ent, f1, p, at, dt)
+	tripped, previous := w.sampleTrip(ent, f1, p, at, dt), s.x
 	s.x = w.initial(ent, dyn.Target)
 	if tripped {
 		s.x = f1.TrippedValue
 	}
+	w.traceTrip(s, f1, previous, at+dt)
 }
 
 func (w *World) sampleTrip(ent *Entity, f1 *model.F1Dyn, p *protectionState, at, dt int64) bool {
@@ -131,7 +136,7 @@ func (w *World) ViolatedBoundaries(entityID string, t int64) []string {
 	defer w.lookAhead(entityID, t)()
 	var violated []string
 	for _, boundary := range ent.kind.Boundaries {
-		if dyn := ent.kind.DynamicsOf(boundary.State); w.stateAt(entityID, boundary.State, t) == dyn.F1.TrippedValue {
+		if dyn := ent.kind.DynamicsOf(boundary.State); isTripped(dyn.F1, w.stateAt(entityID, boundary.State, t)) {
 			violated = append(violated, boundary.Name)
 		}
 	}

@@ -76,6 +76,9 @@ type GroundTruth struct {
 	PreDegradedFraction   float64 `json:"pre_degraded_fraction,omitempty"`
 	MinScenarios          int     `json:"min_scenarios,omitempty"`
 	MinPerLabel           int     `json:"min_per_label,omitempty"`
+
+	OutcomeWeights   *OutcomeWeights  `json:"outcome_weights,omitempty"`
+	BaselinePolicies []BaselinePolicy `json:"baseline_policies,omitempty"`
 }
 
 type EffectorAcknowledgement struct {

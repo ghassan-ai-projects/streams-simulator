@@ -6,9 +6,10 @@ import (
 )
 
 type f1InputWire struct {
-	State string     `json:"state"`
-	Coef  *float64   `json:"coef,omitempty"`
-	Link  *InputLink `json:"link,omitempty"`
+	State       string     `json:"state"`
+	Coef        *float64   `json:"coef,omitempty"`
+	Link        *InputLink `json:"link,omitempty"`
+	Denominator bool       `json:"denominator,omitempty"`
 }
 
 func (f F1Input) MarshalJSON() ([]byte, error) {
@@ -20,7 +21,7 @@ func (f F1Input) MarshalJSON() ([]byte, error) {
 }
 
 func (f F1Input) wire() f1InputWire {
-	out := f1InputWire{State: f.State, Link: f.Link}
+	out := f1InputWire{State: f.State, Link: f.Link, Denominator: f.Denominator}
 	if f.CoefSet || f.Coef != 0 {
 		out.Coef = &f.Coef
 	}
@@ -42,7 +43,7 @@ func (f *F1Input) unmarshalObject(b []byte) error {
 	if err := json.Unmarshal(b, &value); err != nil {
 		return fmt.Errorf("UnmarshalJSON: %w", err)
 	}
-	f.State, f.Coef, f.Link = value.State, value.Coef, value.Link
+	f.State, f.Coef, f.Link, f.Denominator = value.State, value.Coef, value.Link, value.Denominator
 	return f.resolveCoefficient(b)
 }
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -204,11 +205,16 @@ func TestCustomerDirectoriesSplitTheEnvironmentOnThePlatformListSeparator(t *tes
 func TestTheBuiltInExamplesListAndAreFoundByID(t *testing.T) {
 	t.Parallel()
 	listed, err := ListExamples()
-	if err != nil || len(listed) != 2 || listed[0].ID != "chiller-pilot" || listed[1].ID != "factory-utilities" {
+	want := []string{"belt-conveyor-drives-a", "belt-conveyor-drives-b", "chiller-pilot", "factory-utilities"}
+	var ids []string
+	for _, example := range listed {
+		ids = append(ids, example.ID)
+	}
+	if err != nil || !slices.Equal(ids, want) {
 		t.Fatalf("ListExamples = %+v, %v", listed, err)
 	}
 	found, err := FindExample("chiller-pilot")
-	if err != nil || !strings.Contains(string(found), `"chiller-pilot"`) {
+	if err != nil || !strings.Contains(string(found.Composition), `"chiller-pilot"`) || len(found.KindFiles) != 0 {
 		t.Fatalf("FindExample = %.80s, %v", found, err)
 	}
 	if _, err := FindExample("nothing"); !errors.Is(err, domain.ErrUnknownExample) {

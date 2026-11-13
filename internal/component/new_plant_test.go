@@ -24,7 +24,7 @@ func TestAnEmptyPlantFromEveryShippedExampleComposesOnceEquipmentIsAdded(t *test
 			if err != nil {
 				t.Fatal(err)
 			}
-			plant, err := component.NewComposition(base, component.NewPlant{ID: "fresh-plant", Title: "Fresh plant", Empty: true}, example.ID)
+			plant, err := component.NewComposition(base.Composition, component.NewPlant{ID: "fresh-plant", Title: "Fresh plant", Empty: true}, example.ID)
 			if err != nil {
 				t.Fatal(err)
 			}

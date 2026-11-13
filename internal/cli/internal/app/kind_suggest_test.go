@@ -50,11 +50,16 @@ func TestComponentListByUnitListsInstrumentsExactUnitFirstWithTheirUnitAndRange(
 	t.Parallel()
 	doc := invoke(t, "component", "list", "--unit", "%").mustSucceed(t).document(t, "component_list")
 	entries, _ := doc["components"].([]any)
+	if len(entries) != 3 {
+		t.Fatalf("component list --unit %% = %v, want three instruments", doc)
+	}
 	first, _ := entries[0].(map[string]any)
 	second, _ := entries[1].(map[string]any)
-	if len(entries) != 2 || first["id"] != "streamsim/valve-position" || first["match"] != "exact" || first["unit"] != "%" ||
-		second["id"] != "streamsim/humidity" || second["match"] != "convertible" || second["unit"] != "%RH" || second["range"] == nil {
-		t.Fatalf("component list --unit %% = %v, want the valve position first and the humidity probe by conversion", doc)
+	third, _ := entries[2].(map[string]any)
+	if first["id"] != "streamsim/setpoint-readback" || first["match"] != "exact" || first["unit"] != "%" ||
+		second["id"] != "streamsim/valve-position" || second["match"] != "exact" ||
+		third["id"] != "streamsim/humidity" || third["match"] != "convertible" || third["unit"] != "%RH" || third["range"] == nil {
+		t.Fatalf("component list --unit %% = %v, want the setpoint read-back and valve position first and the humidity probe by conversion", doc)
 	}
 }
 

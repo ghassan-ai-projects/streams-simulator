@@ -45,6 +45,8 @@ type Options struct {
 	TrackKPIs bool
 
 	Unobserved bool
+
+	RecordOutcome bool
 }
 
 type World struct {
@@ -61,6 +63,7 @@ type World struct {
 
 	queue    priorityQueue
 	kpis     *kpiTracker
+	outcome  *outcomeRecorder
 	tiebreak uint64
 	seq      int64
 

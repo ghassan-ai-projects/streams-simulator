@@ -49,7 +49,7 @@ func (p *CampaignPhase) checkFaults(compiled *domain.Compiled) error {
 	if p.usesNegative() && (!hasNegative || len(faultEntities(compiled, negative)) == 0) {
 		return specErrorf("phase %q asks for negative runs, which %q has no instance with a negative-class fault for", p.Name, p.Domain)
 	}
-	for _, check := range []func() error{p.checkWeights, func() error { return p.checkPositive(compiled) },
+	for _, check := range []func() error{p.checkWeights, p.checkSeverityRanges, func() error { return p.checkPositive(compiled) },
 		func() error { return p.checkScriptable(compiled, negative) }, func() error { return p.checkCrowding(compiled, negative) }} {
 		if err := check(); err != nil {
 			return err
@@ -70,7 +70,7 @@ func (p *CampaignPhase) checkWeights() error {
 
 func (p *CampaignPhase) checkPositive(compiled *domain.Compiled) error {
 	for _, id := range slices.Sorted(maps.Keys(p.Faults)) {
-		if p.Faults[id] <= 0 || p.Faults[id] > maxFaultWeight || isNegativeClass(compiled, id) || len(faultEntities(compiled, id)) == 0 {
+		if weight := p.Faults[id].Weight; weight <= 0 || weight > maxFaultWeight || isNegativeClass(compiled, id) || len(faultEntities(compiled, id)) == 0 {
 			return specErrorf("phase %q: fault %q needs a weight above 0 and at most %g and must be a positive-class fault %q declares", p.Name, id, maxFaultWeight, p.Domain)
 		}
 	}
@@ -128,7 +128,7 @@ func (p *CampaignPhase) positiveSlots() int {
 
 func (p *CampaignPhase) schedule(negative string, rng *randutil.SplitMix64) []string {
 	faults := slices.Repeat([]string{negative}, p.negatives())
-	faults = append(faults, apportion(p.Faults, p.positiveSlots())...)
+	faults = append(faults, apportion(p.weights(), p.positiveSlots())...)
 	for i := len(faults) - 1; i > 0; i-- {
 		j := rng.Intn(i + 1)
 		faults[i], faults[j] = faults[j], faults[i]

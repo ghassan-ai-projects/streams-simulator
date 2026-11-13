@@ -15,7 +15,10 @@ type NewPlant struct {
 	Empty bool
 }
 
-var leftOutOfAnEmptyPlant = []string{"description", "equipment", "connections"}
+var (
+	leftOutOfAnEmptyPlant       = []string{"description", "equipment", "connections"}
+	leftOutOfAnEmptyGroundTruth = []string{"outcome_weights", "baseline_policies"}
+)
 
 func NewComposition(base []byte, plant NewPlant, source string) (map[string]any, error) {
 	contract, err := compileContract(model.ContractComposition, schemas.Composition())
@@ -39,6 +42,15 @@ func emptyPlant(doc map[string]any) {
 	}
 	doc["profiles"] = emptyProfiles(doc["profiles"])
 	doc["areas"] = []any{map[string]any{"name": siteAreaName(doc["site"])}}
+	emptyGroundTruth(doc["ground_truth"])
+}
+
+func emptyGroundTruth(raw any) {
+	if truth, ok := raw.(map[string]any); ok {
+		for _, key := range leftOutOfAnEmptyGroundTruth {
+			delete(truth, key)
+		}
+	}
 }
 
 func siteAreaName(raw any) string {

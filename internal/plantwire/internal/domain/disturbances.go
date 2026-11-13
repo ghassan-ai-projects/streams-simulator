@@ -53,7 +53,7 @@ func (c *planCheck) disturbanceIssues(plan *model.SessionPlan) []model.Issue {
 	for i, d := range plan.Disturbances {
 		issues = append(issues, c.disturbance(fmt.Sprintf("/disturbances/%d", i), d)...)
 	}
-	return issues
+	return append(issues, horizonIssues(plan)...)
 }
 
 func (c *planCheck) disturbance(at string, d model.Disturbance) []model.Issue {

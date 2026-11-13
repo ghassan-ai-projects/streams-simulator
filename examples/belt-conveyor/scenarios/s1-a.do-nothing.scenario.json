@@ -1,0 +1,64 @@
+{
+  "schema_version": "0.1",
+  "id": "s1-a-do-nothing",
+  "description": "S1: Slow bearing failure on D-3, drives with margin, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 1438843744,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767230363000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__lube_loss",
+        "onset_ns": 1767230363000000000,
+        "params": {
+          "severity": 1.24
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767265293000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "B-1",
+        "fault": "belt_conveyor__downstream_stop",
+        "onset_ns": 1767265293000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767267093000000000
+      }
+    },
+    {
+      "op": "fault.clear",
+      "args": {
+        "at_ns": 1767267093000000000,
+        "fault_id": "f-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767283200000000000
+      }
+    }
+  ]
+}

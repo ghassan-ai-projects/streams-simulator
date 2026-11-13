@@ -28,7 +28,7 @@ func ScoreRun(ev Evidence, gts []*model.GroundTruthRecord) (*RunScore, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RunScore{RunID: ev.RunID, Scorecards: cards, Unexpected: unexpectedOf(ev, disturbedEntities(gts))}, nil
+	return &RunScore{RunID: ev.RunID, Scorecards: cards, Unexpected: unexpectedOf(ev, gts)}, nil
 }
 
 func Document(r *RunScore) any {
@@ -41,7 +41,7 @@ func Document(r *RunScore) any {
 func scorecardsOf(ev Evidence, gts []*model.GroundTruthRecord) ([]*Scorecard, error) {
 	cards := []*Scorecard{}
 	for _, gt := range gts {
-		card, err := scoreOne(ev, gt, len(gts) > 1)
+		card, err := scoreOne(ev, gt, gts)
 		if err != nil {
 			return nil, err
 		}
@@ -50,23 +50,22 @@ func scorecardsOf(ev Evidence, gts []*model.GroundTruthRecord) ([]*Scorecard, er
 	return cards, nil
 }
 
-func scoreOne(ev Evidence, gt *model.GroundTruthRecord, among bool) (*Scorecard, error) {
+func scoreOne(ev Evidence, gt *model.GroundTruthRecord, gts []*model.GroundTruthRecord) (*Scorecard, error) {
 	card, err := Score(ev, gt)
-	if err != nil || !among {
+	if err != nil || len(gts) < 2 {
 		return card, err
 	}
-	scoped := onlyEntity(ev, gt.EntityID)
+	scoped := scopeOf(gt, gts).evidence(ev)
 	card.Judgment, card.Loop = judgment(scoped, gt), loop(scoped, gt)
+	card.Judgment.Prognosis = prognosis(scoped.Verdict.Detections, ev, gt)
 	return card, nil
 }
 
-func onlyEntity(ev Evidence, entity string) Evidence {
-	return selectEntities(ev, func(id string) bool { return id == entity })
-}
-
-func unexpectedOf(ev Evidence, disturbed map[string]bool) Unexpected {
-	rest := selectEntities(ev, func(id string) bool { return !disturbed[id] })
-	return Unexpected{Detections: rest.Verdict.Detections, Actions: rest.Verdict.Actions, EffectCalls: len(rest.Calls)}
+func unexpectedOf(ev Evidence, gts []*model.GroundTruthRecord) Unexpected {
+	labeled, acted := labeledEntities(gts...), actedEntities(gts...)
+	rest := selectEntities(ev, func(id string) bool { return !acted[id] })
+	detections := selected(ev.Verdict.Detections, func(d model.Detection) bool { return !labeled[d.EntityID] })
+	return Unexpected{Detections: detections, Actions: rest.Verdict.Actions, EffectCalls: len(rest.Calls)}
 }
 
 func selectEntities(ev Evidence, keep func(entity string) bool) Evidence {
@@ -88,10 +87,20 @@ func selected[T any](items []T, keep func(T) bool) []T {
 	})
 }
 
-func disturbedEntities(gts []*model.GroundTruthRecord) map[string]bool {
+func labeledEntities(gts ...*model.GroundTruthRecord) map[string]bool {
 	entities := map[string]bool{}
 	for _, gt := range gts {
 		entities[gt.EntityID] = true
+	}
+	return entities
+}
+
+func actedEntities(gts ...*model.GroundTruthRecord) map[string]bool {
+	entities := labeledEntities(gts...)
+	for _, gt := range gts {
+		for _, action := range gt.ExpectedActions {
+			entities[action.EntityID] = true
+		}
 	}
 	return entities
 }

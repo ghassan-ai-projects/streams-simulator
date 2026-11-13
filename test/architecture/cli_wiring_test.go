@@ -88,6 +88,7 @@ var cliAppFiles = map[string]cliFile{
 	"plantwire_connect.go":       {"command: plantwire connect", []string{cliF, "internal/plantwire"}, 95},
 	"plantwire_twin.go":          {"command: plantwire twin-report", []string{"internal/plantwire"}, 25},
 	"plantwire_twin_options.go":  {"option parsing", nil, 33},
+	"component_install_kinds.go": {"command: component install-kinds", []string{"internal/component"}, 22},
 }
 
 // cliEdge declares what one of the CLI's own edges may import and how large it

@@ -1,0 +1,17 @@
+{
+  "board_type": "feeder-controller",
+  "kinds": {
+    "bulk_feeder": {
+      "commands": {
+        "set_feed": {
+          "raw": "bulk_feeder__set_feed",
+          "args": {"percent": {"from": "feed_setpoint"}}
+        }
+      },
+      "metrics": {
+        "feed": {"raw": "bulk_feeder.feed"},
+        "feed_setpoint": {"raw": "bulk_feeder.feed_setpoint"}
+      }
+    }
+  }
+}

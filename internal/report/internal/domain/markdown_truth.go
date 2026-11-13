@@ -23,10 +23,7 @@ func planSections(report *Report) []section {
 }
 
 func resultSections(report *Report) []section {
-	if report.Truth == nil {
-		return nil
-	}
-	return kpiSections(report.Truth.KPIs)
+	return kpiSections(report.Truth, asRunKPIs(report.OutcomeScore))
 }
 
 func withheldReason(report *Report) string {

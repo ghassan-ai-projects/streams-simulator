@@ -14,6 +14,11 @@ type ReplayEvidence = layer.ReplayEvidence
 
 var ErrDigestMismatch = layer.ErrDigestMismatch
 
+var (
+	ErrUnknownOutcomeMode = layer.ErrUnknownOutcomeMode
+	ErrUnknownPolicy      = layer.ErrUnknownPolicy
+)
+
 const MaxRunSpanNS = layer.MaxRunSpanNS
 
 var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced

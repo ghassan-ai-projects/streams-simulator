@@ -155,16 +155,18 @@ type F1Dyn struct {
 	StageDown      *Condition  `json:"stage_down,omitempty"`
 	Stages         int         `json:"stages,omitempty"`
 	Clamp          *Clamp      `json:"clamp,omitempty"`
+	Floor          float64     `json:"floor,omitempty"`
 	Table          *Table      `json:"table,omitempty"`
 	PID            *Controller `json:"pid,omitempty"`
 	Alarm          *Alarm      `json:"alarm,omitempty"`
 }
 
 type F1Input struct {
-	State   string     `json:"state"`
-	Coef    float64    `json:"coef,omitempty"`
-	CoefSet bool       `json:"-"`
-	Link    *InputLink `json:"link,omitempty"`
+	State       string     `json:"state"`
+	Coef        float64    `json:"coef,omitempty"`
+	CoefSet     bool       `json:"-"`
+	Link        *InputLink `json:"link,omitempty"`
+	Denominator bool       `json:"denominator,omitempty"`
 }
 
 type Clamp struct {
@@ -194,8 +196,14 @@ type Fault struct {
 	Observation      *ObservationFault `json:"observation,omitempty"`
 	Observability    Observability     `json:"observability"`
 	ExpectedEffector string            `json:"expected_effector,omitempty"`
+	ExpectedActions  []FaultAction     `json:"expected_actions,omitempty"`
 	DeadlineS        float64           `json:"deadline_s,omitempty"`
 	Counterfactual   *Counterfactual   `json:"counterfactual,omitempty"`
+}
+
+type FaultAction struct {
+	Kind     string `json:"kind"`
+	Effector string `json:"effector"`
 }
 
 type FaultOnset struct {

@@ -101,7 +101,7 @@ func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	offline, err := Grade(t.Context(), gradeOptions(dir, writeLabel(t, dir, gt)))
+	offline, err := gradeOne(t.Context(), gradeOptions(dir, writeLabel(t, dir, gt)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,11 +119,11 @@ func TestGradeFromTheEmbeddedSpecsEqualsGradeFromTheDirectories(t *testing.T) {
 	dir := t.TempDir()
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)
-	fromDirectories, err := Grade(t.Context(), gradeOptions(dir, label))
+	fromDirectories, err := gradeOne(t.Context(), gradeOptions(dir, label))
 	if err != nil {
 		t.Fatal(err)
 	}
-	embedded, err := Grade(t.Context(), Options{Artifact: filepath.Join(dir, "run.json"), Label: label})
+	embedded, err := gradeOne(t.Context(), Options{Artifact: filepath.Join(dir, "run.json"), Label: label})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestGradeRefusesAnArtifactWhoseReplayDoesNotReproduce(t *testing.T) {
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)
 	tamperTraceDigest(t, filepath.Join(dir, "run.json"))
-	_, err := Grade(t.Context(), gradeOptions(dir, label))
+	_, err := gradeOne(t.Context(), gradeOptions(dir, label))
 	var mismatch *rules.ReplayMismatchError
 	if !errors.As(err, &mismatch) || mismatch.Result.Matches {
 		t.Fatalf("err = %v, want a ReplayMismatchError carrying the replay report", err)
@@ -173,14 +173,14 @@ func TestGradeChecksItsInputsAgainstTheirContractsAndNamesTheFileAtFault(t *test
 	dir := t.TempDir()
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)
-	if _, err := Grade(t.Context(), gradeOptions(dir, filepath.Join(dir, "absent.json"))); !errors.Is(err, os.ErrNotExist) {
+	if _, err := gradeOne(t.Context(), gradeOptions(dir, filepath.Join(dir, "absent.json"))); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("a missing label: err = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "verdict.json"), []byte(`{}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	var invalid *model.ValidationError
-	if _, err := Grade(t.Context(), gradeOptions(dir, label)); !errors.As(err, &invalid) || invalid.Source != filepath.Join(dir, "verdict.json") {
+	if _, err := gradeOne(t.Context(), gradeOptions(dir, label)); !errors.As(err, &invalid) || invalid.Source != filepath.Join(dir, "verdict.json") {
 		t.Fatalf("a verdict that breaks its contract: err = %v", err)
 	}
 }
@@ -189,7 +189,7 @@ func TestGradeNamesAMissingArtifactFirst(t *testing.T) {
 	t.Parallel()
 	artifact := filepath.Join(t.TempDir(), "run.json")
 	var pathFailure *os.PathError
-	_, err := Grade(t.Context(), Options{Artifact: artifact})
+	_, err := gradeOne(t.Context(), Options{Artifact: artifact})
 	if !errors.As(err, &pathFailure) || pathFailure.Path != artifact {
 		t.Fatalf("err = %v, want a path failure naming %s", err, artifact)
 	}
@@ -214,7 +214,7 @@ func TestGradeRefusesARunStampedUnblinded(t *testing.T) {
 	if err := os.WriteFile(artifact, stamped, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Grade(t.Context(), gradeOptions(dir, label)); !errors.Is(err, rules.ErrRunUnblinded) {
+	if _, err := gradeOne(t.Context(), gradeOptions(dir, label)); !errors.Is(err, rules.ErrRunUnblinded) {
 		t.Fatalf("Grade of an unblinded run = %v, want %v", err, rules.ErrRunUnblinded)
 	}
 }

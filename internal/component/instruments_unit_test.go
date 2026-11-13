@@ -14,7 +14,8 @@ func TestListForAUnitReturnsTheInstrumentsOfTheSameOrAConvertibleUnitExactFirst(
 	}{
 		{"Cel is convertible to the degC of both temperature instruments", "Cel", []string{"streamsim/rtd:degC:convertible", "streamsim/thermistor:degC:convertible"}},
 		{"degC is their own unit", "degC", []string{"streamsim/rtd:degC:exact", "streamsim/thermistor:degC:exact"}},
-		{"% is a valve position exactly and a humidity by conversion", "%", []string{"streamsim/valve-position:%:exact", "streamsim/humidity:%RH:convertible"}},
+		{"% is a setpoint read-back and a valve position exactly and a humidity by conversion", "%",
+			[]string{"streamsim/setpoint-readback:%:exact", "streamsim/valve-position:%:exact", "streamsim/humidity:%RH:convertible"}},
 		{"an unknown unit matches nothing", "furlong", []string{}},
 		{"a unit of another family matches that family only", "kPa", []string{"streamsim/pressure-transmitter:kPa:exact"}},
 	}

@@ -11,6 +11,9 @@ import (
 var unfollowableForms = []string{model.FormStore, model.FormPeak, model.FormTrip, model.FormAntiRecycle, model.FormSequencer}
 
 func (checks domainChecks) f1Input(form string, in model.F1Input) error {
+	if in.Denominator && form != model.FormRatio {
+		return checks.bad("/denominator", "only a ratio divides by an input; f1 form %q does not", form)
+	}
 	if in.Link != nil {
 		return checks.linkInput(in)
 	}

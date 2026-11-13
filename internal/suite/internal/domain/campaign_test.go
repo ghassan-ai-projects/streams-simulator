@@ -24,7 +24,7 @@ func pumpStation(t *testing.T) map[string]*domain.Compiled {
 }
 
 func smallSpec() *CampaignSpec {
-	faults := map[string]float64{"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1}
+	faults := weighted(map[string]float64{"bearing_wear": 1, "misalignment": 1, "sensor_drift": 1})
 	return &CampaignSpec{SchemaVersion: CampaignSpecVersion, Seed: 11, HostSocket: "/tmp/h.sock", DurationS: 172800, FaultWindowS: 43200,
 		NegativeDurationS: 3600, Phases: []CampaignPhase{
 			{Name: "learn", Domain: "pump-station", Runs: 10, NegativeShare: 0.4, Faults: faults},
@@ -146,16 +146,16 @@ func TestASpecThatBreaksARuleIsRefusedWithItsReason(t *testing.T) {
 		{"no runs", func(s *CampaignSpec) { s.Phases[0].Runs = 0 }, "at least one run"},
 		{"share above one", func(s *CampaignSpec) { s.Phases[0].NegativeShare = 1.5 }, "negative_share"},
 		{"unknown domain", func(s *CampaignSpec) { s.Phases[0].Domain = "no-such-domain" }, "not available"},
-		{"undeclared fault", func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = 1 }, `"no_such_fault"`},
-		{"the negative as a hit", func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = 1 }, `"transient_none"`},
-		{"a commanded state", func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = 1 }, "D-116"},
-		{"a weight beyond range", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 1e308 }, "at most 1e+06"},
+		{"undeclared fault", func(s *CampaignSpec) { s.Phases[0].Faults["no_such_fault"] = FaultWeight{Weight: 1} }, `"no_such_fault"`},
+		{"the negative as a hit", func(s *CampaignSpec) { s.Phases[0].Faults["transient_none"] = FaultWeight{Weight: 1} }, `"transient_none"`},
+		{"a commanded state", func(s *CampaignSpec) { s.Phases[0].Faults["overload"] = FaultWeight{Weight: 1} }, "D-116"},
+		{"a weight beyond range", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = FaultWeight{Weight: 1e308} }, "at most 1e+06"},
 		{"a duration beyond 30 d", func(s *CampaignSpec) { s.DurationS = 1e9 }, "duration_s must be above 0"},
 		{"a transient past run", func(s *CampaignSpec) { s.NegativeDurationS = s.DurationS }, "must fit inside"},
 		{"a phase of billions", func(s *CampaignSpec) { s.Phases[0].Runs = 1_000_000_000_000 }, "at most 4096 runs"},
 		{"too many runs", func(s *CampaignSpec) { s.Phases[0].Runs, s.Phases[1].Runs = 3000, 3000 }, "a campaign has at most 4096"},
 		{"a long phase name", func(s *CampaignSpec) { s.Phases[0].Name = strings.Repeat("p", 65) }, "64 characters"},
-		{"zero weight", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = 0 }, `"bearing_wear"`},
+		{"zero weight", func(s *CampaignSpec) { s.Phases[0].Faults["bearing_wear"] = FaultWeight{Weight: 0} }, `"bearing_wear"`},
 		{"no positive fault", func(s *CampaignSpec) { s.Phases[0].Faults = nil }, "lists no fault"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestEveryNegativeClassFaultIsRefusedAsAPositiveOne(t *testing.T) {
 		}
 	}
 	spec := smallSpec()
-	spec.Phases[0].Faults = map[string]float64{"bearing_wear": 1, "transient_none": 1}
+	spec.Phases[0].Faults = weighted(map[string]float64{"bearing_wear": 1, "transient_none": 1})
 	var invalid *CampaignSpecError
 	if _, _, err := BuildCampaign(spec, domains); !errors.As(err, &invalid) || !strings.Contains(invalid.Message, `"transient_none"`) {
 		t.Fatalf("BuildCampaign = %v, want transient_none refused as a positive fault", err)
