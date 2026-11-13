@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1",
+  "domain": "belt-conveyor-drives-a",
+  "seed": 643449587,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "disturbances": [
+    {
+      "at_s": 1984,
+      "instance": "D-3",
+      "fault": "conveyor_drive__gear_oil_loss",
+      "severity": 0.88
+    }
+  ],
+  "horizon_s": 16200,
+  "pace": "wall"
+}

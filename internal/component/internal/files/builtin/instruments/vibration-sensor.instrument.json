@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/vibration-sensor",
+  "version": 1,
+  "title": "IO-Link vibration transmitter (v-RMS)",
+  "description": "Single-axis vibration transmitter with an IO-Link output, stud mounted (in the style of an ifm VVB001): velocity RMS 0-45 mm/s, read once a minute. A loose mount loses sensitivity; a frozen transmitter repeats its last value and still reports good quality.",
+  "tag": "VT",
+  "unit_family": "vibration_velocity",
+  "unit": "mm/s",
+  "range": {
+    "min": 0,
+    "max": 45
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.01,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 60
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.02
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "loose_mount",
+      "form": "scale",
+      "factor": 0.7
+    },
+    {
+      "id": "frozen",
+      "form": "freeze",
+      "quality": "good"
+    }
+  ]
+}

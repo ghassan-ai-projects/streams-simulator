@@ -1,0 +1,1531 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/belt-conveyor",
+  "version": 1,
+  "title": "Belt conveyor with shared drives",
+  "description": "A 60 m belt at 2 m/s pulled by several drives that share its force equally. It carries the material fed onto it, needs a larger force to break loose from rest than to keep running, stalls when its drives cannot pull it, and stops when the next machine withdraws its run permit. A loaded belt that its available drives cannot restart is stranded.",
+  "class": "material_handling/conveyor/belt_conveyor",
+  "tags": [
+    "material-handling",
+    "bulk",
+    "drives"
+  ],
+  "icon": "conveyor",
+  "kind": {
+    "state": [
+      {
+        "name": "unit",
+        "unit": "ratio",
+        "initial": 1
+      },
+      {
+        "name": "run_cmd",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "start_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "permit",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "tail_grip",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.5,
+        "max": 1
+      },
+      {
+        "name": "feed",
+        "unit": "kg/s",
+        "initial": 41.6667,
+        "min": 0
+      },
+      {
+        "name": "drives",
+        "unit": "on",
+        "initial": 3,
+        "min": 0
+      },
+      {
+        "name": "weights",
+        "unit": "ratio",
+        "initial": 3,
+        "min": 0
+      },
+      {
+        "name": "drag",
+        "unit": "N",
+        "initial": 82.8,
+        "min": 0
+      },
+      {
+        "name": "run_cap",
+        "unit": "N",
+        "initial": 4140,
+        "min": 0
+      },
+      {
+        "name": "boost_cap",
+        "unit": "N",
+        "initial": 4140,
+        "min": 0
+      },
+      {
+        "name": "ready_cap",
+        "unit": "N",
+        "initial": 4140,
+        "min": 0
+      },
+      {
+        "name": "rated",
+        "unit": "N",
+        "initial": 2760,
+        "min": 0
+      },
+      {
+        "name": "go",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "stall_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "has_drive",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "v_target",
+        "unit": "m/s",
+        "initial": 2
+      },
+      {
+        "name": "v",
+        "unit": "m/s",
+        "initial": 2,
+        "min": 0
+      },
+      {
+        "name": "m",
+        "unit": "kg",
+        "initial": 1250.001,
+        "min": 0
+      },
+      {
+        "name": "out",
+        "unit": "kg/s",
+        "initial": 41.6667
+      },
+      {
+        "name": "delivered",
+        "unit": "t",
+        "initial": 100000
+      },
+      {
+        "name": "pull_mat",
+        "unit": "N",
+        "initial": 83.3334
+      },
+      {
+        "name": "f_run",
+        "unit": "N",
+        "initial": 1700.834
+      },
+      {
+        "name": "f_break",
+        "unit": "N",
+        "initial": 3410.001
+      },
+      {
+        "name": "slow",
+        "unit": "ratio",
+        "initial": 0
+      },
+      {
+        "name": "gap",
+        "unit": "N",
+        "initial": 1709.168
+      },
+      {
+        "name": "slow_gap",
+        "unit": "N",
+        "initial": 0
+      },
+      {
+        "name": "f_req",
+        "unit": "N",
+        "initial": 1700.834
+      },
+      {
+        "name": "demand",
+        "unit": "N",
+        "initial": 1783.634
+      },
+      {
+        "name": "boost_extra",
+        "unit": "N",
+        "initial": 0
+      },
+      {
+        "name": "slow_boost",
+        "unit": "N",
+        "initial": 0
+      },
+      {
+        "name": "cap",
+        "unit": "N",
+        "initial": 4140
+      },
+      {
+        "name": "short",
+        "unit": "N",
+        "initial": -2356.366
+      },
+      {
+        "name": "short_cmd",
+        "unit": "N",
+        "initial": -2356.366
+      },
+      {
+        "name": "excess",
+        "unit": "N",
+        "initial": 0
+      },
+      {
+        "name": "pull",
+        "unit": "N",
+        "initial": 1783.634
+      },
+      {
+        "name": "inv_n",
+        "unit": "ratio",
+        "initial": 0.3333333
+      },
+      {
+        "name": "cmd",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "share",
+        "unit": "N",
+        "initial": 594.5446
+      },
+      {
+        "name": "turning",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "moving",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "restart_margin",
+        "unit": "N",
+        "initial": 647.1986
+      },
+      {
+        "name": "stopped",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "loaded",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "trapped",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "strand_risk",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "stranded",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "after_n",
+        "unit": "ratio",
+        "initial": 0.6666667
+      },
+      {
+        "name": "boost_after",
+        "unit": "N",
+        "initial": 2760
+      },
+      {
+        "name": "restart_after",
+        "unit": "N",
+        "initial": -732.8014
+      },
+      {
+        "name": "restart_ok",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "rated_after",
+        "unit": "N",
+        "initial": 1840
+      },
+      {
+        "name": "carry_after",
+        "unit": "N",
+        "initial": 56.36611
+      },
+      {
+        "name": "carry_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "stop_ok",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "tail_speed",
+        "unit": "rpm",
+        "initial": 76.39437,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "feed",
+        "tier": "F0",
+        "f0": {
+          "baseline": 41.6667,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "drives",
+        "tier": "F0",
+        "f0": {
+          "baseline": 3,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "weights",
+        "tier": "F0",
+        "f0": {
+          "baseline": 3,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "drag",
+        "tier": "F0",
+        "f0": {
+          "baseline": 82.8,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "run_cap",
+        "tier": "F0",
+        "f0": {
+          "baseline": 4140,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "boost_cap",
+        "tier": "F0",
+        "f0": {
+          "baseline": 4140,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "ready_cap",
+        "tier": "F0",
+        "f0": {
+          "baseline": 4140,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "rated",
+        "tier": "F0",
+        "f0": {
+          "baseline": 2760,
+          "drift_per_hour": 0
+        }
+      },
+      {
+        "target": "go",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "run_cmd",
+              "coef": 1
+            },
+            {
+              "state": "permit",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "stall_ok",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "short_cmd",
+            "operator": "gt",
+            "threshold": 0
+          },
+          "for_s": 2,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "start_count"
+        }
+      },
+      {
+        "target": "has_drive",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "drives",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "v_target",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "go",
+              "coef": 2
+            },
+            {
+              "state": "stall_ok",
+              "coef": 1
+            },
+            {
+              "state": "has_drive",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "v",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "regime",
+          "selector": "short_cmd",
+          "threshold": 0.5,
+          "below": {
+            "gain": 1,
+            "time_constant_s": 4
+          },
+          "above": {
+            "gain": 0,
+            "time_constant_s": 2
+          },
+          "inputs": [
+            {
+              "state": "v_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "m",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 1,
+          "inputs": [
+            {
+              "state": "feed",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "out",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "m",
+              "coef": 0.01666667
+            },
+            {
+              "state": "v",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "delivered",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "integrator",
+          "gain": 0.001,
+          "inputs": [
+            {
+              "state": "out",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "pull_mat",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "v",
+              "coef": 1
+            },
+            {
+              "state": "feed",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "f_run",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "unit",
+              "coef": 1000
+            },
+            {
+              "state": "m",
+              "coef": 0.494
+            },
+            {
+              "state": "pull_mat",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "f_break",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "unit",
+              "coef": 1630
+            },
+            {
+              "state": "m",
+              "coef": 1.424
+            }
+          ]
+        }
+      },
+      {
+        "target": "slow",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "v",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.2
+            ],
+            "values": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "target": "gap",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "f_break",
+              "coef": 1
+            },
+            {
+              "state": "f_run",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "slow_gap",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "slow",
+              "coef": 1
+            },
+            {
+              "state": "gap",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "f_req",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "f_run",
+              "coef": 1
+            },
+            {
+              "state": "slow_gap",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "demand",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "f_req",
+              "coef": 1
+            },
+            {
+              "state": "drag",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "boost_extra",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "boost_cap",
+              "coef": 1
+            },
+            {
+              "state": "run_cap",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "slow_boost",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "slow",
+              "coef": 1
+            },
+            {
+              "state": "boost_extra",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cap",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "run_cap",
+              "coef": 1
+            },
+            {
+              "state": "slow_boost",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "short",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "demand",
+              "coef": 1
+            },
+            {
+              "state": "cap",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "short_cmd",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "short",
+              "coef": 1
+            },
+            {
+              "state": "go",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "excess",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "short",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              100000
+            ],
+            "values": [
+              0,
+              100000
+            ]
+          }
+        }
+      },
+      {
+        "target": "pull",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "demand",
+              "coef": 1
+            },
+            {
+              "state": "excess",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "inv_n",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "drives",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "values": [
+              0,
+              1,
+              0.5,
+              0.3333333,
+              0.25,
+              0.2,
+              0.1666667
+            ]
+          }
+        }
+      },
+      {
+        "target": "cmd",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "go",
+              "coef": 1
+            },
+            {
+              "state": "stall_ok",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "share",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "pull",
+              "coef": 1
+            },
+            {
+              "state": "inv_n",
+              "coef": 1
+            },
+            {
+              "state": "cmd",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "turning",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "v",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.1,
+              0.11
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "moving",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "cmd",
+              "coef": 1
+            },
+            {
+              "state": "turning",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "restart_margin",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "ready_cap",
+              "coef": 1
+            },
+            {
+              "state": "f_break",
+              "coef": -1
+            },
+            {
+              "state": "drag",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "stopped",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "v",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.1,
+              0.11
+            ],
+            "values": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "target": "loaded",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "m",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              375.0003,
+              376.0003
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "trapped",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "restart_margin",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -1,
+              0
+            ],
+            "values": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "target": "strand_risk",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "stopped",
+              "coef": 1
+            },
+            {
+              "state": "loaded",
+              "coef": 1
+            },
+            {
+              "state": "trapped",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "stranded",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "strand_risk",
+            "operator": "gt",
+            "threshold": 0.5
+          },
+          "for_s": 10,
+          "tripped_value": 1
+        }
+      },
+      {
+        "target": "after_n",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "drives",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "values": [
+              0,
+              0,
+              0.5,
+              0.6666667,
+              0.75,
+              0.8,
+              0.8333333
+            ]
+          }
+        }
+      },
+      {
+        "target": "boost_after",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "boost_cap",
+              "coef": 1
+            },
+            {
+              "state": "after_n",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "restart_after",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "boost_after",
+              "coef": 1
+            },
+            {
+              "state": "f_break",
+              "coef": -1
+            },
+            {
+              "state": "drag",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "restart_ok",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "restart_after",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -1,
+              0
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "rated_after",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rated",
+              "coef": 1
+            },
+            {
+              "state": "after_n",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "carry_after",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "rated_after",
+              "coef": 1
+            },
+            {
+              "state": "demand",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "carry_ok",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "carry_after",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -1,
+              0
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "stop_ok",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "restart_ok",
+              "coef": 1
+            },
+            {
+              "state": "carry_ok",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "tail_speed",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "v",
+              "coef": 38.19719
+            },
+            {
+              "state": "tail_grip",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "flows": [
+      {
+        "name": "discharge",
+        "from": "m",
+        "conductance": 0.01666667,
+        "scale": [
+          "v"
+        ]
+      }
+    ],
+    "faults": [
+      {
+        "id": "downstream_stop",
+        "description": "The next machine withdraws the run permit: the belt stops, nothing is broken.",
+        "affects": [
+          {
+            "state": "permit",
+            "delta": -1
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "tail_speed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "tail_slip",
+        "description": "The belt slips on the tail pulley: only the tail pulley reading falls.",
+        "affects": [
+          {
+            "state": "tail_grip",
+            "delta": -0.3
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "tail_speed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.002
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "start_belt",
+        "description": "Start a stopped belt; also re-arms the stall trip.",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "requires": [
+          {
+            "state": "run_cmd",
+            "operator": "lt",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "run_command"
+          ],
+          "properties": {
+            "run_command": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "run_cmd",
+              "assign_from_arg": "run_command"
+            },
+            {
+              "state": "start_count",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "stop_belt",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "requires": [
+          {
+            "state": "run_cmd",
+            "operator": "gte",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "run_command"
+          ],
+          "properties": {
+            "run_command": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "run_cmd",
+              "assign_from_arg": "run_command"
+            }
+          ]
+        }
+      }
+    ],
+    "boundaries": [
+      {
+        "name": "stranded",
+        "state": "stranded",
+        "severity": "major"
+      }
+    ],
+    "kpis": [
+      "delivered"
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "tail_speed",
+      "state": "tail_speed",
+      "unit_family": "speed",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "ST",
+      "default_instrument": "streamsim/tachometer@1"
+    },
+    {
+      "name": "run_command",
+      "state": "run_cmd",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/command-readback@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "feed_in",
+      "type": "bulk_flow",
+      "direction": "consumes",
+      "state": "feed"
+    },
+    {
+      "name": "moving_out",
+      "type": "run_state",
+      "direction": "provides",
+      "state": "moving"
+    },
+    {
+      "name": "share_out",
+      "type": "pulley_force",
+      "direction": "provides",
+      "state": "share"
+    },
+    {
+      "name": "stop_ok_out",
+      "type": "run_state",
+      "direction": "provides",
+      "state": "stop_ok"
+    },
+    {
+      "name": "drives_out",
+      "type": "run_state",
+      "direction": "provides",
+      "state": "drives"
+    },
+    {
+      "name": "weights_out",
+      "type": "share_weight",
+      "direction": "provides",
+      "state": "weights"
+    },
+    {
+      "name": "drives_in",
+      "type": "run_state",
+      "direction": "consumes",
+      "state": "drives",
+      "sample_s": 1
+    },
+    {
+      "name": "weights_in",
+      "type": "share_weight",
+      "direction": "consumes",
+      "state": "weights",
+      "sample_s": 1
+    },
+    {
+      "name": "drag_in",
+      "type": "drag_force",
+      "direction": "consumes",
+      "state": "drag",
+      "sample_s": 1
+    },
+    {
+      "name": "run_cap_in",
+      "type": "force_capacity",
+      "direction": "consumes",
+      "state": "run_cap",
+      "sample_s": 1
+    },
+    {
+      "name": "boost_cap_in",
+      "type": "force_capacity",
+      "direction": "consumes",
+      "state": "boost_cap",
+      "sample_s": 1
+    },
+    {
+      "name": "ready_cap_in",
+      "type": "force_capacity",
+      "direction": "consumes",
+      "state": "ready_cap",
+      "sample_s": 1
+    },
+    {
+      "name": "rated_in",
+      "type": "force_capacity",
+      "direction": "consumes",
+      "state": "rated",
+      "sample_s": 1
+    }
+  ],
+  "parameters": [
+    {
+      "name": "breakaway_n_per_kg",
+      "title": "Breakaway force per kg of material on the belt",
+      "unit": "N/kg",
+      "type": "number",
+      "min": 0.5,
+      "max": 3,
+      "default": 1.424,
+      "targets": [
+        "dynamics/f_break/f1/inputs/m/coef"
+      ]
+    },
+    {
+      "name": "boost_s",
+      "title": "Starting boost time before a stall trips",
+      "unit": "s",
+      "type": "number",
+      "min": 0.5,
+      "max": 10,
+      "default": 2,
+      "targets": [
+        "dynamics/stall_ok/f1/for_s"
+      ]
+    }
+  ]
+}

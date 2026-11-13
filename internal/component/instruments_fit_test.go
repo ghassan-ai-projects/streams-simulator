@@ -70,8 +70,8 @@ func TestTheFitOfEachInstrumentIsListedAfterTheOnesThatFitAndSerialisedWithItsSt
 	for i, entry := range listed {
 		order[i] = entry.ID
 	}
-	if want := []string{"streamsim/valve-position", "streamsim/humidity"}; !slices.Equal(order, want) {
-		t.Fatalf("order = %v, want the exact valve position before the convertible humidity", order)
+	if want := []string{"streamsim/setpoint-readback", "streamsim/valve-position", "streamsim/humidity"}; !slices.Equal(order, want) {
+		t.Fatalf("order = %v, want the exact setpoint read-back and valve position before the convertible humidity", order)
 	}
 	raw, err := json.Marshal(listed[0])
 	if err != nil || !strings.Contains(string(raw), `"fit":{"ok":true}`) || !strings.Contains(string(raw), `"match":"exact"`) {

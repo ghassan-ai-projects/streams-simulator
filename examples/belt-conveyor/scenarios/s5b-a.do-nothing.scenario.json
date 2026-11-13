@@ -1,0 +1,79 @@
+{
+  "schema_version": "0.1",
+  "id": "s5b-a-do-nothing",
+  "description": "S5b: D-3's vibration channel drops out during its slow bearing failure, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 1177676952,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767228085000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__vibration__dropout",
+        "onset_ns": 1767228085000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767230766000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__lube_loss",
+        "onset_ns": 1767230766000000000,
+        "params": {
+          "severity": 1.16
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767269529000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "B-1",
+        "fault": "belt_conveyor__downstream_stop",
+        "onset_ns": 1767269529000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767271329000000000
+      }
+    },
+    {
+      "op": "fault.clear",
+      "args": {
+        "at_ns": 1767271329000000000,
+        "fault_id": "f-2"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767283200000000000
+      }
+    }
+  ]
+}

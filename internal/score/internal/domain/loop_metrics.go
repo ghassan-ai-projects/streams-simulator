@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"slices"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -45,11 +47,19 @@ func gradeEffectCall(m *LoopMetrics, call world.EffectorCall, claims map[string]
 }
 
 func rightCall(call world.EffectorCall, gt *model.GroundTruthRecord, matchArg string) bool {
-	if gt.ExpectedEffector == "" || call.Effector != gt.ExpectedEffector || call.EntityID != gt.EntityID || !call.EffectApplied {
+	return call.EffectApplied && (expectedEffectorCall(call, gt, matchArg) || expectedActionCall(call, gt))
+}
+
+func expectedEffectorCall(call world.EffectorCall, gt *model.GroundTruthRecord, matchArg string) bool {
+	if gt.ExpectedEffector == "" || call.Effector != gt.ExpectedEffector || call.EntityID != gt.EntityID {
 		return false
 	}
 	cause, _ := call.Args[matchArg].(string)
 	return matchArg == "" || cause == gt.Label
+}
+
+func expectedActionCall(call world.EffectorCall, gt *model.GroundTruthRecord) bool {
+	return slices.Contains(gt.ExpectedActions, model.ExpectedAction{EntityID: call.EntityID, Effector: call.Effector})
 }
 
 func responderArg(ev Evidence, gt *model.GroundTruthRecord) string {

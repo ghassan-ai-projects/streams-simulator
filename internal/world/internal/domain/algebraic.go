@@ -7,18 +7,21 @@ import (
 )
 
 func (w *World) algebraicValue(ent *Entity, dyn *model.Dynamics, at int64) float64 {
+	return clamp(w.formValue(ent, dyn, at), dyn.F1.Clamp)
+}
+
+func (w *World) formValue(ent *Entity, dyn *model.Dynamics, at int64) float64 {
 	f1 := dyn.F1
-	var value float64
 	switch f1.Form {
 	case model.FormSum:
-		value = w.inputValue(ent, dyn, at)
+		return w.inputValue(ent, dyn, at)
 	case model.FormProduct:
-		value = w.weightedProduct(ent, f1, at)
-	default:
-		var axes [2]float64
-		value = curveValue(f1.Table, w.weightedInputs(axes[:len(f1.Inputs)], ent, f1, at))
+		return w.weightedProduct(ent, f1, at)
+	case model.FormRatio:
+		return w.ratio(ent, f1, at)
 	}
-	return clamp(value, f1.Clamp)
+	var axes [2]float64
+	return curveValue(f1.Table, w.weightedInputs(axes[:len(f1.Inputs)], ent, f1, at))
 }
 
 func (w *World) weightedInputs(values []float64, ent *Entity, f1 *model.F1Dyn, at int64) []float64 {
@@ -34,6 +37,18 @@ func (w *World) weightedProduct(ent *Entity, f1 *model.F1Dyn, at int64) float64 
 		result *= in.Coef * w.inputState(ent, in, at)
 	}
 	return result
+}
+
+func (w *World) ratio(ent *Entity, f1 *model.F1Dyn, at int64) float64 {
+	numerator, denominator := 1.0, 1.0
+	for _, in := range f1.Inputs {
+		if factor := in.Coef * w.inputState(ent, in, at); in.Denominator {
+			denominator *= factor
+		} else {
+			numerator *= factor
+		}
+	}
+	return numerator / max(denominator, f1.Floor)
 }
 
 func curveValue(table *model.Table, inputs []float64) float64 {

@@ -55,7 +55,7 @@ func TestComponentExamplesListTheShippedExamplePlantsAndPrintOne(t *testing.T) {
 	list := invoke(t, "component", "examples").mustSucceed(t).document(t, "component_examples")
 	entries, _ := list["examples"].([]any)
 	first, _ := entries[0].(map[string]any)
-	if len(entries) < 2 || first["id"] != "chiller-pilot" || first["title"] != "Chiller pilot" {
+	if len(entries) < 4 || first["id"] != "belt-conveyor-drives-a" || first["title"] != "Belt conveyor, three drives with margin" {
 		t.Fatalf("examples = %v", list)
 	}
 	shown := invoke(t, "component", "example", "factory-utilities").mustSucceed(t).document(t, "component_example")

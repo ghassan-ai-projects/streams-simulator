@@ -20,7 +20,7 @@ func crossCheck(c *Compiled, src string) error {
 }
 
 func (checks domainChecks) checkRest() error {
-	for _, check := range []func() error{checks.checkOverrides, checks.checkStructure, checks.checkProfiles} {
+	for _, check := range []func() error{checks.checkOverrides, checks.checkStructure, checks.checkProfiles, checks.checkOutcomeWeights, checks.checkBaselinePolicies} {
 		if err := check(); err != nil {
 			return err
 		}

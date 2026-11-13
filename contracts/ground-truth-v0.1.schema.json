@@ -70,6 +70,19 @@
     },
 
     "expected_effector": {"type": "string", "description": "The correct action, for the action-appropriateness loop metric."},
+    "expected_actions": {
+      "type": "array",
+      "description": "The fault's expected actions resolved to the run's instances: each effector call that matches one is an appropriate action, and its instance is graded with the fault rather than as unexpected.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entity_id", "effector"],
+        "properties": {
+          "entity_id": {"type": "string", "minLength": 1},
+          "effector": {"type": "string", "minLength": 1}
+        }
+      }
+    },
 
     "trivial_baseline_verdict": {
       "enum": ["non_trivial", "trivial"],

@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "domain": "belt-conveyor-drives-a",
+  "seed": 2024342292,
+  "host_socket": "/tmp/streamsim-host.sock",
+  "disturbances": [
+    {
+      "at_s": 9146,
+      "instance": "F-1",
+      "fault": "bulk_feeder__feed_surge",
+      "severity": 0.48
+    }
+  ],
+  "horizon_s": 21600
+}

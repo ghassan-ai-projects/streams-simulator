@@ -42,7 +42,7 @@ func TestReadWorkspaceReadsEachFolderByItsSuffixAndTheEmbeddedExamples(t *testin
 	if len(workspace.Kinds) != 1 || len(workspace.Twins) != 1 || len(workspace.Compositions) != 1 {
 		t.Fatalf("workspace = %+v, want one kind, twin and composition", workspace)
 	}
-	if got := fileNames(workspace.Examples); len(got) != 2 || got[0] != "chiller-pilot.composition.json" {
+	if got := fileNames(workspace.Examples); len(got) != 4 || got[2] != "chiller-pilot.composition.json" {
 		t.Fatalf("examples = %v, want the shipped example compositions", got)
 	}
 	runs := workspace.Runs

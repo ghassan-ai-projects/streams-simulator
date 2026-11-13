@@ -40,6 +40,7 @@ func BuildRecord(spec *domain.Compiled, solver *Solver, in Injection) (*model.Gr
 	rec := recordIdentity(spec.Spec.ID, in.ScenarioID, in.Seed, in.EntityID, in.FaultID)
 	attachObservability(rec, fault, res, in.OnsetNS)
 	attachScenarioContext(rec, fault, in.PreDegraded, in.Perturbations)
+	attachExpectedActions(rec, spec, fault, in)
 	return rec, nil
 }
 
@@ -101,4 +102,25 @@ func attachCounterfactual(rec *model.GroundTruthRecord, counterfactual *model.Co
 			IfActionByDeadline: counterfactual.IfActionByDeadline,
 		}
 	}
+}
+
+func attachExpectedActions(rec *model.GroundTruthRecord, spec *domain.Compiled, fault *model.Fault, in Injection) {
+	own := spec.FaultKind(in.FaultID).Name
+	for _, action := range fault.ExpectedActions {
+		for _, entity := range actionEntities(spec, own, action.Kind, in) {
+			rec.ExpectedActions = append(rec.ExpectedActions, model.ExpectedAction{EntityID: entity, Effector: action.Effector})
+		}
+	}
+}
+
+func actionEntities(spec *domain.Compiled, own, kind string, in Injection) []string {
+	if kind == own {
+		return []string{in.EntityID}
+	}
+	return slices.DeleteFunc(slices.Clone(in.EntityIDs), func(id string) bool { return !instanceOfKind(spec, id, kind) })
+}
+
+func instanceOfKind(spec *domain.Compiled, id, kind string) bool {
+	instanceKind := spec.InstanceKind(spec.InstanceSetFor(id))
+	return instanceKind != nil && instanceKind.Name == kind
 }

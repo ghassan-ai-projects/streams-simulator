@@ -145,10 +145,11 @@ func registerInputDirs(fs *flag.FlagSet, domains, adapters *string) {
 	registerAdaptersDir(fs, adapters, "adapters")
 }
 
-func registerReportFlags(fs *flag.FlagSet, format, out, a, b *string, replay *bool) {
+func registerReportFlags(fs *flag.FlagSet, format, out, a, b *string, replay, outcome *bool) {
 	fs.StringVar(format, "format", "json", "report format: json|markdown")
 	fs.StringVar(out, "out", "", "file to write the report to")
 	fs.BoolVar(replay, "replay", false, "replay the run and report whether it reproduces")
+	fs.BoolVar(outcome, "outcome", false, "grade the run's outcome against doing nothing and its domain's baseline policies (replays it four times)")
 	fs.StringVar(a, "a", "", "compare: run folder of the reference")
 	fs.StringVar(b, "b", "", "compare: run folder to set beside it")
 }

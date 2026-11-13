@@ -34,7 +34,7 @@ type entryBuild struct {
 
 func (c *composer) buildEntry(index int, entry Entry) (*built, error) {
 	b := &entryBuild{c: c, index: index, entry: entry, parameters: map[string]any{}, instruments: map[string]*Instrument{}}
-	steps := []func() error{b.resolveEquipment, b.checkArea, b.nameKind, b.applySizes, b.chooseInstruments, b.attachInstruments, b.qualifyKind}
+	steps := []func() error{b.resolveEquipment, b.checkArea, b.nameKind, b.applySizes, b.chooseInstruments, b.attachInstruments, b.qualifyKind, b.expectActions}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return nil, err
@@ -157,7 +157,17 @@ func (b *entryBuild) kindDocument() map[string]any {
 		}
 	}
 	kind["state"] = slices.Concat(asList(b.ws.kind["state"]), b.biases)
+	b.addInterface(kind)
 	return kind
+}
+
+func (b *entryBuild) addInterface(kind map[string]any) {
+	if b.entry.Implements != "" {
+		kind["implements"] = b.entry.Implements
+	}
+	if b.entry.BoardType != "" {
+		kind["board_type"] = b.entry.BoardType
+	}
 }
 
 func (b *entryBuild) allFaults() []any {

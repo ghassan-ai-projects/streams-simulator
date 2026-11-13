@@ -195,6 +195,12 @@ streamsim domain compose <composition.json> [--out <file>] [--components-dir <di
 
 It prints `{id, digest, channels, faults, effectors}` as `domain validate` does, plus `composed` (the file written). A composition that breaks a library rule fails with `composition_invalid`, each issue at its pointer in the composition (`/equipment/0/preset`, `/connections/1`); a composed domain that fails its own contract fails with `domain_invalid`.
 
+- `--kinds-dir <dir>` — a directory of kind files and board mappings, repeatable (see `domain validate`). An equipment entry may
+  name the kind file its kind presents to a host (`implements`) and the board mapping it reaches it through (`board_type`, which
+  needs `implements`); compose copies both onto the composed kind and checks the composed domain against the files found here,
+  so a composition with `implements` fails `domain_invalid` (`implements_missing`) without the option. The belt conveyor plants
+  take `--kinds-dir examples/belt-conveyor/kinds`, and so does every `run`, `plantwire node` and `plantwire connect` of them.
+
 ### `domain assumptions`
 
 States what a domain, or a twin scaffolded from kind files, assumes, so a reader can judge a default before trusting it. It reads files only and prints one deterministic document ([`domain-assumptions-v0.1`](../../contracts/domain-assumptions-v0.1.schema.json)), validated against that contract before it is printed.
@@ -270,14 +276,16 @@ Lists, shows and validates the component library: equipment, instruments and voc
 
 ```text
 streamsim component [list|show <namespace/name[@major]>|validate|examples|example <id>] [--components-dir <dir>]...
+streamsim component install-kinds <example-id> --kinds-dir <dir>
 ```
 
 - `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters, and the entry also carries its `unit` and, when it states one, its measuring `range {min, max}`.
 - `component list --unit <u> [--min <n> --max <n>]` — only the instruments that measure in `u` or in a unit convertible to it (the unit conversion `kind twin` uses), ordered fitting instruments first, then the exact unit before a convertible one, then by id and version; each entry carries `match` (`exact` or `convertible`) beside its `unit` and `range`, and `fit: {ok, code?, member?}`: whether a twin can read a metric of that unit through it. `--min` and `--max` are the metric's `eu_range` in `u` (both or neither, `min` below `max`, else a usage failure); the instrument's own range is compared with it after conversion, with the comparison `kind twin` uses, so `ok: true` is exactly what `kind twin` accepts. `code` is `unit_incompatible` (`member` `unit`), `range_unstated` (`eu_range`: no `--min`/`--max` given, and a twin needs the metric's range), `range_narrower` (`eu_range`) or `reading_not_number` (`data_type`). A unit no family knows lists nothing. `--unit`, `--min` and `--max` belong to `list` only.
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
 - `component examples` — the ready-to-run example plants shipped with the library, as `{id, title, description}`.
-- `component example <id>` — one example plant's composition, ready to copy into a workspace; an id that is not shipped fails with `component_failed`.
-- `component new <id> --title <title> (--from <composition.json> | --example <id>) [--empty]` — a new plant's composition as `{composition}`: a full copy of the base with the new id and title, or with `--empty` only its frame (site, areas, axes, stresses, ground truth and profiles without fault weights; no equipment, connections or description). The id and title are checked against `composition-v0.1`; a bad id fails with `composition_invalid` and says what an id must be. Nothing is written.
+- `component example <id>` — one example plant's composition, ready to copy into a workspace, as `{example, kind_files}`; an id that is not shipped fails with `component_failed`. `kind_files` lists the plant wire kind files and board mappings the example's entries implement (`implements`, `board_type`) as `{name, document}`, sorted by name, and is empty when it implements none: the belt conveyor plants carry `belt_conveyor.kind.json`, `bulk_feeder.kind.json`, `conveyor_drive.kind.json` and `feeder-controller.board.json` (the same bytes as `examples/belt-conveyor/kinds/`); the chiller pilot and factory utilities carry none.
+- `component new <id> --title <title> (--from <composition.json> | --example <id>) [--empty]` — a new plant's composition as `{composition}`: a full copy of the base with the new id and title, or with `--empty` only its frame (site, areas, axes, stresses, ground truth and profiles without fault weights; no equipment, connections or description). With `--example` the document also carries the example's `kind_files`, as for `component example`. The id and title are checked against `composition-v0.1`; a bad id fails with `composition_invalid` and says what an id must be. Nothing is written.
+- `component install-kinds <example-id> --kinds-dir <dir>` — writes the kind files and board mappings an example implements into `dir` (created when a file is to be written), so a copy of the example composes and runs with `--kinds-dir <dir>`; prints `{example, written, unchanged}` (file names). A file already there with the same JSON content is left as it is (`unchanged`); one with other content is never overwritten: the command fails with `kind_failed`, an issue per such file (keyword `kind_file_differs`, pointer `/<file name>`), and writes nothing. An example without kind files writes nothing and creates no folder. The canvas runs it when it makes a copy of an example.
 - `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`, where `directories` are the customer directories (the built-in library is always checked and counted). A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
 
 ### `adapter`
@@ -476,6 +484,15 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   the thermal `fan_stall` and `led_stuck_off`, decided from the domain's effects, not from names) is refused with the pointer `/disturbances/N/...`; a negative severity or an `at_s` or
   `duration_s` beyond 30 days (the longest run) breaks the plan's schema.
 
+- `horizon_s` (optional, more than 0 and at most 2592000) — the session ends itself that many seconds after the world
+  starts: the world steps to the last slice end at or before the horizon, the node sends its `NDEATH`, the run folder is
+  complete and the document reports `stopped: false`. In a session paced by the wall clock the world starts when the session
+  starts, while disturbances count from the host's attach, so a host that attaches late shortens the time after them. It gives every run of a plan the
+  same window, so a run can be compared with its own replay without the consumer's calls. Every disturbance must start
+  before the horizon (`disturbance_after_horizon`) and, with `duration_s`, be cleared by it (`clear_after_horizon`); a plan
+  with a `gateway_socket` takes no horizon (`horizon_with_gateway`): a session with real boards runs until it is stopped.
+  Absent, the session runs until it is stopped.
+
 - `pace` (optional, only `"wall"`) — paces the session to the wall clock. The world starts at the wall time the session
   starts (floored to the millisecond; for a mixed session, when the relay opens) instead of 2026-01-01, and that start is
   recorded in `run.json` (`world_config.start_time_ns`), so `replay` and `verify` reproduce the run exactly as an unpaced one.
@@ -545,7 +562,8 @@ streamsim plantwire connect (--plan <file> | --stdin) [--check] [--out <dir>] [-
   written per barrier (no gateway) or per 250 ms relay tick, and one at every link change; `marks` lists what changed since
   the previous snapshot.
 - An interrupt (`SIGINT`, `SIGTERM`) is the operator's Stop: the run ends and `--out` holds an ordinary run folder that
-  `replay` and `verify` accept. The document is `{out, stopped, relay?}`. The canvas runs this command for its Connected
+  `replay` and `verify` accept. A plan with `horizon_s` also ends the session itself at its horizon. The document is
+  `{out, stopped, relay?}`; `stopped` is true only when an interrupt ended the session. The canvas runs this command for its Connected
   session and stops it the same way.
 
 ### `plantwire replay-trace`
@@ -610,6 +628,13 @@ located in the file. Flags that fail are `usage_invalid`, with every issue namin
 occurrence behind it. During the run, an effector call the world refuses through an interlock or
 a reused command id is a recorded outcome.
 A scenario's `description` is for readers; a scenario without a `clock.advance` emits nothing.
+
+**Run ids.** `run_id` (and the world's `world_id`) names the domain and nothing else: every run of one domain has the same
+id, whatever its seed, scenario or commands. That is deliberate. The id reaches the consumer, and an id derived from the
+seed let a consumer recover the seed by brute force and with it the world's hidden numbers (the sealed-oracle rule;
+`TestTheRunIdNamesTheDomainAndCarriesNoSeed` keeps it so). Tell runs apart by their run folder (`--out`) or by
+`expected_trace_digest` in `run.json` (the `trace_digest` `run` prints), which differs whenever what was delivered
+differs.
 
 ```text
 streamsim run [flags]
@@ -749,15 +774,20 @@ Flags:
 - `negatives_per_run` (default 0) adds that many negative-class disturbances to every run.
 - Each disturbance of a run is on a different entity that declares its fault, starts inside `fault_start_window_s`, and a phase is refused when `faults_per_run` plus `negatives_per_run` exceeds the entities a fault is declared on.
 - `faults_per_run: 0` with no `faults` makes a warm-up phase: its runs carry no disturbance (or only the negatives).
+- A fault's weight is a number or `{"weight": w, "severity_range": [lo, hi]}` (0 ≤ lo ≤ hi ≤ 1e6; no other member). With a range, every disturbance of that fault carries a `severity` drawn uniformly from it in its session plan (otherwise the domain's magnitude applies). Severities come from each run's own stream (`campaign/run/<n>/severity`, in disturbance order), so a range moves no other draw and a spec without ranges generates the same files byte for byte as before ranges existed.
 - Example: `{"name": "multi", "domain": "pump-station", "runs": 20, "faults_per_run": 2, "negatives_per_run": 1, "faults": {"bearing_wear": 1, "misalignment": 1}}`; a warm-up: `{"name": "warmup", "domain": "pump-station", "runs": 2, "faults_per_run": 0}`.
 
 ### `score`
 
 Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact, or `labels.json` when the folder holds that instead (a plan with no disturbance or several, see [artifacts](artifacts.md)); an explicit `--label` file holds one label object or an array of them. The command reads `verdict.json` beside the artifact and replays the artifact (against `--domains-dir` and `--adapters-dir`); the replay supplies the effector calls, the delivery ledger and the state history, so an edited `ledger.jsonl` or `world_state_history.jsonl` cannot change a grade. `verify` compares both files with the `ledger_digest` and `history_digest` that `run.json` records and with the replay, and `report` checks every evidence file, `world_state_history.jsonl` included, against its digest. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
 
-An effector call counts as the expected action only if it also names the fault: when the expected effector declares a `responder`, the call's `match_arg` value must equal the label's fault id, so a work order for another fault is not appropriate, not on time and not resolved.
+An effector call counts as the expected action only if it also names the fault: when the expected effector declares a `responder`, the call's `match_arg` value must equal the label's fault id, so a work order for another fault is not appropriate, not on time and not resolved. A label may also carry `expected_actions` (`{entity_id, effector}`, resolved from the fault's `expected_actions` when the label is built: an action of the fault's own kind on the faulted instance, an action of another kind on each instance of that kind): a call with effect that matches one is appropriate and counts for the deadline, so a drive fault answered by cutting the feeder's feed is credited.
 
-With exactly one label the document is that label's scorecard, as always. With several labels it is one JSON document `{"run_id", "scorecards", "unexpected"}`: one scorecard per label in label order, each judged on its own entity alone (its detections, actions and effector calls; its `judgment` and `loop` count nothing from another entity, while the instrument and consumer admission sections describe the whole run), and `unexpected`, counted once for the run, holds the detections and actions the verdict reports on entities that have no label and the number of effector calls (`effect_calls`) made on them: all of them are false. With no label (a warm-up run) `scorecards` is empty and `unexpected` still lists what the consumer reported or did.
+A verdict action matches the world's effector call with the same `command_id`, effector and entity, and its `outcome_believed` must agree with the call's acceptance (`action_fidelity`); `issued_at` must be a valid time but may precede the call, since a consumer decides before the world applies its command (a plant-wire host reports its DCMD's `idempotency_key` as the command id, which is the id the node logs the call under).
+
+A detection that carries `predicted_failure_at` is a failure prediction: `score` then also replays the run with every effector call removed (one more world run) and grades the predictions on each label's entity against that entity's first protection trip there, up to the run's first effector call that took effect, in the scorecard's `judgment.prognosis` (α-λ accuracy at λ 0.5 and 0.75, relative accuracy, prognostic horizon; α 0.2, β 0.5, a late prediction weighing twice an early one; see [truth and scoring](../architecture/truth-and-scoring.md#failure-predictions)). A verdict without predictions is scored as before, with no replay and no `prognosis`.
+
+With exactly one label the document is that label's scorecard, as always. With several labels it is one JSON document `{"run_id", "scorecards", "unexpected"}`: one scorecard per label in label order, each judged on its own entity alone (its `judgment` counts only detections on that entity, its `loop` only effector calls on that entity and on the instances of its `expected_actions`; neither counts anything from another entity, while the instrument and consumer admission sections describe the whole run). A label is keyed by its entity and fault: when several labels sit on one entity (a frozen vibration reading and a dry bearing on one drive), a detection whose `label` names one of their faults is judged with that label alone, and an effector call or action that only some of them expect (`expected_actions`, or the label's expected effector on its entity) goes to those; a detection or call on that entity that names or is expected by none of them is judged with each. With one label per entity this changes nothing. `unexpected`, counted once for the run, holds the detections the verdict reports on entities that have no label, the actions on entities that are neither labelled nor named by a label's `expected_actions`, and the number of effector calls (`effect_calls`) made on those: all of them are false. With no label (a warm-up run) `scorecards` is empty and `unexpected` still lists what the consumer reported or did.
 
 ```json
 {"run_id": "r-1",
@@ -772,22 +802,83 @@ With exactly one label the document is that label's scorecard, as always. With s
 streamsim score --run <run.json> [--label <label.json | labels.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
+### `outcome`
+
+Grades a run on its consequences rather than on its detections. The outcome is computed when it is asked for, from the run
+artifact alone: nothing is sealed or stored while the run happens, and no `verdict.json` or label is read. The command first
+replays the run and refuses one that does not reproduce (`replay_mismatch`) or that is stamped unblinded (an `--explore`
+run, or one whose truth was revealed while it was open; `outcome_failed`), as `score` does. It then replays the artifact's
+command log three ways with the run's own world settings: `as_run` (unchanged), `do_nothing` (every `effector.invoke`
+removed) and, for each of the domain's `ground_truth.baseline_policies` in declared order, `policy:<name>` (every
+`effector.invoke` removed and the policy played: it samples its condition on every instance of its kind once a second from
+the world start, fires on each instance's rising edge held for `for_s`, and issues its calls in order `delay_s` after the
+firing; a fault injected at an instant is seen at the next sample). Each run's `facts` are taken at the run's last world
+time: per entity the trips (first time and entries), the violated boundaries (violations, first time, duration) and each KPI
+state's start and end, and the effector calls the replayed run made, accepted or refused.
+
+With the domain's `ground_truth.outcome_weights`, each run gets a `cost` J, the sum of its `terms`: per boundary violation
+and per hour of violation, per trip entry, per unit of a KPI's own change (end minus start; a negative weight rewards more)
+and, only when doing nothing is clean (no boundary violated, no trip), per accepted call. `verdicts` compares the run with
+each baseline: `delta` is J of the run minus J of the baseline, and the run `beats` it (delta below minus `tie`), `ties`
+it (within `tie`) or `loses`. `valid` is true when doing nothing is not clean, so the story tests something. `easy` is true when the story is valid
+and the run does not beat some baseline policy (it ties or loses): a trivial fixed rule does as well, so the story does not
+tell a controller from that rule (doing nothing is not a policy and never makes a story easy). A domain
+without outcome weights prints the facts only: no `tie`, `cost` or `verdicts`. A run folder that is missing fails with
+`file_not_found`, a domain the run names that neither the artifact embeds nor `--domains-dir` holds with
+`domain_not_found`.
+
+Abridged from the S2-A reference run of `examples/belt-conveyor` (one run, one entity and its terms shown):
+
+```json
+{"run_id": "r-1k3abl2bopgcc", "domain": "belt-conveyor-drives-a", "valid": true, "easy": false, "tie": 0.1,
+ "runs": [{"mode": "do_nothing",
+           "facts": {"horizon_ns": 1767236400000000000,
+                     "entities": [{"entity_id": "B-1", "kind": "belt_conveyor",
+                                   "trips": [{"state": "stall_ok", "first_ns": 1767229490000000000, "count": 1},
+                                             {"state": "stranded", "first_ns": 1767227710000000000, "count": 1}],
+                                   "boundaries": [{"name": "stranded", "severity": "major", "violations": 1,
+                                                   "first_ns": 1767227710000000000, "duration_s": 8690}],
+                                   "kpis": [{"state": "delivered", "start": 100000, "end": 100087.18946594305}]}],
+                     "calls": []},
+           "cost": {"j": 3.9191, "terms": [
+             {"term": "boundary_violations", "kind": "belt_conveyor", "name": "stranded", "entity_id": "B-1", "quantity": 1, "cost": 4},
+             {"term": "kpis", "kind": "belt_conveyor", "name": "delivered", "entity_id": "B-1", "quantity": 87.1895, "cost": -0.5813},
+             {"term": "trips", "kind": "belt_conveyor", "name": "stall_ok", "entity_id": "B-1", "quantity": 1, "cost": 0.5}]}}],
+ "verdicts": [{"baseline": "do_nothing", "delta": -5.4596, "verdict": "beats"},
+              {"baseline": "policy:b4", "delta": -5.5165, "verdict": "beats"}]}
+```
+
+The command first checks that the run reproduces, then replays it once per mode. The outcome replays share nothing and
+run concurrently on at most four workers (fewer when `GOMAXPROCS` is lower, so `GOMAXPROCS=1` runs them one after
+another); the document and the error reported (the first by mode order) are the same whatever the worker count. Measured
+on the conveyor stories at `GOMAXPROCS=3`, the whole command takes about 3 min for a 16 hour story (S1-A: 171 s; the
+24 hour S0-A: 216 s; the 3 hour S2-B: 36 s).
+
+```text
+streamsim outcome --run <run-dir> [--domains-dir <path>] [--adapters-dir <path>]
+```
+
+`outcome` takes the run folder as the flag `--run`, while `report` and `verify` take theirs as a positional argument
+(`report <run-dir>`, `verify <run.json>`). `--domains-dir` and `--adapters-dir` are not needed for a run made by this
+simulator: `run.json` embeds the domain and adapter it ran, and the replays use those. They are read only for an older
+artifact that records none.
+
 ### `report`
 
-- Summarises a run folder (the directory `run --out` publishes) as one document: run identity and inputs, the digests the run recorded, whether the files in the folder still agree with them (`verification`: a check, not a replay; `verify` is the proof), delivery counts and drop reasons, the faults (each as an interval: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` and `cleared_by`, which is `command`, `pulse_end` or `responder`, both null while the fault is active at the end of the run), the perturbations, environment faults and effector calls from the command log with the world's real outcomes, the consumer from `verdict.json` (its `config_digest` only when the verdict recorded one), and the scorecard when `verdict.json` and `label.json` are both present (scored from the specs the artifact embeds, so no `--domains-dir` is needed).
+- Summarises a run folder (the directory `run --out` publishes, given as a positional argument: `report <run-dir>`, where `outcome` takes `--run <run-dir>`) as one document: run identity and inputs, the digests the run recorded, whether the files in the folder still agree with them (`verification`: a check, not a replay; `verify` is the proof), delivery counts and drop reasons, the faults (each as an interval: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` and `cleared_by`, which is `command`, `pulse_end` or `responder`, both null while the fault is active at the end of the run), the perturbations, environment faults and effector calls from the command log with the world's real outcomes, the consumer from `verdict.json` (its `config_digest` only when the verdict recorded one), and the scorecard when `verdict.json` and `label.json` or `labels.json` are present (scored from the specs the artifact embeds, so no `--domains-dir` is needed; with several labels `scoring.scorecard` is the run document `score` prints, `{run_id, scorecards, unexpected}`, and the Markdown shows each scorecard and the unexpected counts).
 - It also says whether the run is `evaluate` or `explore` and whether it is complete.
 - A run started from a plan with a name or purpose carries them as `run.name` and `run.purpose` (authored text: not evidence, not part of any digest); the fault intervals and perturbations are enough to rebuild its plan: a fault cleared by `command` gives the plan's `until_s` as `cleared_ns`, and a perturbation's `from_ns` and `until_ns` (`0` for no end) give its `at_s` and `until_s`.
 - The report is a pure function of the folder: the same folder gives the same bytes.
 - It carries truth, so the truth sections appear only for a run that has ended (`run.json` exists) or an Explore run; a folder cut before `run.json` is reported from its observer journal alone (the ledger and `sealed/` are not read), as incomplete and not ended, with `truth_unavailable: "sealed until the run ends"`.
 - A `run.json` or sealed journal that does not belong to the run of the observer journal is not read: the report says why in `truth_unavailable` and shows no truth.
 - A torn last line of a journal or the ledger (a crashed run) is dropped and named in `torn_tail`.
-- A run whose domain declares KPI states or alarms carries `truth.kpis`: the true mean, minimum and maximum of every KPI and the ISA-18.2 KPIs of every alarm and of the alarm system.
+- A run whose domain declares KPI states or alarms carries `truth.kpis`: the true mean, minimum and maximum of every KPI and the ISA-18.2 KPIs of every alarm and of the alarm system. `truth.kpi_units` gives the unit of each KPI state by name, from the kinds of the embedded domain that declare it (a name two kinds give different units has none). The Markdown KPI table shows the unit; with `--outcome`, a KPI whose start and end the outcome's `as_run` facts record (a counter such as delivered tonnes or life used) is shown by its start, end and change instead of a mean, minimum and maximum that say nothing about a cumulative state.
 - `verification` also checks both journal files as written, session records included (`journal_file`, `sealed_journal_file`).
 - It loads `run.json` as `verify` does: a run that ended complete but records no usable digest for an evidence file (absent, empty or malformed) is a failing verification (`files_differ`, a `digest_missing` check for that file), not an error.
 - Design: [RUN_REPORT.md](../../docs/design/RUN_REPORT.md); contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
 
 ```text
-streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay] [--domains-dir <dir>] [--adapters-dir <dir>]
+streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay] [--outcome] [--domains-dir <dir>] [--adapters-dir <dir>]
 streamsim report compare --a <run-dir> --b <run-dir> [--format json|markdown] [--out <file>]
 ```
 
@@ -796,7 +887,7 @@ streamsim report compare --a <run-dir> --b <run-dir> [--format json|markdown] [-
 | `--format` | `json` | `json` or `markdown`. |
 | `--out` | empty | Write the report to this file. |
 | `--replay` | off | Replay the recording of a run that has ended and say whether it reproduces (`replay.status`). Not for `compare`. |
-| `--domains-dir`, `--adapters-dir` | `domains`, `adapters` | Where a replay finds a domain or adapter the run did not embed. |
+| `--domains-dir`, `--adapters-dir` | `domains`, `adapters` | Where a replay finds a domain or adapter the run did not embed; a run made by this simulator embeds both, so `--replay` and `--outcome` need neither. |
 
 Without `--out`, the JSON report is the command's one stdout document. With `--out`, the file holds the chosen format and stdout holds `{"report_written": "<file>", "format": "<format>"}`. `--format markdown` without `--out` keeps stdout one JSON document: `{"format": "markdown", "markdown": "<text>"}`. A folder with neither `run.json` nor `journal.jsonl` fails with `file_not_found`; a verdict or artifact that breaks its contract fails with `artifact_invalid`.
 
@@ -804,6 +895,20 @@ Without `--out`, the JSON report is the command's one stdout document. With `--o
 
 - `replay` is always present: `{status, detail?}` with `status` `not_checked` (the default: the report reads files and does not replay), `reproduces`, `does_not_reproduce` (with the reason in `detail`) or `incomplete` (a run that ended incomplete cannot be verified as complete); a replay that cannot run, or a run that has not ended, stays `not_checked` with the reason in `detail`.
 - `open_questions` lists what a reader cannot conclude from the run, asked by rules of the binary in a fixed order, each as `{code, message}`: `evidence_foreign` (a file of the folder belongs to another run), `evaluate_unsealed` (an Evaluate run that has not ended: truth sealed, not comparable), `run_not_ended` (an Explore run still open), `run_incomplete`, `stopped_early` (its sentence gives the stop and the requested end as simulated clock times, `hh:mm:ss`), `files_differ`, `replay_not_checked`, `replay_does_not_reproduce`, `no_observations`, `torn_tail`, `no_kpi_results`, `no_outside_scoring` (no verdict was scored, or the run is an unscored investigation).
+- `outcome_score` (only with `--outcome`, and then only when the run ended and its domain declares
+  `ground_truth.outcome_weights`; without the flag no report carries it and none replays the run for it):
+  `{status, reason?, unit?, labels?, result?}` with `status` `scored`, `not_scored` (an unblinded or Explore run) or
+  `failed` (the run does not replay, for example), `unit` the domain's `outcome_weights.unit`, `labels` the `label` of
+  each baseline policy that has one, by mode (`policy:<name>`), and `result` the document `streamsim outcome` prints for
+  the folder. Asking for it replays the run as `outcome` does, so it takes as long (about 3 min for a 16 hour conveyor story at
+  `GOMAXPROCS=3`); it needs no `--domains-dir` either. The Markdown
+  report then adds an "Outcome score" section: a one-line summary of what the run beats, ties and loses to (doing nothing
+  and each policy, with each delta), what the costs mean (J in the domain's unit; a delta is the run's J minus the
+  baseline's, so a negative delta means the run cost less; the tie), the story (`valid: no` reads "Control story: doing
+  nothing is clean", a story that tests no reaction, not an invalid run), whether it is easy (a baseline policy ties or
+  beats the run), one row per run (policy label, cost J, trips, boundary violations, calls) and one per baseline (policy
+  label, delta, verdict).
+  `--outcome` does not apply to `report compare`.
 - The Markdown report reads as a handover: Purpose, What ran, Outcome and integrity (execution outcome, recording integrity, replay and outside scoring as separate rows), Evidence coverage, Results (the scope of the KPI truth and `Objective: Not assessed`, since the run declares no objective), Plan, the fault, perturbation, environment and effector tables, Open questions, then the digests and verification detail.
 - Per-entity coverage is not part of the report.
 

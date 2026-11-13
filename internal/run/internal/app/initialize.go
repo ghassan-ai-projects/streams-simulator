@@ -69,7 +69,7 @@ func newRunWorld(cfg Config) (*world.World, error) {
 
 func runWorldOptions(cfg Config) world.Options {
 	return world.Options{InitialEntities: cfg.EntityIDs, Noiseless: cfg.Noiseless, ForceFailureMode: cfg.ForceFailureMode,
-		EmitDisabled: cfg.silent, TrackKPIs: !cfg.silent}
+		EmitDisabled: cfg.silent, TrackKPIs: !cfg.silent, RecordOutcome: cfg.recordOutcome}
 }
 
 func newRunState(ctx context.Context, cfg Config, w *world.World) (*Run, error) {

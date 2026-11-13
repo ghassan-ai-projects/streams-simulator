@@ -1,14 +1,15 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
-	rules "github.com/ghassan-ai-projects/streams-simulator/internal/grading/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -23,6 +24,14 @@ func writeLabels(t *testing.T, dir, name string, labels ...*model.GroundTruthRec
 		t.Fatal(err)
 	}
 	return path
+}
+
+func gradeOne(ctx context.Context, options Options) (*score.Scorecard, error) {
+	graded, err := GradeRun(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+	return graded.Scorecards[0], nil
 }
 
 func labelOnAnother(gt *model.GroundTruthRecord, entity string) *model.GroundTruthRecord {
@@ -57,15 +66,11 @@ func TestActionsOnAnUnlabelledPondAreUnexpectedAndNoLabelIsAFileOfItsOwn(t *test
 	t.Parallel()
 	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
 	dir := t.TempDir()
-	_, gt := closedLoopRun(t, dir)
+	closedLoopRun(t, dir)
 	none := writeLabels(t, dir, "none.json")
 	graded, err := GradeRun(t.Context(), gradeOptions(dir, none))
 	if err != nil || len(graded.Scorecards) != 0 || len(graded.Unexpected.Actions) != 1 || graded.Unexpected.EffectCalls == 0 {
 		t.Fatalf("GradeRun = %+v, %v, want no scorecard and the action on pond-1 unexpected", graded, err)
-	}
-	several := writeLabels(t, dir, "labels.json", gt, labelOnAnother(gt, "site-a/pond-2"))
-	if _, err := Grade(t.Context(), gradeOptions(dir, several)); !errors.Is(err, rules.ErrNotOneLabel) {
-		t.Fatalf("Grade of two labels = %v, want %v", err, rules.ErrNotOneLabel)
 	}
 }
 

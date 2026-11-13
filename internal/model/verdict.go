@@ -25,6 +25,17 @@ type Detection struct {
 	Confidence   float64  `json:"confidence,omitempty"`
 	EvidenceRefs []string `json:"evidence_refs,omitempty"`
 	Narrative    string   `json:"narrative,omitempty"`
+
+	PredictedFailureAt string `json:"predicted_failure_at,omitempty"`
+}
+
+func (v *Verdict) PredictsFailure() bool {
+	for _, detection := range v.Detections {
+		if detection.PredictedFailureAt != "" {
+			return true
+		}
+	}
+	return false
 }
 
 const (

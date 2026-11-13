@@ -42,11 +42,15 @@ func failureSource(err error) string {
 	return ""
 }
 
-func plainMessage(err error) string {
-	message := err.Error()
+func withoutProgramName(message string) string {
 	for strings.HasPrefix(message, "streamsim: ") {
 		message = strings.TrimPrefix(message, "streamsim: ")
 	}
+	return message
+}
+
+func plainMessage(err error) string {
+	message := withoutProgramName(err.Error())
 	if _, ok := model.AsValidationError(err); ok {
 		message, _, _ = strings.Cut(message, "\n")
 		message = strings.TrimSuffix(message, ":")

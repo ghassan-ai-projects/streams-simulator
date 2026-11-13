@@ -16,23 +16,40 @@ type ExampleSummary struct {
 	Description string `json:"description,omitempty"`
 }
 
+type ExamplePlant struct {
+	Composition json.RawMessage
+	KindFiles   []KindFile
+}
+
 type Examples struct {
 	summaries []ExampleSummary
 	documents map[string]json.RawMessage
+	kindFiles exampleKindFiles
 }
 
-func LoadExamples(files []File) (Examples, error) {
-	examples := Examples{documents: map[string]json.RawMessage{}}
-	for _, file := range files {
-		summary, err := exampleSummary(file)
-		if err != nil {
+func LoadExamples(compositions, kindFiles []File) (Examples, error) {
+	pool, err := loadExampleKindFiles(kindFiles)
+	if err != nil {
+		return Examples{}, err
+	}
+	examples := Examples{documents: map[string]json.RawMessage{}, kindFiles: pool}
+	for _, file := range compositions {
+		if err := examples.add(file); err != nil {
 			return Examples{}, err
 		}
-		examples.summaries = append(examples.summaries, summary)
-		examples.documents[summary.ID] = json.RawMessage(file.Raw)
 	}
 	slices.SortFunc(examples.summaries, func(a, b ExampleSummary) int { return strings.Compare(a.Title, b.Title) })
 	return examples, nil
+}
+
+func (e *Examples) add(file File) error {
+	summary, err := exampleSummary(file)
+	if err != nil {
+		return err
+	}
+	e.summaries = append(e.summaries, summary)
+	e.documents[summary.ID] = json.RawMessage(file.Raw)
+	return nil
 }
 
 func exampleSummary(file File) (ExampleSummary, error) {
@@ -50,10 +67,14 @@ func (e Examples) List() []ExampleSummary {
 	return slices.Clone(e.summaries)
 }
 
-func (e Examples) Find(id string) (json.RawMessage, error) {
+func (e Examples) Find(id string) (ExamplePlant, error) {
 	document, ok := e.documents[id]
 	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrUnknownExample, id)
+		return ExamplePlant{}, fmt.Errorf("%w: %q", ErrUnknownExample, id)
 	}
-	return document, nil
+	kindFiles, err := e.kindFiles.of(id, document)
+	if err != nil {
+		return ExamplePlant{}, err
+	}
+	return ExamplePlant{Composition: document, KindFiles: kindFiles}, nil
 }

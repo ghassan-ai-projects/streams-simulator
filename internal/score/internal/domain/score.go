@@ -77,6 +77,8 @@ type JudgmentMetrics struct {
 	Suspicious         bool  `json:"suspicious,omitempty"`
 	FalsePositive      bool  `json:"false_positive,omitempty"`
 	DetectionCount     int   `json:"detection_count"`
+
+	Prognosis *PrognosisMetrics `json:"prognosis,omitempty"`
 }
 
 func Score(ev Evidence, gt *model.GroundTruthRecord) (*Scorecard, error) {

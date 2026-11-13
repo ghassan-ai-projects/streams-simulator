@@ -70,6 +70,13 @@ mapping) a plain string that resolves to one declaration, so the adapter, pertur
 at the same pointer as before. A fault or effector acts only on entities of its own kind: injecting a fault or invoking an effector
 on an entity of another kind is refused by the world.
 
+**Expected actions on other kinds.** A fault may list `expected_actions`, each `{kind, effector}`: the right actions when it
+strikes, which may be another kind's (a drive fault is answered by cutting the feeder's feed). The kind must be declared and declare
+the effector (issues at `/expected_actions/i/kind` and `/expected_actions/i/effector`). The label resolves them at label time: an
+action of the fault's own kind is expected on the faulted instance, an action of another kind on every instance of that kind in the
+run, so the label carries `expected_actions` as `{entity_id, effector}`. Scoring credits a call that matches one as appropriate and
+grades it with the fault instead of as unexpected.
+
 **Per-kind behaviour.** An entity emits only its kind's channels. A `peer_residual` detector pools the entity's peers: the live
 entities **of the same kind**. A suite scenario draws its entity from the entities of the injected fault's kind, applies profile setup
 calls only when the entity's kind declares the effector, and audits against the channels and the negative-class control fault of that
@@ -512,9 +519,9 @@ Rules:
   annotation keywords (`description`, `title`, `$comment`, `examples`) removed at every depth; effector descriptions are
   director-side text and may name the faults an effector remedies (R7e-09).
 
-## 23. Algebraic forms: `curve`, `product`, `sum` (phase P7i)
+## 23. Algebraic forms: `curve`, `product`, `sum`, `ratio` (phase P7i; `ratio` M3)
 
-Three F1 forms are algebraic: the state is a function of other states at the same instant, evaluated when it is read, with no
+Four F1 forms are algebraic: the state is a function of other states at the same instant, evaluated when it is read, with no
 step, no history and no `dt_ms`. Each input is weighted (`coef × state`, or `coef × aggregate` for a linked input, §21); the
 result passes the form's `clamp` and then the state's bounds, faults and effector kicks like any state.
 
@@ -522,9 +529,12 @@ result passes the form's `clamp` and then the state's bounds, faults and effecto
 |---|---|---|
 | `sum` | `Σ coef × input` | one or more inputs |
 | `product` | `Π coef × input` | 2 to 4 inputs |
+| `ratio` | `Π numerator / max(Π denominator, floor)`, each factor `coef × input` | 1 to 4 numerator inputs and 1 to 4 inputs with `denominator: true`; `floor` > 0 |
 | `curve` | a piecewise-linear table of the weighted inputs, held at its end values outside the table | one input: `table: {x, values}`; two inputs: `table: {x, y, grid}`, bilinear, `grid[i][j]` at `(x[i], y[j])` |
 
 Axes increase strictly and hold at least two points; `values` has one entry per `x`, `grid` one row per `x` of one entry per `y`.
+A `denominator` flag outside a `ratio` is refused at `/inputs/i/denominator`; a ratio without both sides at `/inputs`, and
+a floor at or below zero at `/floor`. A denominator at or below the floor divides by the floor, so no ratio divides by zero.
 Algebraic states take part in the dynamics dependency check, so an algebraic loop is refused. These are tables and bounded
 products, not an expression language: an efficiency curve, a pump or fan law, a heat duty `flow × ΔT` (with `ΔT` a `sum`), or a
 power that scales with `running` (R7g-02) is written with them.

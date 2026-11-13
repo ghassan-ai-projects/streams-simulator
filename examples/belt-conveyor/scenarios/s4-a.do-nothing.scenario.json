@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "id": "s4-a-do-nothing",
+  "description": "S4: Feed surges on a healthy belt, drives with margin, seed row 1 (do-nothing).",
+  "domain": "belt-conveyor-drives-a",
+  "adapter": "native-jsonl",
+  "seed": 2024342292,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767234746000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "F-1",
+        "fault": "bulk_feeder__feed_surge",
+        "onset_ns": 1767234746000000000,
+        "params": {
+          "severity": 0.48
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767247200000000000
+      }
+    }
+  ]
+}

@@ -9,6 +9,8 @@ ordinary domain, so a world never depends on the library at run time.
 | Equipment | Reusable process equipment: a kind without channels, its measurement points, ports, presets and parameters | `Equipment` | `*.component.json`, component-v0.1 |
 | Instrument | A reusable sensor that turns a measurement point into a channel | `Instrument` | `*.instrument.json`, instrument-v0.1 |
 | Vocabulary | Units and conversions, port types and ISA-5.1 tag letters; merged entry by entry across libraries | `Vocabulary` | `vocabulary.json`, component-vocabulary-v0.1 |
+| Example kind file | A plant wire kind file or board mapping an example plant implements, embedded beside the example compositions and chosen by the entries' `implements` and `board_type` | `KindFile`, `ExamplePlant` | `kind_files` |
+| Kind file install | Writing an example's kind files into a kinds folder: a missing file is written, an identical one left, a different one refuses the whole install | `KindFilesInstalled`, `InstallExampleKinds` | `component install-kinds`, `kind_file_differs` |
 | Library | The merged content of the embedded built-in library (loaded first) and the customer directories, each (id, version) once | `Library` | `--components-dir`, `STREAMSIM_COMPONENTS_DIRS` |
 | Reference | `namespace/name@major`, the key of one library file | `reference` | `use`, `default_instrument` |
 | Composition | A plant built from equipment, sizes, instruments and connections | `Composition`, `Entry`, `Connection` | `*.composition.json`, composition-v0.1 |

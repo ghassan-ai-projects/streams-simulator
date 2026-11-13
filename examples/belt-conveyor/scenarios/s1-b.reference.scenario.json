@@ -1,0 +1,118 @@
+{
+  "schema_version": "0.1",
+  "id": "s1-b-reference",
+  "description": "S1: Slow bearing failure on D-3, drives without margin, seed row 1 (reference).",
+  "domain": "belt-conveyor-drives-b",
+  "adapter": "native-jsonl",
+  "seed": 769124933,
+  "world": {
+    "start_time_ns": 1767225600000000000
+  },
+  "commands": [
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767231669000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "D-3",
+        "fault": "conveyor_drive__lube_loss",
+        "onset_ns": 1767231669000000000,
+        "params": {
+          "severity": 0.82
+        }
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767257220000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "percent": 0
+        },
+        "at_ns": 1767257220000000000,
+        "command_id": "s1-b-2",
+        "effector": "bulk_feeder__set_feed",
+        "entity_id": "F-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767257400000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "run_command": 0
+        },
+        "at_ns": 1767257400000000000,
+        "command_id": "s1-b-3",
+        "effector": "conveyor_drive__stop_drive",
+        "entity_id": "D-3"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767257410000000000
+      }
+    },
+    {
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "percent": 18
+        },
+        "at_ns": 1767257410000000000,
+        "command_id": "s1-b-4",
+        "effector": "bulk_feeder__set_feed",
+        "entity_id": "F-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767270337000000000
+      }
+    },
+    {
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "B-1",
+        "fault": "belt_conveyor__downstream_stop",
+        "onset_ns": 1767270337000000000,
+        "params": null
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767272137000000000
+      }
+    },
+    {
+      "op": "fault.clear",
+      "args": {
+        "at_ns": 1767272137000000000,
+        "fault_id": "f-1"
+      }
+    },
+    {
+      "op": "clock.advance",
+      "args": {
+        "to_ns": 1767283200000000000
+      }
+    }
+  ]
+}

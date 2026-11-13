@@ -1,0 +1,19 @@
+{
+  "board_type": "drive-controller",
+  "kinds": {
+    "conveyor_drive": {
+      "commands": {
+        "start_drive": {"raw": "conveyor_drive__start_drive", "args": {"run_command": {"from": "run_command"}}},
+        "stop_drive": {"raw": "conveyor_drive__stop_drive", "args": {"run_command": {"from": "run_command"}}},
+        "reset_trip": {"raw": "conveyor_drive__reset_trip"}
+      },
+      "metrics": {
+        "current": {"raw": "conveyor_drive.current"},
+        "winding": {"raw": "conveyor_drive.winding"},
+        "vibration": {"raw": "conveyor_drive.vibration"},
+        "run_status": {"raw": "conveyor_drive.run_status"},
+        "run_command": {"raw": "conveyor_drive.run_command"}
+      }
+    }
+  }
+}

@@ -8,11 +8,19 @@ import (
 )
 
 func singleChannelDeviation(entity, channel string, clean, faulted *world.World, at int64) float64 {
-	if faulted.ReadingDropped(entity, channel, at) && !clean.ReadingDropped(entity, channel, at) {
+	if readingLost(faulted, entity, channel, at) && !readingLost(clean, entity, channel, at) {
 		return math.Inf(1)
 	}
 	level := math.Abs(faulted.Reading(entity, channel, at) - clean.Reading(entity, channel, at))
 	return level + math.Abs(faulted.ReadingNoise(entity, channel, at)-clean.ReadingNoise(entity, channel, at))
+}
+
+// A held reading of a noisy channel is flat from its injection, as plain to see as a dropped one.
+func readingLost(w *world.World, entity, channel string, at int64) bool {
+	if w.ReadingDropped(entity, channel, at) {
+		return true
+	}
+	return w.ReadingHeld(entity, channel, at) && w.ReadingNoise(entity, channel, at) > 0
 }
 
 func channelDivergence(entity string, det *model.Detector, clean, faulted *world.World, at int64) float64 {

@@ -6,10 +6,10 @@ and `score` (policies), which do not know each other.
 
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
-| Grade | Score a finished run from its published files and the sealed label | `Grade` | `score` command |
+| Grade | Score a finished run from its published files and its sealed labels: one scorecard per label and what was unexpected | `GradeRun`, `Document` | `score` command, the report's `scoring` |
 | Run artifact | The record of the run's inputs, command log and digests | `model.RunArtifact` | `run.json` |
 | Verdict | What the consumer reported, checked against its contract | `model.Verdict` | `verdict.json` |
-| Label | The sealed ground truth the run is graded against | `model.GroundTruthRecord` | `label.json` |
+| Label | The sealed ground truth the run is graded against | `model.GroundTruthRecord` | `label.json`, `labels.json` |
 | Ledger | The delivery ledger, one JSON record per line | `DecodeLedger` | `ledger.jsonl` |
 | State history | The director-only hidden-state snapshots, one per emission | `DecodeHistory` | `world_state_history.jsonl` |
 | Replayed evidence | The effector calls, perturbations and counts recovered by replaying the artifact, because the command log records invocations but not whether each took effect | `ArtifactEvidence` | – |
@@ -21,3 +21,4 @@ and `score` (policies), which do not know each other.
 | Word | Replaced by | Why |
 | --- | --- | --- |
 | `cli` score workflow | the `grading` module | loading, replaying and scoring a run are not command-line wiring |
+| `Grade` (one label only) | `GradeRun` | a run with several labels is graded as one run, in `score` and in the report |

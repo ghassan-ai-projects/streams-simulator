@@ -114,6 +114,21 @@ describe("plant and editor gateways", () => {
     expect(lastCall(t).body).toEqual({ args: {} });
   });
 
+  it("installs an example's kind files through its action and refuses a document without the two lists", async () => {
+    const t = answering({ example: "belt", written: ["a.kind.json"], unchanged: [] });
+    expect(await bridgeAdapter(t).plant.installKinds("belt")).toEqual({
+      ok: true,
+      value: { written: ["a.kind.json"], unchanged: [] },
+    });
+    expect(lastCall(t)).toEqual({ url: "/api/actions/component.install_kinds", body: { args: { example: "belt" } } });
+    for (const odd of [{ written: [] }, { written: [1], unchanged: [] }, { written: [], unchanged: "x" }, "x"]) {
+      expect(await bridgeAdapter(answering(odd)).plant.installKinds("belt")).toMatchObject({
+        ok: false,
+        failure: { kind: "unreadable" },
+      });
+    }
+  });
+
   it("refuses a library response that lacks components", async () => {
     expect(await bridgeAdapter(answering({ components: "all" })).editor.library()).toMatchObject({
       ok: false,

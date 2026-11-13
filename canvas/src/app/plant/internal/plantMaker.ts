@@ -73,7 +73,14 @@ export class PlantMaker {
     if (existing.failure.kind !== "missing") return failure(existing.failure);
     const generated = await this.generate(source, id, title, mode);
     if (!generated.ok) return failure(worded(generated.failure));
+    const installed = await this.installKinds(source, mode);
+    if (!installed.ok) return failure(worded(installed.failure));
     return this.writeComposition(id, generated.value);
+  }
+
+  private async installKinds(source: PlantSource, mode: MakeMode): Promise<Outcome<unknown, PlantFailure>> {
+    if (source.kind !== "example" || mode !== "copy") return success(null);
+    return this.gateway.installKinds(source.id);
   }
 
   private async generate(source: PlantSource, id: string, title: string, mode: MakeMode) {

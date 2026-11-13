@@ -188,6 +188,11 @@
             }
           }
         },
+        "kpi_units": {
+          "type": "object",
+          "description": "The unit of each KPI state by state name, from the kinds of the embedded domain that declare it a KPI; a state those kinds give no unit or two different units is left out. Absent without KPI truth or an embedded domain.",
+          "additionalProperties": {"type": "string", "minLength": 1}
+        },
         "kpis": {
           "type": "object",
           "description": "The run's KPI truth from its sealed journal (domain-spec v0.2 section 29): the true mean, minimum and maximum of every KPI state, and the ISA-18.2 KPIs of every alarm state and of the alarm system.",
@@ -220,6 +225,19 @@
         "status": {"enum": ["scored", "not_scored", "failed"]},
         "reason": {"type": "string", "minLength": 1},
         "scorecard": {"type": "object"}
+      }
+    },
+    "outcome_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Present when the run ended and its domain declares ground_truth.outcome_weights: the run graded on its consequences, as streamsim outcome grades it (the run replayed as it ran, with nobody acting and under each baseline policy). Computed when the report is built, never stored in the folder.",
+      "properties": {
+        "status": {"enum": ["scored", "not_scored", "failed"]},
+        "reason": {"type": "string", "minLength": 1},
+        "unit": {"type": "string", "minLength": 1, "description": "The unit J is counted in: the domain's ground_truth.outcome_weights.unit, absent when the domain names none."},
+        "labels": {"type": "object", "description": "The label of each baseline policy that carries one in the domain, by baseline mode (policy:<name>).", "additionalProperties": {"type": "string", "minLength": 1}},
+        "result": {"type": "object", "description": "The outcome document of streamsim outcome (cli-output-v0.1 outcome)."}
       }
     },
     "open_questions": {

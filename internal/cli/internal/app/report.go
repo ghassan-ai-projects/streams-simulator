@@ -50,7 +50,7 @@ func parseReportOptions(s *session, args []string) (reportOptions, error) {
 		args = args[1:]
 	}
 	fs := newFlagSet("report", s.stderr)
-	registerReportFlags(fs, &options.format, &options.out, &options.A, &options.B, &options.Replay)
+	registerReportFlags(fs, &options.format, &options.out, &options.A, &options.B, &options.Replay, &options.Outcome)
 	registerInputDirs(fs, &options.Directories.Domains, &options.Directories.Adapters)
 	if err := parseFlags(fs, args); err != nil {
 		return reportOptions{}, err
@@ -63,10 +63,10 @@ func admitReportOptions(options reportOptions, positional int) error {
 	switch {
 	case options.format != report.FormatJSON && options.format != report.FormatMarkdown:
 		return usagef("report: --format must be json or markdown, got %q", options.format)
-	case options.compare && (positional != 0 || options.A == "" || options.B == "" || options.Replay):
+	case options.compare && (positional != 0 || options.A == "" || options.B == "" || options.Replay || options.Outcome):
 		return usagef("usage: streamsim report compare --a <run-dir> --b <run-dir> [--format json|markdown] [--out <file>]")
 	case !options.compare && (positional != 1 || options.A != "" || options.B != ""):
-		return usagef("usage: streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay]")
+		return usagef("usage: streamsim report <run-dir> [--format json|markdown] [--out <file>] [--replay] [--outcome]")
 	}
 	return nil
 }

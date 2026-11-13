@@ -16,7 +16,7 @@ func TestGradeUsesTheRecordedSpecsAfterTheDomainFileChanges(t *testing.T) {
 	dir := t.TempDir()
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)
-	before, err := Grade(t.Context(), gradeOptions(dir, label))
+	before, err := gradeOne(t.Context(), gradeOptions(dir, label))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func TestGradeUsesTheRecordedSpecsAfterTheDomainFileChanges(t *testing.T) {
 	}
 	options := gradeOptions(dir, label)
 	options.DomainsDir = domains
-	after, err := Grade(t.Context(), options)
+	after, err := gradeOne(t.Context(), options)
 	if err != nil || !reflect.DeepEqual(after, before) {
 		t.Fatalf("after the domain edit: %v\nafter:  %+v\nbefore: %+v", err, after, before)
 	}

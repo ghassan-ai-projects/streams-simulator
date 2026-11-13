@@ -1,7 +1,15 @@
 import type { ComponentSpec, InstancePopulation } from "../../model/plant";
 import type { Composition } from "../../model/editor";
 import type { ExamplePlant } from "../../model/plant";
-import type { ComposeSummary, CompositionIssue, Diagnostic, FileContent, Outcome, PlantSource } from "./shared";
+import type {
+  ComposeSummary,
+  CompositionIssue,
+  Diagnostic,
+  FileContent,
+  InstalledKinds,
+  Outcome,
+  PlantSource,
+} from "./shared";
 
 export type PlantFailure =
   | { readonly kind: "missing" | "conflict"; readonly diagnostic: Diagnostic }
@@ -22,6 +30,7 @@ export interface PlantGateway {
     readonly title: string;
     readonly mode: "copy" | "empty";
   }): Promise<Outcome<Composition, PlantFailure>>;
+  installKinds(example: string): Promise<Outcome<InstalledKinds, PlantFailure>>;
   writeFile(
     path: string,
     content: string,

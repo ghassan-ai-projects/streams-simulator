@@ -1,4 +1,4 @@
-import type { ComposeSummary, DomainDocument, FileContent } from "../../../../app/ports";
+import type { ComposeSummary, DomainDocument, FileContent, InstalledKinds } from "../../../../app/ports";
 import type { Workspace } from "../../../../model/workspace";
 import type { ExamplePlant, InstancePopulation, LibraryEntry, Presets } from "../../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../../model/plant";
@@ -8,7 +8,7 @@ import { parseComparisonPayload } from "../review/compareDecoder";
 import { parseReportPayload, parseReplayPayload } from "../review/reportDecoder";
 import { isRecord, list, record, text } from "../../../../model/shared/json";
 import { parametersOf, presetsOf } from "./parameterDecoder";
-import { finiteOrNull } from "../transport/decodeKit";
+import { finiteOrNull, names } from "../transport/decodeKit";
 
 export function paired(value: unknown): boolean | null {
   return isRecord(value) && typeof value.paired === "boolean" ? value.paired : null;
@@ -237,6 +237,13 @@ export function population(value: unknown): InstancePopulation | null {
 
 function isTextList(value: unknown): value is readonly string[] {
   return Array.isArray(value) && value.every((id) => typeof id === "string");
+}
+
+export function installedKinds(value: unknown): InstalledKinds | null {
+  if (!isRecord(value) || value.written === undefined || value.unchanged === undefined) return null;
+  const written = names(value.written);
+  const unchanged = names(value.unchanged);
+  return written === null || unchanged === null ? null : { written, unchanged };
 }
 
 export function composeSummary(value: unknown): ComposeSummary | null {

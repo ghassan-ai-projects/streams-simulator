@@ -11,6 +11,9 @@ func componentCommand(s *session, args []string) (any, error) {
 	if len(args) > 0 && args[0] == "new" {
 		return cmdNewPlant(s, args[1:])
 	}
+	if len(args) > 0 && args[0] == "install-kinds" {
+		return cmdInstallKinds(s, args[1:])
+	}
 	return cmdComponent(s, args)
 }
 
@@ -36,20 +39,20 @@ func cmdNewPlant(s *session, args []string) (any, error) {
 }
 
 func newPlant(id string, options newPlantOptions) (any, error) {
-	base, source, err := newPlantBase(options)
+	base, source, document, err := newPlantBase(options)
 	if err != nil {
 		return nil, err
 	}
 	plant := component.NewPlant{ID: id, Title: options.title, Empty: options.empty}
-	composition, err := component.NewComposition(base, plant, source)
-	return map[string]any{"composition": composition}, wrapCLI(err)
+	document["composition"], err = component.NewComposition(base, plant, source)
+	return document, wrapCLI(err)
 }
 
-func newPlantBase(options newPlantOptions) ([]byte, string, error) {
+func newPlantBase(options newPlantOptions) ([]byte, string, map[string]any, error) {
 	if options.example != "" {
 		example, err := component.Example(options.example)
-		return example, "example " + options.example, wrapCLI(err)
+		return example.Composition, "example " + options.example, map[string]any{"kind_files": example.KindFiles}, wrapCLI(err)
 	}
 	raw, err := files.Read(options.from)
-	return raw, options.from, wrapCLI(err)
+	return raw, options.from, map[string]any{}, wrapCLI(err)
 }

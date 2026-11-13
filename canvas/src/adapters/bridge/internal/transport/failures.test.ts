@@ -57,6 +57,10 @@ describe("protocol failures mapped to the owning feature", () => {
     expect(
       plantFailure("compose")(http("composition_invalid", 422, [{ pointer: "/id", message: "bad id" }])),
     ).toMatchObject({ kind: "compose-refused", issues: [{ pointer: "/id", message: "bad id" }] });
+    expect(
+      plantFailure("install")(http("kind_failed", 422, [{ pointer: "/a.kind.json", message: "differs" }])),
+    ).toMatchObject({ kind: "compose-refused", issues: [{ pointer: "/a.kind.json", message: "differs" }] });
+    expect(plantFailure("install")(http("component_failed", 422))).toMatchObject({ kind: "unreadable" });
     expect(plantFailure("read")(http("bridge_failed", 503))).toMatchObject({ kind: "unavailable" });
     expect(plantFailure("read")(http("bridge_failed", 400))).toMatchObject({ kind: "unreadable" });
     expect(plantFailure("read")({ kind: "transport" })).toMatchObject({ kind: "unavailable" });

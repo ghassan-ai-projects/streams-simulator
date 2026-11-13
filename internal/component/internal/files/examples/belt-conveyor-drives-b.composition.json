@@ -1,0 +1,77 @@
+{
+  "schema_version": "0.1",
+  "id": "belt-conveyor-drives-b",
+  "version": "0.1.0",
+  "title": "Belt conveyor, three drives without margin",
+  "description": "A 60 m bulk belt fed at 150 t/h and pulled by three equal drives (synthetic numbers). The drives run near their rating: when one trips, the survivors' inverters trip about two minutes later and the loaded belt is stranded.",
+  "stresses": "load shared across drives on one belt: a failing drive moves load onto its peers, and a stop at the wrong moment strands a loaded belt",
+  "axes": {"absence": "signal", "actuation": "interlocked", "cadence": ["periodic", "report_by_exception"], "cardinality": "small", "consequence": ["downtime", "safety"],
+    "correlation": ["coupled", "cascading"], "fidelity": ["F0", "F1"], "lateness": "none", "rate": "medium", "seasonality": ["diurnal"],
+    "time_reference": "wall", "value_shape": ["scalar", "boolean"]},
+  "site": {"name": "Bulk terminal", "timezone": "Europe/Berlin"},
+  "areas": [{"name": "Terminal"}, {"name": "Transfer belt", "parent": "Terminal"}, {"name": "Drive station", "parent": "Transfer belt"}],
+  "equipment": [
+    {"use": "streamsim/bulk-feeder@1", "names": ["F-1"], "area": "Transfer belt", "implements": "bulk_feeder", "board_type": "feeder-controller"},
+    {"use": "streamsim/belt-conveyor@1", "parameters": {"breakaway_n_per_kg": 1.152}, "names": ["B-1"], "area": "Transfer belt", "implements": "belt_conveyor", "board_type": "belt-controller"},
+    {"use": "streamsim/conveyor-drive@1", "parameters": {"margin": "weak"}, "names": ["D-1", "D-2", "D-3"], "area": "Drive station", "implements": "conveyor_drive", "board_type": "drive-controller",
+      "expected_actions": {
+        "lube_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}],
+        "gear_oil_loss": [{"kind": "bulk_feeder", "effector": "set_feed"}, {"kind": "conveyor_drive", "effector": "stop_drive"}, {"kind": "belt_conveyor", "effector": "stop_belt"}],
+        "vfd_fault": [{"kind": "bulk_feeder", "effector": "set_feed"}]
+      }}
+  ],
+  "connections": [
+    {"from": "F-1.feed_out", "to": "B-1.feed_in"},
+    {"from": "B-1.moving_out", "to": "F-1.moving_in"},
+    {"from": "B-1.share_out", "to": "D-1.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-1.stop_ok_in"},
+    {"from": "B-1.drives_out", "to": "D-1.drives_in"}, {"from": "B-1.weights_out", "to": "D-1.weights_in"}, {"from": "D-1.weighted_out", "to": "B-1.weights_in"},
+    {"from": "D-1.enabled_out", "to": "B-1.drives_in"}, {"from": "D-1.drag_out", "to": "B-1.drag_in"}, {"from": "D-1.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-1.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-1.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-1.ready_cap_out", "to": "B-1.ready_cap_in"},
+    {"from": "B-1.share_out", "to": "D-2.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-2.stop_ok_in"},
+    {"from": "B-1.drives_out", "to": "D-2.drives_in"}, {"from": "B-1.weights_out", "to": "D-2.weights_in"}, {"from": "D-2.weighted_out", "to": "B-1.weights_in"},
+    {"from": "D-2.enabled_out", "to": "B-1.drives_in"}, {"from": "D-2.drag_out", "to": "B-1.drag_in"}, {"from": "D-2.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-2.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-2.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-2.ready_cap_out", "to": "B-1.ready_cap_in"},
+    {"from": "B-1.share_out", "to": "D-3.share_in"}, {"from": "B-1.stop_ok_out", "to": "D-3.stop_ok_in"},
+    {"from": "B-1.drives_out", "to": "D-3.drives_in"}, {"from": "B-1.weights_out", "to": "D-3.weights_in"}, {"from": "D-3.weighted_out", "to": "B-1.weights_in"},
+    {"from": "D-3.enabled_out", "to": "B-1.drives_in"}, {"from": "D-3.drag_out", "to": "B-1.drag_in"}, {"from": "D-3.rated_out", "to": "B-1.rated_in"},
+    {"from": "D-3.run_cap_out", "to": "B-1.run_cap_in"}, {"from": "D-3.boost_cap_out", "to": "B-1.boost_cap_in"}, {"from": "D-3.ready_cap_out", "to": "B-1.ready_cap_in"}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 86400, "description": "A day of the belt at full feed, one fault per scenario."},
+    {"name": "sensor_pathology", "duration_s": 86400, "fault_weights": {"conveyor_drive__vibration__frozen": 1.0, "conveyor_drive__winding__offset": 1.0, "belt_conveyor__tail_speed__offset": 1.0},
+      "description": "An instrument lies while the belt and its drives are healthy: a frozen vibration reading, an offset winding or tail pulley reading."},
+    {"name": "correlated_cascade", "duration_s": 86400, "fault_weights": {"conveyor_drive__vfd_fault": 1.0, "conveyor_drive__gear_oil_loss": 1.0},
+      "description": "A drive trip overloads the two survivors; their inverters trip about two minutes later, the belt stalls and is stranded loaded."}
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0,
+    "outcome_weights": {
+      "boundaries": [{"kind": "belt_conveyor", "name": "stranded", "per_violation": 4}],
+      "trips": [
+        {"kind": "conveyor_drive", "state": "relay_ok", "per_trip": 0.5}, {"kind": "conveyor_drive", "state": "inverter_ok", "per_trip": 0.5},
+        {"kind": "conveyor_drive", "state": "overtemp_ok", "per_trip": 0.5}, {"kind": "conveyor_drive", "state": "free_ok", "per_trip": 0.5},
+        {"kind": "belt_conveyor", "state": "stall_ok", "per_trip": 0.5}
+      ],
+      "kpis": [
+        {"kind": "conveyor_drive", "state": "life_used", "per_unit": 0.0008}, {"kind": "conveyor_drive", "state": "gear_used", "per_unit": 0.00032},
+        {"kind": "belt_conveyor", "state": "delivered", "per_unit": -0.006666666666666667}
+      ],
+      "calls": [
+        {"effector": "bulk_feeder__set_feed", "per_call": 0.25}, {"effector": "conveyor_drive__stop_drive", "per_call": 0.25},
+        {"effector": "belt_conveyor__stop_belt", "per_call": 0.25}
+      ],
+      "tie": 0.1,
+      "unit": "equivalent production hours"
+    },
+    "baseline_policies": [
+      {"name": "b1", "label": "vibration alarm: feed 0, then stop the drive", "when": {"kind": "conveyor_drive", "state": "vibration", "operator": "gt", "threshold": 4.5}, "for_s": 60,
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 0}},
+          {"effector": "conveyor_drive__stop_drive", "target": "matched", "args": {"run_command": 0}, "delay_s": 60}]},
+      {"name": "b2", "label": "current threshold: feed 67 %", "when": {"kind": "conveyor_drive", "state": "current", "operator": "gt", "threshold": 4.688}, "for_s": 60,
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 67}}]},
+      {"name": "b3", "label": "safe limp feed: 18 % from the start", "when": {"kind": "bulk_feeder", "state": "feed_set", "operator": "gte", "threshold": 0},
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 18}}]},
+      {"name": "b4", "label": "drive lost: feed 67 %", "when": {"kind": "conveyor_drive", "state": "available", "operator": "lt", "threshold": 0.5},
+        "then": [{"effector": "bulk_feeder__set_feed", "target": "F-1", "args": {"percent": 67}}]}
+    ]
+  }
+}

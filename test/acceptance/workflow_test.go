@@ -52,7 +52,12 @@ func newBinary(t *testing.T) *binary {
 // run invokes streamsim with the shipped domains and adapters selected.
 func (b *binary) run(args ...string) outcome {
 	b.t.Helper()
-	ctx, cancel := context.WithTimeout(b.t.Context(), 5*time.Minute)
+	return b.runWithin(5*time.Minute, args...)
+}
+
+func (b *binary) runWithin(limit time.Duration, args ...string) outcome {
+	b.t.Helper()
+	ctx, cancel := context.WithTimeout(b.t.Context(), limit)
 	defer cancel()
 	// #nosec G204 -- the test runs the freshly built binary with fixed arguments
 	cmd := exec.CommandContext(ctx, b.path, args...)

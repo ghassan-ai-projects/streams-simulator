@@ -35,3 +35,36 @@ func TestCurveTablesAndProductsAreValidatedByShape(t *testing.T) {
 		})
 	}
 }
+
+func ratioDynamics(floor any, inputs ...any) map[string]any {
+	f1 := map[string]any{"form": "ratio", "inputs": inputs}
+	if floor != nil {
+		f1["floor"] = floor
+	}
+	return map[string]any{"target": "avg_flow", "tier": "F1", "f1": f1}
+}
+
+func TestARatioNeedsBothSidesAndAPositiveFloor(t *testing.T) {
+	t.Parallel()
+	divides := map[string]any{"state": "draw", "denominator": true}
+	cases := []struct {
+		name     string
+		dynamics map[string]any
+		pointer  string
+	}{
+		{"a ratio of one numerator by one denominator", ratioDynamics(0.1, "inflow", divides), ""},
+		{"two numerator inputs by one", ratioDynamics(0.1, "inflow", map[string]any{"state": "level", "coef": 2.0}, divides), ""},
+		{"no denominator", ratioDynamics(0.1, "inflow", "draw"), "/kinds/1/dynamics/3/f1/inputs"},
+		{"no numerator", ratioDynamics(0.1, divides), "/kinds/1/dynamics/3/f1/inputs"},
+		{"a floor of zero", ratioDynamics(0.0, "inflow", divides), "/kinds/1/dynamics/3/f1/floor"},
+		{"no floor", ratioDynamics(nil, "inflow", divides), "/kinds/1/dynamics/3/f1/floor"},
+		{"a denominator outside a ratio", map[string]any{"target": "avg_flow", "tier": "F1", "f1": map[string]any{"form": "product", "inputs": []any{"inflow", divides}}},
+			"/kinds/1/dynamics/3/f1/inputs/1/denominator"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			violationIn(t, testsupport.CoupledDomain(), func(d map[string]any) { put(d, tc.dynamics, "kinds", 1, "dynamics", 3) }, tc.pointer)
+		})
+	}
+}

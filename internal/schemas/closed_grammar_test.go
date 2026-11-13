@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-var proseMembers = []string{"description", "title", "stresses", "not_applicable", "unit", "if_no_action", "if_action_by_deadline"}
+var proseMembers = []string{"description", "title", "stresses", "not_applicable", "unit", "label", "if_no_action", "if_action_by_deadline"}
 
 var identifierMembers = []string{"name", "id_template", "command_id", "instance", "fmu", "enum_values"}
 

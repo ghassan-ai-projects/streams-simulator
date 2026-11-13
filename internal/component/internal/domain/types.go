@@ -105,8 +105,13 @@ type Entry struct {
 	IDTemplate  string            `json:"id_template"`
 	Count       model.EntityCount `json:"count"`
 	Area        string            `json:"area"`
+	Implements  string            `json:"implements"`
+	BoardType   string            `json:"board_type"`
 	Instruments InstrumentChanges `json:"instruments"`
+	Expected    ExpectedActions   `json:"expected_actions"`
 }
+
+type ExpectedActions map[string][]model.FaultAction
 
 func (e Entry) instances() model.InstanceSet {
 	return model.InstanceSet{Names: e.Names, IDTemplate: e.IDTemplate, Count: e.Count}

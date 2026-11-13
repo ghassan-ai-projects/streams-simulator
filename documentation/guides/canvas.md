@@ -27,6 +27,7 @@ The workspace folder holds `domains/`, `compositions/`, `scenarios/`, `layouts/`
 
 | Flow | What you do | What the binary does |
 | --- | --- | --- |
+| Try an example | On an empty workspace choose **Try it** beside an example plant, or make an editable copy of one. | Writes the copy's composition, puts the kind files and board mappings the example implements in `kinds/` (`component install-kinds`; a different file already there is never overwritten and stops the copy), then composes it. |
 | Open a plant | Pick a domain from the workspace list. Instances appear as nodes grouped by area, typed links as edges; select one to see its kind (states, sensors, actions, faults, KPIs). | Loads and describes the domain. |
 | Build from the library | Browse equipment, instruments and presets; place and name instances, set parameters, connect ports. | Type-checks connections, composes, validates and lints; each issue is pinned to its element. Saving writes the composition and the composed domain. |
 | Run | Start a run in **Explore** or **Evaluate** mode with a seed; play, pause, step, reset or end. Live values, charts and a timeline show observations, commands, faults and perturbations. | Runs the world; the run folder is the same one `run --out` writes. |

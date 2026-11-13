@@ -103,7 +103,7 @@ func (checks domainChecks) dynamicF2(d *model.Dynamics) error {
 }
 
 func (checks domainChecks) checkFault(f *model.Fault) error {
-	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultObservation, checks.faultDetector, checks.faultEffector, checks.faultDuration} {
+	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultObservation, checks.faultDetector, checks.faultEffector, checks.faultActions, checks.faultDuration} {
 		if err := check(f); err != nil {
 			return err
 		}
@@ -137,6 +137,19 @@ func (checks domainChecks) faultDetector(f *model.Fault) error {
 func (checks domainChecks) faultEffector(f *model.Fault) error {
 	if f.ExpectedEffector != "" && checks.kind.EffectorDecl(f.ExpectedEffector) == nil {
 		return checks.bad("/expected_effector", "fault %q expects undeclared effector %q", f.ID, f.ExpectedEffector)
+	}
+	return nil
+}
+
+func (checks domainChecks) faultActions(f *model.Fault) error {
+	for i, action := range f.ExpectedActions {
+		kind := checks.compiled.Kind(action.Kind)
+		if kind == nil {
+			return checks.bad(fmt.Sprintf("/expected_actions/%d/kind", i), "fault %q expects an action of undeclared kind %q", f.ID, action.Kind)
+		}
+		if kind.EffectorDecl(action.Effector) == nil {
+			return checks.bad(fmt.Sprintf("/expected_actions/%d/effector", i), "fault %q expects effector %q, which kind %q does not declare", f.ID, action.Effector, action.Kind)
+		}
 	}
 	return nil
 }

@@ -5,7 +5,9 @@ import (
 )
 
 func judgment(ev Evidence, gt *model.GroundTruthRecord) JudgmentMetrics {
-	return judgmentFrom(ev.Verdict, gt)
+	m := judgmentFrom(ev.Verdict, gt)
+	m.Prognosis = prognosis(ev.Verdict.Detections, ev, gt)
+	return m
 }
 
 func judgmentFrom(v *model.Verdict, gt *model.GroundTruthRecord) JudgmentMetrics {

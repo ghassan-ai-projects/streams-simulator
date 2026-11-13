@@ -65,6 +65,10 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }
 
+func ReplayOutcome(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, mode model.OutcomeMode) (*model.OutcomeFacts, error) {
+	return layer.ReplayOutcome(ctx, art, spec, adapterSpec, mode)
+}
+
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
 	return layer.ReplayArtifactEvidence(ctx, art, spec, adapterSpec)
 }
