@@ -104,11 +104,11 @@ How to read the tables:
 | P-8 | Halls (large plants) open with one click or Enter, and the breadcrumb shows the hall. | ✅ | |
 | P-9 | The outline scrolls in its own region with a scroll cue, and the selected row is scrolled into view. | ◐ the selected row scrolls into view | |
 | P-10 | The Navigator minimap is fully visible at a fixed size at 1280 and 1440. | ✗ cut off at the window bottom | |
-| P-11 | A legend explains wire colours (port families) and pin shapes on the plant and editor screens. | ✅ a legend that lists only the families the plant uses, and the count on a grouped wire | |
+| P-11 | A legend explains wire colours (port families) and pin shapes on the plant and editor screens. | ✅ a legend that lists only the families the plant uses, and the count on a grouped wire; selecting a family hides or shows its wires | |
 | P-12 | Hall nodes show that they open (a chevron or "Open"), the hall layout is regular, site nodes are not blank, and hall names match the outline case. | ✗ campus ragged; CAL-1 truncates "feeds all 3 h…"; lowercase h01 | |
 | P-13 | The inspector has a close control, its kind line never breaks mid-token, and long lists (13 faults, 17 states) are grouped or collapsible. | ✅ close control, folding lists | |
 | P-14 | Area frame titles are never crossed by wires, and wires do not cross node headers. | ✗ yellow wire through "Substation" at 1920 | |
-| P-15 | A plant whose instances share many links stays readable: parallel links between two instances are one wire with their count and an arrow each way, nodes list measured channels with units (their readings in a review) instead of model ports, and one control switches back to a wire per link. | ✅ Group links, on by default from three links one way between two instances (2026-11-13) | |
+| P-15 | A plant whose instances share many links stays readable: parallel links between two instances are one wire with their count and an arrow each way, nodes list measured channels with units (their readings in a review) instead of model ports, and one control switches back to a wire per link. | ✅ Group links on the plant, review and editor screens, on by default from three links one way between two instances (2026-11-13) | |
 
 ## 4. Editor (build and edit a plant)
 

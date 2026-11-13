@@ -13,6 +13,7 @@ import styles from "./graph.module.css";
 import { tierClass } from "./tierClass";
 import type { PlantGraphProps } from "./types";
 import type { Keys } from "./useGraphKeys";
+import { useHiddenFamilies } from "./wireFilter";
 
 export type FlowProps = PlantGraphProps & { readonly active: string | null; readonly keys: Keys };
 
@@ -40,7 +41,12 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active, mark
   const review = live !== undefined;
   const pixel = screenPixel(zoom);
   const routes = useMemo(() => routeView(view, tier, review ? "rows" : "pins", pixel), [view, tier, review, pixel]);
-  const edges = useMemo(() => flowEdges(view, routes, shown), [view, routes, shown]);
+  const { hidden } = useHiddenFamilies();
+  const drawn = useMemo(
+    () => (hidden.size === 0 ? view : { ...view, edges: view.edges.filter((edge) => !hidden.has(edge.family ?? "")) }),
+    [view, hidden],
+  );
+  const edges = useMemo(() => flowEdges(drawn, routes, shown), [drawn, routes, shown]);
   return { nodes, edges, zoom };
 }
 

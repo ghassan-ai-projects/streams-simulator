@@ -146,4 +146,28 @@ describe("a grouped plant graph", () => {
     expect(screen.getByText("4 inputs · 3 outputs")).toBeInTheDocument();
     expect(screen.getByText("1 input · 1 output")).toBeInTheDocument();
   });
+
+  it("marks a type hidden in the legend and counts it on the legend button, for this graph only", () => {
+    render(
+      <>
+        <ReactFlowProvider>
+          <ZoomBar />
+        </ReactFlowProvider>
+        <ReactFlowProvider>
+          <ZoomBar />
+        </ReactFlowProvider>
+      </>,
+    );
+    const [first, second] = screen.getAllByRole("button", { name: "Legend" });
+    if (first === undefined || second === undefined) throw new Error("two legends expected");
+    fireEvent.click(first);
+    const power = screen.getByRole("button", { name: "Power" });
+    expect(power).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(power);
+    expect(screen.getByRole("button", { name: /^Power\s*hidden$/ })).toHaveAttribute("aria-pressed", "false");
+    expect(first).toHaveTextContent("Legend· 1 hidden");
+    expect(second).toHaveTextContent(/^Legend$/);
+    fireEvent.click(screen.getByRole("button", { name: /^Power\s*hidden$/ }));
+    expect(first).toHaveTextContent(/^Legend$/);
+  });
 });
