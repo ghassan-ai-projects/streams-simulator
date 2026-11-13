@@ -78,8 +78,8 @@ function PinKeys() {
 function GroupedKey() {
   return (
     <p className={styles.direction}>
-      <span aria-hidden="true">×3</span> Three links between the same two instances, drawn as one wire. A wire that
-      carries more than one type is grey.
+      <span aria-hidden="true">×3</span> Three links between the same two instances, drawn as one wire in the colour of
+      the material or power it carries. A wire that carries several kinds is grey.
     </p>
   );
 }

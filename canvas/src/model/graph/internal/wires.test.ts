@@ -23,17 +23,32 @@ describe("grouped wires", () => {
     const view = plantView(belt, beltSpecs, { open: null, wires: "grouped" });
     expect(view.wires).toBe("grouped");
     expect(view.edges.map((edge) => [edge.id, edge.count, edge.reverse, edge.family])).toEqual([
-      ["F-1.>B-1.", 1, 1, null],
-      ["D-1.>B-1.", 3, 2, null],
+      ["F-1.>B-1.", 1, 1, "bulk"],
+      ["D-1.>B-1.", 3, 2, "power"],
     ]);
   });
 
-  it("keeps one family's colour on a wire whose links all share it", () => {
-    const power = { ...belt, links: belt.links.filter((link) => /drag|run_cap/.test(link.fromPort ?? "")) };
-    const view = plantView(power, beltSpecs, { open: null, wires: "grouped" });
-    expect(view.edges.map((edge) => [edge.id, edge.count, edge.reverse, edge.family])).toEqual([
-      ["D-1.>B-1.", 2, 0, "power"],
+  it("colours a wire by the one material or power it carries, by its signal when it carries nothing else", () => {
+    const only = (pattern: RegExp) => {
+      const plant = { ...belt, links: belt.links.filter((link) => pattern.test(link.fromPort ?? "")) };
+      return plantView(plant, beltSpecs, { open: null, wires: "grouped" }).edges.map((edge) => [edge.id, edge.family]);
+    };
+    expect(only(/drag|run_cap/)).toEqual([["D-1.>B-1.", "power"]]);
+    expect(only(/stop_ok|enabled/)).toEqual([["B-1.>D-1.", "signal"]]);
+    expect(only(/feed|drag/)).toEqual([
+      ["F-1.>B-1.", "bulk"],
+      ["D-1.>B-1.", "power"],
     ]);
+  });
+
+  it("leaves a wire grey when it carries more than one material", () => {
+    const specs = new Map(beltSpecs);
+    const drive = specs.get("lib/drive");
+    if (drive === undefined) throw new Error("no drive spec");
+    const ports = drive.ports.map((port) => (port.name === "drag_out" ? { ...port, type: "bulk_flow" } : port));
+    specs.set("lib/drive", { ...drive, ports });
+    const view = plantView(belt, specs, { open: null, wires: "grouped" });
+    expect(view.edges.find((edge) => edge.from === "D-1")?.family).toBeNull();
   });
 
   it("puts the feeder before the belt it feeds, whatever their ids", () => {

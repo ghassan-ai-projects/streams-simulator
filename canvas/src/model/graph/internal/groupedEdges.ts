@@ -21,17 +21,22 @@ function leads(way: Way, other: Way): boolean {
   return material > 0 || (material === 0 && way.families.length > other.families.length);
 }
 
+function colourOf(families: readonly (Family | null)[]): Family | null {
+  const carried = new Set(families.filter(carries));
+  const kinds = carried.size > 0 ? carried : new Set(families);
+  const [only = null] = kinds;
+  return kinds.size === 1 ? only : null;
+}
+
 function edgeOf(pair: Pair): ViewEdge {
   const [main, back] = leads(pair.second, pair.first) ? [pair.second, pair.first] : [pair.first, pair.second];
-  const families = new Set([...main.families, ...back.families]);
-  const [only = null] = families;
   return {
     id: `${main.from}.>${main.to}.`,
     from: main.from,
     to: main.to,
     fromHandle: null,
     toHandle: null,
-    family: families.size === 1 ? only : null,
+    family: colourOf([...main.families, ...back.families]),
     count: main.families.length,
     reverse: back.families.length,
   };

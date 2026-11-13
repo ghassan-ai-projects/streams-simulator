@@ -72,7 +72,7 @@ describe("a grouped plant graph", () => {
     const [feed, drive] = flowEdges(view, new Map());
     expect(feed).toMatchObject({ label: "×2", ariaLabel: "F-1 and B-1, 2 links: 1 to B-1, 1 to F-1" });
     expect(feed?.markerStart).toMatchObject({ orient: "auto-start-reverse" });
-    expect(drive).toMatchObject({ label: "×5", className: "wire family-none wire-grouped" });
+    expect(drive).toMatchObject({ label: "×5", className: "wire family-power wire-grouped" });
   });
 
   it("names a one-way grouped wire by its direction and count", () => {
